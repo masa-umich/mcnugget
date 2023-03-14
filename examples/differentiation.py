@@ -1,7 +1,5 @@
 import numpy as np
 
-import synnax as sy
-
 import matplotlib.pyplot as plt
 from mcnugget.query import read_during_state, ECStates
 from mcnugget.time import elapsed_seconds

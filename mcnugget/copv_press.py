@@ -108,7 +108,7 @@ def analyze_copv_press(
             [f"Mean Press: {np.mean(amount_pressed):.2f} psi", f"Mean Leak: {np.mean(amount_leaked):.2f} psi"],
             [f"Mean Press Rate: {np.mean(press_rates):.2f} psi/s", f"Mean Leak Rate: {np.mean(leak_rates):.2f} psi/s"],
             [f"Max Press Rate: {np.max(press_rates):.2f} psi/s", f"Max Leak Rate: {np.max(leak_rates):.2f} psi/s"],
-            [f"Peak Temperature: {np.max(tc_avg):.2f} C", f"Temperature Delta: {np.max(ambientized_body_tc_ds) - np.min(ambientized_body_tc_ds):.2f} C"],
+            [f"Peak Temperature: {np.max(tc_avg):.2f} K", f"Temperature Delta: {np.max(ambientized_body_tc_ds) - np.min(ambientized_body_tc_ds):.2f} C"],
             [f"Temperature Climb Rate: {np.max(np.gradient(ambientized_body_tc_ds)):.2f} C/s", ""],
         ],
         fontsize=15,
