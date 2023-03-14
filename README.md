@@ -1,2 +1,2 @@
-# mcchiken
-The McChicken of Data Analysis
+# McNugget
+The McNugget of Data Analysis
