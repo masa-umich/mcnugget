@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-synnax = { path = "../../synnax/client/py", develop = true }
+synnax = "^0.3.11"
 toml = "^0.10.2"
 matplotlib = "^3.7.1"
 
@@ -16,11 +16,11 @@ matplotlib = "^3.7.1"
 black = "^23.1.0"
 
 [tool.synnax]
-host = "10.0.0.15"
-port = 9090
+host = "masa.synnaxlabs.com"
+port = 80
 username = "synnax"
 password = "seldon"
-secure = false
+secure = true
 
 [build-system]
 requires = ["poetry-core"]
