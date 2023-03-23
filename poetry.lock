@@ -1132,30 +1132,28 @@ files = [
 
 [[package]]
 name = "synnax"
-version = "0.3.1"
+version = "0.3.3"
 description = "Synnax Client Library"
 category = "main"
 optional = false
-python-versions = "^3.11"
-files = []
-develop = true
+python-versions = ">=3.11,<4.0"
+files = [
+    {file = "synnax-0.3.3-py3-none-any.whl", hash = "sha256:630b6cb6389b4b0e21ce3a3ad52dfa0c890d93190f5cbcf7f49a696f1d2db0d3"},
+    {file = "synnax-0.3.3.tar.gz", hash = "sha256:5d8a9b0a18ed54c1f5fb87605ab81b0c6aa4311b5b39e93dfdd63f3d4e043236"},
+]
 
 [package.dependencies]
-click = "^8.1.3"
-keyring = "^23.9.3"
-mypy = "^0.971"
-pandas = "^1.4.3"
-pick = "^2.0.2"
-pydantic = "^1.10.2"
-PyJWT = "^2.5.0"
-rich = "^12.6.0"
-synnax-freighter = "^0.2.14"
-urllib3 = "^1.26.14"
-websockets = "^10.3"
-
-[package.source]
-type = "directory"
-url = "../../synnax/client/py"
+click = ">=8.1.3,<9.0.0"
+keyring = ">=23.9.3,<24.0.0"
+mypy = ">=0.971,<0.972"
+pandas = ">=1.4.3,<2.0.0"
+pick = ">=2.0.2,<3.0.0"
+pydantic = ">=1.10.2,<2.0.0"
+PyJWT = ">=2.5.0,<3.0.0"
+rich = ">=12.6.0,<13.0.0"
+synnax-freighter = ">=0.2.14,<0.3.0"
+urllib3 = ">=1.26.14,<2.0.0"
+websockets = ">=10.3,<11.0"
 
 [[package]]
 name = "synnax-freighter"
@@ -1337,4 +1335,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "bbed9e52e51d18da0c587c0127ee9aca3e7326a5acad2fa4306559ddb03ff4d8"
+content-hash = "5d2a009c550ace1e0f8f8cd4991abfa6396f3c94e2d3b2ede6ad1badadb3cf95"
