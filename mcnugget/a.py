@@ -2,7 +2,7 @@ import synnax
 from mcnugget.query import read
 import matplotlib.pyplot as plt
 
-TR = synnax.TimeRange(1677605562912998100, 1677605905413741600)
+TR = synnax.TimeRange(1677605739099293700, 1677605759803447000)
 
 DATA = read(TR, "ec.pressure[12]", "Time")
 
