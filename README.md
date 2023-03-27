@@ -46,7 +46,7 @@ The MASA server connection parameters are as follows:
 
 To kick things off, you'll need to clone this repository using `git`. If you don't have `git` installed,
 you can find instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). Once you have
-`git` installed, create a new project/folder in your [editor](#what-editor-should-i-use). We reccomend the 
+`git` installed, create a new project/folder in your [editor](#what-editor-should-i-use). We recommend the 
 directory `~/Desktop/masa-umich/`. Then, run the following command:
 
 ```bash
@@ -74,6 +74,12 @@ and configuration. To install poetry, run the following command:
 
 ```bash 
 pip install poetry
+```
+
+Then, we need to make sure the virtual environment we use is created in the same directory as our project (if you don't know what a virtual environment is, don't worry). 
+
+```
+poetry config virtualenvs.in-project true
 ```
 
 Now that you have poetry installed, you can install McNugget's dependencies by running 
