@@ -62,7 +62,6 @@ def read(
     """
     df = DataFrame()
     for chan in [*channels]:
-        print(chan)
         df[chan] = CLIENT.read(tr.start.datetime(), tr.end.datetime(), chan)[0]
 
     return df
