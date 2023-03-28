@@ -7,8 +7,6 @@ import toml
 
 TOML = toml.load(Path(os.path.dirname(__file__)).parent.parent / "pyproject.toml")['tool']['synnax']
 
-print(TOML)
-
 try:
     CLIENT = Synnax(
         host=TOML["host"],

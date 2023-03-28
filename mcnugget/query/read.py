@@ -60,8 +60,9 @@ def read(
     Returns:
         A DataFrame containing the data.
     """
+    print(f"Reading range: {tr}")
     df = DataFrame()
     for chan in [*channels]:
-        df[chan] = CLIENT.read(tr.start.datetime(), tr.end.datetime(), chan)[0]
-
+        print(f"Reading data for channel: {chan}")
+        df[chan] = CLIENT.read(tr.start, tr.end, chan)[0]
     return df

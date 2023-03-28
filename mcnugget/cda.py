@@ -3,7 +3,7 @@ from mcnugget.query import read
 from mcnugget.time import elapsed_seconds
 import numpy as np
 import matplotlib.pyplot as plt
-TR = synnax.TimeRange(1677605739099293700, 1677605759803447000)
+TR = synnax.TimeRange(1677367953827685400, 1677367976717749800)
 #TR.start = TR.start+synnax.TimeSpan.HOUR
 #TR.end = TR.end+synnax.TimeSpan.HOUR
 

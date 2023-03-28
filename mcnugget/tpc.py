@@ -11,12 +11,12 @@ def analyze_tpc(
     target: float = 100,
     upper: float = 110,
     lower: float = 90,
-    prop_press: str = "ec.pressure[7] (psi)",
+    prop_press: str = "ec.pressure[7]",
     time: str = "Time",
-    ):
+):
     """Perform basic high level analysis of a TPC (Tank Pressure Control) test."""
     data = read_during_state(
-        tr
+        tr,
         prop_press,
         time,
         state=ECStates.HOTFIRE

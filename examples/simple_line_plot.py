@@ -2,6 +2,7 @@ import synnax as sy
 import matplotlib.pyplot as plt
 from mcnugget.query import read_during_state, ECStates
 from mcnugget.tests import TPC
+from mcnugget.time import elapsed_seconds
 
 # tr defines the time range we're interested in reading. An easy way to figure this
 # out is to use the visualiation UI to copy the range (http://docs.synnaxlabs.com/visualize/select-a-range).
@@ -17,7 +18,7 @@ PT_CH = "ec.pressure[9]"
 # If we wanted to read data during a test, we could switch this to ECStates.HOTFIRE.
 data = read_during_state(tr, TIME_CH, PT_CH, state=ECStates.HOTFIRE)
 # Pick out our timestamps
-time = data[TIME_CH].to_numpy()
+time = elapsed_seconds(data[TIME_CH].to_numpy())
 # Pick out our pressure data
 pressure = data[PT_CH].to_numpy()
 
@@ -25,7 +26,7 @@ pressure = data[PT_CH].to_numpy()
 plt.plot(time, pressure)
 
 # Set the labels
-plt.xlabel("Time (ns)")
+plt.xlabel("Time (s)")
 plt.ylabel("Pressure (psi)")
 
 # Show the plot
