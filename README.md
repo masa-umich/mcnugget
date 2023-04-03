@@ -38,7 +38,7 @@ The MASA server connection parameters are as follows:
 
 - **Name**: `MASA Remote`
 - **Host**: `masa.synnaxlabs.com`
-- **Port**: `443`
+- **Port**: `80`
 - **Username**: `synnax`
 - **Password**: `seldon`
 
