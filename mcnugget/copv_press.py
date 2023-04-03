@@ -120,6 +120,6 @@ def analyze_copv_press(
     plt.show()
 
 if __name__ == "__main__":
-    analyze_copv_press(TPC["02-19-23-02"])
+    analyze_copv_press(TPC["02-25-23-01"])
 
 
