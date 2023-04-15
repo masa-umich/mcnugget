@@ -1,6 +1,4 @@
 import numpy as np
-import scipy.stats as st
-import math as m
 
 class st_ops:
     def t_interval(data, sig_level):  
@@ -14,10 +12,9 @@ class st_ops:
         df = len(data) - 1
         tCV = st.t.ppf(sig_level, df) # t critical value 
         s = st.sem(data) # standard deviation of the mean 
-        tDelta = tCV * (s/(m.sqrt(len(data))))
+        tDelta = tCV * (s/(np.sqrt(len(data))))
         return tDelta
-        
-##calling upon t interval function 
+#calling upon t interval function 
 #create a function called valve_delay that calls t_interval twice, one for lox and one for fuel
 
 def valve_delay(lox_data, fuel_data, sig_level):
@@ -31,10 +28,12 @@ def valve_delay(lox_data, fuel_data, sig_level):
     lox_d = st_ops.delta_t(lox_data, sig_level)
     fuel_d = st_ops.delta_t(fuel_data, sig_level)
 
+    #using Cian Mullen's version of the equation 
     cian_mtd = fuel_m - lox_m - fuel_d - lox_d
     return cian_mtd
 
     #or you can just subtract the lower bound of fuel by the upper bound of lox 
+    #technically faster, you don't need to calculate as much
     other_mtd = fuel_delay[0] - lox_delay[1]
     return other_mtd
 
