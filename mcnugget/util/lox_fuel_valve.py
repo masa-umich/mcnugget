@@ -35,7 +35,7 @@ def valve_delay(lox_data, fuel_data, sig_level):
     return cian_mtd
 
     #or you can just subtract the lower bound of fuel by the upper bound of lox 
-    other_mtd = fuel_delay[1] - lox_delay[0]
+    other_mtd = fuel_delay[0] - lox_delay[1]
     return other_mtd
 
 
