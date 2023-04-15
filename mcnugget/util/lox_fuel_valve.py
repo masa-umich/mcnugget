@@ -25,12 +25,19 @@ def valve_delay(lox_data, fuel_data, sig_level):
     fuel_delay = st_ops.t_interval(fuel_data, sig_level)
     
     #two intervals to get the delta inside your valve_delay function
-    lox_mean = np.mean(lox_data)
-    fuel_mean = np.mean(fuel_data)
+    lox_m = np.mean(lox_data)
+    fuel_m = np.mean(fuel_data)
 
-    #get the upper and lower bound in the np.arrays 
-    lox_delta = 
-    fuel_delta = 
+    lox_d = st_ops.delta_t(lox_data, sig_level)
+    fuel_d = st_ops.delta_t(fuel_data, sig_level)
+
+    cian_mtd = fuel_m - lox_m - fuel_d - lox_d
+    return cian_mtd
+
+    #or you can just subtract the lower bound of fuel by the upper bound of lox 
+    other_mtd = fuel_delay[1] - lox_delay[0]
+    return other_mtd
+
 
 
 
