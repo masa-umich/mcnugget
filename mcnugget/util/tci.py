@@ -1,21 +1,28 @@
 import numpy as np 
 from scipy.stats import st
 
-#what is this for 
-purpose = input("What is the purpose for the confidence interval: ")
 
-# input sample data 
-data = np.array([float(x) for x in input("Enter data separated by spaces: ").split()])
+def t_interval(
+    data: np.array, 
+    sig_level: float,
+):  
 
-#degrees of freedom 
-df = len(data) - 1
+    if len(data) < 2:
+        return str("Input data must contain at least two values.")
+    if sig_level <= 0 or sig_level >= 1:
+        return str("Significance level must be between 0 and 1.")
 
-#input confidence interval value in decimal form (i.e. 95% -> 0.95) 
-sig_level = float(input("Enter significance level (e.g. 0.95): "))
+    df = len(data) - 1
+    mean = np.mean(data)
 
-c_interval = st.t.interval(sig_level, df, np.mean(data), st.sem(data))
+    sig_level = float(input("Enter significance level (e.g. 0.95): "))
 
-#maybe print something prettier for it like 
-#"With 95% confidence the [what the thing is for] is between (c_interval)"
+    # # input sample data 
+    # data = np.array([float(x) for x in input("Enter data separated by spaces: ").split()])
+    # #degrees of freedom
+    # #input confidence interval value in decimal form (i.e. 95% -> 0.95) 
+    c_interval = st.t.interval(sig_level, df, np.mean(data), st.sem(data))
+    # #maybe print something prettier for it like 
+    # #"With 95% confidence the [what the thing is for] is between (c_interval)"
 
-np.array(c_interval)
+    return np.array(c_interval)
