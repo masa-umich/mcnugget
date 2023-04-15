@@ -15,8 +15,9 @@ def t_interval(
     df = len(data) - 1
     mean = np.mean(data)
 
-    sig_level = float(input("Enter significance level (e.g. 0.95): "))
-
+    sig_level = 
+    #take sig level as an input argument 
+    
     # # input sample data 
     # data = np.array([float(x) for x in input("Enter data separated by spaces: ").split()])
     # #degrees of freedom
