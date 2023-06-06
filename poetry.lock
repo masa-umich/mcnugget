@@ -243,6 +243,62 @@ test = ["Pillow", "matplotlib", "pytest"]
 test-no-images = ["pytest"]
 
 [[package]]
+name = "coolprop"
+version = "6.4.3.post1"
+description = "Open-source thermodynamic and transport properties database"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:6b7bcc6baad597787d5becdbfcc28463faed9611e71ea41ca66756502b555e33"},
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:7544eaeeaa6cd58e449f96d16631662426c03f4b51ec5543fb67e43d1e3384c2"},
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:58f08be0d5beaa9266accb5669a7719d2ad4c0c0f0c84d7a08d2f379019fc51e"},
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:faa6cbcb47f4a6441c7b5524dcc1f3189c2147055864135d8d3365ecfb4caf26"},
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:5c2c5e88c8b3e729c3b26b0f82f9a2f6731d30058c10c9c97e85b9dcf3219a5d"},
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:a016d07d3c62466795b373514d90940fafe0e314156c2be134e05d17340f7086"},
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-win32.whl", hash = "sha256:5af06c6481a6251e9e768bf0364ab6043cc796d5b73df9af42386f04970061d1"},
+    {file = "CoolProp-6.4.3.post1-cp310-cp310-win_amd64.whl", hash = "sha256:61636b96fce7236ad0f91e6cc1cf8dc9549554b357690d96d1425f77db45d280"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:0a0ee960e6c6d8a612357a99fc68d2f0c96615b20c71e3770ce42e307b0ba1f8"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:998bd5430d1353fc5031f8b923872bf3798e516562e7bdc7033bf1a3bda0c509"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b4c1ec67215d4ce785f62424d710d7711d75260bf952656096dbfee3a4c51516"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:87c26ae5a6b7261df4c1d8fd95779116eb2d8a4210898349293c6edae3b66d74"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:eede417b35c1e11eb0a79ed28e6fffb1e1fc6a22128473cbd86320992e54a596"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:e363f6defee7d35d54091050bf9603124e61ae5b8330d62d919128dd5f8465eb"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-win32.whl", hash = "sha256:3d9f1f0b26e2d5e1f81a9cf24152854a670e660a09664521629dd19254168f56"},
+    {file = "CoolProp-6.4.3.post1-cp311-cp311-win_amd64.whl", hash = "sha256:4dae44da73fad67235802e5287d986571e318722bf140a5a2b4729c3269affa7"},
+    {file = "CoolProp-6.4.3.post1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:dcad868eb633f0a915fabd989aa479f74a3e7c7e7f935617fd85ef18719dd424"},
+    {file = "CoolProp-6.4.3.post1-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e502fc1683b2a0997dbd27cc07304e7eae8559ed36c1fdad6a7c2f2df4585b0d"},
+    {file = "CoolProp-6.4.3.post1-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:343fd8fe101b51b361bd8308dc0b55887cbaee0314f21ebc9b69937b2ec7c209"},
+    {file = "CoolProp-6.4.3.post1-cp36-cp36m-musllinux_1_1_aarch64.whl", hash = "sha256:2ff25467bc7a3df371012155de4b464b45812b6269857ccfe86ded27d7e99ac3"},
+    {file = "CoolProp-6.4.3.post1-cp36-cp36m-musllinux_1_1_x86_64.whl", hash = "sha256:38c2f89bbe6bb78d8092ee2870fec0035c9ca2f6140a9f3bddeab98e12168191"},
+    {file = "CoolProp-6.4.3.post1-cp36-cp36m-win32.whl", hash = "sha256:f3af66bb8659b2ec324d181e48c9d26b55552af2fbac31da7de80e7fd31da2ee"},
+    {file = "CoolProp-6.4.3.post1-cp36-cp36m-win_amd64.whl", hash = "sha256:304754d608efbd760bd946b0c5091b258c63468888fb8c03af31589cf26d7fd3"},
+    {file = "CoolProp-6.4.3.post1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:6a9dff6d884d2a1e4ad1ab47d467e8aec1a1e08d112429219329cb4dfde4de88"},
+    {file = "CoolProp-6.4.3.post1-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d809eb966a4b76c9243a25bcc7599c3b4f380eb8b4df3572c56fdd2fb662f2a1"},
+    {file = "CoolProp-6.4.3.post1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5c636700e4b72492958fddf8a79a03c16ddfb3c7a52c54293ac6a9161d8aa6a6"},
+    {file = "CoolProp-6.4.3.post1-cp37-cp37m-musllinux_1_1_aarch64.whl", hash = "sha256:51c9abe35ce32716dc615ca12402f4ad2766af97e43c57b728ad28ff237129f5"},
+    {file = "CoolProp-6.4.3.post1-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:754199e19a19d3680eeb5a025425896d0e78285bdf1b1b7736358f7e31d7f1f8"},
+    {file = "CoolProp-6.4.3.post1-cp37-cp37m-win32.whl", hash = "sha256:87e5b20cfc75be30a7e8ce06935f800a634767f07b83d3e5d8356f4e6927de97"},
+    {file = "CoolProp-6.4.3.post1-cp37-cp37m-win_amd64.whl", hash = "sha256:706c1bfee11314a0776647e6f73914a92e63b769e026324244d49030d14bc59f"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d6bb73cde0aab8ed27ca4f1fd44885509a23d62e5070d300e0d977f0f7f5f36c"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:8167c1257c291b57042aaef09d18de5ee90dda460af970f0fb9b01b07ffa7412"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f58d704544fd923083d31c76a9cab359e83937a2a532d7971c1781163acfffa4"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b96243f6456d86b10630b65cc7d2f82315f43bd79635b76ffb3ccb8664377536"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-musllinux_1_1_aarch64.whl", hash = "sha256:fb5f6c56533f9067f140ba821530a6770aca5f16c09e64851dd03138d4a80b28"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:f3669a072c1d97135c268dfe489a83a1e6cbce650ba5782d100959c0d14f4ffe"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-win32.whl", hash = "sha256:834f53cf7e1983c5bbf6c8a68abca46068fc9bfc14c1382ce5c9f2a8ed022f46"},
+    {file = "CoolProp-6.4.3.post1-cp38-cp38-win_amd64.whl", hash = "sha256:6338a46c21714423f175a9b89e35809e2c1911b733a91766d6343b5341ebcfdf"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:e917174abf7498afddbaf29f6f6701682df5edb780248807d9d03a11240fe16a"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:d45c4662750e44e6737ef96357becde26787681b0baf9b3a43e0fc9aac56966d"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a36c875868fdfcc7caa0d634f2da7e4f56f6da35d42d93cfc5efa05e010d1045"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a2e61ba3afc745acda7ddf057a4b990f631476bf480d34d4101563a2c9d72f42"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:3527a678258e209b3b93c7ef5fbe1cb727b2b4158daa09ab13690016c5238b80"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:df1228ad58ba4113e8ecfecb0c7d33a47ad4f56f99cf5bf32c914e93242c79d8"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-win32.whl", hash = "sha256:4e2921035cc63c74ac2cf732b2a54257691e6f6db5ad21935db4229e72523019"},
+    {file = "CoolProp-6.4.3.post1-cp39-cp39-win_amd64.whl", hash = "sha256:f5a19b7e1189997620ccba0e4e32459b9bfdb2e6e4b36cee11608a0e1a238f2c"},
+]
+
+[[package]]
 name = "cryptography"
 version = "39.0.2"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
@@ -997,6 +1053,21 @@ dotenv = ["python-dotenv (>=0.10.4)"]
 email = ["email-validator (>=1.0.3)"]
 
 [[package]]
+name = "pyfluids"
+version = "2.3.2"
+description = "A simple, full-featured, lightweight CoolProp wrapper for Python"
+category = "main"
+optional = false
+python-versions = ">=3.7,<3.12"
+files = [
+    {file = "pyfluids-2.3.2-py3-none-any.whl", hash = "sha256:ba9383acea67adf86b6459ef6e6ad95f3c52ad563f3148efefd125b11193dd77"},
+    {file = "pyfluids-2.3.2.tar.gz", hash = "sha256:5f281993a22b02f8088d0abcec749d171f29fc22ace27eff007daac968f643e5"},
+]
+
+[package.dependencies]
+CoolProp = "6.4.3.post1"
+
+[[package]]
 name = "pygments"
 version = "2.14.0"
 description = "Pygments is a syntax highlighting package written in Python."
@@ -1374,4 +1445,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "0360d9a591cba92e4dcc38b1017aa601c58bb7e620c33e27a0bdb66c2e27e207"
+content-hash = "89c8dc1063a4488674c4ecc6a1333d95d2c122b3fa436ce97ae4fd48c2f33e98"

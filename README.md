@@ -4,7 +4,7 @@ The McChicken of Data Analysis. It's not gonna change your life, but it gets the
 
 ## Get Started
 
-McNugget is an analysis toolkit that automatically reads and writes data from the MASA 
+McNugget is an analysis toolkit that automatically reads and writes data from the MASA
 Synnax Data Processing Server (no configuration required!), which you can use to analyze
 MASA's 2023 and later data.
 
@@ -13,8 +13,8 @@ MASA's 2023 and later data.
 A typical workflow with McNugget involves the following steps:
 
 1. Finding the range (time range) of data you're interested in getting access to. The ideal
-way to do this is to use the [Synnax Visualization UI](https://docs.synnaxlabs.com/visualize/get-started)
-to plot different areas of data. Once you've found the range you're interested in, copy it to your clipboard.
+   way to do this is to use the [Synnax Visualization UI](https://docs.synnaxlabs.com/visualize/get-started)
+   to plot different areas of data. Once you've found the range you're interested in, copy it to your clipboard.
 
 2. Create a new script describing the analysis you intend on doing (for example, `cda.py`).
 
@@ -28,8 +28,7 @@ to plot different areas of data. Once you've found the range you're interested i
 
 ## Install the Visualization UI
 
-To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this,
-simply follow the instructions[here](https://docs.synnaxlabs.com/visualize/get-started?).
+To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this, simply follow the instructions[here](https://docs.synnaxlabs.com/visualize/get-started?).
 
 The next step is to connect to the MASA cluster. Instructions for this can be found [here
 ](https://docs.synnaxlabs.com/visualize/connect-a-cluster).
@@ -44,9 +43,7 @@ The MASA server connection parameters are as follows:
 
 ## Install McNugget
 
-To kick things off, you'll need to clone this repository using `git`. If you don't have `git` installed,
-you can find instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). Once you have
-`git` installed, create a new project/folder in your [editor](#what-editor-should-i-use). We recommend the 
+To kick things off, you'll need to clone this repository using `git`. If you don't have `git` installed, you can find instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). Once you have `git` installed, create a new project/folder in your [editor](#what-editor-should-i-use). We recommend the
 directory `~/Desktop/masa-umich/`. Then, run the following command:
 
 ```bash
@@ -55,7 +52,7 @@ git clone https://github.com/masa-umich/mcnugget.git
 
 This will download the mcnugget source code into the directory `~/Desktop/masa-umich/mcnugget/`.
 
-After downloading the source, the next step is to install and set up Python. You'll need vesrion 3.11. If you don't have 
+After downloading the source, the next step is to install and set up Python. You'll need vesrion 3.11. If you don't have
 Python installed, see the [Python Installation Guide](https://www.python.org/downloads/) for instructions.
 If you're not sure what version you're running, use the following command:
 
@@ -66,23 +63,23 @@ python --version
 If you don't see `3.11.x` or higher in the output, you'll need to upgrade your Python installation. If you see
 the output `command not found`, your python installation use the `python3` or `python3.11` command instead of `python`.
 If you get an error saying `command not found`, try using `python3` or `python3.11` instead. The same goes for
-the commands involving `pip` (try `pip3` or `pip3.11` instead). If you're still having trouble, ask for help in the 
+the commands involving `pip` (try `pip3` or `pip3.11` instead). If you're still having trouble, ask for help in the
 `#software` slack channel.
 
 McNugget uses a virtual environment tool called `poetry` to manage it's dependencies
 and configuration. To install poetry, run the following command:
 
-```bash 
+```bash
 pip install poetry
 ```
 
-Then, we need to make sure the virtual environment we use is created in the same directory as our project (if you don't know what a virtual environment is, don't worry). 
+Then, we need to make sure the virtual environment we use is created in the same directory as our project (if you don't know what a virtual environment is, don't worry).
 
 ```
 poetry config virtualenvs.in-project true
 ```
 
-Now that you have poetry installed, you can install McNugget's dependencies by running 
+Now that you have poetry installed, you can install McNugget's dependencies by running
 the following command:
 
 ```bash
@@ -91,8 +88,8 @@ poetry install
 
 ## Starting a Shell and Running an Example
 
-To verify everything installed correctly, you'll want to run an example. The first step is to 
-start a shell. To do this, run the following command: 
+To verify everything installed correctly, you'll want to run an example. The first step is to
+start a shell. To do this, run the following command:
 
 ```bash
 poetry shell
@@ -112,7 +109,7 @@ A line plot containing some TPC data should show up.
 
 The first step is to create a new script in the `mcnugget` directory. Choose the name of this script
 to match the type of analysis you're performing. For example, if you're performing a CDA analysis,
-name the script `cda.py`. 
+name the script `cda.py`.
 
 ### Import a few useful tools
 
@@ -181,14 +178,21 @@ Traceback (most recent call last):
     from mcnugget.query.client import CLIENT
   File "/Users/emilianobonilla/Desktop/masa-umich/mcnugget/mcnugget/query/client.py", line 21, in <module>
     raise Exception(
-Exception: 
+Exception:
         Failed to connect to Synnax data processing sever. Screenshot
         this error and send it in the #software slack channel.
 ```
 
-### Pytnon Version is too Old
+## Updating McNugget Dependencies
 
-### Python Certificate Error
+Sometimes we add new dependences to McNugget, to make sure all of your dependencies are up to date, run:
+
+```
+poetry install
+```
+
+in the root directory of the repository.
+
 
 ## Frequently Asked Questions
 
