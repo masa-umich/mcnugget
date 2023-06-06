@@ -1,11 +1,12 @@
 import numpy as np
 
+
 def correct_calibration(
-    curr_slope: float,
-    curr_offset: float,
-    target_slope: float,
-    target_offset: float,
-    data: np.ndarray,
+        curr_slope: float,
+        curr_offset: float,
+        target_slope: float,
+        target_offset: float,
+        data: np.ndarray,
 ) -> np.ndarray:
     """Corrects the calibration of a dataset.
 
