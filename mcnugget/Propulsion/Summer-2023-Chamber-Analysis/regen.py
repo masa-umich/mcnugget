@@ -59,10 +59,14 @@ v = np.zeros(n) # Velocity at each station
 Re = np.zeros(n) # Reynolds number at each station
 Pr =  np.zeros(n) # Renolds number at each station
 
+
 # Initial Conditions
 Coolant = Fuel(300) # Initial Coolant Condiditions
 Twc = np.full(n, Liner.T) # Initial Station Temperatures
 Twh = np.full(n, Liner.T) # Initial Station Temperatures
+Nu = np.zeros(n) # Nusselt Number at each station
+hc = np.zeros(n) # Cold Wall Convective Heat Transfer Coefficient at each station
+ql = np.zeros(n) # Coldwall Heat Flux at each station
 Tc = 300 # Initial Coolant Temperature
 # Engine Inputs
 mdot = 2.124 # kg/s
@@ -70,9 +74,13 @@ mdot = 2.124 # kg/s
 # Initial Calculations
 Liner.di * np.pi * dx  # Hotwall Area per Station
 Liner.do * np.pi * dx  # Coldwall Area per Station
-rc.e / rc.dh # Relative Roughness
+rc.k = rc.e / rc.dh # Relative Roughness
 
 # Iterative Simulation
+
+Twc_eps = 0.1 # Coldwall Temperature Convergence Criteria
+Twh_eps = 0.1 # Hotwall Temperature Convergence Criteria
+
 for n in range(0, n): # Iterates through each station
     if True:
         Twh[n] = Twh[n-1]
@@ -86,6 +94,28 @@ cp[n] = Coolant.cp # Sets Specific Heat Capacity to Station Specific Heat Capaci
 v[n] = mdot / (rho[n] * rc.A) # Sets Velocity to Station Velocity
 Re[n] = (rho[n] * v[n] * rc.dh) / u[n] # Sets Reynolds Number to Station Reynolds Number
 Pr[n] = (cp[n] * u[n]) / k[n] # Sets Prandtl Number to Station Prandtl Number
+Twc_prev = 0
+Twh_prev = 0
+
+while np.absolute(Twc[n]-Twc_prev) > Twc_eps and np.absolute(Twh[n]-Twh_prev) > Twh_eps:
+    Twc_prev = Twc[n]
+    Twh_prev = Twh[n]
+    def ColbrookWhite(Re, k, dh):
+        a = 0.0001
+        b = 1000
+        c = (a + b) / 2
+        while np.absolute((1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re * np.sqrt(c)))))) > 0.0001:
+            if (1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re * np.sqrt(c))))) > 0:
+                a = c
+            else:
+                b = c
+            c = (a + b) / 2
+        return c
+    rc.f = ColbrookWhite(Re[n], rc.k, rc.dh) # Sets Friction Factor 
+    Nu[n] = ((rc.f / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(rc.f / 8) * (np.power(Pr[n], (2/3)) - 1))) * (1 + ((Liner.do / Liner.di) ** 0.7)) # Sets Nusselt Number to Station Nusselt Number
+    hc[n] = (Nu[n] * k[n]) / rc.dh # Sets Cold Wall Heat Transfer Coefficient
+    ql[n] = hc[n] * (Twc[n] - Tc[n]) # Sets Cold Wall Heat Flux
+    break
 
 
 
