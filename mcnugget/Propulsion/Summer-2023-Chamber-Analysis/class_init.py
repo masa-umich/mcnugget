@@ -32,6 +32,7 @@ class Liner:
 # Interopolates Fuel Properties at a given temperature
 # Inputs: Temperature (K)
 # Outputs: conductivity, viscosity, Prandtl Number, Specific Heat, Density
+
 class Fuel:
     def __init__(self, T):
         self.T = T
@@ -47,6 +48,8 @@ class Fuel:
         self.u = np.interp(T, fuel_properties[:, 0], fuel_properties[:, 3])
         self.cp = np.interp(T, fuel_properties[:, 0], fuel_properties[:, 1])
         self.rho = np.interp(T, fuel_properties[:, 0], fuel_properties[:, 2])
+
+
 
 
 
