@@ -61,8 +61,8 @@ Pr =  np.zeros(n) # Renolds number at each station
 
 # Initial Conditions
 Coolant = Fuel(300) # Initial Coolant Condiditions
-Twc = Liner.T # Initial Station Temperatures
-Twh = Liner.T # Initial Station Temperatures
+Twc = np.full(n, Liner.T) # Initial Station Temperatures
+Twh = np.full(n, Liner.T) # Initial Station Temperatures
 Tc = 300 # Initial Coolant Temperature
 # Engine Inputs
 mdot = 2.124 # kg/s
