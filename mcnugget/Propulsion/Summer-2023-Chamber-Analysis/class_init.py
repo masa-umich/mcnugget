@@ -16,6 +16,7 @@ class Regen_Channel:
     dh = init
     k = init
     f = init
+    e = init
 
 class Liner:     
     k = init
