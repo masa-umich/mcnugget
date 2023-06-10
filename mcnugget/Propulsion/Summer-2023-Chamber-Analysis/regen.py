@@ -2,8 +2,10 @@ import matplotlib.pyplot as plt
 from pyfluids import Fluid, FluidsList, Input
 from class_init import Regen_Channel
 from class_init import Liner
+from class_init import fuel
 import numpy as np
 import pint
+from fuel import fuel_prop
 
 # Chamber Regen Analysis Code
 # This will analyze the regenerative cooling circuit iteratively, dividing the liner into axial stations
@@ -34,6 +36,4 @@ v = 0.3
 E = 17560000 * 6895 # Pa 
 ty = 29370 * 6895 # Pa 
 di = 0.06797755393 # m
-do = 0.07026355393 # m
-
-# RP1 Parameters
+do = 0.07026355393 # meters

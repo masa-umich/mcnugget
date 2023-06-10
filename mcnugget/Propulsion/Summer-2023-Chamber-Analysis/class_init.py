@@ -27,4 +27,11 @@ class Liner:
     do = init
     T = init
 
+class fuel:     
+    k = init
+    u = init
+    Pr = init
+    cp = init
+    rho = init
+
 
