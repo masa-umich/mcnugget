@@ -31,7 +31,7 @@ class Liner:
 
 # Interopolates Fuel Properties at a given temperature
 # Inputs: Temperature (K)
-# Outputs: conductivity, viscosity, Prandtl Number, Specific Heat, Density
+# Outputs: Conductivity, Viscosity, Prandtl Number, Specific Heat, Density
 
 class Fuel:
     def __init__(self, T):
