@@ -19,26 +19,19 @@ import pint
 #   6. Convective Heat Transfer Coefficients and Maximum Heat-flux
 
 # Regen Channel Inputs
-rc = Regen_Channel() 
-rc.L = 12 / 39.37 # m
-rc.ri = 0.07026355393 # m 
-rc.ro = 0.07091 # m 
-rc.A = ((np.pi) * rc.ro ** 2) - ((np.pi) * rc.ri ** 2) # m^2
-rc.dh = 2 * ((rc.ro) - (rc.ri)) # m
-rc.e = 0.00005 # m 
+rc = Regen_Channel(0.07091, 0.07026355393) # Takes in channel outer radius and inner radius
+rc.L = 12 / 39.37 # Regen Cooled Length in Meters
+rc.e = 0.00005 # Abolute Roughness of Coldwall
 
 # Liner Inputs
-Liner = Liner() 
+Liner = Liner(0.07026355393, 0.06797755393) 
 Liner.k = 280 # W/mK
 Liner.rho = 8.9 # g/cm^3
 Liner.a = 0.000017 # K^-1
 Liner.v = 0.3
 Liner.E = 17560000 * 6895 # Pa 
 Liner.ty = 29370 * 6895 # Pa 
-Liner.ri = 0.06797755393 # m
-Liner.ro = 0.07026355393 # meters
 Liner.T = 300 # Initial Liner Temperature
-Liner.t = Liner.ro - Liner.ri # m
 
 # Hot Gas Inputs
 hg = 962.5 # W/m^2K

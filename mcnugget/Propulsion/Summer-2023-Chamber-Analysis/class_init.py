@@ -10,14 +10,16 @@ init = 1
 
 class Regen_Channel:     
     L = init
-    di = init
-    do = init
-    A = init
-    dh = init
+    ri = init
+    ro = init
     k = init
     f = init
     e = init
     sA = init
+    
+    def __init__(self, ro, ri):
+        self.A = ((np.pi) * ro ** 2) - ((np.pi) * ri ** 2) # m^2
+        self.dh = 2 * ((ro) - (ri))
 
 class Liner:     
     k = init
@@ -27,10 +29,13 @@ class Liner:
     E = init
     ty = init 
     tu = init
-    di = init
-    do = init
     T = init
     sA = init
+
+    def __init__(self, ro, ri):
+        self.t = ro - ri
+        self.ro = ro
+        self.ri = ri
 
 # Interopolates Fuel Properties at a given temperature
 # Inputs: Temperature (K)
