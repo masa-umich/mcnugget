@@ -21,29 +21,28 @@ import pint
 # Regen Channel Inputs
 rc = Regen_Channel() 
 rc.L = 12 # in
-rc.di = 0.07026355393 # m 
-rc.do = 0.07091 # m 
-rc.A = ((np.pi / 4) * rc.do ** 2) - ((np.pi / 4) * rc.di ** 2) # m^2
-rc.dh = 2 * ((rc.do/2) - (rc.di/2)) # m
+rc.ri = 0.07026355393 # m 
+rc.ro = 0.07091 # m 
+rc.A = ((np.pi) * rc.ro ** 2) - ((np.pi) * rc.ri ** 2) # m^2
+rc.dh = 2 * ((rc.ro) - (rc.ri)) # m
 rc.e = 0.00005 # m 
 
 # Liner Inputs
 Liner = Liner() 
-Liner.k = 0.28 # kW/mK
+Liner.k = 280 # W/mK
 Liner.rho = 8.9 # g/cm^3
 Liner.a = 0.000017 # K^-1
 Liner.v = 0.3
 Liner.E = 17560000 * 6895 # Pa 
 Liner.ty = 29370 * 6895 # Pa 
-Liner.di = 0.06797755393 # m
-Liner.do = 0.07026355393 # meters
+Liner.ri = 0.06797755393 # m
+Liner.ro = 0.07026355393 # meters
 Liner.T = 300 # Initial Liner Temperature
-Liner.t = (Liner.do / 2) - (Liner.di / 2)# m
-
+Liner.t = Liner.ro - Liner.ri # m
 
 # Hot Gas Inputs
-hg = 0.9625 # kW/m^2K
-qrad = 482 # kW/m^2
+hg = 962.5 # W/m^2K
+qrad = 0 # kW/m^2
 Tg = 3316 # K
 
 # Station Setup
@@ -75,36 +74,33 @@ q = np.zeros(N) # Heat Flux at each station
 mdot = 2.124 # kg/s
 
 # Initial Calculations
-Liner.di * np.pi * dx  # Hotwall Area per Station
-Liner.do * np.pi * dx  # Coldwall Area per Station
-rc.k = rc.e / rc.di # Relative Roughness
+2 * Liner.ri * np.pi * dx  # Hotwall Area per Station
+2* Liner.ro * np.pi * dx  # Coldwall Area per Station
+rc.k = rc.e / (2 * rc.ri) # Relative Roughness
 
 # Iterative Simulation
 
-Twc_eps = 0.0001 # Coldwall Temperature Convergence Criteria
-Twh_eps = 0.0001 # Hotwall Temperature Convergence Criteria
+Twc_eps = 0.01 # Coldwall Temperature Convergence Criteria
+Twh_eps = 0.01 # Hotwall Temperature Convergence Criteria
 
 for n in range(0, N): # Iterates through each station
-    if True:
-        Twh[n] = Twh[n-1]
-        Twc[n] = Twc[n-1]
-    break
+#    if True:
+#        Twh[n] = Twh[n-1]
+#        Twc[n] = Twc[n-1]
+#    break
 
-Coolant.T = Tc # Sets Coolant Temperature to Station Temperature
-np.put(rho, n, Coolant.rho)# Sets Density to Station Density
-np.put(u, n, Coolant.u)# Sets Viscosity to Station Viscosity
-np.put(k, n, Coolant.k)# Sets Conductivity to Station Conductivity
-np.put(cp, n, Coolant.cp)# Sets Specific Heat Capacity to Station Specific Heat Capacity
-np.put(v, n, mdot / (rho[n] * rc.A))# Sets Velocity to Station Velocity
-np.put(Re, n, (rho[n] * v[n] * rc.dh) / u[n])# Sets Reynolds Number to Station Reynolds Number
-np.put(Pr, n, (cp[n] * u[n] * rc.dh) / k[n])# Sets Prandtl Number to Station Prandtl Number
+    Coolant.T = Tc # Sets Coolant Temperature to Station Temperature
+    np.put(rho, n, Coolant.rho)# Sets Density to Station Density
+    np.put(u, n, Coolant.u)# Sets Viscosity to Station Viscosity
+    np.put(k, n, Coolant.k)# Sets Conductivity to Station Conductivity
+    np.put(cp, n, Coolant.cp)# Sets Specific Heat Capacity to Station Specific Heat Capacity
+    np.put(v, n, mdot / (rho[n] * rc.A))# Sets Velocity to Station Velocity
+    np.put(Re, n, (rho[n] * v[n] * rc.dh) / u[n])# Sets Reynolds Number to Station Reynolds Number
+    np.put(Pr, n, (cp[n] * u[n]) / k[n])# Sets Prandtl Number to Station Prandtl Number
+    Twc_prev = 0
+    Twh_prev = 0
 
-Twc_prev = 0
-Twh_prev = 0
-
-while np.absolute(Twc[n]-Twc_prev) > Twc_eps and np.absolute(Twh[n]-Twh_prev) > Twh_eps:
-
-    # Solve for friction factor
+    # Solve for friction factor using Colbrook-White Equation
 
     def ColbrookWhite(Re, k, dh):
         a = 0.01
@@ -118,19 +114,18 @@ while np.absolute(Twc[n]-Twc_prev) > Twc_eps and np.absolute(Twh[n]-Twh_prev) > 
                 break
             c = (a + b) / 2
         return c
+
     rc.f = ColbrookWhite(Re[n], rc.k, rc.dh) # Sets Friction Factor 
 
     # Solve Heat Equation
 
-    np.put(Nu, n, ((rc.f / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(rc.f / 8) * (np.power(Pr[n], (2/3)) - 1))) * (1 + ((Liner.do / Liner.di) ** 0.7))) # Sets Nusselt Number to Station Nusselt Number
+    np.put(Nu, n, ((rc.f / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(rc.f / 8) * (np.power(Pr[n], (2/3)) - 1)))) # Sets Nusselt Number to Station Nusselt Number
     np.put(hc, n, (Nu[n] * k[n]) / rc.dh) # Sets Cold Wall Heat Transfer Coefficient
-    np.put(q, n, ((Tg - Coolant.T)/ (1/hg)) + (np.log(Liner.t) / Liner.k) + (1/hc[n]) + qrad) # Solve for heat flux
-    Twh_prev = Twh[n]
-    np.put(Twh, n, Tg - ((q[n] - qrad) / hg)) # Sets Hotwall Temperature
-    Twc_prev = Twc[n]
-    np.put(Twc, n, Twh[n] - (q[n] * (np.log(Liner.t) / Liner.k))) # Sets Coldwall Temperature
-    print(Twc[n])
+    np.put(q, n, (Tg - Coolant.T) / ((1/hg) + (Liner.t/ Liner.k) + (1/hc[n]) + qrad)) # Solve for heat flux
+    np.put(Twh, n, Tg - (q[n] / hg)) # Sets Hotwall Temperature
     print(Twh[n])
+    np.put(Twc, n, Twh[n] - (q[n] * (Liner.t / Liner.k))) # Sets Coldwall Temperature
+    print(Twc[n])
 
 
 
