@@ -17,6 +17,7 @@ class Regen_Channel:
     k = init
     f = init
     e = init
+    sA = init
 
 class Liner:     
     k = init
@@ -29,6 +30,7 @@ class Liner:
     di = init
     do = init
     T = init
+    sA = init
 
 # Interopolates Fuel Properties at a given temperature
 # Inputs: Temperature (K)

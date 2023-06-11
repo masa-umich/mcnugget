@@ -20,7 +20,7 @@ import pint
 
 # Regen Channel Inputs
 rc = Regen_Channel() 
-rc.L = 12 # in
+rc.L = 12 / 39.37 # m
 rc.ri = 0.07026355393 # m 
 rc.ro = 0.07091 # m 
 rc.A = ((np.pi) * rc.ro ** 2) - ((np.pi) * rc.ri ** 2) # m^2
@@ -67,23 +67,24 @@ Twh = np.full(N, Liner.T) # Initial Station Temperatures
 Nu = np.zeros(N) # Nusselt Number at each station
 hc = np.zeros(N) # Cold Wall Convective Heat Transfer Coefficient at each station
 ql = np.zeros(N) # Coldwall Heat Flux at each station
-Tc = np.full(N, Liner.T) # Initial Coolant Temperature
+Tc = Liner.T # Initial Coolant Temperature
 q = np.zeros(N) # Heat Flux at each station
 
 # Engine Inputs
 mdot = 2.124 # kg/s
 
 # Initial Calculations
-2 * Liner.ri * np.pi * dx  # Hotwall Area per Station
-2* Liner.ro * np.pi * dx  # Coldwall Area per Station
+Liner.sA = 2 * Liner.ri * np.pi * dx  # Hotwall Area per Station
+rc.sA = 2 * Liner.ro * np.pi * dx  # Coldwall Area per Station
 rc.k = rc.e / (2 * rc.ri) # Relative Roughness
 
 # Iterative Simulation
 
-Twc_eps = 0.01 # Coldwall Temperature Convergence Criteria
-Twh_eps = 0.01 # Hotwall Temperature Convergence Criteria
+Twc_eps = 0.0001 # Coldwall Temperature Convergence Criteria
+Twh_eps = 0.0001 # Hotwall Temperature Convergence Criteria
 
 for n in range(0, N): # Iterates through each station
+
 #    if True:
 #        Twh[n] = Twh[n-1]
 #        Twc[n] = Twc[n-1]
@@ -97,8 +98,6 @@ for n in range(0, N): # Iterates through each station
     np.put(v, n, mdot / (rho[n] * rc.A))# Sets Velocity to Station Velocity
     np.put(Re, n, (rho[n] * v[n] * rc.dh) / u[n])# Sets Reynolds Number to Station Reynolds Number
     np.put(Pr, n, (cp[n] * u[n]) / k[n])# Sets Prandtl Number to Station Prandtl Number
-    Twc_prev = 0
-    Twh_prev = 0
 
     # Solve for friction factor using Colbrook-White Equation
 
@@ -123,9 +122,9 @@ for n in range(0, N): # Iterates through each station
     np.put(hc, n, (Nu[n] * k[n]) / rc.dh) # Sets Cold Wall Heat Transfer Coefficient
     np.put(q, n, (Tg - Coolant.T) / ((1/hg) + (Liner.t/ Liner.k) + (1/hc[n]) + qrad)) # Solve for heat flux
     np.put(Twh, n, Tg - (q[n] / hg)) # Sets Hotwall Temperature
-    print(Twh[n])
     np.put(Twc, n, Twh[n] - (q[n] * (Liner.t / Liner.k))) # Sets Coldwall Temperature
-    print(Twc[n])
+    Tc = Tc + (q[n] * rc.sA)/(mdot * cp[n]) # Sets Coolant Temperature
+    print(Twh[n])
 
 
 
