@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 from pyfluids import Fluid, FluidsList, Input
 import numpy as np
-import pint
 from numpy import genfromtxt
 
 Conductivity = genfromtxt('Conductivity.csv', delimiter=',')

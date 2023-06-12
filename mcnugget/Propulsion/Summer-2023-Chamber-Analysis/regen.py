@@ -3,8 +3,8 @@ from pyfluids import Fluid, FluidsList, Input
 from class_init import Regen_Channel
 from class_init import Liner
 from class_init import Fuel
+from Colbrook_White import Friction_Factor
 import numpy as np
-import pint
 
 # Chamber Regen Analysis Code
 # This will analyze the regenerative cooling circuit iteratively, dividing the liner into axial stations
@@ -180,21 +180,7 @@ for n in range(0, N):
     np.put(Pr, n, (cp[n] * u[n]) / k[n])
 
     # Solves for friction factor using Colbrook-White Equation
-
-    #def ColbrookWhite(Re_calc, k, dh):
-    #    a = 0.01
-    #    b = 0.06
-    #    c = (a + b) / 2
-    #    while np.absolute((1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re_calc * np.sqrt(c)))))) > 0.0001:
-    #        if (1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re_calc * np.sqrt(c))))) < 0 and (1 / np.sqrt(a)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re_calc * np.sqrt(a))))) < 0:
-    #            a = c
-    #        else:
-    #            b = c
-    #            break
-    #        c = (a + b) / 2
-    #    return c
-    
-    f[n] = 0.03 # Hard Coded Friction Factor
+    np.put(f, n, Friction_Factor(Re[n], rc.k))
 
     # Solves Steady State Heat Equation for the Wall Temperatures
     # - Calculates Nusselt Number and Updates the Station Values
