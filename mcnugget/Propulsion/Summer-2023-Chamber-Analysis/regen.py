@@ -212,7 +212,7 @@ for n in range(0, N):
 print("")
 print("End of Simulation!")
 print("")
-print("Maximum Hotwall Temperature [K], Maximum Coldwall Temperature [K], and Maximum Coolant Temperature [K]")
+print("Maximum Hotwall Temperature [K], Maximum Coldwall Temperature [K], and Maximum Fuel Temperature [K]")
 print(Twh[0], Twc[0], Tc)
 print("")
 print("Axial Gradient of Wall Temperature [K], Axial Gradient of Velocity [m/s], and Axial Gradient of Fuel Temperature [K]")
