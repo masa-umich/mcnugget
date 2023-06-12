@@ -83,7 +83,7 @@ mdot = 2.124 # kg/s
 
 # Station Geometry:
 # - N: Number of Stations
-N = 200 
+N = 100 
 
 # - dx: Axial Distance between each station
 dx = rc.L / N 
