@@ -22,9 +22,12 @@ import numpy as np
 
 # Regen Channel Inputs: 
 # Geometric Properties of the Regen Channel
+Channel_Outer_Radius = 0.07091 # m
+Channel_Inner_Radius = 0.07033 # m
+Liner_Inner_Radius = 0.06797755393 # m
 
 # - Outer Radius, Inner Radius
-rc = Regen_Channel(0.07091, 0.07026355393)
+rc = Regen_Channel(Channel_Outer_Radius, Channel_Inner_Radius)
 
 # - L : Length of the Regen Channel
 rc.L = 12 / 39.37 # m
@@ -39,7 +42,7 @@ rc.e = 0.00005 # m
 
 # Liner Geometry
 # - Outer Radius, Inner Radius
-Liner = Liner(0.07026355393, 0.06797755393)
+Liner = Liner(Channel_Inner_Radius, Liner_Inner_Radius)
 
 
 # Liner Material Properties Inputs: 
