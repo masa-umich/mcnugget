@@ -18,74 +18,171 @@ import pint
 #   5. Maximum Temperature
 #   6. Convective Heat Transfer Coefficients and Maximum Heat-flux
 
-# Regen Channel Inputs
-rc = Regen_Channel(0.07091, 0.07026355393) # Takes in channel outer radius and inner radius
-rc.L = 12 / 39.37 # Regen Cooled Length in Meters
-rc.e = 0.00005 # Abolute Roughness of Coldwall
 
-# Liner Inputs
-Liner = Liner(0.07026355393, 0.06797755393) # Takes in channel outer radius and inner radius
+
+# Regen Channel Inputs: 
+# Geometric Properties of the Regen Channel
+
+# - Outer Radius, Inner Radius
+rc = Regen_Channel(0.07091, 0.07026355393)
+
+# - L : Length of the Regen Channel
+rc.L = 12 / 39.37 # m
+
+# - e : Abolsute Roughness of the Regen Channel
+rc.e = 0.00005 # m
+
+
+
+# Liner Inputs: 
+# Thermo-Physcial Properties of the Liner
+
+# Liner Geometry
+
+# - Outer Radius, Inner Radius
+Liner = Liner(0.07026355393, 0.06797755393)
+
+
+# Liner Material Properties Inputs: 
+
+# - k: Thermal Conductivity
 Liner.k = 280 # W/mK
+# - rho: Density
 Liner.rho = 8.9 # g/cm^3
+# - a: Thermal Expansion Coefficient
 Liner.a = 0.000017 # K^-1
+# - v: Poisson's Ratio
 Liner.v = 0.3
+# - E: Young's Modulus
 Liner.E = 17560000 * 6895 # Pa 
+# - ty: Yield Strength
 Liner.ty = 29370 * 6895 # Pa 
-Liner.T = 300 # Initial Liner Temperature
+# - Initial Temperature
+Liner.T = 300 # K
 
-# Hot Gas Inputs
+
+
+# Hot Gas Inputs:
+# Heat transfer properties of the hot gas and radiation 
+
+# - hg: Hot Gas Convective Heat Transfer Coefficient
 hg = 962.5 # W/m^2K
+
+# - qrad: Radiative Heat Flux
 qrad = 0 # kW/m^2
+
+# - Tg: Hot Gas Temperature
 Tg = 3316 # K
 
-# Station Setup
-N = 100 # number of stations
-dx = rc.L / N # Length of each station
-x = np.linspace(0, rc.L, N) # Axial position of each station
-Twc = np.zeros(N) # Coldwall Temperature at each station
-Twh = np.zeros(N) # Hotwall Temperature at each station
-rho = np.zeros(N) # Density at each station
-u = np.zeros(N) # Viscosity at each station
-k = np.zeros(N) # Conductivity at each station
-cp = np.zeros(N) # Specific Heat Capacity at each station
-v = np.zeros(N) # Velocity at each station
-Re = np.zeros(N) # Reynolds number at each station
-Pr =  np.zeros(N) # Renolds number at each station
-f =  np.zeros(N) # Renolds number at each station
-
-# Initial Conditions
-Coolant = Fuel(300) # Initial Coolant Condiditions
-Twc = np.full(N, Liner.T) # Initial Station Temperatures
-Twh = np.full(N, Liner.T) # Initial Station Temperatures
-Nu = np.zeros(N) # Nusselt Number at each station
-hc = np.zeros(N) # Cold Wall Convective Heat Transfer Coefficient at each station
-ql = np.zeros(N) # Coldwall Heat Flux at each station
-Tc = Liner.T # Initial Coolant Temperature
-Q = np.zeros(N) # Heat Flowrate at each station
-
-# Engine Inputs
+# Engine Inputs:
+# - mdot: Fuel Mass Flow Rate of the Engine
 mdot = 2.124 # kg/s
 
-# Initial Calculations
-Liner.sA = 2 * Liner.ri * np.pi * dx  # Hotwall Area per Station
+
+
+# Station Setup:
+# Initializes the stations and array of values at each station
+
+
+# Station Geometry:
+# - N: Number of Stations
+N = 200 
+
+# - dx: Axial Distance between each station
+dx = rc.L / N 
+
+# - x: Axial Position of each station
+x = np.linspace(0, rc.L, N)
+
+# - sA: Surface Area of the Hotwall at each station
+Liner.sA = 2 * Liner.ri * np.pi * dx
+
+# - sA: Surface Area of the Coldwall at each station
 rc.sA = 2 * Liner.ro * np.pi * dx  # Coldwall Area per Station
-rc.k = rc.e / (2 * rc.ri) # Relative Roughness
-A_lm = ((2 * np.pi * dx * Liner.ro) - (2 * np.pi * dx * Liner.ri)) / (np.log((2 * np.pi * dx * Liner.ro) / (2 * np.pi * dx * Liner.ri))) # Log Mean Area
+
+# - A_lm: Log Mean Area between the Hotwall and Coldwall
+A_lm = ((2 * np.pi * dx * Liner.ro) - (2 * np.pi * dx * Liner.ri)) / (np.log((2 * np.pi * dx * Liner.ro) / (2 * np.pi * dx * Liner.ri)))
+
+
+# Temperature Stations
+# - Twc: Coldwall Temperature at each station
+Twc = np.zeros(N)
+
+# - Twh: Hotwall Temperature at each station
+Twh = np.zeros(N)
+
+
+# Fluid Stations
+# - rho: Density at each station
+rho = np.zeros(N)
+
+# - u: Viscosity at each station
+u = np.zeros(N)
+
+# - k: Conductivity at each station
+k = np.zeros(N)
+
+# - cp: Specific Heat Capacity at each station
+cp = np.zeros(N)
+
+# - v: Velocity at each station
+v = np.zeros(N)
+
+# - Re: Reynolds Number at each station
+Re = np.zeros(N)
+
+# - Pr: Prandtl Number at each station
+Pr =  np.zeros(N)
+
+
+# Heat Transfer Stations
+# - f: Friction Factor at each station
+f =  np.zeros(N)
+
+# - Nu: Nusselt Number at each station
+Nu = np.zeros(N) # Nusselt Number at each station
+
+# - hc: Cold Wall Convective Heat Transfer Coefficient at each station
+hc = np.zeros(N) # Cold Wall Convective Heat Transfer Coefficient at each station
+
+# - Coldwall Heat Flux at each station
+ql = np.zeros(N) 
+
+# - Q: Heat Flow-rate at each station
+Q = np.zeros(N) # Heat Flowrate at each station
+
+
+# Initial Conditions
+# - Initializes Coldwall Temperature
+Twc = np.full(N, Liner.T)
+
+# - Initializes Hotwall Temperature
+Twh = np.full(N, Liner.T)
+
+# - Initializes Coolant Temperature
+Coolant = Fuel(Liner.T)
+
+# - Calculates Relative Roughness of the Regen Channel
+rc.k = rc.e / (2 * rc.ri)
+
+
 
 # Iterative Simulation
 
-for n in range(0, N): # Iterates through each station
+# - Iterates through each station
+for n in range(0, N): 
 
-    Coolant.T = Tc # Sets Coolant Temperature to Station Temperature
-    np.put(rho, n, Coolant.rho)# Sets Density to Station Density
-    np.put(u, n, Coolant.u)# Sets Viscosity to Station Viscosity
-    np.put(k, n, Coolant.k)# Sets Conductivity to Station Conductivity
-    np.put(cp, n, Coolant.cp)# Sets Specific Heat Capacity to Station Specific Heat Capacity
-    np.put(v, n, mdot / (rho[n] * rc.A))# Sets Velocity to Station Velocity
-    np.put(Re, n, (rho[n] * v[n] * rc.dh) / u[n])# Sets Reynolds Number to Station Reynolds Number
-    np.put(Pr, n, (cp[n] * u[n]) / k[n])# Sets Prandtl Number to Station Prandtl Number
+    # Updates Station Coolant Values
+    Coolant.T = Tc 
+    np.put(rho, n, Coolant.rho)
+    np.put(u, n, Coolant.u)
+    np.put(k, n, Coolant.k)
+    np.put(cp, n, Coolant.cp)
+    np.put(v, n, mdot / (rho[n] * rc.A))
+    np.put(Re, n, (rho[n] * v[n] * rc.dh) / u[n])
+    np.put(Pr, n, (cp[n] * u[n]) / k[n])
 
-    # Solve for friction factor using Colbrook-White Equation
+    # Solves for friction factor using Colbrook-White Equation
 
     #def ColbrookWhite(Re_calc, k, dh):
     #    a = 0.01
@@ -102,12 +199,24 @@ for n in range(0, N): # Iterates through each station
     
     f[n] = 0.03 # Hard Coded Friction Factor
 
-    # Solve Heat Equation
+    # Solves Steady State Heat Equation for the Wall Temperatures
+    # - Calculates Nusselt Number and Updates the Station Values
+    np.put(Nu, n, ((f[n] / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(f[n] / 8) * (np.power(Pr[n], (2/3)) - 1)))) 
 
-    np.put(Nu, n, ((f[n] / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(f[n] / 8) * (np.power(Pr[n], (2/3)) - 1)))) # Sets Nusselt Number to Station Nusselt Number
-    np.put(hc, n, (Nu[n] * k[n]) / rc.dh) # Sets Cold Wall Heat Transfer Coefficient
-    np.put(Q, n, ((((1 / (hg * Liner.sA)) + ((Liner.ro - Liner.ri) / (Liner.k * A_lm)) + (1 / (hc[n] * rc.sA)))**(-1)) * (Tg - Tc))) # Solve for heat flow rate
-    np.put(Twh, n, -(Q[n] / (Liner.sA * hg)) + Tg) # Sets Hotwall Temperature
-    np.put(Twc, n, (-((Q[n] * (np.log(Liner.ro / Liner.ri)))) / (2 * np.pi * Liner.k * dx)) + Twh[n]) # Sets Coldwall Temperature
-    Tc = Tc + Q[n] / (mdot * cp[n]) # Sets Coolant Temperature
-    print(Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) # Prints Station Temperatures, Coldwall Heat Transfer Coefficients, Velocity, Reynolds Number, Prandtl Number, Friction Factor, and Station Number
+    # - Calculates Coldwall Heat Transfer Coefficient and Updates the Station Values
+    np.put(hc, n, (Nu[n] * k[n]) / rc.dh) 
+
+    # - Calculates Heat Flowrate and Updates the Station Values 
+    np.put(Q, n, ((((1 / (hg * Liner.sA)) + ((Liner.ro - Liner.ri) / (Liner.k * A_lm)) + (1 / (hc[n] * rc.sA)))**(-1)) * (Tg - Tc))) 
+
+    # - Calculates the Hotwall Temperature and Updates the Station Values
+    np.put(Twh, n, -(Q[n] / (Liner.sA * hg)) + Tg) 
+
+    # - Calculates the Coldwall Temperature and Updates the Station Values
+    np.put(Twc, n, (-((Q[n] * (np.log(Liner.ro / Liner.ri)))) / (2 * np.pi * Liner.k * dx)) + Twh[n]) 
+
+    # - Calculates the Final Coolant Temperature and Updates the Station Values
+    Tc = Tc + Q[n] / (mdot * cp[n]) 
+
+    # - Prints the Station Values and Iteration Number
+    print(Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) 
