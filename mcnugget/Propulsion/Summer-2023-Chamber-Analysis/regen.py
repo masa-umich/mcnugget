@@ -167,6 +167,9 @@ rc.k = rc.e / (2 * rc.ri)
 
 # Iterative Simulation
 # - Iterates through each station
+print("Starting Iterative Simulation")
+print("Twh, Twc, Tc, Nu, v, Re, Pr, f, n")
+
 for n in range(0, N): 
 
     # Updates Station Coolant Values
@@ -203,3 +206,8 @@ for n in range(0, N):
 
     # - Prints the Station Values and Iteration Number
     print(Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) 
+
+print("End of Simulation!")
+
+print("Axial Gradient of Wall Temperature, Axial Gradient of Velocity, and Axial Gradient of Fuel Temperature")
+print((Twh[99]-Twh[0]), (v[99]-v[0]), (Tc - Liner.T))
