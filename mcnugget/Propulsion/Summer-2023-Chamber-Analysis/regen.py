@@ -157,7 +157,8 @@ Twc = np.full(N, Liner.T)
 Twh = np.full(N, Liner.T)
 
 # - Initializes Coolant Temperature
-Coolant = Fuel(Liner.T)
+Tc = Liner.T
+Coolant = Fuel(Tc)
 
 # - Calculates Relative Roughness of the Regen Channel
 rc.k = rc.e / (2 * rc.ri)
