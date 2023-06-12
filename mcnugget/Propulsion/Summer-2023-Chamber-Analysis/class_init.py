@@ -4,7 +4,8 @@ import numpy as np
 import pint
 from numpy import genfromtxt
 
-fuel_properties = genfromtxt('rp1.csv', delimiter=',')
+Conductivity = genfromtxt('Conductivity.csv', delimiter=',')
+Heat_Capacity = genfromtxt('Heat_Capacity.csv', delimiter=',')
 
 init = 1
 
@@ -52,12 +53,10 @@ class Fuel:
     @T.setter
     def T(self, T):
         self._T = T
-        self.k = np.interp(T, fuel_properties[:, 0], fuel_properties[:, 4])
-        self.u = np.interp(T, fuel_properties[:, 0], fuel_properties[:, 3])
-        self.cp = np.interp(T, fuel_properties[:, 0], fuel_properties[:, 1])
-        self.rho = np.interp(T, fuel_properties[:, 0], fuel_properties[:, 2])
-
-
+        self.k = np.interp(T, Conductivity[:, 0], Conductivity[:, 1])
+        self.u = np.exp(2.5585 + (-3.505 / (T / 273.15)) - (3.412 * np.log(T / 273.15)) + (2.1551 * (T / 273.15)**(-3.145))) * 0.0008
+        self.cp = np.interp(T, Heat_Capacity[:, 0], Heat_Capacity[:, 1])
+        self.rho = 287.67 * 0.53365**(-(1 + (1 - (T / 574.262))**0.6289))
 
 
 

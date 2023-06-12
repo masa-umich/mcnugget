@@ -110,4 +110,4 @@ for n in range(0, N): # Iterates through each station
     np.put(Twh, n, -(Q[n] / (Liner.sA * hg)) + Tg) # Sets Hotwall Temperature
     np.put(Twc, n, (-((Q[n] * (np.log(Liner.ro / Liner.ri)))) / (2 * np.pi * Liner.k * dx)) + Twh[n]) # Sets Coldwall Temperature
     Tc = Tc + Q[n] / (mdot * cp[n]) # Sets Coolant Temperature
-    print(Twh[n], Twc[n], Tc, hc[n], v[n], Re[n], Pr[n], f[n], n) # Prints Station Temperatures, Coldwall Heat Transfer Coefficients, Velocity, Reynolds Number, Prandtl Number, Friction Factor, and Station Number
+    print(Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) # Prints Station Temperatures, Coldwall Heat Transfer Coefficients, Velocity, Reynolds Number, Prandtl Number, Friction Factor, and Station Number
