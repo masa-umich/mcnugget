@@ -167,7 +167,9 @@ rc.k = rc.e / (2 * rc.ri)
 
 # Iterative Simulation
 # - Iterates through each station
+print("")
 print("Starting Iterative Simulation")
+print("")
 print("Twh, Twc, Tc, Nu, v, Re, Pr, f, n")
 
 for n in range(0, N): 
@@ -207,7 +209,12 @@ for n in range(0, N):
     # - Prints the Station Values and Iteration Number
     print(Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) 
 
+print("")
 print("End of Simulation!")
-
-print("Axial Gradient of Wall Temperature, Axial Gradient of Velocity, and Axial Gradient of Fuel Temperature")
+print("")
+print("Maximum Hotwall Temperature [K], Maximum Coldwall Temperature [K], and Maximum Coolant Temperature [K]")
+print(Twh[0], Twc[0], Tc)
+print("")
+print("Axial Gradient of Wall Temperature [K], Axial Gradient of Velocity [m/s], and Axial Gradient of Fuel Temperature [K]")
 print((Twh[99]-Twh[0]), (v[99]-v[0]), (Tc - Liner.T))
+print("")
