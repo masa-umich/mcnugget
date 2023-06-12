@@ -51,7 +51,7 @@ cp = np.zeros(N) # Specific Heat Capacity at each station
 v = np.zeros(N) # Velocity at each station
 Re = np.zeros(N) # Reynolds number at each station
 Pr =  np.zeros(N) # Renolds number at each station
-
+f =  np.zeros(N) # Renolds number at each station
 
 # Initial Conditions
 Coolant = Fuel(300) # Initial Coolant Condiditions
@@ -87,27 +87,27 @@ for n in range(0, N): # Iterates through each station
 
     # Solve for friction factor using Colbrook-White Equation
 
-    def ColbrookWhite(Re, k, dh):
-        a = 0.01
-        b = 0.05
-        c = (a + b) / 2
-        while np.absolute((1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re * np.sqrt(c)))))) > 0.0001:
-            if (1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re * np.sqrt(c))))) < 0 and (1 / np.sqrt(a)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re * np.sqrt(a))))) < 0:
-                a = c
-            else:
-                b = c
-                break
-            c = (a + b) / 2
-        return c
-
-    rc.f = ColbrookWhite(Re[n], rc.k, rc.dh) # Sets Friction Factor 
+    #def ColbrookWhite(Re_calc, k, dh):
+    #    a = 0.01
+    #    b = 0.06
+    #    c = (a + b) / 2
+    #    while np.absolute((1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re_calc * np.sqrt(c)))))) > 0.0001:
+    #        if (1 / np.sqrt(c)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re_calc * np.sqrt(c))))) < 0 and (1 / np.sqrt(a)) + (2 * np.log10((rc.k / (3.7 * rc.dh)) + (2.51 / (Re_calc * np.sqrt(a))))) < 0:
+    #            a = c
+    #        else:
+    #            b = c
+    #            break
+    #        c = (a + b) / 2
+    #    return c
+    
+    f[n] = 0.03 # Hard Coded Friction Factor
 
     # Solve Heat Equation
 
-    np.put(Nu, n, ((rc.f / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(rc.f / 8) * (np.power(Pr[n], (2/3)) - 1)))) # Sets Nusselt Number to Station Nusselt Number
+    np.put(Nu, n, ((f[n] / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(f[n] / 8) * (np.power(Pr[n], (2/3)) - 1)))) # Sets Nusselt Number to Station Nusselt Number
     np.put(hc, n, (Nu[n] * k[n]) / rc.dh) # Sets Cold Wall Heat Transfer Coefficient
     np.put(Q, n, ((((1 / (hg * Liner.sA)) + ((Liner.ro - Liner.ri) / (Liner.k * A_lm)) + (1 / (hc[n] * rc.sA)))**(-1)) * (Tg - Tc))) # Solve for heat flow rate
     np.put(Twh, n, -(Q[n] / (Liner.sA * hg)) + Tg) # Sets Hotwall Temperature
     np.put(Twc, n, (-((Q[n] * (np.log(Liner.ro / Liner.ri)))) / (2 * np.pi * Liner.k * dx)) + Twh[n]) # Sets Coldwall Temperature
     Tc = Tc + Q[n] / (mdot * cp[n]) # Sets Coolant Temperature
-    print(Twh[n], Twc[n], Tc, hc[n], v[n], Re[n], Pr[n], n) # Prints Station Temperatures, Coldwall Heat Transfer Coefficients, Velocity, Reynolds Number, Prandtl Number, and Station Number
+    print(Twh[n], Twc[n], Tc, hc[n], v[n], Re[n], Pr[n], f[n], n) # Prints Station Temperatures, Coldwall Heat Transfer Coefficients, Velocity, Reynolds Number, Prandtl Number, Friction Factor, and Station Number
