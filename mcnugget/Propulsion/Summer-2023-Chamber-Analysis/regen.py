@@ -38,13 +38,11 @@ rc.e = 0.00005 # m
 # Thermo-Physcial Properties of the Liner
 
 # Liner Geometry
-
 # - Outer Radius, Inner Radius
 Liner = Liner(0.07026355393, 0.06797755393)
 
 
 # Liner Material Properties Inputs: 
-
 # - k: Thermal Conductivity
 Liner.k = 280 # W/mK
 # - rho: Density
@@ -64,7 +62,6 @@ Liner.T = 300 # K
 
 # Hot Gas Inputs:
 # Heat transfer properties of the hot gas and radiation 
-
 # - hg: Hot Gas Convective Heat Transfer Coefficient
 hg = 962.5 # W/m^2K
 
@@ -168,7 +165,6 @@ rc.k = rc.e / (2 * rc.ri)
 
 
 # Iterative Simulation
-
 # - Iterates through each station
 for n in range(0, N): 
 
