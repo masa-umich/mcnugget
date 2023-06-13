@@ -4,6 +4,9 @@ from class_init import Regen_Channel
 from class_init import Liner
 from class_init import Fuel
 from Colbrook_White import Friction_Factor
+from Stress import radial_stress
+from Stress import axial_stress
+from Stress import von_mises
 import numpy as np
 
 # Chamber Regen Analysis Code
@@ -34,6 +37,13 @@ Liner_Inner_Radius = 0.06797755393 # m
 # - mdot: Fuel Mass Flow Rate of the Engine
 mdot = 2.124 # kg/s
 
+# - Chamber Pressure:
+#Convert psi to Pa
+P_c = 318.2 * 6895 # Pa
+
+# - Coolant Pressure: 
+P_f = 444.8 * 6895 # Pa
+
 
 # Liner Inputs: 
 # Liner Material Properties Inputs: 
@@ -56,7 +66,7 @@ Liner.T = 300 # K
 # Hot Gas Inputs:
 # Heat transfer properties of the hot gas and radiation 
 # - hg: Hot Gas Convective Heat Transfer Coefficient
-hg = 655.9 # W/m^2K
+hg = 666.91 # W/m^2K
 
 # - hrad: Radiative Heat Transfer Coefficient
 hrad = 203.03 # W/m^2K
@@ -231,4 +241,23 @@ print((Twh[n]-Twh[0]), (v[n]-v[0]), (Tc - Liner.T))
 print("")
 print("Total Pressure Drop [psi]")
 print(dP_Total)
+print("")
+
+
+
+# Structural Calculations
+# - q_max: Calculates the Maximum Heat Flux
+q_max = np.amax(Q) / Liner.sA 
+
+# - Max_Stress: Calculates the Maximum Radial Stress
+Max_Stress = radial_stress(q_max, Liner.ro, Liner.ri, P_c, P_f, Liner.E, Liner.a, Liner.k, Liner.v)
+
+# - SF: Calculates the Safety Factor to Yield
+SF = Liner.ty / Max_Stress
+
+print("Maximum stress [psi]")
+print(Max_Stress/ 6895)
+print("")
+print("Safety Factor to Yield")
+print(SF)
 print("")
