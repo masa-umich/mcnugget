@@ -58,8 +58,8 @@ Liner.T = 300 # K
 # - hg: Hot Gas Convective Heat Transfer Coefficient
 hg = 962.5 # W/m^2K
 
-# - qrad: Radiative Heat Flux
-qrad = 0 # kW/m^2
+# - hrad: Radiative Heat Transfer Coefficient
+hrad = 203.03 # W/m^2K
 
 # - Tg: Hot Gas Temperature
 Tg = 3316 # K
@@ -202,10 +202,10 @@ for n in range(0, N):
     np.put(hc, n, (Nu[n] * k[n]) / rc.dh) 
 
     # - Calculates Heat Flowrate and Updates the Station Values 
-    np.put(Q, n, ((((1 / (hg * Liner.sA)) + ((Liner.ro - Liner.ri) / (Liner.k * A_lm)) + (1 / (hc[n] * rc.sA)))**(-1)) * (Tg - Tc))) 
+    np.put(Q, n, ((((1 / ((hg + hrad) * Liner.sA)) + ((Liner.ro - Liner.ri) / (Liner.k * A_lm)) + (1 / (hc[n] * rc.sA)))**(-1)) * (Tg - Tc))) 
 
     # - Calculates the Hotwall Temperature and Updates the Station Values
-    np.put(Twh, n, -(Q[n] / (Liner.sA * hg)) + Tg) 
+    np.put(Twh, n, -(Q[n] / ((Liner.sA * (hg + hrad))) - Tg))
 
     # - Calculates the Coldwall Temperature and Updates the Station Values
     np.put(Twc, n, (-((Q[n] * (np.log(Liner.ro / Liner.ri)))) / (2 * np.pi * Liner.k * dx)) + Twh[n]) 
@@ -214,7 +214,7 @@ for n in range(0, N):
     Tc = Tc + Q[n] / (mdot * cp[n]) 
 
     # - Prints the Station Values and Iteration Number
-    print(Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) 
+    print(Q[n], Liner.sA, Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) 
 
 # - Calculates the Total Pressure Drop
 # - Convert Pa to psi
