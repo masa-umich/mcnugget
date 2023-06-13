@@ -29,7 +29,7 @@ N = 100 # Resolution gain over 100 stations is minimal
 # Regen Channel Inputs: 
 # Geometric Properties of the Regen Channel
 Channel_Outer_Radius = 0.07091 # m
-Channel_Inner_Radius = 0.07026 # m
+Channel_Inner_Radius = 0.07026355393 # m
 Liner_Inner_Radius = 0.06797755393 # m
 
 
