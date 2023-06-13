@@ -139,6 +139,9 @@ Pr =  np.zeros(N)
 # - f: Friction Factor at each station
 f =  np.zeros(N)
 
+# - dP: Pressure Drop at each station
+dP = np.zeros(N)
+
 # - Nu: Nusselt Number at each station
 Nu = np.zeros(N) # Nusselt Number at each station
 
@@ -190,6 +193,9 @@ for n in range(0, N):
     # Solves for friction factor using Colbrook-White Equation
     np.put(f, n, Friction_Factor(Re[n], rc.k))
 
+    # Solves for Pressure Drop using Darcy-Weisbach Equation
+    np.put(dP, n, (f[n] * (rho[n] / 2) * (np.power(v[n], 2) / rc.dh))*dx)
+
     # Solves Steady State Heat Equation for the Wall Temperatures
     # - Calculates Nusselt Number and Updates the Station Values
     np.put(Nu, n, ((f[n] / 8) * (Re[n] - 1000) * Pr[n]) / (1 + (12.7 * np.sqrt(f[n] / 8) * (np.power(Pr[n], (2/3)) - 1)))) 
@@ -212,6 +218,10 @@ for n in range(0, N):
     # - Prints the Station Values and Iteration Number
     print(Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) 
 
+# - Calculates the Total Pressure Drop
+# - Convert Pa to psi
+dP_Total = np.sum(dP) * 0.000145038
+
 print("")
 print("End of Simulation!")
 print("")
@@ -220,4 +230,7 @@ print(Twh[0], Twc[0], Tc)
 print("")
 print("Axial Gradient of Wall Temperature [K], Axial Gradient of Velocity [m/s], and Axial Gradient of Fuel Temperature [K]")
 print((Twh[99]-Twh[0]), (v[99]-v[0]), (Tc - Liner.T))
+print("")
+print("Total Pressure Drop [psi]")
+print(dP_Total)
 print("")
