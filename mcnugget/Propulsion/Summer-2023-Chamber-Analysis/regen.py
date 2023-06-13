@@ -56,13 +56,13 @@ Liner.T = 300 # K
 # Hot Gas Inputs:
 # Heat transfer properties of the hot gas and radiation 
 # - hg: Hot Gas Convective Heat Transfer Coefficient
-hg = 962.5 # W/m^2K
+hg = 822.7 # W/m^2K
 
 # - hrad: Radiative Heat Transfer Coefficient
 hrad = 203.03 # W/m^2K
 
 # - Tg: Hot Gas Temperature
-Tg = 3316 # K
+Tg = 3328 # K
 
 
 
@@ -74,7 +74,7 @@ Liner = Liner(Channel_Inner_Radius, Liner_Inner_Radius)
 rc = Regen_Channel(Channel_Outer_Radius, Channel_Inner_Radius)
 
 # - L : Length of the Regen Channel
-rc.L = 12 / 39.37 # m
+rc.L = 11.9 / 39.37 # m
 
 # - e : Abolsute Roughness of the Regen Channel
 rc.e = 0.00005 # m
@@ -174,7 +174,7 @@ rc.k = rc.e / (2 * rc.ri)
 print("")
 print("Starting Iterative Simulation")
 print("")
-print("Twh, Twc, Tc, Nu, v, Re, Pr, f, n")
+print("Heatflow rate, Twh, Twc, Tc, Nu, v, Re, Pr, f, n")
 
 for n in range(0, N): 
 
@@ -214,7 +214,7 @@ for n in range(0, N):
     Tc = Tc + Q[n] / (mdot * cp[n]) 
 
     # - Prints the Station Values and Iteration Number
-    print(Q[n], Liner.sA, Twh[n], Twc[n], Tc, Nu[n], v[n], Re[n], Pr[n], f[n], n) 
+    print(Q[n], Twh[n], Twc[n], Tc, hc[n], v[n], Re[n], Pr[n], f[n], n) 
 
 # - Calculates the Total Pressure Drop
 # - Convert Pa to psi
