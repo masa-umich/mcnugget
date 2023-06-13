@@ -20,8 +20,8 @@ import numpy as np
 
 # Simulation Settings:
 # - N: Number of Stations
-N = 200 
-
+N = 100 # Resolution gain over 100 stations is minimal
+ 
 
 # Regen Channel Inputs: 
 # Geometric Properties of the Regen Channel
@@ -227,7 +227,7 @@ print("Maximum Hotwall Temperature [K], Maximum Coldwall Temperature [K], and Ma
 print(Twh[0], Twc[0], Tc)
 print("")
 print("Axial Gradient of Wall Temperature [K], Axial Gradient of Velocity [m/s], and Axial Gradient of Fuel Temperature [K]")
-print((Twh[99]-Twh[0]), (v[99]-v[0]), (Tc - Liner.T))
+print((Twh[n]-Twh[0]), (v[n]-v[0]), (Tc - Liner.T))
 print("")
 print("Total Pressure Drop [psi]")
 print(dP_Total)
