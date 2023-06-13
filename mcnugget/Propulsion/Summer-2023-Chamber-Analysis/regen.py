@@ -18,6 +18,9 @@ import numpy as np
 #   5. Maximum Temperature
 #   6. Convective Heat Transfer Coefficients and Maximum Heat-flux
 
+# Simulation Settings:
+# - N: Number of Stations
+N = 200 
 
 
 # Regen Channel Inputs: 
@@ -26,25 +29,13 @@ Channel_Outer_Radius = 0.07091 # m
 Channel_Inner_Radius = 0.07033 # m
 Liner_Inner_Radius = 0.06797755393 # m
 
-# - Outer Radius, Inner Radius
-rc = Regen_Channel(Channel_Outer_Radius, Channel_Inner_Radius)
 
-# - L : Length of the Regen Channel
-rc.L = 12 / 39.37 # m
-
-# - e : Abolsute Roughness of the Regen Channel
-rc.e = 0.00005 # m
-
+# Engine Inputs:
+# - mdot: Fuel Mass Flow Rate of the Engine
+mdot = 2.124 # kg/s
 
 
 # Liner Inputs: 
-# Thermo-Physcial Properties of the Liner
-
-# Liner Geometry
-# - Outer Radius, Inner Radius
-Liner = Liner(Channel_Inner_Radius, Liner_Inner_Radius)
-
-
 # Liner Material Properties Inputs: 
 # - k: Thermal Conductivity
 Liner.k = 280 # W/mK
@@ -62,7 +53,6 @@ Liner.ty = 29370 * 6895 # Pa
 Liner.T = 300 # K
 
 
-
 # Hot Gas Inputs:
 # Heat transfer properties of the hot gas and radiation 
 # - hg: Hot Gas Convective Heat Transfer Coefficient
@@ -74,9 +64,20 @@ qrad = 0 # kW/m^2
 # - Tg: Hot Gas Temperature
 Tg = 3316 # K
 
-# Engine Inputs:
-# - mdot: Fuel Mass Flow Rate of the Engine
-mdot = 2.124 # kg/s
+
+
+# Channel Geometry Calculations
+# - Outer Radius, Inner Radius
+Liner = Liner(Channel_Inner_Radius, Liner_Inner_Radius)
+
+# - Outer Radius, Inner Radius
+rc = Regen_Channel(Channel_Outer_Radius, Channel_Inner_Radius)
+
+# - L : Length of the Regen Channel
+rc.L = 12 / 39.37 # m
+
+# - e : Abolsute Roughness of the Regen Channel
+rc.e = 0.00005 # m
 
 
 
@@ -85,9 +86,6 @@ mdot = 2.124 # kg/s
 
 
 # Station Geometry:
-# - N: Number of Stations
-N = 100 
-
 # - dx: Axial Distance between each station
 dx = rc.L / N 
 
