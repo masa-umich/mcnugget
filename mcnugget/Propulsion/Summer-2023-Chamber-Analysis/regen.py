@@ -233,8 +233,8 @@ dP_Total = np.sum(dP) * 0.000145038
 print("")
 print("End of Simulation!")
 print("")
-print("Maximum Hotwall Temperature [K], Maximum Coldwall Temperature [K], and Maximum Fuel Temperature [K]")
-print(Twh[0], Twc[0], Tc)
+print("Maximum Hotwall Temperature [K], Maximum Coldwall Temperature [K], Wall Temperature Gradient [K], and Maximum Fuel Temperature [K]")
+print(Twh[0], Twc[0], (Twh[0] - Twc[0]), Tc)
 print("")
 print("Axial Gradient of Wall Temperature [K], Axial Gradient of Velocity [m/s], and Axial Gradient of Fuel Temperature [K]")
 print((Twh[n]-Twh[0]), (v[n]-v[0]), (Tc - Liner.T))
@@ -250,10 +250,10 @@ print("")
 q_max = np.amax(Q) / Liner.sA 
 
 # - Max_Stress: Calculates the Maximum Radial Stress
-Max_Stress = radial_stress(q_max, Liner.ro, Liner.ri, P_c, P_f, Liner.E, Liner.a, Liner.k, Liner.v)
+Max_Stress = -radial_stress(q_max, Liner.ro, Liner.ri, P_c, P_f, Liner.E, Liner.a, Liner.k, Liner.v)
 
 # - SF: Calculates the Safety Factor to Yield
-SF = Liner.ty / Max_Stress
+SF = np.absolute(Liner.ty / Max_Stress)
 
 print("Maximum stress [psi]")
 print(Max_Stress/ 6895)
