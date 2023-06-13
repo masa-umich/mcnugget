@@ -26,7 +26,7 @@ N = 100 # Resolution gain over 100 stations is minimal
 # Regen Channel Inputs: 
 # Geometric Properties of the Regen Channel
 Channel_Outer_Radius = 0.07091 # m
-Channel_Inner_Radius = 0.07033 # m
+Channel_Inner_Radius = 0.07026 # m
 Liner_Inner_Radius = 0.06797755393 # m
 
 
@@ -56,7 +56,7 @@ Liner.T = 300 # K
 # Hot Gas Inputs:
 # Heat transfer properties of the hot gas and radiation 
 # - hg: Hot Gas Convective Heat Transfer Coefficient
-hg = 822.7 # W/m^2K
+hg = 655.9 # W/m^2K
 
 # - hrad: Radiative Heat Transfer Coefficient
 hrad = 203.03 # W/m^2K
