@@ -28,18 +28,18 @@ N = 100 # Resolution gain over 100 stations is minimal
 
 # Regen Channel Inputs: 
 # Geometric Properties of the Regen Channel
-Channel_Outer_Radius = 0.07091 # m
+Channel_Outer_Radius = 0.07085 # m
 Channel_Inner_Radius = 0.07026355393 # m
 Liner_Inner_Radius = 0.06797755393 # m
 
 
 # Engine Inputs:
 # - mdot: Fuel Mass Flow Rate of the Engine
-mdot = 2.124 # kg/s
+mdot = 2.034 # kg/s
 
 # - Chamber Pressure:
 #Convert psi to Pa
-P_c = 318.2 * 6895 # Pa
+P_c = 308 * 6895 # Pa
 
 # - Coolant Pressure: 
 P_f = 444.8 * 6895 # Pa
@@ -66,13 +66,13 @@ Liner.T = 300 # K
 # Hot Gas Inputs:
 # Heat transfer properties of the hot gas and radiation 
 # - hg: Hot Gas Convective Heat Transfer Coefficient
-hg = 666.91 # W/m^2K
+hg = 706.4 # W/m^2K
 
 # - hrad: Radiative Heat Transfer Coefficient
-hrad = 203.03 # W/m^2K
+hrad = 191 # W/m^2K
 
 # - Tg: Hot Gas Temperature
-Tg = 3328 # K
+Tg = 3367.6 # K
 
 
 
@@ -225,7 +225,7 @@ for n in range(0, N):
 
     # - Prints the Station Values and Iteration Number
     print(Q[n], Twh[n], Twc[n], Tc, hc[n], v[n], Re[n], Pr[n], f[n], n) 
-
+    
 # - Calculates the Total Pressure Drop
 # - Convert Pa to psi
 dP_Total = np.sum(dP) * 0.000145038
@@ -242,8 +242,6 @@ print("")
 print("Total Pressure Drop [psi]")
 print(dP_Total)
 print("")
-
-
 
 # Structural Calculations
 # - q_max: Calculates the Maximum Heat Flux
