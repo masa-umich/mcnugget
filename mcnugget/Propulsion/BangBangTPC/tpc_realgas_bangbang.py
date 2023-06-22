@@ -32,7 +32,7 @@ class Fuel:
 RP1 = Fuel(290)
 LOx = Fluid(FluidsList.Oxygen).with_state(Input.pressure(500*6894.76),Input.temperature(-190))
 N2 = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
-
+N2_tank = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(500*6894.76),Input.temperature(16.85))
 # Target tank pressure
 P_tank = 500*6894.76
 Tank_psi = 500
@@ -48,7 +48,7 @@ mdot_L = 3.9934
 # Temperature for isentropic calcs
 T0 = 290
 
-# vdots at T0
+# vdots into tank at T0
 vdot_F = mdot_F/RP1.rho
 vdot_L = mdot_L/LOx.density
 
@@ -65,8 +65,8 @@ Isotherm_L = np.zeros(1000)
 
 for x in range(1000):
     N2 = N2.with_state(Input.pressure(COPV[x]),Input.temperature(16.85))
-    Isotherm_F[x] = mdot_F/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550
-    Isotherm_L[x] = mdot_L/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550*Cf
+    Isotherm_F[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550
+    Isotherm_L[x] = vdot_L*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550*Cf
 
 # plot the ideal area isothermal curves
 line_1 = plt.plot(COPV_psi,Isotherm_F,'-r',label='RP1')
