@@ -41,6 +41,7 @@ RP1 = Fuel(290)
 LOx = Fluid(FluidsList.Oxygen).with_state(Input.pressure(500*6894.76),Input.temperature(-190))
 N2 = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
 N2_tank = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(500*6894.76),Input.temperature(16.85))
+Tank_plus10 = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(510*6894.74),Input.temperature(16.85))
 
 # Target tank pressure
 P_tank = 500*6894.76
@@ -58,6 +59,10 @@ mdot_L = 3.9934
 vdot_F = mdot_F/RP1.rho
 vdot_L = mdot_L/LOx.density
 
+# initial volume of gas
+V0_F = 46.4/1000
+V0_L = 29.5/1000
+
 # gamma 
 gamma = 1.4
 
@@ -71,36 +76,64 @@ COPV_psi = np.linspace(Tank_psi/(2/(gamma+1))**(gamma/(gamma-1)),4500,1000)
 # ISOTHERMAL CALCS
 Isotherm_F = np.zeros(1000)
 Isotherm_L = np.zeros(1000)
+Isot_plus10_F = np.zeros(1000)
+Isot_plus10_L = np.zeros(1000)
 
 for x in range(1000):
     N2 = N2.with_state(Input.pressure(COPV[x]),Input.temperature(16.85))
     Isotherm_F[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550
     Isotherm_L[x] = vdot_L*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550*Cf
+    Isot_plus10_F[x] = (Tank_plus10.density*(V0_F+0.1*vdot_F)-V0_F*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550
+    Isot_plus10_L[x] = (Tank_plus10.density*(V0_L+0.1*vdot_L)-V0_L*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550*Cf
 
 # plot the ideal area isothermal curves
 plt.figure(1)
-line_1 = plt.plot(COPV_psi,Isotherm_F,'-r',label='RP1')
-line_2 = plt.plot(COPV_psi,Isotherm_L,'-b',label='LOx')
+line_1 = plt.plot(COPV_psi,Isotherm_F,'-r',label='Constant Pressure')
+line_2 = plt.plot(COPV_psi,Isot_plus10_F,'--r',label='+10 psi')
 plt.legend()
-plt.title('Isothermal')
+plt.title('Isothermal Fuel')
+plt.xlabel("COPV Pressure (psi)")
+plt.ylabel("Area (in^2)")
+
+plt.figure(2)
+line_1 = plt.plot(COPV_psi,Isotherm_L,'-b',label='Constant Pressure')
+line_2 = plt.plot(COPV_psi,Isot_plus10_L,'--b',label='+10 psi')
+plt.legend()
+plt.title('Isothermal LOx')
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
 
 # ISENTROPIC CALCS
 Isentrope_F = np.zeros(1000)
 Isentrope_L = np.zeros(1000)
+Isoe_plus10_F = np.zeros(1000)
+Isoe_plus10_L = np.zeros(1000)
+
+N2_tank = N2_tank.with_state(Input.pressure(500*6894.76),Input.entropy(entropy))
+Tank_plus10 = Tank_plus10.with_state(Input.pressure(510*6894.76),Input.entropy(entropy))
 
 for x in range(1000):
     N2 = N2.with_state(Input.pressure(COPV[x]),Input.entropy(entropy))
     Isentrope_F[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550
     Isentrope_L[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550*Cf
+    Isoe_plus10_F[x] = (Tank_plus10.density*(V0_F+0.1*vdot_F)-V0_F*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550
+    Isoe_plus10_L[x] = (Tank_plus10.density*(V0_L+0.1*vdot_L)-V0_L*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550*Cf
 
 # plot the ideal area isentropic curves
-plt.figure(2)
-line_1 = plt.plot(COPV_psi,Isentrope_F,'-r',label='RP1')
-line_2 = plt.plot(COPV_psi,Isentrope_L,'-b',label='LOx')
+plt.figure(3)
+line_1 = plt.plot(COPV_psi,Isentrope_F,'-r',label='Constant Pressure')
+line_2 = plt.plot(COPV_psi,Isoe_plus10_F,'--r',label='+10 psi')
 plt.legend()
-plt.title('Isentropic')
+plt.title('Isentropic Fuel')
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
+
+plt.figure(4)
+line_1 = plt.plot(COPV_psi,Isentrope_L,'-b',label='Constant Pressure')
+line_2 = plt.plot(COPV_psi,Isoe_plus10_L,'--b',label='+10 psi')
+plt.legend()
+plt.title('Isentropic LOx')
+plt.xlabel("COPV Pressure (psi)")
+plt.ylabel("Area (in^2)")
+
 plt.show()
