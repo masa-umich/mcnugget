@@ -86,7 +86,7 @@ for x in range(1000):
     Isot_plus10_F[x] = (Tank_plus10.density*(V0_F+0.1*vdot_F)-V0_F*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550
     Isot_plus10_L[x] = (Tank_plus10.density*(V0_L+0.1*vdot_L)-V0_L*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550*Cf
 
-# plot the ideal area isothermal curves
+# plot the isothermal curves
 plt.figure(1)
 line_1 = plt.plot(COPV_psi,Isotherm_F,'-r',label='Constant Pressure')
 line_2 = plt.plot(COPV_psi,Isot_plus10_F,'--r',label='+10 psi')
@@ -119,7 +119,7 @@ for x in range(1000):
     Isoe_plus10_F[x] = (Tank_plus10.density*(V0_F+0.1*vdot_F)-V0_F*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550
     Isoe_plus10_L[x] = (Tank_plus10.density*(V0_L+0.1*vdot_L)-V0_L*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550*Cf
 
-# plot the ideal area isentropic curves
+# plot the isentropic curves
 plt.figure(3)
 line_1 = plt.plot(COPV_psi,Isentrope_F,'-r',label='Constant Pressure')
 line_2 = plt.plot(COPV_psi,Isoe_plus10_F,'--r',label='+10 psi')
