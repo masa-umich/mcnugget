@@ -47,9 +47,10 @@ Tank_plus10 = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(510*6894.74),
 P_tank = 500*6894.76
 Tank_psi = 500
 
-# Estimated Cd and collapse factor
+# Estimated Cd, collapse factor, and orifice area
 Cd = 0.61
 Cf = 2.1
+A = 0.0271
 
 # mdots at T0 
 mdot_F = 1.9967
@@ -90,6 +91,8 @@ for x in range(1000):
 plt.figure(1)
 line_1 = plt.plot(COPV_psi,Isotherm_F,'-r',label='Constant Pressure')
 line_2 = plt.plot(COPV_psi,Isot_plus10_F,'--r',label='+10 psi')
+line_3 = plt.plot([COPV_psi[0],COPV_psi[999]],[A,A],'-g',label='1 valve')
+line_4 = plt.plot([COPV_psi[0],COPV_psi[999]],[2*A,2*A],'--g',label='2 valves')
 plt.legend()
 plt.title('Isothermal Fuel')
 plt.xlabel("COPV Pressure (psi)")
@@ -98,6 +101,8 @@ plt.ylabel("Area (in^2)")
 plt.figure(2)
 line_1 = plt.plot(COPV_psi,Isotherm_L,'-b',label='Constant Pressure')
 line_2 = plt.plot(COPV_psi,Isot_plus10_L,'--b',label='+10 psi')
+line_3 = plt.plot([COPV_psi[0],COPV_psi[999]],[A,A],'-g',label='1 valve')
+line_4 = plt.plot([COPV_psi[0],COPV_psi[999]],[2*A,2*A],'--g',label='2 valves')
 plt.legend()
 plt.title('Isothermal LOx')
 plt.xlabel("COPV Pressure (psi)")
@@ -109,20 +114,26 @@ Isentrope_L = np.zeros(1000)
 Isoe_plus10_F = np.zeros(1000)
 Isoe_plus10_L = np.zeros(1000)
 
-N2_tank = N2_tank.with_state(Input.pressure(500*6894.76),Input.entropy(entropy))
-Tank_plus10 = Tank_plus10.with_state(Input.pressure(510*6894.76),Input.entropy(entropy))
-
 for x in range(1000):
+    # change the gas properties to correspond to COPV pressure, including the entropy in the fuel tanks after the timestep of one valve actuation (0.1s)
     N2 = N2.with_state(Input.pressure(COPV[x]),Input.entropy(entropy))
+    s_F = (N2_tank.entropy*V0_F*N2_tank.density+N2.entropy*0.1*vdot_F*N2.density)/(V0_F*N2_tank.density+0.1*vdot_F*N2.density)
+    s_L = (N2_tank.entropy*V0_L*N2_tank.density+N2.entropy*0.1*vdot_L*N2.density)/(V0_L*N2_tank.density+0.1*vdot_L*N2.density)
+
+    Tank_plus10 = Tank_plus10.with_state(Input.pressure(510*6894.76),Input.entropy(s_F))
     Isentrope_F[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550
-    Isentrope_L[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550*Cf
     Isoe_plus10_F[x] = (Tank_plus10.density*(V0_F+0.1*vdot_F)-V0_F*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550
+
+    Tank_plus10 = Tank_plus10.with_state(Input.pressure(510*6894.76),Input.entropy(s_L))
+    Isentrope_L[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550*Cf
     Isoe_plus10_L[x] = (Tank_plus10.density*(V0_L+0.1*vdot_L)-V0_L*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550*Cf
 
 # plot the isentropic curves
 plt.figure(3)
 line_1 = plt.plot(COPV_psi,Isentrope_F,'-r',label='Constant Pressure')
 line_2 = plt.plot(COPV_psi,Isoe_plus10_F,'--r',label='+10 psi')
+line_3 = plt.plot([COPV_psi[0],COPV_psi[999]],[A,A],'-g',label='1 valve')
+line_4 = plt.plot([COPV_psi[0],COPV_psi[999]],[2*A,2*A],'--g',label='2 valves')
 plt.legend()
 plt.title('Isentropic Fuel')
 plt.xlabel("COPV Pressure (psi)")
@@ -131,6 +142,8 @@ plt.ylabel("Area (in^2)")
 plt.figure(4)
 line_1 = plt.plot(COPV_psi,Isentrope_L,'-b',label='Constant Pressure')
 line_2 = plt.plot(COPV_psi,Isoe_plus10_L,'--b',label='+10 psi')
+line_3 = plt.plot([COPV_psi[0],COPV_psi[999]],[A,A],'-g',label='1 valve')
+line_4 = plt.plot([COPV_psi[0],COPV_psi[999]],[2*A,2*A],'--g',label='2 valves')
 plt.legend()
 plt.title('Isentropic LOx')
 plt.xlabel("COPV Pressure (psi)")
