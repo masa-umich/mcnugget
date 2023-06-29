@@ -43,14 +43,15 @@ N2 = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.te
 N2_tank = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(500*6894.76),Input.temperature(16.85))
 Tank_plus10 = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(510*6894.74),Input.temperature(16.85))
 
-# Target tank pressure
+# Target tank pressure, and max pressure rate of change
 P_tank = 500*6894.76
 Tank_psi = 500
+dpdt = 100*6894.76
 
 # Estimated Cd, collapse factor, and orifice area
 Cd = 0.61
 Cf = 2.1
-A = 0.0271
+A = 0.75/27.66
 
 # mdots at T0 
 mdot_F = 1.9967
@@ -114,24 +115,83 @@ Isentrope_L = np.zeros(1000)
 Isoe_plus10_F = np.zeros(1000)
 Isoe_plus10_L = np.zeros(1000)
 
+# Reinitialize fluids and constants
+time = np.linspace(0,20,1000)
+dt = time[1] - time[0]
+P_C = np.zeros(1000)
+
+N2_F = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
+N2_L = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
+N2_C = N2.with_state(Input.pressure(COPV[999]),Input.entropy(entropy))
+V_C = 0.0266
+Z_C = N2_C.compressibility
+T_C = N2_C.temperature + 273.15
+R_C = N2_C.pressure/(Z_C*N2_C.density*T_C)
+gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
+Z_F = N2_F.compressibility
+Z_L = N2_L.compressibility
+T_F = N2_F.temperature + 273.15
+T_L = N2_L.temperature + 273.15
+R_F = N2_F.pressure/(Z_F*T_F*N2_F.density)
+R_L = N2_L.pressure/(Z_L*T_L*N2_L.density)
+VF = V0_F
+VL = V0_L
+mF = N2_F.density*VF
+mL = N2_L.density*VL
+mdinF = vdot_F*N2_F.density
+mdinL = vdot_L*N2_L.density*Cf
+
 for x in range(1000):
-    # change the gas properties to correspond to COPV pressure, including the entropy in the fuel tanks after the timestep of one valve actuation (0.1s)
-    N2 = N2.with_state(Input.pressure(COPV[x]),Input.entropy(entropy))
-    s_F = (N2_tank.entropy*V0_F*N2_tank.density+N2.entropy*0.1*vdot_F*N2.density)/(V0_F*N2_tank.density+0.1*vdot_F*N2.density)
-    s_L = (N2_tank.entropy*V0_L*N2_tank.density+N2.entropy*0.1*vdot_L*N2.density)/(V0_L*N2_tank.density+0.1*vdot_L*N2.density)
+    #area calc from previous step
+    P_C[x] = N2_C.pressure/6894.76
+    Isentrope_F[x] = mdinF/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
+    Isentrope_L[x] = mdinL/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
+    Isoe_plus10_F[x] = (dpdt*VF**2 + V0_F*P_tank*vdot_F)/(V0_F*R_F*T_F*Z_F*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
+    Isoe_plus10_L[x] = (dpdt*VF**2 + V0_F*P_tank*vdot_L)/(V0_L*R_L*T_L*Z_L*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
 
-    Tank_plus10 = Tank_plus10.with_state(Input.pressure(510*6894.76),Input.entropy(s_F))
-    Isentrope_F[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550
-    Isoe_plus10_F[x] = (Tank_plus10.density*(V0_F+0.1*vdot_F)-V0_F*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550
+    #increment tank mass and volume
+    mF = mF + mdinF*dt
+    mL = mL + mdinL*dt
+    VF = VF + vdot_F*dt
+    VL = VL + vdot_L*dt
+    rhoF = mF/VF
+    rhoL = mL/VL
 
-    Tank_plus10 = Tank_plus10.with_state(Input.pressure(510*6894.76),Input.entropy(s_L))
-    Isentrope_L[x] = vdot_F*N2_tank.density/(Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**(1/2))*1550*Cf
-    Isoe_plus10_L[x] = (Tank_plus10.density*(V0_L+0.1*vdot_L)-V0_L*N2_tank.density)/(0.1*Cd*(gamma*N2.density*COPV[x]*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)*1550*Cf
+    #increment gas internal energy
+    HdotF = vdot_F*(N2_F.density*N2_C.enthalpy - RP1.rho*(RP1.T*RP1.cp))
+    HdotL = vdot_L*(N2_L.density*N2_C.enthalpy - LOx.density*LOx.enthalpy)
+    EdotF = HdotF - P_tank*vdot_F
+    EdotL = HdotL - P_tank*vdot_L
+    eF = (N2_F.internal_energy*mF + EdotF*dt)/mF
+    eL = (N2_L.internal_energy*mL + EdotL*dt)/mL
+
+    #set new tank states
+    N2_F = N2_F.with_state(Input.internal_energy(eF),Input.density(rhoF))
+    N2_L = N2_L.with_state(Input.internal_energy(eL),Input.density(rhoL))
+    Z_F = N2_F.compressibility
+    Z_L = N2_L.compressibility
+    T_F = N2_F.temperature + 273.15
+    T_L = N2_L.temperature + 273.15
+    R_F = N2_F.pressure/(Z_F*T_F*N2_F.density)
+    R_L = N2_L.pressure/(Z_L*T_L*N2_L.density)
+
+    #set new COPV state
+    rhoC = (N2_C.density*V_C - (mdinF + mdinL)*dt)/V_C
+    N2_C = N2_C.with_state(Input.density(rhoC),Input.entropy(entropy))
+    Z_C = N2_C.compressibility
+    T_C = N2_C.temperature + 273.15
+    R_C = N2_C.pressure/(Z_C*N2_C.density*T_C)
+    gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
+
+    #get new tank mdots
+    mdinF = vdot_F*N2_F.density
+    mdinL = vdot_L*N2_L.density*Cf
+
 
 # plot the isentropic curves
 plt.figure(3)
-line_1 = plt.plot(COPV_psi,Isentrope_F,'-r',label='Constant Pressure')
-line_2 = plt.plot(COPV_psi,Isoe_plus10_F,'--r',label='+10 psi')
+line_1 = plt.plot(P_C,Isentrope_F,'-r',label='Constant Pressure')
+line_2 = plt.plot(P_C,Isoe_plus10_F,'--r',label='+10 psi')
 line_3 = plt.plot([COPV_psi[0],COPV_psi[999]],[A,A],'-g',label='1 valve')
 line_4 = plt.plot([COPV_psi[0],COPV_psi[999]],[2*A,2*A],'--g',label='2 valves')
 plt.legend()
@@ -140,8 +200,8 @@ plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
 
 plt.figure(4)
-line_1 = plt.plot(COPV_psi,Isentrope_L,'-b',label='Constant Pressure')
-line_2 = plt.plot(COPV_psi,Isoe_plus10_L,'--b',label='+10 psi')
+line_1 = plt.plot(P_C,Isentrope_L,'-b',label='Constant Pressure')
+line_2 = plt.plot(P_C,Isoe_plus10_L,'--b',label='+10 psi')
 line_3 = plt.plot([COPV_psi[0],COPV_psi[999]],[A,A],'-g',label='1 valve')
 line_4 = plt.plot([COPV_psi[0],COPV_psi[999]],[2*A,2*A],'--g',label='2 valves')
 plt.legend()
