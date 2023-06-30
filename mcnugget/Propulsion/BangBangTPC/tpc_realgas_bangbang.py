@@ -116,8 +116,7 @@ Isoe_plus10_F = np.zeros(1000)
 Isoe_plus10_L = np.zeros(1000)
 
 # Reinitialize fluids and constants
-time = np.linspace(0,20,1000)
-dt = time[1] - time[0]
+dt = 20/1000 # timestep size
 P_C = np.zeros(1000)
 
 N2_F = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
