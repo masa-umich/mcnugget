@@ -80,7 +80,7 @@ Isotherm_L = np.zeros(1000)
 Isot_plus10_F = np.zeros(1000)
 Isot_plus10_L = np.zeros(1000)
 
-dt = 10/1000 # timestep size
+dt = 12/1000 # timestep size
 P_C = np.zeros(1000)
 
 N2_F = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
@@ -155,6 +155,8 @@ plt.legend()
 plt.title('Isothermal Fuel')
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
+plt.xlim([COPV_psi[0],COPV_psi[999]])
+plt.ylim([0,0.15])
 
 plt.figure(2)
 line_1 = plt.plot(P_C,Isotherm_L,'-b',label='Constant Pressure')
@@ -165,6 +167,8 @@ plt.legend()
 plt.title('Isothermal LOx')
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
+plt.xlim([COPV_psi[0],COPV_psi[999]])
+plt.ylim([0,0.3])
 
 # ISENTROPIC CALCS
 Isentrope_F = np.zeros(1000)
