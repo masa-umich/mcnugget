@@ -50,7 +50,7 @@ dpdt = 100*6894.76
 # Estimated Cd, collapse factor, and orifice area
 Cd = 0.61
 Cf = 2.1
-A = 0.75/27.66
+A = 0.75/(27.66*Cd)
 
 # mdots out at T0 
 mdot_F = 1.9967
@@ -103,8 +103,8 @@ VF = V0_F
 VL = V0_L
 mF = N2_F.density*VF
 mL = N2_L.density*VL
-mdinF = vdot_F*N2_F.density
-mdinL = vdot_L*N2_L.density*Cf
+mdinF = vdot_F*N2_F.pressure/(R_F*T_F*Z_F)
+mdinL = vdot_L*N2_L.pressure/(R_L*T_L*Z_L)*Cf
 
 for x in range(1000):
     # Area calc for the current COPV pressure
@@ -123,8 +123,8 @@ for x in range(1000):
     rhoL = mL/VL
 
     # Calculate inernal energy change
-    HdotF = vdot_F*(N2_F.density*N2_C.enthalpy )
-    HdotL = vdot_L*(N2_L.density*N2_C.enthalpy )
+    HdotF = mdinF*N2_C.enthalpy
+    HdotL = mdinL*N2_C.enthalpy
     EdotF = HdotF - N2_F.pressure*vdot_F
     EdotL = HdotL - N2_L.pressure*vdot_L
     eF = (N2_F.internal_energy*mF + EdotF*dt)/mF
@@ -149,8 +149,8 @@ for x in range(1000):
     gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
 
     # Calculate new mdots for next loop
-    mdinF = vdot_F*N2_F.density
-    mdinL = vdot_L*N2_L.density*Cf
+    mdinF = vdot_F*N2_F.pressure/(R_F*T_F*Z_F)
+    mdinL = vdot_L*N2_L.pressure/(R_L*T_L*Z_L)*Cf
 
 
 # plot the isothermal curves
@@ -207,8 +207,8 @@ VF = V0_F
 VL = V0_L
 mF = N2_F.density*VF
 mL = N2_L.density*VL
-mdinF = vdot_F*N2_F.density
-mdinL = vdot_L*N2_L.density*Cf
+mdinF = vdot_F*N2_F.pressure/(R_F*T_F*Z_F)
+mdinL = vdot_L*N2_L.pressure/(R_L*T_L*Z_L)*Cf
 
 for x in range(1000):
     # Area calculation for current COPV pressure
@@ -227,8 +227,8 @@ for x in range(1000):
     rhoL = mL/VL
 
     # Calculate gas internal energy
-    HdotF = vdot_F*(N2_F.density*N2_C.enthalpy )
-    HdotL = vdot_L*(N2_L.density*N2_C.enthalpy )
+    HdotF = mdinF*N2_C.enthalpy
+    HdotL = mdinL*N2_C.enthalpy
     EdotF = HdotF - N2_F.pressure*vdot_F
     EdotL = HdotL - N2_L.pressure*vdot_L
     eF = (N2_F.internal_energy*mF + EdotF*dt)/mF
@@ -253,8 +253,8 @@ for x in range(1000):
     gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
 
     # Calculate new tank mdots
-    mdinF = vdot_F*N2_F.density
-    mdinL = vdot_L*N2_L.density*Cf
+    mdinF = vdot_F*N2_F.pressure/(R_F*T_F*Z_F)
+    mdinL = vdot_L*N2_L.pressure/(R_L*T_L*Z_L)*Cf
 
 
 # plot the isentropic curves
