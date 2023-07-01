@@ -50,11 +50,11 @@ dpdt = 100*6894.76
 # Estimated Cd, collapse factor, and orifice area
 Cd = 0.61
 Cf = 2.1
-A = 0.75/(27.66*Cd)
+A = (0.75/(27.66))
 
 # mdots out at T0 
-mdot_F = 1.9967
-mdot_L = 3.9934
+mdot_F = 2.063
+mdot_L = 4.125
 
 # vdots into tank at T0
 vdot_F = mdot_F/RP1.rho
