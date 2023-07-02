@@ -194,7 +194,7 @@ Isoe_plus10_L = np.zeros(1000)
 P_C = np.zeros(1000)
 
 # timestep size, in seconds
-dt = 100/1000 
+dt = 10/1000 
 
 # Initialize fluids for Nitrogen in both tanks and the COPV, F for fuel, L for LOx, and C for COPV respectively
 N2_F = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
@@ -233,13 +233,12 @@ mL = N2_L.density*VL
 for y in range(1000):
     # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
     # x[3] is temperature, x[4] is extensive energy
-    #print(N2_C.pressure)
     def fuelFunc(x):
-        return [x[0] - VF - (vdot_F * dt),
-                (x[1] * x[3] * Z_F * R_F) - (N2_F.pressure * x[0]),
-                x[1] - mF - (x[2] * dt),
-                (x[3] * Cv_F * x[1]) - x[4],
-                x[4] - (N2_F.internal_energy * mF) - (x[2] * N2_C.enthalpy * dt) + (N2_F.pressure * vdot_F * dt)]
+        return [x[0] - VF - vdot_F*dt,
+                x[1]*x[3]*Z_F*R_F - N2_F.pressure*x[0],
+                x[1] - mF - x[2]*dt,
+                x[3]*Cv_F*x[1] - x[4],
+                x[4] - N2_F.internal_energy*mF - x[2]*N2_C.enthalpy + N2_F.pressure*vdot_F*dt]
     Fuel_state = sp.fsolve(fuelFunc,[1,1,1,1,1])
 
     VF = Fuel_state[0]
@@ -248,7 +247,6 @@ for y in range(1000):
 
     T_F = Fuel_state[3]
     eF = Fuel_state[4]/mF
-
     rhoF = mF/VF
     N2_F = N2_F.with_state(Input.internal_energy(eF),Input.density(rhoF))
 
@@ -261,7 +259,7 @@ for y in range(1000):
                 x[1]*x[3]*Z_L*R_L - N2_L.pressure*x[0],
                 x[1] - mL - x[2]*dt,
                 x[3]*Cv_L*x[1] - x[4],
-                (x[4] - N2_L.internal_energy * mL) - (x[2] * N2_C.enthalpy * dt) + N2_L.pressure * vdot_F*dt]
+                x[4] - N2_L.internal_energy*mL - x[2]*N2_C.enthalpy + N2_L.pressure*vdot_F*dt]
     LOx_state = sp.fsolve(LOxfunc,[1,1,1,1,1])
 
     VL = Fuel_state[0]
@@ -272,7 +270,7 @@ for y in range(1000):
     eL = Fuel_state[4]/mL
     rhoL = mL/VL
     N2_L = N2_L.with_state(Input.internal_energy(eL),Input.density(rhoL))
-    print(N2_F.pressure, N2_L.pressure)
+
     Z_L = N2_L.compressibility
     R_L = Ru/N2_L.molar_mass
 
@@ -317,6 +315,3 @@ plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
 plt.xlim([COPV_min,COPV_max])
 plt.ylim([0,0.3])
-
-# Show final graphs
-plt.show()
