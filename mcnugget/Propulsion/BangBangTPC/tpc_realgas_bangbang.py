@@ -13,6 +13,38 @@ from numpy import genfromtxt
 #   1. Isothermal (slow blow-down)
 #   2. Isentropic (most like real burn)
 
+# Target tank pressure, and max pressure rate of change
+P_Fuel_Tank = 506.889*6894.76
+P_LOx_Tank = 506.9*6894.76
+dpdt = 100*6894.76
+
+# Estimated Orifice Cd, collapse factor, and orifice area
+Cd = 0.61
+Cf = 2.1
+CdA_Valve = 0.75/(27.66)
+
+# mdots out at T0, in kg/s
+mdot_Fuel = 2.063
+mdot_LOx = 4.125
+
+# Ideal Gamma
+gamma = 1.4
+
+# COPV max and min pressures
+COPV_max = 4500 * 6894.76
+COPV_min = P_Fuel_Tank/(2/(gamma+1))**(gamma/(gamma-1))
+
+# ISENTROPIC CALCS
+
+# Area arrays for constant pressure and area needed to stay below 10 psi/valve actuation time rate of change, in in^2
+Isentrope_F = np.zeros(1000)
+Isentrope_L = np.zeros(1000)
+Isoe_plus10_F = np.zeros(1000)
+Isoe_plus10_L = np.zeros(1000)
+
+# Pressure array to use for graphing (does not affect math), in psi
+P_C = np.zeros(1000)
+
 # Copy of the fuel class from Logan's chamber analysis scripts (thanks btw)
 
 Conductivity = genfromtxt('Conductivity.csv', delimiter=',')
@@ -39,256 +71,104 @@ class Fuel:
 
 # Initialize baseline fluid variables
 RP1 = Fuel(290)
-LOx = Fluid(FluidsList.Oxygen).with_state(Input.pressure(500*6894.76),Input.temperature(-190))
-N2 = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
-N2_tank = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(500*6894.76),Input.temperature(16.85))
-
-# Target tank pressure, and max pressure rate of change
-P_tank = 500*6894.76
-Tank_psi = 500
-dpdt = 100*6894.76
-
-# Estimated Cd, collapse factor, and orifice area
-Cd = 0.61
-Cf = 2.1
-A = 0.75/(27.66*Cd)
-
-# mdots out at T0, in kg/s
-mdot_F = 1.9967
-mdot_L = 3.9934
 
 # vdots into tank at T0, in m^3/s
-vdot_F = mdot_F/RP1.rho
-vdot_L = mdot_L/LOx.density
+vdot_Fuel = mdot_Fuel/RP1.rho
+vdot_LOx = mdot_LOx/1140
 
 # initial volume of gas, in m^3
-V0_F = (45/1000) * 0.075
-V0_L = (45/1000) * 0.075
+V0_Ullage = (45/1000) * 0.075
+V_C = 26.6/1000
 
-# universal gas constant (molar gas constant), in it's respective complicated units
-Ru = 8.3145
+# Time Step
+dt = 0.01
 
-# ideal gamma 
-gamma = 1.4
+# Initial COPV Properties
+N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
+entropy = N2_C.entropy
 
-# entropy at initial condisitons
-entropy = N2.entropy
+# Initial Fuel Ullage Gas Properties
+N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_Fuel_Tank),Input.temperature(16.85))
+Z_Fuel = N2_F.compressibility
+T_Ullage_Fuel = N2_F.temperature + 273.15
+R_Fuel = N2_F.pressure/(Z_Fuel * T_Ullage_Fuel * N2_F.density)
 
-# COPV max and min pressures
-COPV_max = 4500
-COPV_min = Tank_psi/(2/(gamma+1))**(gamma/(gamma-1))
+# Initial Fuel Ullage Mass
+m_Ullage_Fuel = V0_Ullage * N2_F.density
+V_Ullage_Fuel = V0_Ullage
+e_Ullage_Fuel = N2_F.internal_energy
 
-# ISOTHERMAL CALCS
-Isotherm_F = np.zeros(1000)
-Isotherm_L = np.zeros(1000)
-Isot_plus10_F = np.zeros(1000)
-Isot_plus10_L = np.zeros(1000)
-P_C = np.zeros(1000)
+# Initial LOx Ullage Gas Properties
+N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_LOx_Tank),Input.temperature(16.85))
+Z_LOx = N2_LOx.compressibility
+T_Ullage_LOx = N2_LOx.temperature + 273.15
+R_LOx = N2_LOx.pressure/(Z_LOx * T_Ullage_LOx * N2_LOx.density)
 
-# timestep size
-dt = 12/1000
+# Initial LOx Ullage Mass
+m_Ullage_LOx = V0_Ullage * N2_LOx.density
+V_Ullage_LOx = V0_Ullage
+e_Ullage_LOx = N2_LOx.internal_energy
 
-#Initialize actual gas properties
-N2_F = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
-N2_L = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
-N2_C = N2.with_state(Input.pressure(COPV_max*6894.76),Input.temperature(16.85))
-V_C = 0.0266
-Z_C = N2_C.compressibility
-T_C = N2_C.temperature + 273.15
-R_C = N2_C.pressure/(Z_C*N2_C.density*T_C)
-gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
-Z_F = N2_F.compressibility
-Z_L = N2_L.compressibility
-T_F = N2_F.temperature + 273.15
-T_L = N2_L.temperature + 273.15
-R_F = N2_F.pressure/(Z_F*T_F*N2_F.density)
-R_L = N2_L.pressure/(Z_L*T_L*N2_L.density)
-VF = V0_F
-VL = V0_L
-mF = N2_F.density*VF
-mL = N2_L.density*VL
-
-""" for x in range(1000):
-    # Area calc for the current COPV pressure
-    P_C[x] = N2_C.pressure/6894.76
-    Isotherm_F[x] = mdinF/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    Isotherm_L[x] = mdinL/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    Isot_plus10_F[x] = (dpdt*VF**2 + V0_F*P_tank*vdot_F)/(V0_F*R_F*T_F*Z_F*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    Isot_plus10_L[x] = (dpdt*VF**2 + V0_F*P_tank*vdot_L)/(V0_L*R_L*T_L*Z_L*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
-
-    # Increment tank masses and volumes
-    mF = mF + mdinF*dt
-    mL = mL + mdinL*dt
-    VF = VF + vdot_F*dt
-    VL = VL + vdot_L*dt
-    rhoF = mF/VF
-    rhoL = mL/VL
-
-    # Calculate inernal energy change
-    HdotF = mdinF*N2_C.enthalpy
-    HdotL = mdinL*N2_C.enthalpy
-    EdotF = HdotF - N2_F.pressure*vdot_F
-    EdotL = HdotL - N2_L.pressure*vdot_L
-    eF = (N2_F.internal_energy*mF + EdotF*dt)/mF
-    eL = (N2_L.internal_energy*mL + EdotL*dt)/mL
-
-    # Set gas properties for new tank states
-    N2_F = N2_F.with_state(Input.internal_energy(eF),Input.density(rhoF))
-    N2_L = N2_L.with_state(Input.internal_energy(eL),Input.density(rhoL))
-    Z_F = N2_F.compressibility
-    Z_L = N2_L.compressibility
-    T_F = N2_F.temperature + 273.15
-    T_L = N2_L.temperature + 273.15
-    R_F = N2_F.pressure/(Z_F*T_F*N2_F.density)
-    R_L = N2_L.pressure/(Z_L*T_L*N2_L.density)
-
-    # Increment COPV state
-    rhoC = (N2_C.density*V_C - (mdinF + mdinL)*dt)/V_C
-    N2_C = N2_C.with_state(Input.density(rhoC),Input.temperature(16.85))
-    Z_C = N2_C.compressibility
-    T_C = N2_C.temperature + 273.15
-    R_C = N2_C.pressure/(Z_C*N2_C.density*T_C)
-    gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
-
-    # Calculate new mdots for next loop
-    mdinF = vdot_F*N2_F.pressure/(R_F*T_F*Z_F)
-    mdinL = vdot_L*N2_L.pressure/(R_L*T_L*Z_L)*Cf
-
-
-# plot the isothermal curves
-plt.figure(1)
-line_1 = plt.plot(P_C,Isotherm_F,'-r',label='Constant Pressure')
-line_2 = plt.plot(P_C,Isot_plus10_F,'--r',label='+10 psi')
-line_3 = plt.plot([COPV_min,COPV_max],[A,A],'-g',label='1 valve')
-line_4 = plt.plot([COPV_min,COPV_max],[2*A,2*A],'--g',label='2 valves')
-plt.legend()
-plt.title('Isothermal Fuel')
-plt.xlabel("COPV Pressure (psi)")
-plt.ylabel("Area (in^2)")
-plt.xlim([COPV_min,COPV_max])
-plt.ylim([0,0.15])
-
-plt.figure(2)
-line_1 = plt.plot(P_C,Isotherm_L,'-b',label='Constant Pressure')
-line_2 = plt.plot(P_C,Isot_plus10_L,'--b',label='+10 psi')
-line_3 = plt.plot([COPV_min,COPV_max],[A,A],'-g',label='1 valve')
-line_4 = plt.plot([COPV_min,COPV_max],[2*A,2*A],'--g',label='2 valves')
-plt.legend()
-plt.title('Isothermal LOx')
-plt.xlabel("COPV Pressure (psi)")
-plt.ylabel("Area (in^2)")
-plt.xlim([COPV_min,COPV_max])
-plt.ylim([0,0.3]) """
-
-# ISENTROPIC CALCS
-
-# Area arrays for constant pressure and area needed to stay below 10 psi/valve actuation time rate of change, in in^2
-Isentrope_F = np.zeros(1000)
-Isentrope_L = np.zeros(1000)
-Isoe_plus10_F = np.zeros(1000)
-Isoe_plus10_L = np.zeros(1000)
-
-# Pressure array to use for graphing (does not affect math), in psi
-P_C = np.zeros(1000)
-
-# timestep size, in seconds
-dt = 1/100
-
-# Initialize fluids for Nitrogen in both tanks and the COPV, F for fuel, L for LOx, and C for COPV respectively
-N2_F = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
-N2_L = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
-N2_C = N2.with_state(Input.pressure(COPV_max*6894.76),Input.entropy(entropy))
-
-# COPV volume, in m^3
-V_C = 0.0266
-
-# COPV initial properties, T in Kelvin, R in J/kgK, Z in no units, and gamma in no units
-Z_C = N2_C.compressibility
-T_C = N2_C.temperature + 273.15
-R_C = Ru/N2_C.molar_mass
-
-# Initial properties for both fuel and LOx tanks, units the same as COPV properties,
-Z_F = N2_F.compressibility
-Z_L = N2_L.compressibility
-T_F = N2_F.temperature + 273.1
-T_L = N2_L.temperature + 273.15
-R_F = Ru/N2_F.molar_mass
-R_L = Ru/N2_L.molar_mass
-
-# Approximate constant volume specific heats for tank ullages, I don't currently remember the SI units for these
-Cv_F = N2_F.specific_heat - R_F
-Cv_L = N2_L.specific_heat - R_L
-
-# initial tank volumes, in m^3
-VF = V0_F
-VL = V0_L
-
-# initial tank masses, in kg
-mF = N2_F.density*VF
-mL = N2_L.density*VL
-print(N2_F.pressure)
-for y in range(1000):
-    # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
-    # x[3] is temperature, x[4] is total energy
+# Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
+# x[3] is temperature, x[4] is total energy
+for y in range(1500):
+    Z_Fuel = N2_F.pressure / (N2_F.density * R_Fuel * (N2_F.temperature + 273.15))
     def fuelFunc(x):
-        return [x[0] - VF - vdot_F*dt,
-                (x[1]*x[3]*Z_F*R_F) - (P_tank*x[0]),
-                x[1] - mF - (x[2]*dt),
-                (x[3]*N2_F.specific_heat) - x[4] - P_tank * x[0],
-                x[4] - (N2_F.internal_energy*mF) - (x[2]*N2_C.enthalpy*dt) + (P_tank*vdot_F*dt)]
+        return [x[0] - V_Ullage_Fuel - vdot_Fuel * dt,
+                (x[1] * x[3] * Z_Fuel * R_Fuel) - (P_Fuel_Tank * x[0]),
+                x[1] - m_Ullage_Fuel - (x[2] * dt),
+                (x[3] * N2_F.specific_heat * x[1]) - x[4] - (P_Fuel_Tank * x[0]),
+                x[4] - (e_Ullage_Fuel * m_Ullage_Fuel) - (x[2] * N2_C.enthalpy * dt) + (P_Fuel_Tank * vdot_Fuel * dt)]
     Fuel_state = sp.fsolve(fuelFunc,[1,1,1,1,1])
+    V_Ullage_Fuel = Fuel_state[0]
+    m_Ullage_Fuel = Fuel_state[1]
+    mdot_gas_Fuel = Fuel_state[2]
+    T_Ullage_Fuel = Fuel_state[3]
+    e_Ullage_Fuel = Fuel_state[4]
+    e_Ullage_Fuel = e_Ullage_Fuel / m_Ullage_Fuel
+    rho_Ullage_Fuel = m_Ullage_Fuel / V_Ullage_Fuel
+    N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage_Fuel),Input.temperature(T_Ullage_Fuel - 273.15))
+    P_Fuel_Tank = N2_F.pressure
 
-    VF = Fuel_state[0]
-    mF = Fuel_state[1]
-    mdinF = Fuel_state[2]
-    T_F = Fuel_state[3]
-    eF = Fuel_state[4]/mF
-    rhoF = mF/VF
+    # Solve the system for the LOx tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
+    # x[3] is temperature, x[4] is total energy
+    Z_LOx = N2_LOx.pressure / (N2_LOx.density * R_LOx * (N2_LOx.temperature + 273.15))
+    def LOxFunc(y):
+        return [y[0] - V_Ullage_LOx - vdot_LOx * dt,
+                (y[1] * y[3] * Z_LOx * R_LOx) - (P_LOx_Tank * y[0]),
+                y[1] - m_Ullage_LOx - (y[2] * dt),
+                (y[3] * N2_LOx.specific_heat * y[1]) - y[4] - (P_LOx_Tank * y[0]),
+                y[4] - (e_Ullage_LOx * m_Ullage_LOx) - (y[2] * N2_C.enthalpy * dt) + (P_LOx_Tank * vdot_LOx * dt)]
+    LOx_state = sp.fsolve(LOxFunc,[1,1,1,1,1])
+    V_Ullage_LOx = LOx_state[0]
+    m_Ullage_LOx = LOx_state[1]
+    mdot_gas_LOx = LOx_state[2]
+    T_Ullage_LOx = LOx_state[3]
+    e_Ullage_LOx = LOx_state[4]
+    e_Ullage_LOx = e_Ullage_LOx / m_Ullage_LOx
+    rho_Ullage_LOx = m_Ullage_LOx / V_Ullage_LOx
+    N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage_LOx),Input.temperature(T_Ullage_LOx - 273.15))
+    P_LOx_Tank = N2_LOx.pressure
 
-    N2_F = N2_F.with_state(Input.density(rhoF),Input.internal_energy(eF))
-    Z_F = N2_F.compressibility
-    R_F = Ru/N2_F.molar_mass
-
-# Solve the system for the LOx tank state, x variables defined the same as for fuel
-    def LOxfunc(x):
-        return [x[0] - VL - vdot_L*dt,
-                (x[1]*x[3]*Z_L*R_L) - (N2_L.pressure*x[0]),
-                x[1] - mL - (x[2]*dt),
-                (x[3]*Cv_L*x[1]) - x[4],
-                x[4] - (N2_L.internal_energy*mL) - (x[2]*N2_C.enthalpy*dt) + (N2_L.pressure*vdot_L*dt)]
-    LOx_state = sp.fsolve(LOxfunc,[1,1,1,1,1])
-
-    VL = LOx_state[0]
-    mL = LOx_state[1]
-    mdinL = LOx_state[2]
-
-    T_L = LOx_state[3]
-    eL = LOx_state[4]/mL
-    rhoL = mL/VL
-    N2_L = N2_L.with_state(Input.internal_energy(eL),Input.density(rhoL))
-
-    Z_L = N2_L.compressibility
-    R_L = Ru/N2_L.molar_mass
-
-    
     # Increment the COPV state
-    rhoC = (N2_C.density*V_C - (mdinF)*dt)/V_C
+    rhoC = (N2_C.density*V_C - (mdot_gas_Fuel)*dt)/V_C
     N2_C = N2_C.with_state(Input.density(rhoC),Input.entropy(entropy))
     Z_C = N2_C.compressibility
     T_C = N2_C.temperature + 273.15
-    R_C = Ru/N2_C.molar_mass
+    R_C = N2_C.pressure/(Z_C * T_C * N2_C.density)
     gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
+    print(N2_C.pressure/6894.76, N2_C.temperature + 273.15, N2_C.enthalpy, mdot_gas_Fuel, mdot_gas_LOx)
 
     # Area calculation for current COPV pressure
-    P_C[y] = N2_C.pressure/6894.76
-    Isentrope_F[y] = mdinF/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    #Isentrope_L[y] = mdinL/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
-    Isoe_plus10_F[y] = (dpdt*VF**2 + V0_F*P_tank*vdot_F)/(V0_F*R_F*T_F*Z_F*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    #Isoe_plus10_L[y] = (dpdt*VF**2 + V0_F*P_tank*vdot_L)/(V0_L*R_L*T_L*Z_L*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
+    #P_C[y] = N2_C.pressure/6894.76
+    #Isentrope_F[y] = mdot_gas_Fuel/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
+    #Isentrope_L[y] = mdot_gas_LOx/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
+    #Isoe_plus10_F[y] = (dpdt*V_Ullage_Fuel**2 + V0_Ullage*P_Fuel_Tank*vdot_Fuel)/(V0_Ullage*R_Fuel*T_Ullage_Fuel*Z_Fuel*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
+    #Isoe_plus10_L[y] = (dpdt*V_Ullage_LOx**2 + V0_Ullage*P_LOx_Tank*vdot_LOx)/(V0_Ullage*R_LOx*T_Ullage_LOx*Z_LOx*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
 
 
 
-# plot the isentropic curves
+""" # plot the isentropic curves
 plt.figure(3)
 line_1 = plt.plot(P_C,Isentrope_F,'-r',label='Constant Pressure')
 line_2 = plt.plot(P_C,Isoe_plus10_F,'--r',label='+10 psi')
@@ -311,4 +191,4 @@ plt.title('Isentropic LOx')
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
 plt.xlim([COPV_min,COPV_max])
-plt.ylim([0,0.3])
+plt.ylim([0,0.3]) """
