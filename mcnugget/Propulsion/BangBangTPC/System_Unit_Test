@@ -30,7 +30,7 @@ class Fuel:
         self.rho = 287.67 * 0.53365**(-(1 + (1 - (T / 574.262))**0.6289))
 
 # Target tank pressure, and max pressure rate of change
-P_tank = 500*6894.76
+P_tank = 506.889*6894.76
 
 # Initialize baseline fluid variables
 RP1 = Fuel(290)
@@ -45,7 +45,7 @@ vdot_Fuel = mdot_Fuel/RP1.rho
 V0_Ullage = (45/1000) * 0.075
 
 # Time Step
-dt = 0.01
+dt = 0.0000001
 
 # Fluid Properties
 N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_tank),Input.temperature(16.85))
@@ -58,10 +58,11 @@ N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.
 m_Ullage = V0_Ullage * N2_F.density
 V_Ullage = V0_Ullage
 e_Ullage = N2_F.internal_energy
-
+print(P_tank/6894.76)
 # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
 # x[3] is temperature, x[4] is total energy
 for y in range(1000):
+    Z = N2_F.pressure / (N2_F.density * R * (N2_F.temperature + 273.15))
     def fuelFunc(x):
         return [x[0] - V_Ullage - vdot_Fuel * dt,
                 (x[1] * x[3] * Z * R) - (P_tank * x[0]),
@@ -69,7 +70,6 @@ for y in range(1000):
                 (x[3] * N2_F.specific_heat * x[1]) - x[4] - (P_tank * x[0]),
                 x[4] - (e_Ullage * m_Ullage) - (x[2] * N2_C.enthalpy * dt) + (P_tank * vdot_Fuel * dt)]
     Fuel_state = sp.fsolve(fuelFunc,[1,1,1,1,1])
-    
     V_Ullage = Fuel_state[0]
     m_Ullage = Fuel_state[1]
     mdot_gas = Fuel_state[2]
@@ -77,8 +77,9 @@ for y in range(1000):
     E_Ullage = Fuel_state[4]
     e_Ullage = E_Ullage / m_Ullage
     rho_Ullage = m_Ullage / V_Ullage
-    P_tank = rho_Ullage * Z * R * T_Ullage
-    N2_Test = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage),Input.temperature(T_Ullage - 273.15))
-    Z = N2_F.compressibility
-    R = P_tank/(Z * T_Ullage * rho_Ullage)
-    print(N2_Test.pressure / P_tank)
+    N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage),Input.temperature(T_Ullage - 273.15))
+    P_tank = N2_F.pressure
+    print(P_tank/6894.76, T_Ullage, mdot_gas, sep = ',')
+   
+    
+   
