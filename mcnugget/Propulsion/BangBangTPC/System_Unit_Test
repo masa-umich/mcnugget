@@ -1,0 +1,84 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.optimize as sp
+import CoolProp.CoolProp as CP
+from pyfluids import Fluid, FluidsList, Input
+from numpy import genfromtxt
+
+# Copy of the fuel class from Logan's chamber analysis scripts (thanks btw)
+
+Conductivity = genfromtxt('Conductivity.csv', delimiter=',')
+Heat_Capacity = genfromtxt('Heat_Capacity.csv', delimiter=',')
+
+# Interopolates Fuel Properties at a given temperature
+# Inputs: Temperature (K)
+# Outputs: Conductivity, Viscosity, Prandtl Number, Specific Heat, Density
+class Fuel:
+    def __init__(self, T):
+        self.T = T
+
+    @property
+    def T(self):
+        return self._T
+
+    @T.setter
+    def T(self, T):
+        self._T = T
+        self.k = np.interp(T, Conductivity[:, 0], Conductivity[:, 1])
+        self.u = np.exp(2.5585 + (-3.505 / (T / 273.15)) - (3.412 * np.log(T / 273.15)) + (2.1551 * (T / 273.15)**(-3.145))) * 0.0008
+        self.cp = np.interp(T, Heat_Capacity[:, 0], Heat_Capacity[:, 1])
+        self.rho = 287.67 * 0.53365**(-(1 + (1 - (T / 574.262))**0.6289))
+
+# Target tank pressure, and max pressure rate of change
+P_tank = 500*6894.76
+
+# Initialize baseline fluid variables
+RP1 = Fuel(290)
+
+# mdots out at T0, in kg/s
+mdot_Fuel = 1.9967
+
+# vdots into tank at T0, in m^3/s
+vdot_Fuel = mdot_Fuel/RP1.rho
+
+# initial volume of gas, in m^3
+V0_Ullage = (45/1000) * 0.075
+
+# Time Step
+dt = 0.01
+
+# Fluid Properties
+N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_tank),Input.temperature(16.85))
+Z = N2_F.compressibility
+T_Ullage = N2_F.temperature + 273.15
+R = N2_F.pressure/(Z * T_Ullage * N2_F.density)
+N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
+
+# Initial Fuel Mass
+m_Ullage = V0_Ullage * N2_F.density
+V_Ullage = V0_Ullage
+e_Ullage = N2_F.internal_energy
+
+# Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
+# x[3] is temperature, x[4] is total energy
+for y in range(1000):
+    def fuelFunc(x):
+        return [x[0] - V_Ullage - vdot_Fuel * dt,
+                (x[1] * x[3] * Z * R) - (P_tank * x[0]),
+                x[1] - m_Ullage - (x[2] * dt),
+                (x[3] * N2_F.specific_heat * x[1]) - x[4] - (P_tank * x[0]),
+                x[4] - (e_Ullage * m_Ullage) - (x[2] * N2_C.enthalpy * dt) + (P_tank * vdot_Fuel * dt)]
+    Fuel_state = sp.fsolve(fuelFunc,[1,1,1,1,1])
+    
+    V_Ullage = Fuel_state[0]
+    m_Ullage = Fuel_state[1]
+    mdot_gas = Fuel_state[2]
+    T_Ullage = Fuel_state[3]
+    E_Ullage = Fuel_state[4]
+    e_Ullage = E_Ullage / m_Ullage
+    rho_Ullage = m_Ullage / V_Ullage
+    P_tank = rho_Ullage * Z * R * T_Ullage
+    N2_Test = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage),Input.temperature(T_Ullage - 273.15))
+    Z = N2_F.compressibility
+    R = P_tank/(Z * T_Ullage * rho_Ullage)
+    print(N2_Test.pressure / P_tank)

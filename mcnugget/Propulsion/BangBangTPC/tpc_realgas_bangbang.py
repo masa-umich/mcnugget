@@ -62,8 +62,8 @@ vdot_F = mdot_F/RP1.rho
 vdot_L = mdot_L/LOx.density
 
 # initial volume of gas, in m^3
-V0_F = 46.4/1000
-V0_L = 29.5/1000
+V0_F = (45/1000) * 0.075
+V0_L = (45/1000) * 0.075
 
 # universal gas constant (molar gas constant), in it's respective complicated units
 Ru = 8.3145
@@ -107,10 +107,8 @@ VF = V0_F
 VL = V0_L
 mF = N2_F.density*VF
 mL = N2_L.density*VL
-mdinF = vdot_F*N2_F.pressure/(R_F*T_F*Z_F)
-mdinL = vdot_L*N2_L.pressure/(R_L*T_L*Z_L)*Cf
 
-for x in range(1000):
+""" for x in range(1000):
     # Area calc for the current COPV pressure
     P_C[x] = N2_C.pressure/6894.76
     Isotherm_F[x] = mdinF/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
@@ -180,7 +178,7 @@ plt.title('Isothermal LOx')
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Area (in^2)")
 plt.xlim([COPV_min,COPV_max])
-plt.ylim([0,0.3])
+plt.ylim([0,0.3]) """
 
 # ISENTROPIC CALCS
 
@@ -194,7 +192,7 @@ Isoe_plus10_L = np.zeros(1000)
 P_C = np.zeros(1000)
 
 # timestep size, in seconds
-dt = 10/1000 
+dt = 1/100
 
 # Initialize fluids for Nitrogen in both tanks and the COPV, F for fuel, L for LOx, and C for COPV respectively
 N2_F = N2_tank.with_state(Input.pressure(P_tank),Input.temperature(16.85))
@@ -208,7 +206,6 @@ V_C = 0.0266
 Z_C = N2_C.compressibility
 T_C = N2_C.temperature + 273.15
 R_C = Ru/N2_C.molar_mass
-gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
 
 # Initial properties for both fuel and LOx tanks, units the same as COPV properties,
 Z_F = N2_F.compressibility
@@ -229,53 +226,53 @@ VL = V0_L
 # initial tank masses, in kg
 mF = N2_F.density*VF
 mL = N2_L.density*VL
-
+print(N2_F.pressure)
 for y in range(1000):
     # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
-    # x[3] is temperature, x[4] is extensive energy
+    # x[3] is temperature, x[4] is total energy
     def fuelFunc(x):
         return [x[0] - VF - vdot_F*dt,
-                x[1]*x[3]*Z_F*R_F - N2_F.pressure*x[0],
-                x[1] - mF - x[2]*dt,
-                x[3]*Cv_F*x[1] - x[4],
-                x[4] - N2_F.internal_energy*mF - x[2]*N2_C.enthalpy + N2_F.pressure*vdot_F*dt]
+                (x[1]*x[3]*Z_F*R_F) - (P_tank*x[0]),
+                x[1] - mF - (x[2]*dt),
+                (x[3]*N2_F.specific_heat) - x[4] - P_tank * x[0],
+                x[4] - (N2_F.internal_energy*mF) - (x[2]*N2_C.enthalpy*dt) + (P_tank*vdot_F*dt)]
     Fuel_state = sp.fsolve(fuelFunc,[1,1,1,1,1])
 
     VF = Fuel_state[0]
     mF = Fuel_state[1]
     mdinF = Fuel_state[2]
-
     T_F = Fuel_state[3]
     eF = Fuel_state[4]/mF
     rhoF = mF/VF
-    N2_F = N2_F.with_state(Input.internal_energy(eF),Input.density(rhoF))
 
+    N2_F = N2_F.with_state(Input.density(rhoF),Input.internal_energy(eF))
     Z_F = N2_F.compressibility
     R_F = Ru/N2_F.molar_mass
 
-    # Solve the system for the LOx tank state, x variables defined the same as for fuel
+# Solve the system for the LOx tank state, x variables defined the same as for fuel
     def LOxfunc(x):
         return [x[0] - VL - vdot_L*dt,
-                x[1]*x[3]*Z_L*R_L - N2_L.pressure*x[0],
-                x[1] - mL - x[2]*dt,
-                x[3]*Cv_L*x[1] - x[4],
-                x[4] - N2_L.internal_energy*mL - x[2]*N2_C.enthalpy + N2_L.pressure*vdot_F*dt]
+                (x[1]*x[3]*Z_L*R_L) - (N2_L.pressure*x[0]),
+                x[1] - mL - (x[2]*dt),
+                (x[3]*Cv_L*x[1]) - x[4],
+                x[4] - (N2_L.internal_energy*mL) - (x[2]*N2_C.enthalpy*dt) + (N2_L.pressure*vdot_L*dt)]
     LOx_state = sp.fsolve(LOxfunc,[1,1,1,1,1])
 
-    VL = Fuel_state[0]
-    mL = Fuel_state[1]
-    mdinL = Fuel_state[2]
+    VL = LOx_state[0]
+    mL = LOx_state[1]
+    mdinL = LOx_state[2]
 
-    T_L = Fuel_state[3]
-    eL = Fuel_state[4]/mL
+    T_L = LOx_state[3]
+    eL = LOx_state[4]/mL
     rhoL = mL/VL
     N2_L = N2_L.with_state(Input.internal_energy(eL),Input.density(rhoL))
 
     Z_L = N2_L.compressibility
     R_L = Ru/N2_L.molar_mass
 
+    
     # Increment the COPV state
-    rhoC = (N2_C.density*V_C - (mdinF + mdinL)*dt)/V_C
+    rhoC = (N2_C.density*V_C - (mdinF)*dt)/V_C
     N2_C = N2_C.with_state(Input.density(rhoC),Input.entropy(entropy))
     Z_C = N2_C.compressibility
     T_C = N2_C.temperature + 273.15
@@ -285,9 +282,9 @@ for y in range(1000):
     # Area calculation for current COPV pressure
     P_C[y] = N2_C.pressure/6894.76
     Isentrope_F[y] = mdinF/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    Isentrope_L[y] = mdinL/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
+    #Isentrope_L[y] = mdinL/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
     Isoe_plus10_F[y] = (dpdt*VF**2 + V0_F*P_tank*vdot_F)/(V0_F*R_F*T_F*Z_F*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    Isoe_plus10_L[y] = (dpdt*VF**2 + V0_F*P_tank*vdot_L)/(V0_L*R_L*T_L*Z_L*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
+    #Isoe_plus10_L[y] = (dpdt*VF**2 + V0_F*P_tank*vdot_L)/(V0_L*R_L*T_L*Z_L*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
 
 
 
