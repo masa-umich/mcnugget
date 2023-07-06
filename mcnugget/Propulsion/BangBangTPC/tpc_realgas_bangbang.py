@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import interactive
 import scipy.optimize as sp
 import CoolProp.CoolProp as CP
 from pyfluids import Fluid, FluidsList, Input
 from numpy import genfromtxt
+interactive(True)
 
 # TPC Orifice Area Calculator
 # Calculates the area needed for both fuel and LOx side TPC for varying COPV Pressure
@@ -81,7 +83,7 @@ V0_Ullage = (45/1000) * 0.075
 V_C = 26.6/1000
 
 # Time Step
-dt = 0.01
+dt = 0.006
 
 # Initial COPV Properties
 N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
@@ -111,7 +113,7 @@ e_Ullage_LOx = N2_LOx.internal_energy
 
 # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
 # x[3] is temperature, x[4] is total energy
-for y in range(1500):
+for y in range(1000):
     Z_Fuel = N2_F.pressure / (N2_F.density * R_Fuel * (N2_F.temperature + 273.15))
     def fuelFunc(x):
         return [x[0] - V_Ullage_Fuel - vdot_Fuel * dt,
@@ -151,8 +153,10 @@ for y in range(1500):
     P_LOx_Tank = N2_LOx.pressure
 
     # Increment the COPV state
-    rhoC = (N2_C.density*V_C - (mdot_gas_Fuel)*dt)/V_C
-    N2_C = N2_C.with_state(Input.density(rhoC),Input.entropy(entropy))
+    #enthalpy = N2_C.enthalpy - ((mdot_gas_Fuel + mdot_gas_LOx) * dt * N2_C.enthalpy)
+    #N2_C = N2_C.with_state(Input.enthalpy(enthalpy), Input.entropy(entropy))
+    rho_C = ((N2_C.density * V_C) - ((mdot_gas_Fuel + mdot_gas_LOx) * dt)) / V_C
+    N2_C = N2_C.with_state(Input.density(rho_C), Input.entropy(N2_C.entropy))
     Z_C = N2_C.compressibility
     T_C = N2_C.temperature + 273.15
     R_C = N2_C.pressure/(Z_C * T_C * N2_C.density)
@@ -160,35 +164,8 @@ for y in range(1500):
     print(N2_C.pressure/6894.76, N2_C.temperature + 273.15, N2_C.enthalpy, mdot_gas_Fuel, mdot_gas_LOx)
 
     # Area calculation for current COPV pressure
-    #P_C[y] = N2_C.pressure/6894.76
-    #Isentrope_F[y] = mdot_gas_Fuel/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    #Isentrope_L[y] = mdot_gas_LOx/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
-    #Isoe_plus10_F[y] = (dpdt*V_Ullage_Fuel**2 + V0_Ullage*P_Fuel_Tank*vdot_Fuel)/(V0_Ullage*R_Fuel*T_Ullage_Fuel*Z_Fuel*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    #Isoe_plus10_L[y] = (dpdt*V_Ullage_LOx**2 + V0_Ullage*P_LOx_Tank*vdot_LOx)/(V0_Ullage*R_LOx*T_Ullage_LOx*Z_LOx*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
-
-
-
-""" # plot the isentropic curves
-plt.figure(3)
-line_1 = plt.plot(P_C,Isentrope_F,'-r',label='Constant Pressure')
-line_2 = plt.plot(P_C,Isoe_plus10_F,'--r',label='+10 psi')
-line_3 = plt.plot([COPV_min,COPV_max],[A,A],'-g',label='1 valve')
-line_4 = plt.plot([COPV_min,COPV_max],[2*A,2*A],'--g',label='2 valves')
-plt.legend()
-plt.title('Isentropic Fuel')
-plt.xlabel("COPV Pressure (psi)")
-plt.ylabel("Area (in^2)")
-plt.xlim([COPV_min,COPV_max])
-plt.ylim([0,0.1])
-
-plt.figure(4)
-line_1 = plt.plot(P_C,Isentrope_L,'-b',label='Constant Pressure')
-line_2 = plt.plot(P_C,Isoe_plus10_L,'--b',label='+10 psi')
-line_3 = plt.plot([COPV_min,COPV_max],[A,A],'-g',label='1 valve')
-line_4 = plt.plot([COPV_min,COPV_max],[2*A,2*A],'--g',label='2 valves')
-plt.legend()
-plt.title('Isentropic LOx')
-plt.xlabel("COPV Pressure (psi)")
-plt.ylabel("Area (in^2)")
-plt.xlim([COPV_min,COPV_max])
-plt.ylim([0,0.3]) """
+    P_C[y] = N2_C.pressure/6894.76
+    Isentrope_F[y] = mdot_gas_Fuel/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
+    Isentrope_L[y] = mdot_gas_LOx/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
+    Isoe_plus10_F[y] = (dpdt*V_Ullage_Fuel**2 + V_Ullage_Fuel*P_Fuel_Tank*vdot_Fuel)/(V_Ullage_Fuel*R_Fuel*T_Ullage_Fuel*Z_Fuel*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
+    Isoe_plus10_L[y] = (dpdt*V_Ullage_LOx**2 + V_Ullage_LOx*P_LOx_Tank*vdot_LOx)/(V_Ullage_LOx*R_LOx*T_Ullage_LOx*Z_LOx*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
