@@ -46,7 +46,7 @@ V0_Ullage = (45/1000) * 0.075
 V_C = 26.6/1000
 
 # Time Step
-dt = 0.00001
+dt = 0.001
 
 # Fluid Properties
 N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_tank),Input.temperature(16.85))
@@ -55,50 +55,60 @@ T_Ullage = N2_F.temperature + 273.15
 R = N2_F.pressure/(Z * T_Ullage * N2_F.density)
 N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
 entropy = N2_C.entropy
+pressure_array = np.linspace(4000*6894.76,4500*6894.76,50)
+mdot_array = np.zeros(50)
 
 # Initial Fuel Mass
 m_Ullage = V0_Ullage * N2_F.density
 V_Ullage = V0_Ullage
 e_Ullage = N2_F.internal_energy
 print(P_tank/6894.76)
-E_total = (e_Ullage * m_Ullage) + (N2_C.internal_energy * N2_C.density * V_C)
-# Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
-# x[3] is temperature, x[4] is total energy
-for y in range(100000):
-    E_Ullage_Prev = e_Ullage * m_Ullage
-    Z = N2_F.pressure / (N2_F.density * R * (N2_F.temperature + 273.15))
-    def fuelFunc(x):
-        return [x[0] - V_Ullage - vdot_Fuel * dt,
-                (x[1] * x[3] * Z * R) - (P_tank * x[0]),
-                x[1] - m_Ullage - (x[2] * dt),
-                (x[3] * N2_F.specific_heat * x[1]) - x[4] - (P_tank * x[0]),
-                x[4] - (e_Ullage * m_Ullage) - (x[2] * N2_C.enthalpy * dt) + (P_tank * vdot_Fuel * dt)]
-    Fuel_state = sp.fsolve(fuelFunc,[1,1,1,1,1])
-    V_Ullage = Fuel_state[0]
-    m_Ullage = Fuel_state[1]
-    mdot_gas = Fuel_state[2]
-    T_Ullage = Fuel_state[3]
-    E_Ullage = Fuel_state[4]
-    e_Ullage = E_Ullage / m_Ullage
-    rho_Ullage = m_Ullage / V_Ullage
-    N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage),Input.temperature(T_Ullage - 273.15))
-    W = P_tank * vdot_Fuel * dt
-    P_tank = N2_F.pressure
-    dE = E_Ullage - E_Ullage_Prev
-    print(P_tank / 6894.76)
 
-   # Increment the COPV state
-    rhoC = (N2_C.density*V_C - (mdot_gas)*dt)/V_C
-    E_Prev = N2_C.internal_energy * rhoC * V_C
-    E = (N2_C.internal_energy * rhoC * V_C) - dE
-    e = E / (rhoC * V_C)
-    N2_C = N2_C.with_state(Input.density(rhoC),Input.internal_energy(e))
-    Z_C = N2_C.compressibility
-    T_C = N2_C.temperature + 273.15
-    R_C = N2_C.pressure/(Z_C * T_C * N2_C.density)
-    gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
-    print(N2_C.pressure/6894.76)
-    E_total_Prev = E_total
-    E_total = E + E_Ullage
-    print(E_total_Prev - E_total)
+for y in range(50):
+    # previous COPV state values 
+    m_C_prev = N2_C.density*V_C
+    e_C_prev = N2_C.internal_energy
+    E_C_prev = e_C_prev*N2_C.density*V_C
+
+    # New COPV state
+    N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(pressure_array[49-y]),Input.entropy(entropy))
+    m_C = N2_C.density*V_C
+    e_C = N2_C.internal_energy
+    E_C = e_C*N2_C.density*V_C
+
+    # Calculate energy and mass change
+    delta_m = m_C_prev - m_C
+    delta_E = E_C_prev - E_C
+
+    # Previous ullage state values to be used for mdot calculations
+    V_Ullage_prev = V_Ullage
+    E_Ullage_prev = e_Ullage*m_Ullage
+    m_Ullage_prev = m_Ullage
+
+    # Current ullage state values to be used for setting fuel ullage state
+    m_Ullage = m_Ullage_prev + delta_m
+    E_Ullage = E_Ullage_prev + delta_E
+    e_Ullage = E_Ullage/m_Ullage
+    N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.internal_energy(e_Ullage),Input.pressure(P_tank))
+    V_Ullage = m_Ullage/N2_F.density
+
+    Z = N2_F.compressibility
+    for z in range(100):
+        # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
+        # x[3] is temperature, x[4] is total energy
+        # With enough timesteps, this should arrive at a stable mdot value
+        def state_func(x):
+            return[x[0] - V_Ullage_prev - vdot_Fuel*dt,
+                   x[1]*Z*R*x[3] - P_tank*x[0],
+                   x[1] - m_Ullage_prev - x[2]*dt,
+                   x[3]*N2_F.specific_heat*x[1] - x[4] - P_tank*x[0],
+                   x[4] - E_Ullage_prev - x[2]*N2_C.enthalpy*dt + P_tank*vdot_Fuel*dt]
+        fuel_state = sp.fsolve(state_func,[1,1,1,1,1])
+        V_Ullage_prev = fuel_state[0]
+        m_Ullage_prev = fuel_state[1]
+        mdot_array[49-y] = fuel_state[2]
+        T_Ullage_prev = fuel_state[3]
+        E_Ullage_prev = fuel_state[4]
     
+    # Area calcs and preliminary debug statements here
+    print(mdot_array[49-y],N2_C.pressure/6894.76,E_Ullage+E_C,V_Ullage,m_C+m_Ullage)
