@@ -46,7 +46,7 @@ V0_Ullage = (45/1000) * 0.075
 V_C = 26.6/1000
 
 # Time Step
-dt = 0.1
+dt = 0.00001
 
 # Fluid Properties
 N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_tank),Input.temperature(16.85))
@@ -61,9 +61,11 @@ m_Ullage = V0_Ullage * N2_F.density
 V_Ullage = V0_Ullage
 e_Ullage = N2_F.internal_energy
 print(P_tank/6894.76)
+E_total = (e_Ullage * m_Ullage) + (N2_C.internal_energy * N2_C.density * V_C)
 # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
 # x[3] is temperature, x[4] is total energy
-for y in range(50):
+for y in range(100000):
+    E_Ullage_Prev = e_Ullage * m_Ullage
     Z = N2_F.pressure / (N2_F.density * R * (N2_F.temperature + 273.15))
     def fuelFunc(x):
         return [x[0] - V_Ullage - vdot_Fuel * dt,
@@ -80,15 +82,23 @@ for y in range(50):
     e_Ullage = E_Ullage / m_Ullage
     rho_Ullage = m_Ullage / V_Ullage
     N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage),Input.temperature(T_Ullage - 273.15))
+    W = P_tank * vdot_Fuel * dt
     P_tank = N2_F.pressure
-    print(mdot_gas)
+    dE = E_Ullage - E_Ullage_Prev
+    print(P_tank / 6894.76)
 
    # Increment the COPV state
     rhoC = (N2_C.density*V_C - (mdot_gas)*dt)/V_C
-    N2_C = N2_C.with_state(Input.density(rhoC),Input.entropy(entropy))
+    E_Prev = N2_C.internal_energy * rhoC * V_C
+    E = (N2_C.internal_energy * rhoC * V_C) - dE
+    e = E / (rhoC * V_C)
+    N2_C = N2_C.with_state(Input.density(rhoC),Input.internal_energy(e))
     Z_C = N2_C.compressibility
     T_C = N2_C.temperature + 273.15
     R_C = N2_C.pressure/(Z_C * T_C * N2_C.density)
     gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
     print(N2_C.pressure/6894.76)
-   
+    E_total_Prev = E_total
+    E_total = E + E_Ullage
+    print(E_total_Prev - E_total)
+    
