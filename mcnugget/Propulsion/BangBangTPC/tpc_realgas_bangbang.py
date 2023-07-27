@@ -85,87 +85,119 @@ V_C = 26.6/1000
 # Time Step
 dt = 0.006
 
+# Number of steps in outer loop
+N = 1000
+
+# Number of steps in inner loop
+n = 100
+
 # Initial COPV Properties
 N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
 entropy = N2_C.entropy
+COPV_pressures = np.linspace(800*6894.76,4500*6894.76,N)
 
 # Initial Fuel Ullage Gas Properties
 N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_Fuel_Tank),Input.temperature(16.85))
 Z_Fuel = N2_F.compressibility
 T_Ullage_Fuel = N2_F.temperature + 273.15
 R_Fuel = N2_F.pressure/(Z_Fuel * T_Ullage_Fuel * N2_F.density)
+Fuel_gas_mdots = np.zeros(N)
 
 # Initial Fuel Ullage Mass
 m_Ullage_Fuel = V0_Ullage * N2_F.density
 V_Ullage_Fuel = V0_Ullage
 e_Ullage_Fuel = N2_F.internal_energy
+E_Ullage_Fuel = e_Ullage_Fuel*m_Ullage_Fuel
 
 # Initial LOx Ullage Gas Properties
 N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_LOx_Tank),Input.temperature(16.85))
 Z_LOx = N2_LOx.compressibility
 T_Ullage_LOx = N2_LOx.temperature + 273.15
 R_LOx = N2_LOx.pressure/(Z_LOx * T_Ullage_LOx * N2_LOx.density)
+LOx_gas_mdots = np.zeros(N)
 
 # Initial LOx Ullage Mass
 m_Ullage_LOx = V0_Ullage * N2_LOx.density
 V_Ullage_LOx = V0_Ullage
 e_Ullage_LOx = N2_LOx.internal_energy
+E_Ullage_LOx = e_Ullage_LOx*m_Ullage_LOx
 
-# Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
-# x[3] is temperature, x[4] is total energy
-for y in range(1000):
-    Z_Fuel = N2_F.pressure / (N2_F.density * R_Fuel * (N2_F.temperature + 273.15))
-    def fuelFunc(x):
-        return [x[0] - V_Ullage_Fuel - vdot_Fuel * dt,
-                (x[1] * x[3] * Z_Fuel * R_Fuel) - (P_Fuel_Tank * x[0]),
-                x[1] - m_Ullage_Fuel - (x[2] * dt),
-                (x[3] * N2_F.specific_heat * x[1]) - x[4] - (P_Fuel_Tank * x[0]),
-                x[4] - (e_Ullage_Fuel * m_Ullage_Fuel) - (x[2] * N2_C.enthalpy * dt) + (P_Fuel_Tank * vdot_Fuel * dt)]
-    Fuel_state = sp.fsolve(fuelFunc,[1,1,1,1,1])
-    V_Ullage_Fuel = Fuel_state[0]
-    m_Ullage_Fuel = Fuel_state[1]
-    mdot_gas_Fuel = Fuel_state[2]
-    T_Ullage_Fuel = Fuel_state[3]
-    e_Ullage_Fuel = Fuel_state[4]
-    e_Ullage_Fuel = e_Ullage_Fuel / m_Ullage_Fuel
-    rho_Ullage_Fuel = m_Ullage_Fuel / V_Ullage_Fuel
-    N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage_Fuel),Input.temperature(T_Ullage_Fuel - 273.15))
-    P_Fuel_Tank = N2_F.pressure
 
-    # Solve the system for the LOx tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
-    # x[3] is temperature, x[4] is total energy
-    Z_LOx = N2_LOx.pressure / (N2_LOx.density * R_LOx * (N2_LOx.temperature + 273.15))
-    def LOxFunc(y):
-        return [y[0] - V_Ullage_LOx - vdot_LOx * dt,
-                (y[1] * y[3] * Z_LOx * R_LOx) - (P_LOx_Tank * y[0]),
-                y[1] - m_Ullage_LOx - (y[2] * dt),
-                (y[3] * N2_LOx.specific_heat * y[1]) - y[4] - (P_LOx_Tank * y[0]),
-                y[4] - (e_Ullage_LOx * m_Ullage_LOx) - (y[2] * N2_C.enthalpy * dt) + (P_LOx_Tank * vdot_LOx * dt)]
-    LOx_state = sp.fsolve(LOxFunc,[1,1,1,1,1])
-    V_Ullage_LOx = LOx_state[0]
-    m_Ullage_LOx = LOx_state[1]
-    mdot_gas_LOx = LOx_state[2]
-    T_Ullage_LOx = LOx_state[3]
-    e_Ullage_LOx = LOx_state[4]
-    e_Ullage_LOx = e_Ullage_LOx / m_Ullage_LOx
-    rho_Ullage_LOx = m_Ullage_LOx / V_Ullage_LOx
-    N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.density(rho_Ullage_LOx),Input.temperature(T_Ullage_LOx - 273.15))
-    P_LOx_Tank = N2_LOx.pressure
 
-    # Increment the COPV state
-    #enthalpy = N2_C.enthalpy - ((mdot_gas_Fuel + mdot_gas_LOx) * dt * N2_C.enthalpy)
-    #N2_C = N2_C.with_state(Input.enthalpy(enthalpy), Input.entropy(entropy))
-    rho_C = ((N2_C.density * V_C) - ((mdot_gas_Fuel + mdot_gas_LOx) * dt)) / V_C
-    N2_C = N2_C.with_state(Input.density(rho_C), Input.entropy(N2_C.entropy))
-    Z_C = N2_C.compressibility
-    T_C = N2_C.temperature + 273.15
-    R_C = N2_C.pressure/(Z_C * T_C * N2_C.density)
-    gammaC = N2_C.specific_heat/(N2_C.specific_heat-R_C)
-    print(N2_C.pressure/6894.76, N2_C.temperature + 273.15, N2_C.enthalpy, mdot_gas_Fuel, mdot_gas_LOx)
+for y in range(N):
+    # Previous COPV state values
+    E_C_prev = N2_C.internal_energy*N2_C.density*V_C
+    m_C_prev = N2_C.density*V_C
 
-    # Area calculation for current COPV pressure
-    P_C[y] = N2_C.pressure/6894.76
-    Isentrope_F[y] = mdot_gas_Fuel/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    Isentrope_L[y] = mdot_gas_LOx/(Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
-    Isoe_plus10_F[y] = (dpdt*V_Ullage_Fuel**2 + V_Ullage_Fuel*P_Fuel_Tank*vdot_Fuel)/(V_Ullage_Fuel*R_Fuel*T_Ullage_Fuel*Z_Fuel*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550
-    Isoe_plus10_L[y] = (dpdt*V_Ullage_LOx**2 + V_Ullage_LOx*P_LOx_Tank*vdot_LOx)/(V_Ullage_LOx*R_LOx*T_Ullage_LOx*Z_LOx*Cd*N2_C.pressure*((gammaC/(R_C*Z_C*T_C))*(2/(gammaC+1))**((gammaC+1)/(gammaC-1)))**0.5)*1550*Cf
+    # Increment COPV state
+    N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(COPV_pressures[(N-1)-y]),Input.entropy(entropy))
+    m_C = N2_C.density*V_C
+    E_C = N2_C.internal_energy*m_C
+
+    # Change in mass and energy
+    delta_m = m_C_prev - m_C
+    delta_E = E_C_prev - E_C
+    
+    # Previous tank state values
+    V_Ull_F_prev = V_Ullage_Fuel
+    V_Ull_L_prev = V_Ullage_LOx
+    E_Ull_F_prev = e_Ullage_Fuel*m_Ullage_Fuel
+    E_Ull_L_prev = e_Ullage_LOx*m_Ullage_LOx
+    m_Ull_F_prev = m_Ullage_Fuel
+    m_Ull_L_prev = m_Ullage_LOx
+    
+    # set up needed values for inner loop, previous ullage volume gets used later
+    # so I added a new variable so the previous value remains untouched
+    Z_Fuel = N2_F.compressibility
+    Z_LOx = N2_LOx.compressibility
+    V_Ull_F_Loop = V_Ull_F_prev
+    V_Ull_L_Loop = V_Ull_L_prev
+    for z in range(n):
+        # Solve the system for the fuel tank state, x[0] is volume, x[1] is mass, x[2] is mdot,
+        # x[3] is temperature, x[4] is total energy, add 5 to each to get the LOx variables
+        def state_func(x):
+            return[x[0] - V_Ull_F_Loop - vdot_Fuel*dt,
+                   x[1]*Z_Fuel*R_Fuel*x[3] - P_Fuel_Tank*x[0],
+                   x[1] - m_Ull_F_prev - x[2]*dt,
+                   x[3]*N2_F.specific_heat*x[1] - x[4] - P_Fuel_Tank*x[0],
+                   x[4] - E_Ull_F_prev - x[2]*N2_C.enthalpy*dt + P_Fuel_Tank*vdot_Fuel*dt,
+                   x[5] - V_Ull_L_Loop - vdot_LOx*dt,
+                   x[6]*Z_LOx*R_LOx*x[8] - P_LOx_Tank*x[5],
+                   x[6] - m_Ull_L_prev - x[7]*dt,
+                   x[8]*N2_LOx.specific_heat*x[6] - x[9] - P_LOx_Tank*x[5],
+                   x[9] - E_Ull_L_prev - x[7]*N2_C.enthalpy*dt + P_LOx_Tank*vdot_LOx*dt]
+        state = sp.fsolve(state_func,[1,1,1,1,1,1,1,1,1,1])
+
+        V_Ull_F_Loop = state[0]
+        m_Ull_F_prev = state[1]
+        Fuel_gas_mdots[(N-1)-y] = state[2]
+        T_Ull_F_prev = state[3]
+        E_Ull_F_prev = state[4]
+        V_Ull_L_Loop = state[5]
+        m_Ull_L_prev = state[6]
+        LOx_gas_mdots[(N-1)-y] = Cf*state[7]
+        T_Ull_L_prev = state[8]
+        E_Ull_L_prev = state[9]
+    
+    # Proportion of mass and energy entering each ullage
+    delta_m_fuelgas = delta_m*(Fuel_gas_mdots[(N-1)-y]/(Fuel_gas_mdots[(N-1)-y]+LOx_gas_mdots[(N-1)-y]))
+    delta_m_LOxgas = delta_m*(LOx_gas_mdots[(N-1)-y]/(Fuel_gas_mdots[(N-1)-y]+LOx_gas_mdots[(N-1)-y]))
+    delta_E_fuelgas = delta_E*(Fuel_gas_mdots[(N-1)-y]/(Fuel_gas_mdots[(N-1)-y]+LOx_gas_mdots[(N-1)-y]))
+    delta_E_LOxgas = delta_E*(LOx_gas_mdots[(N-1)-y]/(Fuel_gas_mdots[(N-1)-y]+LOx_gas_mdots[(N-1)-y]))
+
+    # New tank state values
+    m_Ullage_Fuel = m_Ullage_Fuel + delta_m_fuelgas
+    m_Ullage_LOx = m_Ullage_LOx + delta_m_LOxgas
+    V_Ullage_Fuel = V_Ullage_Fuel + delta_m_fuelgas/N2_F.density
+    V_Ullage_LOx = V_Ullage_LOx + delta_m_LOxgas/N2_LOx.density
+    E_Ullage_Fuel = E_Ullage_Fuel + delta_E_fuelgas - P_Fuel_Tank*(V_Ullage_Fuel - V_Ull_F_prev)
+    E_Ullage_LOx = E_Ullage_LOx + delta_E_LOxgas - P_LOx_Tank*(V_Ullage_LOx - V_Ull_L_prev)
+
+    # New tank states
+    e_Ullage_Fuel = E_Ullage_Fuel/m_Ullage_Fuel
+    e_Ullage_LOx = E_Ullage_LOx/m_Ullage_LOx
+    N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_Fuel_Tank),Input.internal_energy(e_Ullage_Fuel))
+    N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_LOx_Tank),Input.internal_energy(e_Ullage_LOx))
+
+    # Debug and/or area calcs here
+    print(Fuel_gas_mdots[(N-1)-y],LOx_gas_mdots[(N-1)-y],E_Ullage_Fuel+E_Ullage_LOx+E_C,m_Ullage_Fuel+m_Ullage_LOx+m_C,V_Ullage_Fuel,V_Ullage_LOx)
