@@ -49,7 +49,7 @@ V_C = 26.6/1000
 dt = 0.000001
 
 # Number of time steps in outer loop
-N = 100
+N = 1000
 
 # Number of time steps in inner loop
 n = 50
@@ -59,7 +59,7 @@ N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_tank),Input.temper
 Z = N2_F.compressibility
 T_Ullage = N2_F.temperature + 273.15
 R = N2_F.pressure/(Z * T_Ullage * N2_F.density)
-N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
+N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(290-273.15))
 entropy = N2_C.entropy
 pressure_array = np.linspace(1000*6894.76,4500*6894.76,N)
 mdot_array = np.zeros(N)
@@ -93,10 +93,10 @@ for y in range(N):
 
     # Current ullage state values to be used for setting fuel ullage state
     m_Ullage = m_Ullage_prev + delta_m
-    E_Ullage = E_Ullage_prev + delta_E
+    V_Ullage = V_Ullage_prev + delta_m / N2_F.density
+    E_Ullage = E_Ullage_prev + delta_E  - P_tank * (V_Ullage - V_Ullage_prev)
     e_Ullage = E_Ullage/m_Ullage
     N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.internal_energy(e_Ullage),Input.pressure(P_tank))
-    V_Ullage = m_Ullage/N2_F.density
 
     Z = N2_F.compressibility
     for z in range(n):
@@ -117,4 +117,4 @@ for y in range(N):
         E_Ullage_prev = fuel_state[4]
     
     # Area calcs and preliminary debug statements here
-    print(mdot_array[(N-1)-y],N2_C.pressure/6894.76,E_Ullage+E_C,V_Ullage,m_C+m_Ullage, N2_C.temperature + 273.15)
+    print(mdot_array[(N-1)-y],N2_C.pressure/6894.76,E_Ullage+E_C,V_Ullage,m_C+m_Ullage, (N2_F.temperature + 273.15) - (N2_C.temperature + 273.15))
