@@ -22,7 +22,7 @@ dpdt = 100*6894.76
 
 # Estimated Orifice Cd, collapse factor, and orifice area
 Cd = 0.61
-Cf = 2.1
+Cf = 1.4
 CdA_Valve = 0.75/(27.66)
 
 # mdots out at T0, in kg/s
@@ -191,7 +191,7 @@ for y in range(N):
     V_Ullage_Fuel = V_Ullage_Fuel + delta_m_fuelgas/N2_F.density
     V_Ullage_LOx = V_Ullage_LOx + delta_m_LOxgas/N2_LOx.density
     E_Ullage_Fuel = E_Ullage_Fuel + delta_E_fuelgas - P_Fuel_Tank*(V_Ullage_Fuel - V_Ull_F_prev)
-    E_Ullage_LOx = E_Ullage_LOx + delta_E_LOxgas - P_LOx_Tank*(V_Ullage_LOx - V_Ull_L_prev)
+    E_Ullage_LOx = E_Ullage_LOx + delta_E_LOxgas - ((Cf * delta_E_LOxgas) - delta_E_LOxgas) - P_LOx_Tank*(V_Ullage_LOx - V_Ull_L_prev)
 
     # New tank states
     e_Ullage_Fuel = E_Ullage_Fuel/m_Ullage_Fuel
@@ -200,4 +200,5 @@ for y in range(N):
     N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_LOx_Tank),Input.internal_energy(e_Ullage_LOx))
 
     # Debug and/or area calcs here
-    print(Fuel_gas_mdots[(N-1)-y],LOx_gas_mdots[(N-1)-y],E_Ullage_Fuel+E_Ullage_LOx+E_C,m_Ullage_Fuel+m_Ullage_LOx+m_C,V_Ullage_Fuel,V_Ullage_LOx)
+    #print(Fuel_gas_mdots[(N-1)-y],LOx_gas_mdots[(N-1)-y],E_Ullage_Fuel+E_Ullage_LOx+E_C,m_Ullage_Fuel+m_Ullage_LOx+m_C,V_Ullage_Fuel,V_Ullage_LOx)
+    print(Fuel_gas_mdots[(N-1)-y],LOx_gas_mdots[(N-1)-y],N2_C.pressure / 6894.76, E_Ullage_Fuel+E_Ullage_LOx+E_C)
