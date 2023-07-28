@@ -22,7 +22,7 @@ dpdt = 100*6894.76
 
 # Estimated Orifice Cd, collapse factor, and orifice area
 Cd = 0.61
-Cf = 1.4
+Cf = 1.5
 CdA_Valve = 0.75/(27.66)
 
 # mdots out at T0, in kg/s
@@ -94,7 +94,7 @@ n = 100
 # Initial COPV Properties
 N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
 entropy = N2_C.entropy
-COPV_pressures = np.linspace(800*6894.76,4500*6894.76,N)
+COPV_pressures = np.linspace(1500*6894.76,4500*6894.76,N)
 
 # Initial Fuel Ullage Gas Properties
 N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_Fuel_Tank),Input.temperature(16.85))
@@ -110,7 +110,7 @@ e_Ullage_Fuel = N2_F.internal_energy
 E_Ullage_Fuel = e_Ullage_Fuel*m_Ullage_Fuel
 
 # Initial LOx Ullage Gas Properties
-N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_LOx_Tank),Input.temperature(16.85))
+N2_LOx = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_LOx_Tank),Input.temperature(160 - 273.15))
 Z_LOx = N2_LOx.compressibility
 T_Ullage_LOx = N2_LOx.temperature + 273.15
 R_LOx = N2_LOx.pressure/(Z_LOx * T_Ullage_LOx * N2_LOx.density)
