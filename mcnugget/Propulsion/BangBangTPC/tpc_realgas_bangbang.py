@@ -11,9 +11,11 @@ interactive(True)
 # Calculates the area needed for both fuel and LOx side TPC for varying COPV Pressure
 # using real-gas properties
 
-# Situations being considered
-#   1. Isothermal (slow blow-down)
-#   2. Isentropic (most like real burn)
+# Number of steps in outer loop
+N = 1000
+
+# Number of steps in inner loop
+n = 100
 
 # Target tank pressure, and max pressure rate of change
 P_Fuel_Tank = 506.889*6894.76
@@ -29,7 +31,7 @@ CdA_Valve = 0.75/(27.66)
 mdot_Fuel = 2.063
 mdot_LOx = 4.125
 
-# Ideal Gamma
+# Array for gamma
 gamma = 1.4
 
 # COPV max and min pressures
@@ -39,10 +41,10 @@ COPV_min = P_Fuel_Tank/(2/(gamma+1))**(gamma/(gamma-1))
 # ISENTROPIC CALCS
 
 # Area arrays for constant pressure and area needed to stay below 10 psi/valve actuation time rate of change, in in^2
-Isentrope_F = np.zeros(1000)
-Isentrope_L = np.zeros(1000)
-Isoe_plus10_F = np.zeros(1000)
-Isoe_plus10_L = np.zeros(1000)
+Isentrope_F = np.zeros(N)
+Isentrope_L = np.zeros(N)
+Isoe_plus10_F = np.zeros(N)
+Isoe_plus10_L = np.zeros(N)
 
 # Pressure array to use for graphing (does not affect math), in psi
 P_C = np.zeros(1000)
@@ -84,12 +86,6 @@ V_C = 26.6/1000
 
 # Time Step
 dt = 0.006
-
-# Number of steps in outer loop
-N = 1000
-
-# Number of steps in inner loop
-n = 100
 
 # Initial COPV Properties
 N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4500*6894.76),Input.temperature(16.85))
@@ -133,6 +129,9 @@ for y in range(N):
     N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(COPV_pressures[(N-1)-y]),Input.entropy(entropy))
     m_C = N2_C.density*V_C
     E_C = N2_C.internal_energy*m_C
+
+    P_C[(N-1)-y] = N2_C.pressure/6894.76
+    gamma = N2_C.enthalpy/N2_C.internal_energy
 
     # Change in mass and energy
     delta_m = m_C_prev - m_C
@@ -201,4 +200,25 @@ for y in range(N):
 
     # Debug and/or area calcs here
     #print(Fuel_gas_mdots[(N-1)-y],LOx_gas_mdots[(N-1)-y],E_Ullage_Fuel+E_Ullage_LOx+E_C,m_Ullage_Fuel+m_Ullage_LOx+m_C,V_Ullage_Fuel,V_Ullage_LOx)
-    print(Fuel_gas_mdots[(N-1)-y],LOx_gas_mdots[(N-1)-y],N2_C.pressure / 6894.76, E_Ullage_Fuel+E_Ullage_LOx+E_C)
+    print(Fuel_gas_mdots[(N-1)-y],LOx_gas_mdots[(N-1)-y],N2_C.pressure / 6894.76, E_Ullage_Fuel+E_Ullage_LOx+E_C,gamma)
+
+    C_mdot = (Cd*(gamma*N2_C.density*N2_C.pressure*(2/(gamma+1))**((gamma+1)/(gamma-1)))**0.5)
+    Isentrope_F[(N-1)-y] = Fuel_gas_mdots[(N-1)-y] / C_mdot * 1550
+    Isentrope_L[(N-1)-y] = LOx_gas_mdots[(N-1)-y] / C_mdot * 1550
+
+# graph fuel orifice area
+plt.figure(1)
+ideal_fuel = plt.plot(P_C,Isentrope_F,'-r',label='Ideal Area')
+one_valve = plt.plot([P_C[0],P_C[N-1]],[CdA_Valve,CdA_Valve],'-g',label='1 Valve')
+two_valve = plt.plot([P_C[0],P_C[N-1]],[2*CdA_Valve,2*CdA_Valve],'-g',label='2 Valves')
+plt.legend()
+
+# graph LOx orifice area
+plt.figure(2)
+ideal_LOx = plt.plot(P_C,Isentrope_L,'-b',label='Ideal Area')
+one_valve = plt.plot([P_C[0],P_C[N-1]],[CdA_Valve,CdA_Valve],'-g',label='1 Valve')
+two_valve = plt.plot([P_C[0],P_C[N-1]],[2*CdA_Valve,2*CdA_Valve],'-g',label='2 Valves')
+three_valve = plt.plot([P_C[0],P_C[N-1]],[3*CdA_Valve,3*CdA_Valve],'-g',label='3 Valves')
+plt.legend()
+
+plt.show()
