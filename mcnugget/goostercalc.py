@@ -16,7 +16,7 @@ def gasBooster(supplyP_1, supplyV, copvV, temp):
     Vs = supplyV 
     Vo = copvV
     Tcopv = temp + 273.15  #assuming conversion from c to k in copv
-    Ts = temp + 273.15
+    ts = temp + 273.15
     R = 0.0820574 #ideal gas constant 
     molar_m = 28.0134
     cycleV = 0.02031996
@@ -27,7 +27,7 @@ def gasBooster(supplyP_1, supplyV, copvV, temp):
 
 # find initial mass of n2 in copv and 2k bottle after equalized 
 # change to real gas (cool prop)
-    ms = (inletPressure * Vs * molar_m) / (R * Ts)
+    ms = (inletPressure * Vs * molar_m) / (R * ts)
     copvMass = (outletPressure * Vo * molar_m)/(R * Tcopv)
 
 # table and graph 
@@ -47,13 +47,13 @@ def gasBooster(supplyP_1, supplyV, copvV, temp):
         cycleNumber = i
         
         # Mass is removed from supply bottle
-        m = (inletPressure * cycleV * molar_m) / (R * Ts)
+        m = (inletPressure * cycleV * molar_m) / (R * ts)
         
         # Reassign Ts after loss of mass
-        Ts = Ts - (m * cp) / (molar_m * pa * (v2 - cycleV)) + 273.15
+        ts = ts - (m * cp) / (molar_m * pa * (v2 - cycleV)) + 273.15
         
         # Compression
-        Tcompressed = ((-m * cp) / (molar_m * pa * (v2 - cycleV))) + 273.15 + Ts
+        Tcompressed = ((-m * cp) / (molar_m * pa * (v2 - cycleV))) + 273.15 + ts
         
         # Copv calculations
         Tcopv = ((copvMass * Tcopv) + (m * Tcompressed)) / (copvMass + m)
@@ -61,7 +61,7 @@ def gasBooster(supplyP_1, supplyV, copvV, temp):
         
         # Reassign values
         copvMass = copvMass + m  # Mass in copv
-        Ms = Ms - m  # Supply mass
+        ms = ms - m  # Supply mass
         
         # Converting back to psi/C
         inletP = inletPressure * 14.6959
@@ -112,4 +112,8 @@ print(result)
 #machine learning (eventually lmao) get data, retune, do it again
 #computation to improve automation 
 
+#max continuous operating temperature, various specification parameters 
+# for your COPV (volume, surface area, thermodynamic properties, etc),  
+#the press rate of your pump, and the specifications of your gas bottle
 
+#def copvPress()
