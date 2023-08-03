@@ -40,4 +40,4 @@ def copvAP(supplyP_1, cycleNum, vSupply, maxTemp):
 #first phase: time will be different because pressing faster 
 # every time press COPV start out at 0 
 #in some cases you are never going to go to phase 2 because you don't have to turn the pump on 
-#current operating pressure might never reach 2k 
+#current operating pressure might never reach 2k
