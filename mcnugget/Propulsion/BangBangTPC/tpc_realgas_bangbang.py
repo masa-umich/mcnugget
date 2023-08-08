@@ -81,8 +81,8 @@ vdot_Fuel = mdot_Fuel/RP1.rho
 vdot_LOx = mdot_LOx/1140
 
 # initial volume of gas, in m^3
-V0_Ullage_F = (55.44/1000)*0.075
-V0_Ullage_L = (72.37/1000)*0.075
+V0_Ullage_F = (55.44/1000)*0.1
+V0_Ullage_L = (72.37/1000)*0.02
 V_C = 26.6/1000
 
 # Time Step
@@ -91,7 +91,7 @@ dt = 0.006
 # Initial COPV Properties
 N2_C = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(4000*6894.76),Input.temperature(16.85))
 entropy = N2_C.entropy
-COPV_pressures = np.linspace(1500*6894.76,4000*6894.76,N)
+COPV_pressures = np.linspace(1200*6894.76,4000*6894.76,N)
 
 # Initial Fuel Ullage Gas Properties
 N2_F = Fluid(FluidsList.Nitrogen).with_state(Input.pressure(P_Fuel_Tank),Input.temperature(16.85))
@@ -235,7 +235,7 @@ ideal_fuel = plt.plot(P_C,Isentrope_F,'-r',label='MINIMUM AREA')
 plus_10_F = plt.plot(P_C,Isoe_plus10_F,'--r',label='MAXIMUM AREA')
 quarter_valve = plt.plot([P_C[0],P_C[N-1]],[0.25*CdA_Valve,0.25*CdA_Valve],'-g',label='1/4 Tescom')
 half_valve = plt.plot([P_C[0],P_C[N-1]],[0.5*CdA_Valve,0.5*CdA_Valve],'-g',label='1/2 Tescom')
-threequart_valve = one_valve = plt.plot([P_C[0],P_C[N-1]],[0.75*CdA_Valve,0.75*CdA_Valve],'-g',label='3/4 Tescom')
+one_valve = plt.plot([P_C[0],P_C[N-1]],[CdA_Valve,CdA_Valve],'-g',label='1 Full Tescom')
 plt.ylim([0,0.03])
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Orifice Area (in^2)")
@@ -249,6 +249,7 @@ plus_10_L = plt.plot(P_C,Isoe_plus10_L,'--b',label='MAXIMUM AREA')
 one_valve = plt.plot([P_C[0],P_C[N-1]],[CdA_Valve,CdA_Valve],'-g',label='1 Tescom')
 two_valve = plt.plot([P_C[0],P_C[N-1]],[2*CdA_Valve,2*CdA_Valve],'-g',label='2 Tescoms')
 three_valve = plt.plot([P_C[0],P_C[N-1]],[3*CdA_Valve,3*CdA_Valve],'-g',label='3 Tescoms')
+three_point_five_valve = plt.plot([P_C[0],P_C[N-1]],[3.5*CdA_Valve,3.5*CdA_Valve],'-g',label='3 1/2 Tescoms')
 plt.ylim([0,0.1])
 plt.xlabel("COPV Pressure (psi)")
 plt.ylabel("Orifice Area (in^2)")
