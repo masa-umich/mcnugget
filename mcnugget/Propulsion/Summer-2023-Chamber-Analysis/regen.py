@@ -28,9 +28,9 @@ N = 100 # Resolution gain over 100 stations is minimal
 
 # Regen Channel Inputs: 
 # Geometric Properties of the Regen Channel
-Liner_OD = 5.5301 + 0.000 # in
-Liner_ID = 5.32 + 0.005 # in 
-Jacket_ID = 5.5788 - 0.000 # in
+Liner_OD = 5.5000 + 0.0323 - 0.001 # in
+Liner_ID = 5.32 # in 
+Jacket_ID = 5.5760 + 0.0018 + 0.001 # in
 Channel_Outer_Radius = (Jacket_ID / 39.3701)/2 # m
 Channel_Inner_Radius =  (Liner_OD / 39.3701)/2 # m
 Liner_Inner_Radius = (Liner_ID / 39.3701)/2 # m
