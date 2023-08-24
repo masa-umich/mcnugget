@@ -28,14 +28,14 @@ N = 100 # Resolution gain over 100 stations is minimal
 
 # Regen Channel Inputs: 
 # Geometric Properties of the Regen Channel
-Liner_OD = 5.5000 + 0.0323 - 0.001 # in
+Liner_OD = 5.5317 # in
 Liner_ID = 5.32 # in 
-Jacket_ID = 5.5760 + 0.0018 + 0.001 # in
+Jacket_ID = 5.5798 # in
 Channel_Outer_Radius = (Jacket_ID / 39.3701)/2 # m
 Channel_Inner_Radius =  (Liner_OD / 39.3701)/2 # m
 Liner_Inner_Radius = (Liner_ID / 39.3701)/2 # m
 
-print("Gap Height", (Channel_Outer_Radius-Channel_Inner_Radius)*39.37)
+#print("Gap Height", (Channel_Outer_Radius-Channel_Inner_Radius)*39.37)
 
 # Engine Inputs:
 # - mdot: Fuel Mass Flow Rate of the Engine
@@ -88,7 +88,7 @@ Liner = Liner(Channel_Inner_Radius, Liner_Inner_Radius)
 rc = Regen_Channel(Channel_Outer_Radius, Channel_Inner_Radius)
 
 # - L : Length of the Regen Channel
-rc.L = 11.32 / 39.37 # m
+rc.L = 10.9 / 39.37 # m
 
 # - e : Abolsute Roughness of the Regen Channel
 rc.e = 0.00005 # m
