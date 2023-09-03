@@ -23,15 +23,14 @@ def copvAP(supplyP_1, cycleNum, vSupply, maxTemp):
     copvTemp = cp.PropsSI('T', 'P', copvPressure, 'Q', 1, 'Nitrogen')
     
     while copvPressure > meop or copvTemp > maxTemp:
-        # Phase 1: 0->2k phase (fast pressure climb)
-        #if copvPresure > 2k:
-        #add more 
-        #else copv pressure being over 2k 
-#time between cycles? 
+        #Phase 1: 0->6k phase (fast pressure climb)
+        #ask Patrick McGowan for fill time/pressure/temp afterwards
+        #time between cycles? 
         
 
-#2 phases: 0->2k phase (just what is in the 2k bottle) faster pressure climb
-#2nd phase is pressing, using the pump 
+    #2 phases: 0->2k phase (just what is in the 2k bottle) faster pressure climb
+    #2nd phase is pressing, using the pump 
+    #using Cristina's calculator
 
 #max operating pressure, max operating temp as parameter 
 #write something for the first and second phase 
