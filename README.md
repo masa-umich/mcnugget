@@ -28,7 +28,7 @@ A typical workflow with McNugget involves the following steps:
 
 ## Install the Visualization UI
 
-To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this, simply follow the instructions[here](https://docs.synnaxlabs.com/visualize/get-started?).
+To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this, simply follow the instructions [here](https://docs.synnaxlabs.com/visualize/get-started?).
 
 The next step is to connect to the MASA cluster. Instructions for this can be found [here
 ](https://docs.synnaxlabs.com/visualize/connect-a-cluster).
@@ -192,7 +192,6 @@ poetry install
 ```
 
 in the root directory of the repository.
-
 
 ## Frequently Asked Questions
 
