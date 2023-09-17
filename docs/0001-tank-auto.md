@@ -1,3 +1,21 @@
+# 0 - Summary
+
+A short summary. What is this and why are we writing it?
+
+# 1 - Vocabularity
+
+What terms may others be unfamiliar with? And what do they mean?
+
+# 2 - Motivation
+
+Detail - Why are writing this. 
+
+# 3 - Requirements
+
+# 4 - Design
+
+- nominal state machine and failure cases
+
 # Tank Autosequencing Notes 
 
 _**Changing from COPV (composite overwrapped pressure vessel) to tanks instead._  
