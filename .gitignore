@@ -1,5 +1,4 @@
 .idea
 .vscode
 **/__pycache__
-**/*.png
 **/.DS_Store

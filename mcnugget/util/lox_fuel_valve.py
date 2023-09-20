@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import st
 
 class st_ops:
     def t_interval(data, sig_level):  
@@ -14,9 +15,9 @@ class st_ops:
         s = st.sem(data) # standard deviation of the mean 
         tDelta = tCV * (s/(np.sqrt(len(data))))
         return tDelta
+
 #calling upon t interval function 
 #create a function called valve_delay that calls t_interval twice, one for lox and one for fuel
-
 def valve_delay(lox_data, fuel_data, sig_level):
     lox_delay = st_ops.t_interval(lox_data, sig_level)
     fuel_delay = st_ops.t_interval(fuel_data, sig_level)
