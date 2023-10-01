@@ -4,6 +4,10 @@ from tkinter import filedialog
 from tkinter import simpledialog
 import gspread
 import argparse
+import os
+
+# /Users/evanhekman/coding_projects/masa-sheet-reading-v1-authenticationkey.json
+# os.environ['SRVC_ACT_CRED']
 
 
 def handle_excel(file_path, columns):
@@ -49,8 +53,9 @@ def prompt_columns(existing_columns):
 
 # inputs the name of the google sheet and returns a workbook containing the extracted data
 def open_google_name(name, columns):
+    file_path = authentication_path()
     gspread_client = gspread.service_account(
-        filename="/Users/evanhekman/coding_projects/masa-sheet-reading-v1-authenticationkey.json")
+        filename=file_path)
     spreadsheets = {sheet.title: sheet for sheet in gspread_client.openall()}
     google_sheet = spreadsheets.get(name, None)
     if google_sheet is None:
@@ -74,8 +79,9 @@ def open_google_name(name, columns):
 
 # inputs the link to the google sheet and returns a workbook containing the extracted data
 def open_google_link(link, columns):
+    file_path = authentication_path()
     gspread_client = gspread.service_account(
-        filename="/Users/evanhekman/coding_projects/masa-sheet-reading-v1-authenticationkey.json")
+        filename=file_path)
     sheet = gspread_client.open_by_url(link).sheet1
     # extract column data
     headers = [header for header in sheet.row_values(1)]
@@ -154,6 +160,14 @@ def main():
         button_google_name.pack()
         # input_type_label = tk.Label(root, text="Select how you would like to input the file")
         root.mainloop()
+
+
+def authentication_path():
+    try:
+        with open("credentials.json", "r") as creds:
+            return creds.name
+    except FileNotFoundError:
+        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
 
 
 if __name__ == "__main__":
