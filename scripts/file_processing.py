@@ -4,10 +4,6 @@ from tkinter import filedialog
 from tkinter import simpledialog
 import gspread
 import argparse
-import os
-
-# /Users/evanhekman/coding_projects/masa-sheet-reading-v1-authenticationkey.json
-# os.environ['SRVC_ACT_CRED']
 
 
 def handle_excel(file_path, columns):
@@ -158,7 +154,6 @@ def main():
         button_excel.pack()
         button_google_link.pack()
         button_google_name.pack()
-        # input_type_label = tk.Label(root, text="Select how you would like to input the file")
         root.mainloop()
 
 
