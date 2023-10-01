@@ -1,10 +1,8 @@
 import pandas as pd
-import numpy as np
 import tkinter as tk
-import openpyxl
 from tkinter import filedialog
+from tkinter import simpledialog
 import gspread
-import re
 import argparse
 
 
@@ -32,22 +30,21 @@ def handle_google_name(name, columns):
 
 
 def prompt_columns(existing_columns):
-    return ["Albatross", "Capybara"]
-    # if existing_columns is None:
-    #     root = tk.Tk()
-    #     dialog = tk.Toplevel()
-    #     columns = []
-    #     while True:
-    #         column_name = tk.simpledialog.askstring("Input", "Input columns to extract - select cancel to finish")
-    #         if column_name is None:
-    #             break
-    #         if column_name != "" and not (column_name in columns):
-    #             columns.append(column_name)
-    #     dialog.destroy()
-    #     root.destroy()
-    #     return columns
-    # else:
-    #     return existing_columns
+    if existing_columns is None:
+        root = tk.Tk()
+        dialog = tk.Toplevel()
+        columns = []
+        while True:
+            column_name = tk.simpledialog.askstring("Input", "Input columns to extract - select cancel to finish")
+            if column_name is None:
+                break
+            if column_name != "" and not (column_name in columns):
+                columns.append(column_name)
+        dialog.destroy()
+        root.destroy()
+        return columns
+    else:
+        return existing_columns
 
 
 # inputs the name of the google sheet and returns a workbook containing the extracted data
@@ -57,12 +54,16 @@ def open_google_name(name, columns):
     spreadsheets = {sheet.title: sheet for sheet in gspread_client.openall()}
     google_sheet = spreadsheets.get(name, None)
     if google_sheet is None:
-        raise Exception(f"Google Sheet '{title}' not found")
+        raise Exception(f"Google Sheet '{name}' not found")
         # retry opening the google sheet
     else:
         # extract column data
         sheet = google_sheet.sheet1
         headers = [header for header in sheet.row_values(1)]
+        missing_columns = [col for col in columns if headers.count(col) == 0]
+        columns = [col for col in columns if headers.count(col) != 0]
+        for col in missing_columns:
+            print(f"column {col} not found")
         column_values = {col: sheet.col_values(headers.index(col) + 1) for col in columns}
         new_workbook = pd.DataFrame(column_values)
         if new_workbook is not None:
@@ -78,6 +79,10 @@ def open_google_link(link, columns):
     sheet = gspread_client.open_by_url(link).sheet1
     # extract column data
     headers = [header for header in sheet.row_values(1)]
+    missing_columns = [col for col in columns if headers.count(col) == 0]
+    columns = [col for col in columns if headers.count(col) != 0]
+    for col in missing_columns:
+        print(f"column {col} not found")
     column_values = {col: sheet.col_values(headers.index(col) + 1) for col in columns}
     new_workbook = pd.DataFrame(column_values)
     if new_workbook is not None:
