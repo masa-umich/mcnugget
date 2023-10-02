@@ -5,6 +5,64 @@ from tkinter import simpledialog
 import gspread
 import argparse
 
+# OVERVIEW
+# define a function that returns a read(sheet/filepath, column) object
+#   that can read column data from a google sheet or an excel file
+# make a protocol class
+'''
+method signatures
+read
+get
+row, col (returns value)
+
+Name - permanent name for the channel, never changes. 
+    .channels.create(name) - pass in name
+    if name already exists, leave it (internally handled)
+    retrieve_if_name_exists = true
+Alias - 
+    temporary name (depending on port/channel)
+Device - *subject to change
+    enum of what computer is connected to the channel
+Port - *subject to change
+    port of the connected cpu
+Data Type - 
+    smallest possible data type (usually a float32 except for gps float64, bool = uint8, )
+client.set(key, value)
+    key = name_device
+Sensor Type - 
+    TC? Pressure Transducer? Etc. Relevant for DAC side, understanding calibration values
+    Valve is not a sensor - instead, create 3 channels for valve. Call create() 3-5 times. Use name as a prefix
+    en (uint8) open/closed
+    cmd (push/write channel to open/close)
+    v (voltage) float32
+    _i (current)
+    plugged (uint32) plugged in or not
+    cmd_time (time we sent the command) indexed channel
+        field on create method - is_index field on create method should be set to true
+        use the key from the channel to link the indexed channel
+Units - 
+    units is the data type (pass as value to create())
+PT Slope - 
+    only applies to PT sensors
+PT Offset - 
+    only applies to PT sensors
+TC Type - 
+    thermocouples, use lookup table (embedded in DAC firmware) 
+TC Offset - 
+    thermocouples, use lookup table (embedded in DAC firmware) 
+
+GSE_time(is_index = true)
+when we create a GSE channel that is time-indexed, link the GSE_time TIME-INDEXED channel to index the time
+time-indexed channels are really just a pair of channels to store time data
+
+sunday:
+we will get
+    set()
+    create()
+we should provide
+    get(row->int, column->int) ->string or ->num or ->whatever
+'''
+
 
 def handle_excel(file_path, columns):
     if file_path is None:
