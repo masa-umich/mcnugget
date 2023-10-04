@@ -64,6 +64,18 @@ we should provide
 '''
 
 
+class Table:
+    def __init__(self, dataframe: pd.DataFrame):
+        self.df_ = dataframe
+
+    @property
+    def df(self) -> pd.DataFrame:
+        return self.df_
+
+    def get(self, row, col):
+        return self.df.columns[col][row]
+
+
 def handle_excel(file_path, columns):
     if file_path is None:
         file_path = filedialog.askopenfilename(filetypes=[("excel file", "*.xlsx")])
