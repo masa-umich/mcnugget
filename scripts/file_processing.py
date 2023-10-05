@@ -4,6 +4,7 @@ from tkinter import filedialog
 from tkinter import simpledialog
 import gspread
 import argparse
+import re
 
 # OVERVIEW
 # define a function that returns a read(sheet/filepath, column) object
@@ -64,42 +65,58 @@ we should provide
 '''
 
 
-class Table:
-    def __init__(self, dataframe: pd.DataFrame):
-        self.df_ = dataframe
-
-    @property
-    def df(self) -> pd.DataFrame:
-        return self.df_
+class DataFrameCase:
+    # worth noting that this class is essentially a pandas DataFrame except for the constructor
+    # the ctor checks if teh input type was specified, otherwise checks each possibility using regex
+    def __init__(self, unknown_input=None, excel_filepath=None, google_sheet_url=None, google_sheet_name=None):
+        self.df = None
+        if excel_filepath:
+            self.df = handle_excel(excel_filepath)
+        elif google_sheet_url:
+            self.df = handle_google_link(google_sheet_url)
+        elif google_sheet_name:
+            self.df = handle_google_name(google_sheet_name)
+        elif re.search(r'xlsx', unknown_input):
+            self.df = handle_excel(unknown_input)
+        elif re.search(r'docs\.google\.com', unknown_input):
+            self.df = handle_google_link(unknown_input)
+        else:
+            self.df = handle_google_name(unknown_input)
+        # print(self.df)
 
     def get(self, row, col):
-        return self.df.columns[col][row]
+        # d = DataFrameCase(pd.DataFrame({"A": [1, 2, 4, 9, 16], "B": [0, 2, 4, 6, 8]}))
+        # print(d.df.get(row, col))
+        # print(d.df.values)
+        # print(d.df.values[row])
+        return self.df.get(row)[col]
 
 
-def handle_excel(file_path, columns):
+def handle_excel(file_path, columns=None):
     if file_path is None:
         file_path = filedialog.askopenfilename(filetypes=[("excel file", "*.xlsx")])
         if not file_path:
             raise Exception("Invalid file path")
     columns = prompt_columns(columns)
-    print(open_excel(file_path, columns))
+    return open_excel(file_path, columns)
 
 
-def handle_google_link(url, columns):
+def handle_google_link(url, columns=None):
     if url is None:
         url = tk.simpledialog.askstring("Input", "Link to google sheet (must be accessible)")
     columns = prompt_columns(columns)
-    print(open_google_link(url, columns))
+    return open_google_link(url, columns)
 
 
-def handle_google_name(name, columns):
+def handle_google_name(name, columns=None):
     if name is None:
         name = tk.simpledialog.askstring("Input", "Title of google sheet (must be accessible)")
     columns = prompt_columns(columns)
-    print(open_google_name(name, columns))
+    return open_google_name(name, columns)
 
 
 def prompt_columns(existing_columns):
+    return ["Albatross", "Beaver", "Capybara"]
     if existing_columns is None:
         root = tk.Tk()
         dialog = tk.Toplevel()
@@ -135,7 +152,7 @@ def open_google_name(name, columns):
         columns = [col for col in columns if headers.count(col) != 0]
         for col in missing_columns:
             print(f"column {col} not found")
-        column_values = {col: sheet.col_values(headers.index(col) + 1) for col in columns}
+        column_values = {headers.index(col): sheet.col_values(headers.index(col) + 1) for col in columns}
         new_workbook = pd.DataFrame(column_values)
         if new_workbook is not None:
             return new_workbook
@@ -155,7 +172,7 @@ def open_google_link(link, columns):
     columns = [col for col in columns if headers.count(col) != 0]
     for col in missing_columns:
         print(f"column {col} not found")
-    column_values = {col: sheet.col_values(headers.index(col) + 1) for col in columns}
+    column_values = {headers.index(col): sheet.col_values(headers.index(col) + 1) for col in columns}
     new_workbook = pd.DataFrame(column_values)
     if new_workbook is not None:
         return new_workbook
@@ -167,7 +184,8 @@ def open_excel(file_path, columns):
     workbook = pd.read_excel(file_path)
     if columns is None:
         columns = prompt_columns(columns)
-    new_workbook = pd.DataFrame({col: workbook.get(col) for col in columns})
+    # column_indices = {index: col for index, col in enumerate(columns)}
+    new_workbook = pd.DataFrame({index: workbook.get(col) for index, col in enumerate(columns)})
     if new_workbook is not None:
         return new_workbook
     else:
