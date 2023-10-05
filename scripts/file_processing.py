@@ -116,7 +116,7 @@ def handle_google_name(name, columns=None):
 
 
 def prompt_columns(existing_columns):
-    return ["Albatross", "Beaver", "Capybara"]
+    # return ["Albatross", "Beaver", "Capybara"]
     if existing_columns is None:
         root = tk.Tk()
         dialog = tk.Toplevel()
@@ -193,6 +193,19 @@ def open_excel(file_path, columns):
 
 
 def main():
+    input = tk.simpledialog.askstring("Input", "Input a file path, url, or name of a google sheet to extract")
+    print(DataFrameCase(input))
+
+
+def authentication_path():
+    try:
+        with open("credentials.json", "r") as creds:
+            return creds.name
+    except FileNotFoundError:
+        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
+
+
+def terminal_script():
     # Create an ArgumentParser object
     parser = argparse.ArgumentParser(description="file extraction script")
 
@@ -243,14 +256,6 @@ def main():
         button_google_link.pack()
         button_google_name.pack()
         root.mainloop()
-
-
-def authentication_path():
-    try:
-        with open("credentials.json", "r") as creds:
-            return creds.name
-    except FileNotFoundError:
-        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
 
 
 if __name__ == "__main__":
