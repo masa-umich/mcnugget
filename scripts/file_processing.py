@@ -6,11 +6,14 @@ import gspread
 import argparse
 import re
 
+'''
+-----NOTES----
+
 # OVERVIEW
 # define a function that returns a read(sheet/filepath, column) object
 #   that can read column data from a google sheet or an excel file
 # make a protocol class
-'''
+
 method signatures
 read
 get
@@ -84,11 +87,11 @@ class DataFrameCase:
             self.df = handle_google_name(unknown_input)
         # print(self.df)
 
+    def __str__(self):
+        return "DataFrameCase object:\n" + str(self.df)
+
+
     def get(self, row, col):
-        # d = DataFrameCase(pd.DataFrame({"A": [1, 2, 4, 9, 16], "B": [0, 2, 4, 6, 8]}))
-        # print(d.df.get(row, col))
-        # print(d.df.values)
-        # print(d.df.values[row])
         return self.df.get(row)[col]
 
 
@@ -180,6 +183,14 @@ def open_google_link(link, columns):
         raise Exception("Unable to process Google link/file")
 
 
+def authentication_path():
+    try:
+        with open("credentials.json", "r") as creds:
+            return creds.name
+    except FileNotFoundError:
+        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
+
+
 def open_excel(file_path, columns):
     workbook = pd.read_excel(file_path)
     if columns is None:
@@ -193,16 +204,10 @@ def open_excel(file_path, columns):
 
 
 def main():
-    input = tk.simpledialog.askstring("Input", "Input a file path, url, or name of a google sheet to extract")
-    print(DataFrameCase(input))
-
-
-def authentication_path():
-    try:
-        with open("credentials.json", "r") as creds:
-            return creds.name
-    except FileNotFoundError:
-        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
+    unknown_input = tk.simpledialog.askstring("Input", "Input a file path, url, or name of a google sheet to extract")
+    dfc = DataFrameCase(unknown_input)
+    print(dfc)
+    print()
 
 
 def terminal_script():
