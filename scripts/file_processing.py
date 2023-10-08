@@ -5,182 +5,122 @@ from tkinter import simpledialog
 import gspread
 import argparse
 import re
+import numpy
+from gspread import Spreadsheet
+from enum import Enum
 
-'''
------NOTES----
 
-# OVERVIEW
-# define a function that returns a read(sheet/filepath, column) object
-#   that can read column data from a google sheet or an excel file
-# make a protocol class
-
-method signatures
-read
-get
-row, col (returns value)
-
-Name - permanent name for the channel, never changes. 
-    .channels.create(name) - pass in name
-    if name already exists, leave it (internally handled)
-    retrieve_if_name_exists = true
-Alias - 
-    temporary name (depending on port/channel)
-Device - *subject to change
-    enum of what computer is connected to the channel
-Port - *subject to change
-    port of the connected cpu
-Data Type - 
-    smallest possible data type (usually a float32 except for gps float64, bool = uint8, )
-client.set(key, value)
-    key = name_device
-Sensor Type - 
-    TC? Pressure Transducer? Etc. Relevant for DAC side, understanding calibration values
-    Valve is not a sensor - instead, create 3 channels for valve. Call create() 3-5 times. Use name as a prefix
-    en (uint8) open/closed
-    cmd (push/write channel to open/close)
-    v (voltage) float32
-    _i (current)
-    plugged (uint32) plugged in or not
-    cmd_time (time we sent the command) indexed channel
-        field on create method - is_index field on create method should be set to true
-        use the key from the channel to link the indexed channel
-Units - 
-    units is the data type (pass as value to create())
-PT Slope - 
-    only applies to PT sensors
-PT Offset - 
-    only applies to PT sensors
-TC Type - 
-    thermocouples, use lookup table (embedded in DAC firmware) 
-TC Offset - 
-    thermocouples, use lookup table (embedded in DAC firmware) 
-
-GSE_time(is_index = true)
-when we create a GSE channel that is time-indexed, link the GSE_time TIME-INDEXED channel to index the time
-time-indexed channels are really just a pair of channels to store time data
-
-sunday:
-we will get
-    set()
-    create()
-we should provide
-    get(row->int, column->int) ->string or ->num or ->whatever
-'''
+def main():
+    excel = DataFrameCase("/Users/evanhekman/testing_spreadsheet.xlsx")
+    google_url = \
+        DataFrameCase("https://docs.google.com/spreadsheets/d/12cWNMZwD24SpkkLSkM972Z8S_Jxt4Hxe3_n6hM9yvHQ/edit#gid=0")
+    google_name = DataFrameCase("testing_spreadsheet")
+    # print(excel.get(1, 1))
+    # print(google_url.get(1, 1))
+    # print(google_name.get(1, 1))
+    # print(excel.get(0, 0))
+    # print(google_url.get(0, 0))
+    # print(google_name.get(0, 0))
+    # excel.set(2, 2, 64)
+    # excel.save()
 
 
 class DataFrameCase:
-    # worth noting that this class is essentially a pandas DataFrame except for the constructor
-    # the ctor checks if teh input type was specified, otherwise checks each possibility using regex
     def __init__(self, unknown_input=None, excel_filepath=None, google_sheet_url=None, google_sheet_name=None):
-        self.df = None
         if excel_filepath:
-            self.df = handle_excel(excel_filepath)
-        elif google_sheet_url:
-            self.df = handle_google_link(google_sheet_url)
-        elif google_sheet_name:
-            self.df = handle_google_name(google_sheet_name)
-        elif re.search(r'xlsx', unknown_input):
-            self.df = handle_excel(unknown_input)
-        elif re.search(r'docs\.google\.com', unknown_input):
-            self.df = handle_google_link(unknown_input)
+            self.data = ExcelDataFrameCase(unknown_input)
+        elif google_sheet_url or google_sheet_name:
+            self.data = GoogleDataFrameCase(unknown_input)
+        elif re.search(r'\.xlsx', unknown_input):
+            self.data = ExcelDataFrameCase(unknown_input)
         else:
-            self.df = handle_google_name(unknown_input)
-        # print(self.df)
-
-    def __str__(self):
-        return "DataFrameCase object:\n" + str(self.df)
-
+            self.data = GoogleDataFrameCase(unknown_input)
 
     def get(self, row, col):
-        return self.df.get(row)[col]
+        return self.data.get(row, col)
+
+    def set(self, row, col, val):
+        return self.data.set(row, col, val)
+
+    def save(self):
+        self.data.save()
 
 
-def handle_excel(file_path, columns=None):
+class ExcelDataFrameCase:
+    def __init__(self, filepath):
+        self.df = handle_excel(filepath)
+        self.headers = {i: self.df.columns[i] for i in range(self.df.columns.size)}
+        self.filepath = filepath
+
+    def get(self, row, col):
+        if row == 0:
+            return self.df.columns[0]
+        return self.df.get(self.headers.get(col))[row - 1]
+
+    def set(self, row, col, val):
+        if row == 0:
+            raise Exception("Pandas does not support renaming headers - please edit the excel file directly.")
+        else:
+            self.df.loc[row - 1, self.headers.get(col)] = val
+
+    def save(self):
+        self.df.to_excel(self.filepath)
+
+
+class GoogleDataFrameCase:
+    def __init__(self, url_or_name):
+        self.gspread_client = gspread.service_account("credentials.json")
+        if re.search(r'docs\.google\.com', url_or_name):
+            self.sheet = handle_google_link(url_or_name, self.gspread_client)
+        else:
+            self.sheet = handle_google_name(url_or_name, self.gspread_client)
+
+    def get(self, row, col):
+        return self.sheet.sheet1.cell(row + 1, col + 1).value
+
+    def set(self, row, col, val):
+        self.sheet.sheet1.update_cell(row + 1, col + 1, val)
+
+    def save(self):
+        print("Why are you saving? Google sheets save automatically")
+
+
+def handle_excel(file_path) -> pd.DataFrame:
     if file_path is None:
         file_path = filedialog.askopenfilename(filetypes=[("excel file", "*.xlsx")])
         if not file_path:
             raise Exception("Invalid file path")
-    columns = prompt_columns(columns)
-    return open_excel(file_path, columns)
+    return open_excel(file_path)
 
 
-def handle_google_link(url, columns=None):
+def handle_google_link(url, gspread_client) -> Spreadsheet:
     if url is None:
         url = tk.simpledialog.askstring("Input", "Link to google sheet (must be accessible)")
-    columns = prompt_columns(columns)
-    return open_google_link(url, columns)
+    return open_google_link(url, gspread_client)
 
 
-def handle_google_name(name, columns=None):
+def handle_google_name(name, gspread_client) -> Spreadsheet:
     if name is None:
         name = tk.simpledialog.askstring("Input", "Title of google sheet (must be accessible)")
-    columns = prompt_columns(columns)
-    return open_google_name(name, columns)
-
-
-def prompt_columns(existing_columns):
-    # return ["Albatross", "Beaver", "Capybara"]
-    if existing_columns is None:
-        root = tk.Tk()
-        dialog = tk.Toplevel()
-        columns = []
-        while True:
-            column_name = tk.simpledialog.askstring("Input", "Input columns to extract - select cancel to finish")
-            if column_name is None:
-                break
-            if column_name != "" and not (column_name in columns):
-                columns.append(column_name)
-        dialog.destroy()
-        root.destroy()
-        return columns
-    else:
-        return existing_columns
+    return open_google_name(name, gspread_client)
 
 
 # inputs the name of the google sheet and returns a workbook containing the extracted data
-def open_google_name(name, columns):
-    file_path = authentication_path()
-    gspread_client = gspread.service_account(
-        filename=file_path)
-    spreadsheets = {sheet.title: sheet for sheet in gspread_client.openall()}
-    google_sheet = spreadsheets.get(name, None)
-    if google_sheet is None:
-        raise Exception(f"Google Sheet '{name}' not found")
-        # retry opening the google sheet
+def open_google_name(name, gspread_client) -> Spreadsheet:
+    s = gspread_client.open(name)
+    if s is not None:
+        return s
     else:
-        # extract column data
-        sheet = google_sheet.sheet1
-        headers = [header for header in sheet.row_values(1)]
-        missing_columns = [col for col in columns if headers.count(col) == 0]
-        columns = [col for col in columns if headers.count(col) != 0]
-        for col in missing_columns:
-            print(f"column {col} not found")
-        column_values = {headers.index(col): sheet.col_values(headers.index(col) + 1) for col in columns}
-        new_workbook = pd.DataFrame(column_values)
-        if new_workbook is not None:
-            return new_workbook
-        else:
-            raise Exception("Unable to process Google sheet")
+        raise Exception("Unable to process google link")
 
 
 # inputs the link to the google sheet and returns a workbook containing the extracted data
-def open_google_link(link, columns):
-    file_path = authentication_path()
-    gspread_client = gspread.service_account(
-        filename=file_path)
-    sheet = gspread_client.open_by_url(link).sheet1
-    # extract column data
-    headers = [header for header in sheet.row_values(1)]
-    missing_columns = [col for col in columns if headers.count(col) == 0]
-    columns = [col for col in columns if headers.count(col) != 0]
-    for col in missing_columns:
-        print(f"column {col} not found")
-    column_values = {headers.index(col): sheet.col_values(headers.index(col) + 1) for col in columns}
-    new_workbook = pd.DataFrame(column_values)
-    if new_workbook is not None:
-        return new_workbook
+def open_google_link(link, gspread_client) -> Spreadsheet:
+    s = gspread_client.open_by_url(link)
+    if s is not None:
+        return s
     else:
-        raise Exception("Unable to process Google link/file")
+        raise Exception("Unable to process google link")
 
 
 def authentication_path():
@@ -191,23 +131,12 @@ def authentication_path():
         raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
 
 
-def open_excel(file_path, columns):
+def open_excel(file_path) -> pd.DataFrame:
     workbook = pd.read_excel(file_path)
-    if columns is None:
-        columns = prompt_columns(columns)
-    # column_indices = {index: col for index, col in enumerate(columns)}
-    new_workbook = pd.DataFrame({index: workbook.get(col) for index, col in enumerate(columns)})
-    if new_workbook is not None:
-        return new_workbook
+    if workbook is not None:
+        return workbook
     else:
         raise Exception("Unable to process Excel file")
-
-
-def main():
-    unknown_input = tk.simpledialog.askstring("Input", "Input a file path, url, or name of a google sheet to extract")
-    dfc = DataFrameCase(unknown_input)
-    print(dfc)
-    print()
 
 
 def terminal_script():
