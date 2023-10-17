@@ -5,24 +5,31 @@ from tkinter import simpledialog
 import gspread
 import argparse
 import re
-import numpy
 from gspread import Spreadsheet
-from enum import Enum
+from synnax import channel as ch
+import numpy
 
 
 def main():
-    excel = DataFrameCase("/Users/evanhekman/testing_spreadsheet.xlsx")
-    google_url = \
-        DataFrameCase("https://docs.google.com/spreadsheets/d/12cWNMZwD24SpkkLSkM972Z8S_Jxt4Hxe3_n6hM9yvHQ/edit#gid=0")
-    google_name = DataFrameCase("testing_spreadsheet")
-    # print(excel.get(1, 1))
-    # print(google_url.get(1, 1))
-    # print(google_name.get(1, 1))
-    # print(excel.get(0, 0))
-    # print(google_url.get(0, 0))
-    # print(google_name.get(0, 0))
-    # excel.set(2, 2, 64)
-    # excel.save()
+    # excel = DataFrameCase("/Users/evanhekman/testing_spreadsheet.xlsx")
+    # google_url = \
+    #     DataFrameCase("https://docs.google.com/spreadsheets/d/12cWNMZwD24SpkkLSkM972Z8S_Jxt4Hxe3_n6hM9yvHQ/edit#gid=0")
+    # google_name = DataFrameCase("testing_spreadsheet")
+
+    excel_str = "/Users/evanhekman/instrumentation_example.xlsx"
+    google_url_str = "https://docs.google.com/spreadsheets/d/1GpaiJmR4A7l6NXS_nretchqW1pBHg2clNO7uNfHxijk/edit#gid=0"
+    google_name_str = "instrumentation_sheet_copy"
+    channels = extract_channels(google_url_str)
+    print(channels)
+
+
+def extract_channels(sheet: str) -> [ch.Channel]:
+    source = DataFrameCase(sheet)
+    channels = []
+    for r in [row for row in range(source.data.rows()) if row != 0]:  # first row will be column headers
+        print(r)
+        channels.append(ch.Channel(name=source.get(r, 0), is_index=True, data_type=source.get(r, 4)))
+    return channels
 
 
 class DataFrameCase:
@@ -66,6 +73,9 @@ class ExcelDataFrameCase:
     def save(self):
         self.df.to_excel(self.filepath)
 
+    def rows(self) -> int:
+        return len(self.df.columns[0])
+
 
 class GoogleDataFrameCase:
     def __init__(self, url_or_name):
@@ -83,6 +93,9 @@ class GoogleDataFrameCase:
 
     def save(self):
         print("Why are you saving? Google sheets save automatically")
+
+    def rows(self) -> int:
+        return len(self.sheet.sheet1.col_values(1))
 
 
 def handle_excel(file_path) -> pd.DataFrame:
