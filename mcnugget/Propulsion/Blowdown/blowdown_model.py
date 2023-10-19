@@ -4,7 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import CoolProp.CoolProp as CP
-from pyfluids import Fluid, FluidsList, Input
+
 
 
 IN_TO_M = 1/39.37
@@ -62,11 +62,8 @@ class COPV:
         # T_tank = T_o*((1 + ((gamma - 1)/2)*(t/tau))^(2/(1-gamma)))
         
         self.current_t += self.dt
-        CP.AbstractState.cpmass()
         
     
-
-
 class SystemState:
     def __init__(self):
         raise NotImplementedError
