@@ -97,8 +97,9 @@ class PropTank:
         # TODO: Add termination condition here when P_ullage ~= ambient pressure
         self.gas_state.update_state(dV, self.V_ullage)
     
-    def print_state(self):
-        print(self.gas_state.get_state_string())
+    def get_state_string(self):
+        return ("[TANK] Propellant mass: {0:.2f} kg | Ullage fraction: {1:.2f}% \n\t".format(
+            self.V_prop*self.rho_prop, self.ullage_frac*100) + self.gas_state.get_state_string())
 
 
 class COPV:
@@ -154,39 +155,66 @@ def system_equations(params: tuple, *constants: tuple):
     return (eqn1, eqn2, eqn3, eqn4, eqn5)
     
     
-def solve(engine: EngineModel, ox_tank: PropTank, fuel_tank: PropTank, dt: float):
+def solve(engine: EngineModel, ox_tank: PropTank, fuel_tank: PropTank):
+    runtime = 1  # [s] Overall runtime of 5 seconds
+    dt = 0.001   # 1 ms timestep length
     # Variables we want so solve for:
     # mdot_o: mass flow rate of oxidizer [kg/s]
     # mdot_f: mass flow rate of fuel [kg/s]
     # c_star: effective C*, as function of only O/F ratio (fixed P_c) [m/s]
     # F_t: thrust force [N]
     # P_c: chamber pressure [Pa]
-    init_guess = tuple((4, 2, 1500, 12000, 2.1e6))
-    constants = tuple((ox_tank.CdA, ox_tank.rho_prop, ox_tank.gas_state.P, fuel_tank.CdA, fuel_tank.rho_prop, 
-                 fuel_tank.gas_state.P, engine.P_c_ideal, engine.A_t, engine.C_F, engine.C_star_eff))
-    mdot_o, mdot_f, c_star, F_t, P_c = fsolve(system_equations, init_guess, args=constants)
-    # We've solved the downstream conditions, now need to update PropTank with our delta mass
-    ox_dV = (mdot_o*dt)/(ox_tank.rho_prop)
-    fuel_dV = (mdot_f*dt)/(fuel_tank.rho_prop)
-    ox_tank.update_state(ox_dV)
-    fuel_tank.update_state(fuel_dV)
+    t_range = np.arange(0, runtime, dt, dtype=float)
+    F_graph = [0 for _ in range(t_range.size)]
+    Pc_graph = [0 for _ in range(t_range.size)]
+    Cstar_graph = [0 for _ in range(t_range.size)]
+    for i in range(t_range.size):
+        init_guess = tuple((4, 2, 1500, 12000, 2.1e6))
+        constants = tuple((ox_tank.CdA, ox_tank.rho_prop, ox_tank.gas_state.P, fuel_tank.CdA, fuel_tank.rho_prop, 
+                    fuel_tank.gas_state.P, engine.P_c_ideal, engine.A_t, engine.C_F, engine.C_star_eff))
+        mdot_o, mdot_f, c_star, F_t, P_c = fsolve(system_equations, init_guess, args=constants)
+        # We've solved the downstream conditions, now need to update PropTank with our delta mass
+        ox_dV = (mdot_o*dt)/(ox_tank.rho_prop)
+        fuel_dV = (mdot_f*dt)/(fuel_tank.rho_prop)
+        ox_tank.update_state(ox_dV)
+        fuel_tank.update_state(fuel_dV)
+        # Update data
+        F_graph[i], Pc_graph[i], Cstar_graph[i] = F_t, P_c, c_star
     
-    ox_tank.print_state()
-    fuel_tank.print_state()
+    # Print final state of the system
+    ox_str = ox_tank.get_state_string()
+    fuel_str = fuel_tank.get_state_string()
+    print("----- Final system state: -----")
+    print("Oxdizer [LOX]:" + "\n\t" + ox_str)
+    print("Fuel [RP-1]:" + "\n\t" + fuel_str)
+    # Graph values
+    fig, axs = plt.subplots(3,1)
+    fig.set_size_inches((12, 8))
+    fig.suptitle("ME-5 Transient Blowdown Engine Performance")
+    axs[0].plot(t_range, np.array(F_graph)/1000)
+    axs[1].plot(t_range, np.array(Pc_graph)/1e5)
+    axs[2].plot(t_range, np.array(Cstar_graph))
+    plt.xlabel("Time [s]")
+    axs.flat[0].set(ylabel = "Thrust [kN]")
+    axs.flat[1].set(ylabel = "Chamber pressure [barA]")
+    axs.flat[2].set(ylabel = "C* (effective) [m/s]")
+    plt.show()
     
 
 if __name__ == "__main__":
-    runtime = 30  # [s] Overall runtime of 30 seconds
-    dt = 0.001  # 1 ms timestep length
     rp1_rho = 900   # Typically 810 to 1020 [kg/m^3]
     lox_rho = 1140  # At boiling point [kg/m^3]
     # Initial COPV: ~1000 psia, room temperature, 50 L
     # copv = COPV(7e6, 298, 0.05, dt)
     me_5 = EngineModel()
-    # Fuel tank is 30 L with 20 L of RP-1 at 500 psi and 298K ullage
-    fuel_tank = PropTank(30, 20, rp1_rho, 500, 298, 0.00005878550926)
     # Ox tank is 80 L with 70 L of LOX at 600 psi and 200K ullage
     ox_tank = PropTank(80, 70, rp1_rho, 600, 200, 0.0001419634254)
-    fuel_tank.print_state()
-    ox_tank.print_state()
-    solve(me_5, ox_tank, fuel_tank, dt)
+    # Fuel tank is 30 L with 20 L of RP-1 at 500 psi and 298K ullage
+    fuel_tank = PropTank(30, 20, rp1_rho, 500, 298, 0.00005878550926)
+    # Print initial state of the system
+    ox_str = ox_tank.get_state_string()
+    fuel_str = fuel_tank.get_state_string()
+    print("----- Initial system state: -----")
+    print("Oxdizer [LOX]:" + "\n\t" + ox_str)
+    print("Fuel [RP-1]:" + "\n\t" + fuel_str)
+    solve(me_5, ox_tank, fuel_tank)
