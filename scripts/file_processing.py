@@ -26,21 +26,15 @@ TC_OFFSET_COL = 10
 
 
 def main():
-    # excel = DataFrameCase("/Users/evanhekman/testing_spreadsheet.xlsx")
-    # google_url = \
-    #     DataFrameCase("https://docs.google.com/spreadsheets/d/12cWNMZwD24SpkkLSkM972Z8S_Jxt4Hxe3_n6hM9yvHQ/edit#gid=0")
-    # google_name = DataFrameCase("testing_spreadsheet")
-
-    excel_str_1 = "/Users/evanhekman/instrumentation_sheet_copy.xlsx"
-    excel_str_2 = "/Users/evanhekman/instrumentation_sheet_copy_alternate.xlsx"
-    google_url_str = "https://docs.google.com/spreadsheets/d/1GpaiJmR4A7l6NXS_nretchqW1pBHg2clNO7uNfHxijk/edit#gid=0"
-    google_name_str = "instrumentation_sheet_copy"
-    channels = extract_channels(google_name_str)
-    for channel in channels:
-        print(str(channel.name) + " " + str(channel.data_type) + " " + str(channel.is_index))
+    print("put something here, lol")
 
 
 def extract_channels(sheet: str) -> [sy.Channel]:
+    """ Extracts all channels from a sheet.
+    For the sheet, pass in a google sheet url, the name of a google sheet shared with the service account,
+    or a filepath to an excel file.
+    Returns an array of Channel and SugaredChannel objects
+    """
     source = DataFrameCase(sheet)
     channels = []
     for r in [row for row in range(source.rows()) if row != 0]:  # first row will be column headers
@@ -74,6 +68,10 @@ def extract_channels(sheet: str) -> [sy.Channel]:
 
 
 def validate_sheet(source, row) -> None:
+    """ Checks to make sure no important fields are empty in a given row for a sheet
+    If you're having trouble querying the API too much you could try skipping validation as this
+        function includes 7 extra API calls for every row
+    """
     if source.get(row, NAME_COL) is None:
         raise Exception("Name cannot be empty - row " + str(row) + " col " + str(NAME_COL))
 
@@ -97,6 +95,9 @@ def validate_sheet(source, row) -> None:
 
 
 def valve_channel(source, row) -> [sy.Channel]:
+    """ Helper function to define sub-channels associated with a VLV channel
+    valve_en(uint8), valve_cmd(uint8), valve_v(float32), valve_i(float32), valve_plugged(uint32)
+    """
     prefix = source.data.get(row, 0)
     index_ch = sy.Channel(name=(prefix + "_time"), data_type=DataType.TIMESTAMP, is_index=True)
     channels = [
@@ -111,6 +112,11 @@ def valve_channel(source, row) -> [sy.Channel]:
 
 
 class SugaredChannel:
+    """ A messy subclass of Channel that isn't actually a subclass.
+    Has the same properties as Channel but actually represents an object with a Channel and Dictionary attached to it.
+    SugaredChannel.channel is the standard channel.
+    SugaredChannel.sugar is the calibration info for a PT/TC channel
+    """
     def __init__(self, *, name: str, data_type: CrudeDataType, rate: CrudeRate = 0,
                  is_index: bool = False, index: sy.channel.payload.ChannelKey = 0, sugar: {str: str}) -> None:
         self.channel = sy.Channel(name=name, data_type=data_type, rate=rate, is_index=is_index, index=index)
@@ -147,6 +153,10 @@ class SugaredChannel:
 
 
 class DataFrameCase:
+    """ A class that can be instantiated to represent a google or Excel sheet
+    Almost everything is handled internally - just instantiate using a url, name, or filepath
+        and query using the get(row, col) function. The set(row, col) can also be used and will automatically save
+    """
     def __init__(self, unknown_input=None, excel_filepath=None, google_sheet_url=None, google_sheet_name=None):
         if excel_filepath:
             self.data = ExcelDataFrameCase(unknown_input)
@@ -167,10 +177,16 @@ class DataFrameCase:
         self.data.save()
 
     def rows(self) -> int:
+        # returns the number of non-empty rows in the sheet
         return self.data.rows()
 
 
 class ExcelDataFrameCase:
+    """ A class that contains methods to extract data from an Excel sheet
+    Instantiated using the filepath to the desired sheet
+    Some weird fencepost error handling because Excel has a header row and pandas.DataFrame does not
+    However, pandas.DataFrames are much easier to work with and provide easy extraction
+    """
     def __init__(self, filepath):
         self.df = handle_excel(filepath)
         self.headers = {i: self.df.columns[i] for i in range(self.df.columns.size)}
@@ -186,6 +202,7 @@ class ExcelDataFrameCase:
             raise Exception("Pandas does not support renaming headers - please edit the excel file directly.")
         else:
             self.df.loc[row, self.headers.get(col)] = val
+            self.save()
 
     def save(self):
         self.df.to_excel(self.filepath)
@@ -197,6 +214,11 @@ class ExcelDataFrameCase:
 
 
 class GoogleDataFrameCase:
+    """ A class that contains methods to extract data from a google sheet
+    Can be instantiated using the url of a google sheet
+    Can also be instantiated using the name of a google sheet shared with the service account
+    Note that the API has a cap and cannot be queried infinitely for free
+    """
     def __init__(self, url_or_name):
         self.gspread_client = gspread.service_account("credentials.json")
         if re.search(r'docs\.google\.com', url_or_name):
@@ -237,6 +259,14 @@ def handle_google_name(name, gspread_client) -> Spreadsheet:
     return open_google_name(name, gspread_client)
 
 
+def authentication_path():
+    try:
+        with open("credentials.json", "r") as creds:
+            return creds.name
+    except FileNotFoundError:
+        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
+
+
 # inputs the name of the google sheet and returns a workbook containing the extracted data
 def open_google_name(name, gspread_client) -> Spreadsheet:
     s = gspread_client.open(name)
@@ -255,73 +285,12 @@ def open_google_link(link, gspread_client) -> Spreadsheet:
         raise Exception("Unable to process google link")
 
 
-def authentication_path():
-    try:
-        with open("credentials.json", "r") as creds:
-            return creds.name
-    except FileNotFoundError:
-        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
-
-
 def open_excel(file_path) -> pd.DataFrame:
     workbook = pd.read_excel(file_path)
     if workbook is not None:
         return workbook
     else:
         raise Exception("Unable to process Excel file")
-
-
-# def terminal_script():
-#     # Create an ArgumentParser object
-#     parser = argparse.ArgumentParser(description="file extraction script")
-#
-#     # Add optional arguments
-#     parser.add_argument("--excel_filepath", type=str, default=None, help="filepath to an excel sheet")
-#     parser.add_argument("--google_link", type=str, default=None, help="link to a google sheet (requires access)")
-#     parser.add_argument("--google_name", type=str, default=None, help="title of a google sheet (requires access)")
-#     parser.add_argument("--columns", nargs='+', type=str, default=None, help="which columns to extract from the sheet")
-#     args = parser.parse_args()
-#
-#     # Access the argument values
-#     excel_filepath = args.excel_filepath
-#     google_link = args.google_link
-#     google_name = args.google_name
-#     columns = args.columns
-#
-#     # Print the argument values
-#     print("processing these arguments:")
-#     print("excel_filepath:", excel_filepath)
-#     print("google_link:", google_link)
-#     print("google_name:", google_name)
-#     print("columns:", columns)
-#
-#     if excel_filepath:
-#         handle_excel(file_path=excel_filepath, columns=columns)
-#     elif google_link:
-#         handle_google_link(url=google_link, columns=columns)
-#     elif google_name:
-#         handle_google_name(name=google_name, columns=columns)
-#     else:
-#         print("no arguments detected")
-#         root = tk.Tk()
-#         root.title("Input Type")
-#         root.geometry("600x200+435+378")
-#         button_excel = \
-#             tk.Button(root, text="Excel file",
-#                       command=lambda: (root.destroy(), handle_excel(file_path=None, columns=None)))
-#         button_excel['foreground'] = 'green'
-#         button_google_link = \
-#             tk.Button(root, text="Google Sheet link",
-#                       command=lambda: (root.destroy(), handle_google_link(url=None, columns=None)))
-#         button_google_link['foreground'] = 'blue'
-#         button_google_name = \
-#             tk.Button(root, text="Google Sheet by name",
-#                       command=lambda: (root.destroy(), handle_google_name(name=None, columns=None)))
-#         button_google_name['foreground'] = 'blue'
-#         button_excel.pack()
-#         button_google_link.pack()
-#         button_google_name.pack()
-#         root.mainloop()
 
 
 if __name__ == "__main__":
