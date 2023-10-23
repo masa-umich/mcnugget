@@ -1,20 +1,15 @@
 import pandas as pd
 import tkinter as tk
 import re
-import argparse
 from tkinter import filedialog
 from tkinter import simpledialog
 import synnax as sy
 import gspread
 from gspread import Spreadsheet
 from synnax.telem import (
-    Rate,
     CrudeDataType,
     CrudeRate,
     DataType,
-    TimeRange,
-    Series,
-    CrudeTimeStamp,
 )
 
 NAME_COL = 0
@@ -36,10 +31,11 @@ def main():
     #     DataFrameCase("https://docs.google.com/spreadsheets/d/12cWNMZwD24SpkkLSkM972Z8S_Jxt4Hxe3_n6hM9yvHQ/edit#gid=0")
     # google_name = DataFrameCase("testing_spreadsheet")
 
-    excel_str = "/Users/evanhekman/instrumentation_sheet_copy.xlsx"
+    excel_str_1 = "/Users/evanhekman/instrumentation_sheet_copy.xlsx"
+    excel_str_2 = "/Users/evanhekman/instrumentation_sheet_copy_alternate.xlsx"
     google_url_str = "https://docs.google.com/spreadsheets/d/1GpaiJmR4A7l6NXS_nretchqW1pBHg2clNO7uNfHxijk/edit#gid=0"
     google_name_str = "instrumentation_sheet_copy"
-    channels = extract_channels(excel_str)
+    channels = extract_channels(google_name_str)
     for channel in channels:
         print(str(channel.name) + " " + str(channel.data_type) + " " + str(channel.is_index))
 
@@ -47,8 +43,7 @@ def main():
 def extract_channels(sheet: str) -> [sy.Channel]:
     source = DataFrameCase(sheet)
     channels = []
-    for r in [row for row in range(source.data.rows()) if row != 0]:  # first row will be column headers
-        print(r)
+    for r in [row for row in range(source.rows()) if row != 0]:  # first row will be column headers
         validate_sheet(source, r)
         if source.get(r, SENSOR_TYPE_COL) == "VLV":  # handles valve channel creation
             valve_subchannels = valve_channel(source, r)
@@ -171,6 +166,9 @@ class DataFrameCase:
     def save(self):
         self.data.save()
 
+    def rows(self) -> int:
+        return self.data.rows()
+
 
 class ExcelDataFrameCase:
     def __init__(self, filepath):
@@ -187,13 +185,15 @@ class ExcelDataFrameCase:
         if row == 0:
             raise Exception("Pandas does not support renaming headers - please edit the excel file directly.")
         else:
-            self.df.loc[row - 1, self.headers.get(col)] = val
+            self.df.loc[row, self.headers.get(col)] = val
 
     def save(self):
         self.df.to_excel(self.filepath)
 
     def rows(self) -> int:
-        return len(self.df.columns[0])
+        print(self.df["Name"])
+        return len(self.df["Name"]) + 1
+        # returns the number of names in the name column + 1 because Excel has headers but pandas does not
 
 
 class GoogleDataFrameCase:
