@@ -14,6 +14,7 @@ from synnax.telem import (
     TimeSpan,
     TimeRange,
 )
+import sys
 
 NAME_COL = 0
 ALIAS_COL = 1
@@ -55,9 +56,18 @@ TODO
 
 
 def main():
-    channels = extract_channels("/Users/evanhekman/instrumentation_sheet_copy.xlsx")
-    print(channels)
-    # parse cli
+    n = len(sys.argv)
+    if n != 2:
+        print("Usage: file_processing.py sheet"
+              "\nsheet must be a filepath to an excel sheet, url of a google sheet, or name of a google sheet.")
+        return 1
+    source = sys.argv[1]
+    print(f"extracting data from {source}")
+    channels = extract_channels(source)
+    # update_active_range(channels)
+    print("Successfully updated these channels:")
+    for channel in channels:
+        print(channel)
 
 
 class SugaredChannel:
@@ -72,6 +82,10 @@ class SugaredChannel:
         self.channel = sy.Channel(name=name, data_type=data_type, rate=rate, is_index=is_index, index=index)
         self.sugar = sugar
         self.alias = alias
+
+    def __str__(self) -> str:
+        return f"name={self.name}, data_type={self.data_type}, " \
+               f"is_index={self.is_index}, index={self.index}, key={self.key}"
 
     # name, data_type, rate, is_index, index
     @property
@@ -239,6 +253,7 @@ class ExcelDataFrameCase:
     However, pandas.DataFrames are much easier to work with and provide easy extraction
     """
     def __init__(self, filepath):
+        print("processing as Excel Sheet")
         self.df = handle_excel(filepath)
         self.headers = {i: self.df.columns[i] for i in range(self.df.columns.size)}
         self.filepath = filepath
@@ -259,7 +274,6 @@ class ExcelDataFrameCase:
         self.df.to_excel(self.filepath)
 
     def rows(self) -> int:
-        print(self.df["Name"])
         return len(self.df["Name"]) + 1
         # returns the number of names in the name column + 1 because Excel has headers but pandas does not
 
@@ -271,6 +285,7 @@ class GoogleDataFrameCase:
     Note that the API has a cap and cannot be queried infinitely for free
     """
     def __init__(self, url_or_name):
+        print("processing as Google Sheet")
         self.gspread_client = gspread.service_account("credentials.json")
         if re.search(r'docs\.google\.com', url_or_name):
             self.sheet = handle_google_link(url_or_name, self.gspread_client)
@@ -315,7 +330,7 @@ def authentication_path():
         with open("credentials.json", "r") as creds:
             return creds.name
     except FileNotFoundError:
-        raise Exception("Create a 'credentials.json' file in this directory to authenticate to the gcloud server")
+        raise Exception("Create a 'credentials.json' in the mcnugget directory to authenticate to the gcloud server")
 
 
 # inputs the name of the google sheet and returns a workbook containing the extracted data
