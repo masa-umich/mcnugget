@@ -10,6 +10,9 @@ from synnax.telem import (
     CrudeDataType,
     CrudeRate,
     DataType,
+    TimeStamp,
+    TimeSpan,
+    TimeRange,
 )
 
 NAME_COL = 0
@@ -25,8 +28,91 @@ TC_TYPE_COL = 9
 TC_OFFSET_COL = 10
 
 
+"""
+key-value pairs on the range
+A range is a period of data (range of time)
+ACTIVE RANGE is the current context that everything operates under
+Range has KV dictionaries which contain metadata (col 5-9 of spreadsheet)
+active_range() returns a class object of range which we can call set(key, value) or kv.set() on
+set_alias(key, value) sets a human-readable name for each channel/range
+see test_range for examples
+kv.set_alias("PT_1_slope", 5) to set pt_slope to 5 on channel PT_1
+"""
+
+"""
+- one active_range for ALL channels, indexed using name as a key in a dictionary-like structure
+- alias is not a field on Channel but needs to be set, so I need to turn everything into a SugaredChannel
+    - everything becomes a SugaredChannel but might have empty 'sugar'. Can iterate over all sugar kv pairs and set
+- "pt_slope", "pt_offset", "tc_type", "tc_offset"
+gse_pt_01_pt_slope, gse_pt_01_pt_offset, gse_tc_01_tc_type, gse_tc_01_tc_offset
+"""
+
+"""
+TODO
+- change sugar so channel.alias works on everything
+- 
+"""
+
+
 def main():
-    print("put something here, lol")
+    channels = extract_channels("/Users/evanhekman/instrumentation_sheet_copy.xlsx")
+    print(channels)
+    # parse cli
+
+
+class SugaredChannel:
+    """ A messy subclass of Channel that isn't actually a subclass.
+    Has the same properties as Channel but actually represents an object with a Channel and Dictionary attached to it.
+    SugaredChannel.channel is the standard channel.
+    SugaredChannel.sugar is a dictionary representing the calibration info for a PT/TC channel
+    SugaredChannel.alias is the alias for the channel
+    """
+    def __init__(self, *, name: str, data_type: CrudeDataType, rate: CrudeRate = 0, is_index: bool = False,
+                 index: sy.channel.payload.ChannelKey = 0, sugar: {str: str}, alias: str) -> None:
+        self.channel = sy.Channel(name=name, data_type=data_type, rate=rate, is_index=is_index, index=index)
+        self.sugar = sugar
+        self.alias = alias
+
+    # name, data_type, rate, is_index, index
+    @property
+    def name(self) -> str:
+        return self.channel.name
+
+    @property
+    def data_type(self) -> str:
+        return self.channel.data_type
+
+    @property
+    def rate(self) -> CrudeRate:
+        return self.channel.rate
+
+    @property
+    def is_index(self) -> bool:
+        return self.channel.is_index
+
+    @property
+    def index(self) -> sy.channel.payload.ChannelKey:
+        return self.channel.index
+
+    @property
+    def leaseholder(self) -> int:
+        return self.channel.leaseholder
+
+    @property
+    def key(self) -> sy.channel.payload.ChannelKey:
+        return self.channel.key
+
+
+def update_active_range(channels: [sy.Channel]) -> None:
+    """ Updates active_range with info from the input channel
+    Specifically, it updates the alias and calibration info
+    """
+    active_range = sy.get_active_range()  # waiting for a function definition
+
+    for channel in channels:
+        active_range.set_alias(channel.name, channel.alias)
+        for key, value in channel.sugar:
+            active_range.kv.set(key, value)
 
 
 def extract_channels(sheet: str) -> [sy.Channel]:
@@ -51,7 +137,7 @@ def extract_channels(sheet: str) -> [sy.Channel]:
                                 + str(TC_TYPE_COL) + " or " + str(TC_OFFSET_COL))
             channels.append(SugaredChannel(name=source.get(r, NAME_COL),
                                            is_index=False, data_type=DataType(source.get(r, DATA_TYPE_COL)),
-                                           sugar=sugar, index=tc_index.key))
+                                           sugar=sugar, index=tc_index.key, alias=source.get(r, ALIAS_COL)))
         elif source.get(r, SENSOR_TYPE_COL) == "PT":  # handles PT channel creation
             sugar = {"pt_slope": source.get(r, PT_SLOPE_COL), "pt_offset": source.get(r, PT_OFFSET_COL)}
             pt_index = sy.Channel(name=(source.get(r, NAME_COL) + "_time"), is_index=True, data_type=DataType.TIMESTAMP)
@@ -60,7 +146,7 @@ def extract_channels(sheet: str) -> [sy.Channel]:
                                 + str(PT_SLOPE_COL) + " or " + str(PT_OFFSET_COL))
             channels.append(SugaredChannel(name=source.get(r, NAME_COL),
                                            is_index=False, data_type=DataType(source.get(r, DATA_TYPE_COL)),
-                                           sugar=sugar, index=pt_index.key))
+                                           sugar=sugar, index=pt_index.key, alias=source.get(r, ALIAS_COL)))
         else:
             raise Exception("Undefined Sensor Type in column " + str(SENSOR_TYPE_COL))
             # if channel is not defined as "TC", "PT" or "VLV", an exception is raised
@@ -94,62 +180,27 @@ def validate_sheet(source, row) -> None:
         raise Exception("Units cannot be empty - row " + str(row) + " col " + str(UNITS_COL))
 
 
-def valve_channel(source, row) -> [sy.Channel]:
+def valve_channel(source, r) -> [SugaredChannel]:
     """ Helper function to define sub-channels associated with a VLV channel
     valve_en(uint8), valve_cmd(uint8), valve_v(float32), valve_i(float32), valve_plugged(uint32)
     """
-    prefix = source.data.get(row, 0)
-    index_ch = sy.Channel(name=(prefix + "_time"), data_type=DataType.TIMESTAMP, is_index=True)
+    prefix = source.data.get(r, 0)
+    index_ch = SugaredChannel(name=(prefix + "_time"), data_type=DataType.TIMESTAMP, is_index=True,
+                              alias=source.get(r, ALIAS_COL), sugar={})
     channels = [
         index_ch,
-        sy.Channel(name=(prefix + "_en"), data_type=DataType.UINT8, is_index=False, index=index_ch.key),
-        sy.Channel(name=(prefix + "_cmd"), data_type=DataType.UINT8, is_index=False, index=index_ch.key),
-        sy.Channel(name=(prefix + "_v"), data_type=DataType.FLOAT32, is_index=False, index=index_ch.key),
-        sy.Channel(name=(prefix + "_i"), data_type=DataType.FLOAT32, is_index=False, index=index_ch.key),
-        sy.Channel(name=(prefix + "_plugged"), data_type=DataType.UINT32, is_index=False, index=index_ch.key)
+        SugaredChannel(name=(prefix + "_en"), data_type=DataType.UINT8, is_index=False, index=index_ch.key,
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_cmd"), data_type=DataType.UINT8, is_index=False, index=index_ch.key,
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_v"), data_type=DataType.FLOAT32, is_index=False, index=index_ch.key,
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_i"), data_type=DataType.FLOAT32, is_index=False, index=index_ch.key,
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_plugged"), data_type=DataType.UINT32, is_index=False, index=index_ch.key,
+                       alias=source.get(r, ALIAS_COL), sugar={})
     ]
     return channels
-
-
-class SugaredChannel:
-    """ A messy subclass of Channel that isn't actually a subclass.
-    Has the same properties as Channel but actually represents an object with a Channel and Dictionary attached to it.
-    SugaredChannel.channel is the standard channel.
-    SugaredChannel.sugar is the calibration info for a PT/TC channel
-    """
-    def __init__(self, *, name: str, data_type: CrudeDataType, rate: CrudeRate = 0,
-                 is_index: bool = False, index: sy.channel.payload.ChannelKey = 0, sugar: {str: str}) -> None:
-        self.channel = sy.Channel(name=name, data_type=data_type, rate=rate, is_index=is_index, index=index)
-        self.sugar = sugar
-
-    # name, data_type, rate, is_index, index
-    @property
-    def name(self) -> str:
-        return self.channel.name
-
-    @property
-    def data_type(self) -> str:
-        return self.channel.data_type
-
-    @property
-    def rate(self) -> CrudeRate:
-        return self.channel.rate
-
-    @property
-    def is_index(self) -> bool:
-        return self.channel.is_index
-
-    @property
-    def index(self) -> sy.channel.payload.ChannelKey:
-        return self.channel.index
-
-    @property
-    def leaseholder(self) -> int:
-        return self.channel.leaseholder
-
-    @property
-    def key(self) -> sy.channel.payload.ChannelKey:
-        return self.channel.key
 
 
 class DataFrameCase:
