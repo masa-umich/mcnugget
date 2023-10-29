@@ -19,14 +19,14 @@ import sys
 import time
 from synnax import Synnax
 
-py = Synnax()
-# py.channels.create(name="test_pt_01_time", data_type=DataType.TIMESTAMP, is_index=True)
-# pt_time_ch = py.channels.retrieve("test_pt_01_time")
-# py.channels.create(name="test_pt_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
-# py.channels.create(name="test_tc_01_time", data_type=DataType.TIMESTAMP, is_index=True)
-# tc_time_ch = py.channels.retrieve("test_tc_01_time")
-# py.channels.create(name="test_tc_01", data_type=DataType.FLOAT32, index=tc_time_ch.index)
-# py.channels.create(name="test_valve_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+client = Synnax()
+# client.channels.create(name="test_pt_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+# pt_time_ch = client.channels.retrieve("test_pt_01_time")
+# client.channels.create(name="test_pt_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+# client.channels.create(name="test_tc_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+# tc_time_ch = client.channels.retrieve("test_tc_01_time")
+# client.channels.create(name="test_tc_01", data_type=DataType.FLOAT32, index=tc_time_ch.index)
+# client.channels.create(name="test_valve_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
 
 
 """
@@ -58,26 +58,18 @@ active_range() returns a class object of range which we can call set(key, value)
 set_alias(key, value) sets a human-readable name for each channel/range
 see test_range for examples
 kv.set_alias("PT_1_slope", 5) to set pt_slope to 5 on channel PT_1
-"""
 
-"""
 - one active_range for ALL channels, indexed using name as a key in a dictionary-like structure
 - alias is not a field on Channel but needs to be set, so I need to turn everything into a SugaredChannel
     - everything becomes a SugaredChannel but might have empty 'sugar'. Can iterate over all sugar kv pairs and set
 - "pt_slope", "pt_offset", "tc_type", "tc_offset"
 gse_pt_01_pt_slope, gse_pt_01_pt_offset, gse_tc_01_tc_type, gse_tc_01_tc_offset
-"""
 
-"""
-TODO
-- change sugar so channel.alias works on everything
-- 
 
 ---
 1. get a local version of synnax running run main.go.start()
 2. create dummy range(client.ranges.create())
 3. range.kv.set() to update
-
 
 """
 
@@ -94,28 +86,45 @@ def main():
     print(f"extracting data from {source}")
     channels = extract_channels(source)
 
-    # py.channels.create(name="test_pt_01_time", data_type=DataType.TIMESTAMP, is_index=True)
-    # pt_time_ch = py.channels.retrieve("test_pt_01_time")
-    # py.channels.create(name="test_pt_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
-    # py.channels.create(name="test_tc_01_time", data_type=DataType.TIMESTAMP, is_index=True)
-    # tc_time_ch = py.channels.retrieve("test_tc_01_time")
-    # py.channels.create(name="test_tc_01", data_type=DataType.FLOAT32, index=tc_time_ch.index)
-    # py.channels.create(name="test_valve_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+    # client.channels.create(name="test_pt_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+    # pt_time_ch = client.channels.retrieve("test_pt_01_time")
+    # client.channels.create(name="test_pt_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+    # client.channels.create(name="test_tc_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+    # tc_time_ch = client.channels.retrieve("test_tc_01_time")
+    # client.channels.create(name="test_tc_01", data_type=DataType.FLOAT32, index=tc_time_ch.index)
+    # client.channels.create(name="test_valve_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
     print("\nBEFORE:\n")
     for name in [ch.channel.name for ch in channels]:
         try:
-            print(py.channels.retrieve(name))
+            print(client.channels.retrieve(name))
         except synnax.exceptions.QueryError as ex:
             print("channel " + name + " not found")
+
+    print()
+
     update_active_range(channels)
+
     print("\nAFTER:\n")
     for name in [ch.channel.name for ch in channels]:
         try:
-            print(py.channels.retrieve(name))
+            print(client.channels.retrieve(name))
         except synnax.exceptions.QueryError as ex:
             print("channel " + name + " not found")
     print("time to execute: " + str(time.time() - start_time))
 
+
+class BetterSugaredChannel:
+    def __init__(self, *, name: str, data_type: CrudeDataType, rate: CrudeRate = 0, is_index: bool = False,
+                 index: sy.channel.payload.ChannelKey = 0, sugar: {str: str}, alias: str) -> None:
+        self.channel = sy.Channel(name=name, data_type=data_type, rate=rate, is_index=is_index, index=index)
+        self.name = self.channel.name
+        self.sugar = sugar
+        self.alias = alias
+        self.data_type = self.channel.data_type
+        self.rate = self.channel.rate
+        self.is_index = self.channel.is_index
+        self.index = self.channel.index
+        self.key = self.channel.key
 
 class SugaredChannel:
     """ A messy subclass of Channel that isn't actually a subclass.
@@ -127,13 +136,13 @@ class SugaredChannel:
     def __init__(self, *, name: str, data_type: CrudeDataType, rate: CrudeRate = 0, is_index: bool = False,
                  index: sy.channel.payload.ChannelKey = 0, sugar: {str: str}, alias: str) -> None:
         self.channel = sy.Channel(name=name, data_type=data_type, rate=rate, is_index=is_index, index=index)
-        self.name = name
+        self.name = self.channel.name
         self.sugar = sugar
         self.alias = alias
-        self.data_type = data_type
-        self.rate = rate
-        self.is_index = is_index
-        self.index = index
+        self.data_type = self.channel.data_type
+        self.rate = self.channel.rate
+        self.is_index = self.channel.is_index
+        self.index = self.channel.index
         self.key = self.channel.key
 
     def __str__(self) -> str:
@@ -145,23 +154,17 @@ def update_active_range(channels: [SugaredChannel]) -> None:
     """ Updates active_range with info from the input channel
     Specifically, it updates the alias and calibration info
     """
-
     for ch in channels:
-        # print(ch)
+        print(ch)
         try:
-            old_ch = py.channels.retrieve(ch.name)
-            old_ch.name = ch.name
-            old_ch.data_type = ch.channel.data_type
-            old_ch.is_index = ch.channel.is_index
-            old_ch.index = ch.channel.index
-            print("updated channel " + ch.name)
+            old_ch = client.channels.retrieve(ch.name) #This is a placeholder for changing actual values
+            print("do nothing lol, we can't change existing channels yet")
         except synnax.exceptions.QueryError:
-            # print(ch.name)
-            # print(ch.data_type)
-            # print(ch.index)
-            # print(ch.is_index)
-            # py.channels.create(name=ch.name, data_type=ch.data_type, index=ch.index, is_index=ch.is_index)
-            print("need to create channel " + ch.name)
+            if ch.is_index:
+                new_ch = client.channels.create(name=ch.name, data_type=ch.data_type, is_index=True)
+            else:
+                new_ch = client.channels.create(name=ch.name, data_type=ch.data_type, index=ch.index)
+        print()
 
 
 def extract_channels(sheet: str) -> [SugaredChannel]:
@@ -172,33 +175,85 @@ def extract_channels(sheet: str) -> [SugaredChannel]:
     """
     source = DataFrameCase(sheet)
     channels = []
+    device_indexes = {}
     for r in [row for row in range(source.rows()) if row != 0]:  # first row will be column headers
+        try:
+            dev_index_key = device_indexes[source.get(r, DEVICE_COL)].key
+        except KeyError:
+            try:
+                new_dev_ch = client.channels.retrieve(source.get(r, NAME_COL) + "_time")
+            except synnax.exceptions.QueryError:
+                new_dev_ch = client.channels.create(name=(source.get(r, NAME_COL) + "_time"),
+                                                    data_type=DataType.TIMESTAMP, is_index=True)
+            device_indexes[source.get(r, DEVICE_COL)] = new_dev_ch
+            dev_index_key = device_indexes[source.get(r, DEVICE_COL)].key  # the channel indexing all other channels on the device
         validate_sheet(source, r)
         if source.get(r, SENSOR_TYPE_COL) == "VLV":  # handles valve channel creation
-            valve_subchannels = valve_channel(source, r)
-            for channel in valve_subchannels:
+            for channel in valve_channel(source, r, dev_index_key):
                 channels.append(channel)
         elif source.get(r, SENSOR_TYPE_COL) == "TC":  # handles TC channel creation
-            sugar = {"tc_type": source.get(r, TC_TYPE_COL), "tc_offset": source.get(r, TC_OFFSET_COL)}
-            tc_index = sy.Channel(name=(source.get(r, NAME_COL) + "_time"), is_index=True, data_type=DataType.TIMESTAMP)
-            if sugar["tc_offset"] is None or sugar["tc_type"] is None:
-                raise Exception("Undefined TC type or TC offset in column "
-                                + str(TC_TYPE_COL) + " or " + str(TC_OFFSET_COL))
-            channels.append(SugaredChannel(name=source.get(r, NAME_COL),
-                                           is_index=False, data_type=DataType(source.get(r, DATA_TYPE_COL)),
-                                           sugar=sugar, index=tc_index.key, alias=source.get(r, ALIAS_COL)))
+            for channel in tc_channel(source, r, dev_index_key):
+                channels.append(channel)
         elif source.get(r, SENSOR_TYPE_COL) == "PT":  # handles PT channel creation
-            sugar = {"pt_slope": source.get(r, PT_SLOPE_COL), "pt_offset": source.get(r, PT_OFFSET_COL)}
-            pt_index = sy.Channel(name=(source.get(r, NAME_COL) + "_time"), is_index=True, data_type=DataType.TIMESTAMP)
-            if sugar["pt_slope"] is None or sugar["pt_offset"] is None:
-                raise Exception("Undefined PT slope or PT offset in column "
-                                + str(PT_SLOPE_COL) + " or " + str(PT_OFFSET_COL))
-            channels.append(SugaredChannel(name=source.get(r, NAME_COL),
-                                           is_index=False, data_type=DataType(source.get(r, DATA_TYPE_COL)),
-                                           sugar=sugar, index=pt_index.key, alias=source.get(r, ALIAS_COL)))
+            for channel in pt_channel(source, r, dev_index_key):
+                channels.append(channel)
         else:
             raise Exception("Undefined Sensor Type in column " + str(SENSOR_TYPE_COL))
             # if channel is not defined as "TC", "PT" or "VLV", an exception is raised
+    return channels
+
+
+def tc_channel(source, r, dev_index_key) -> [SugaredChannel]:
+    channels = []
+    sugar = {"tc_type": source.get(r, TC_TYPE_COL), "tc_offset": source.get(r, TC_OFFSET_COL)}
+    tc_index = sy.Channel(name=(source.get(r, NAME_COL) + "_time"), is_index=True, data_type=DataType.TIMESTAMP)
+    if sugar["tc_offset"] is None or sugar["tc_type"] is None:
+        raise Exception("Undefined TC type or TC offset in column "
+                        + str(TC_TYPE_COL) + " or " + str(TC_OFFSET_COL))
+    channels.append(SugaredChannel(name=source.get(r, NAME_COL),
+                                    is_index=False, data_type=DataType(source.get(r, DATA_TYPE_COL)),
+                                    sugar=sugar, index=dev_index_key, alias=source.get(r, ALIAS_COL)))
+    return channels
+
+
+def pt_channel(source, r, dev_index_key) -> [SugaredChannel]:
+    channels = []
+    sugar = {"pt_slope": source.get(r, PT_SLOPE_COL), "pt_offset": source.get(r, PT_OFFSET_COL)}
+    pt_index = sy.Channel(name=(source.get(r, NAME_COL) + "_time"), is_index=True, data_type=DataType.TIMESTAMP)
+    if sugar["pt_slope"] is None or sugar["pt_offset"] is None:
+        raise Exception("Undefined PT slope or PT offset in column "
+                        + str(PT_SLOPE_COL) + " or " + str(PT_OFFSET_COL))
+    channels.append(SugaredChannel(name=source.get(r, NAME_COL),
+                                    is_index=False, data_type=DataType(source.get(r, DATA_TYPE_COL)),
+                                    sugar=sugar, index=dev_index_key, alias=source.get(r, ALIAS_COL)))
+    return channels
+
+
+def valve_channel(source, r, dev_index_key) -> [SugaredChannel]:
+    """ Helper function to define sub-channels associated with a VLV channel
+    valve_en(uint8), valve_cmd(uint8), valve_v(float32), valve_i(float32), valve_plugged(uint32)
+    all are indexed by the device's time channel except for valve_cmd, which has its own vlv_time channel
+    """
+    prefix = source.data.get(r, 0)
+    try:
+        valve_index = client.channels.retrieve(prefix + "_time")
+    except synnax.exceptions.QueryError:
+        valve_index = client.channels.create(name=(prefix + "_time"), data_type=DataType.TIMESTAMP, is_index=True)
+    print("valve time index channel key: " + str(valve_index.key))
+    channels = [
+        SugaredChannel(name=valve_index.name, data_type=valve_index.data_type, index=valve_index.index, #vlv_index itself
+                       alias="valve time index channel", sugar={}),
+        SugaredChannel(name=(prefix + "_en"), data_type=DataType.UINT8, index=dev_index_key, #device_time
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_cmd"), data_type=DataType.UINT8, index=valve_index.key, #vlv_index
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_v"), data_type=DataType.FLOAT32, index=dev_index_key, #device_time
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_i"), data_type=DataType.FLOAT32, index=dev_index_key, #device_time
+                       alias=source.get(r, ALIAS_COL), sugar={}),
+        SugaredChannel(name=(prefix + "_plugged"), data_type=DataType.UINT32, index=dev_index_key, #device_time
+                       alias=source.get(r, ALIAS_COL), sugar={})
+    ]
     return channels
 
 
@@ -227,29 +282,6 @@ def validate_sheet(source, row) -> None:
 
     if source.get(row, UNITS_COL) is None:
         raise Exception("Units cannot be empty - row " + str(row) + " col " + str(UNITS_COL))
-
-
-def valve_channel(source, r) -> [SugaredChannel]:
-    """ Helper function to define sub-channels associated with a VLV channel
-    valve_en(uint8), valve_cmd(uint8), valve_v(float32), valve_i(float32), valve_plugged(uint32)
-    """
-    prefix = source.data.get(r, 0)
-    index_ch = SugaredChannel(name=(prefix + "_time"), data_type=DataType.TIMESTAMP, is_index=True,
-                              alias=source.get(r, ALIAS_COL), sugar={})
-    channels = [
-        index_ch,
-        SugaredChannel(name=(prefix + "_en"), data_type=DataType.UINT8, is_index=False, index=index_ch.key,
-                       alias=source.get(r, ALIAS_COL), sugar={}),
-        SugaredChannel(name=(prefix + "_cmd"), data_type=DataType.UINT8, is_index=False, index=index_ch.key,
-                       alias=source.get(r, ALIAS_COL), sugar={}),
-        SugaredChannel(name=(prefix + "_v"), data_type=DataType.FLOAT32, is_index=False, index=index_ch.key,
-                       alias=source.get(r, ALIAS_COL), sugar={}),
-        SugaredChannel(name=(prefix + "_i"), data_type=DataType.FLOAT32, is_index=False, index=index_ch.key,
-                       alias=source.get(r, ALIAS_COL), sugar={}),
-        SugaredChannel(name=(prefix + "_plugged"), data_type=DataType.UINT32, is_index=False, index=index_ch.key,
-                       alias=source.get(r, ALIAS_COL), sugar={})
-    ]
-    return channels
 
 
 class DataFrameCase:
@@ -328,15 +360,11 @@ class GoogleDataFrameCase:
         print("processing as Google Sheet")
         self.gspread_client = gspread.service_account("credentials.json")
         if re.search(r'docs\.google\.com', url_or_name):
-            print('not implemented yet')
+            self.sheet = handle_google_link(url_or_name, self.gspread_client).sheet1
+            self.data = self.sheet.get_all_values()
         else:
             self.sheet = handle_google_name(url_or_name, self.gspread_client).sheet1
-            # colA = self.sheet.col_values("A")
-            # print(colA)
-            # print()
-            # query_string = "A1:K" + str(len(colA))
             self.data = self.sheet.get_all_values()
-            print(self.data)
 
         #     self.sheet = handle_google_link(url_or_name, self.gspread_client).sheet1
         #     self.df = pd.DataFrame(self.sheet.batch_get)
@@ -393,7 +421,7 @@ def open_google_name(name, gspread_client) -> Spreadsheet:
     if s is not None:
         return s
     else:
-        raise Exception("Unable to process google link")
+        raise Exception("Unable to process google sheet name")
 
 
 # inputs the link to the google sheet and returns a workbook containing the extracted data
