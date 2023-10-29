@@ -5,6 +5,7 @@ from tkinter import filedialog
 from tkinter import simpledialog
 import synnax as sy
 import gspread
+import synnax.exceptions
 from gspread import Spreadsheet
 from synnax.telem import (
     CrudeDataType,
@@ -15,6 +16,25 @@ from synnax.telem import (
     TimeRange,
 )
 import sys
+import time
+from synnax import Synnax
+
+py = Synnax()
+# py.channels.create(name="test_pt_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+# pt_time_ch = py.channels.retrieve("test_pt_01_time")
+# py.channels.create(name="test_pt_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+# py.channels.create(name="test_tc_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+# tc_time_ch = py.channels.retrieve("test_tc_01_time")
+# py.channels.create(name="test_tc_01", data_type=DataType.FLOAT32, index=tc_time_ch.index)
+# py.channels.create(name="test_valve_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+
+
+"""
+old version of api calls: 5.45s to extract one channel
+new version of api calls: 1.07s to extract 5+ channels
+excel files: 0.18s for 5+ channels
+"""
+
 
 NAME_COL = 0
 ALIAS_COL = 1
@@ -52,22 +72,49 @@ gse_pt_01_pt_slope, gse_pt_01_pt_offset, gse_tc_01_tc_type, gse_tc_01_tc_offset
 TODO
 - change sugar so channel.alias works on everything
 - 
+
+---
+1. get a local version of synnax running run main.go.start()
+2. create dummy range(client.ranges.create())
+3. range.kv.set() to update
+
+
 """
 
 
 def main():
+    start_time = time.time()
     n = len(sys.argv)
     if n != 2:
         print("Usage: file_processing.py sheet"
               "\nsheet must be a filepath to an excel sheet, url of a google sheet, or name of a google sheet.")
-        return 1
-    source = sys.argv[1]
+        source = "instrumentation_sheet_copy"
+    else:
+        source = sys.argv[1]
     print(f"extracting data from {source}")
     channels = extract_channels(source)
-    # update_active_range(channels)
-    print("Successfully updated these channels:")
-    for channel in channels:
-        print(channel)
+
+    # py.channels.create(name="test_pt_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+    # pt_time_ch = py.channels.retrieve("test_pt_01_time")
+    # py.channels.create(name="test_pt_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+    # py.channels.create(name="test_tc_01_time", data_type=DataType.TIMESTAMP, is_index=True)
+    # tc_time_ch = py.channels.retrieve("test_tc_01_time")
+    # py.channels.create(name="test_tc_01", data_type=DataType.FLOAT32, index=tc_time_ch.index)
+    # py.channels.create(name="test_valve_01", data_type=DataType.FLOAT32, index=pt_time_ch.index)
+    print("\nBEFORE:\n")
+    for name in [ch.channel.name for ch in channels]:
+        try:
+            print(py.channels.retrieve(name))
+        except synnax.exceptions.QueryError as ex:
+            print("channel " + name + " not found")
+    update_active_range(channels)
+    print("\nAFTER:\n")
+    for name in [ch.channel.name for ch in channels]:
+        try:
+            print(py.channels.retrieve(name))
+        except synnax.exceptions.QueryError as ex:
+            print("channel " + name + " not found")
+    print("time to execute: " + str(time.time() - start_time))
 
 
 class SugaredChannel:
@@ -80,56 +127,44 @@ class SugaredChannel:
     def __init__(self, *, name: str, data_type: CrudeDataType, rate: CrudeRate = 0, is_index: bool = False,
                  index: sy.channel.payload.ChannelKey = 0, sugar: {str: str}, alias: str) -> None:
         self.channel = sy.Channel(name=name, data_type=data_type, rate=rate, is_index=is_index, index=index)
+        self.name = name
         self.sugar = sugar
         self.alias = alias
+        self.data_type = data_type
+        self.rate = rate
+        self.is_index = is_index
+        self.index = index
+        self.key = self.channel.key
 
     def __str__(self) -> str:
         return f"name={self.name}, data_type={self.data_type}, " \
                f"is_index={self.is_index}, index={self.index}, key={self.key}"
 
-    # name, data_type, rate, is_index, index
-    @property
-    def name(self) -> str:
-        return self.channel.name
 
-    @property
-    def data_type(self) -> str:
-        return self.channel.data_type
-
-    @property
-    def rate(self) -> CrudeRate:
-        return self.channel.rate
-
-    @property
-    def is_index(self) -> bool:
-        return self.channel.is_index
-
-    @property
-    def index(self) -> sy.channel.payload.ChannelKey:
-        return self.channel.index
-
-    @property
-    def leaseholder(self) -> int:
-        return self.channel.leaseholder
-
-    @property
-    def key(self) -> sy.channel.payload.ChannelKey:
-        return self.channel.key
-
-
-def update_active_range(channels: [sy.Channel]) -> None:
+def update_active_range(channels: [SugaredChannel]) -> None:
     """ Updates active_range with info from the input channel
     Specifically, it updates the alias and calibration info
     """
-    active_range = sy.get_active_range()  # waiting for a function definition
 
-    for channel in channels:
-        active_range.set_alias(channel.name, channel.alias)
-        for key, value in channel.sugar:
-            active_range.kv.set(key, value)
+    for ch in channels:
+        # print(ch)
+        try:
+            old_ch = py.channels.retrieve(ch.name)
+            old_ch.name = ch.name
+            old_ch.data_type = ch.channel.data_type
+            old_ch.is_index = ch.channel.is_index
+            old_ch.index = ch.channel.index
+            print("updated channel " + ch.name)
+        except synnax.exceptions.QueryError:
+            # print(ch.name)
+            # print(ch.data_type)
+            # print(ch.index)
+            # print(ch.is_index)
+            # py.channels.create(name=ch.name, data_type=ch.data_type, index=ch.index, is_index=ch.is_index)
+            print("need to create channel " + ch.name)
 
 
-def extract_channels(sheet: str) -> [sy.Channel]:
+def extract_channels(sheet: str) -> [SugaredChannel]:
     """ Extracts all channels from a sheet.
     For the sheet, pass in a google sheet url, the name of a google sheet shared with the service account,
     or a filepath to an excel file.
@@ -285,24 +320,43 @@ class GoogleDataFrameCase:
     Note that the API has a cap and cannot be queried infinitely for free
     """
     def __init__(self, url_or_name):
+        """
+        would be more efficient to:
+        get col A
+        get range(A1:Kx) where x is the number of rows (determined by col A)
+        """
         print("processing as Google Sheet")
         self.gspread_client = gspread.service_account("credentials.json")
         if re.search(r'docs\.google\.com', url_or_name):
-            self.sheet = handle_google_link(url_or_name, self.gspread_client)
+            print('not implemented yet')
         else:
-            self.sheet = handle_google_name(url_or_name, self.gspread_client)
+            self.sheet = handle_google_name(url_or_name, self.gspread_client).sheet1
+            # colA = self.sheet.col_values("A")
+            # print(colA)
+            # print()
+            # query_string = "A1:K" + str(len(colA))
+            self.data = self.sheet.get_all_values()
+            print(self.data)
+
+        #     self.sheet = handle_google_link(url_or_name, self.gspread_client).sheet1
+        #     self.df = pd.DataFrame(self.sheet.batch_get)
+        #     print(self.df)
+        #
+        #     self.df = pd.DataFrame(handle_google_name(url_or_name, self.gspread_client))
+        #     print(self.df)
 
     def get(self, row, col):
-        return self.sheet.sheet1.cell(row + 1, col + 1).value
+        return self.data[row][col]
+        # return self.sheet.cell(row + 1, col + 1).value
 
     def set(self, row, col, val):
-        self.sheet.sheet1.update_cell(row + 1, col + 1, val)
+        self.sheet.update_cell(row + 1, col + 1, val)
 
     def save(self):
         print("Why are you saving? Google sheets save automatically")
 
     def rows(self) -> int:
-        return len(self.sheet.sheet1.col_values(1))
+        return len(self.sheet.col_values(1))
 
 
 def handle_excel(file_path) -> pd.DataFrame:
