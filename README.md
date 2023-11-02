@@ -8,32 +8,28 @@ McNugget is an analysis toolkit that automatically reads and writes data from th
 Synnax Data Processing Server (no configuration required!), which you can use to analyze
 MASA's 2023 and later data.
 
-## A Typical Workflow
+## Installation
 
-A typical workflow with McNugget involves the following steps:
+### 1 - Connect to MWireless or the UofM VPN
 
-1. Finding the range (time range) of data you're interested in getting access to. The ideal
-   way to do this is to use the [Synnax Visualization UI](https://docs.synnaxlabs.com/visualize/get-started)
-   to plot different areas of data. Once you've found the range you're interested in, copy it to your clipboard.
+To work with McNugget, **you'll need to be connected to the UofM VPN or MWireless.** Installation instructions for doing so can be found [here](https://its.umich.edu/enterprise/wifi-networks/vpn/getting-started).
 
-2. Create a new script describing the analysis you intend on doing (for example, `cda.py`).
+### 2 - Install the Synnax CA Certificates
 
-3. In your script import the `mcnugget.query.read` method to read the data for the channel's you're interested in.
+The next step is to install the Synnax encryption certificates. These allow you to communicate with the database in a secure manner. To install the certificates, run the correct
 
-4. Perform analysis.
+## Install the Synnax Console
 
-5. Print out the results or plot the data.
+While you don't need it to work with McNugget, we highly recommend installing the Synnax Console. To do this, simply follow the instructions [here](https://docs.synnaxlabs.com/console/get-started?).
 
-6. Push your changes!
+The next step is to connect to the MASA cluster:
 
-## Install the Visualization UI
+1. Because Synnax is hosted on a Michigan Internal server, you need to be connected to the UofM VPN or MWireless before you connect. Instructions for doing so can be found here: 
+3. Instructions for this can be found [here](https://docs.synnaxlabs.com/console/connect-a-cluster). 
 
-To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this, simply follow the instructions [here](https://docs.synnaxlabs.com/console/get-started?).
+PLEASE NOTE THAT YOU NEED TO BE CONNECTED TO THE UOFM VPN OR MWIRELESS BEFORE YOU CONNECT.
 
-The next step is to connect to the MASA cluster. Instructions for this can be found [here
-](https://docs.synnaxlabs.com/console/connect-a-cluster). 
-
-PLEASE NOTE THAT YOU NEED TO BE CONNECTED TO THE UOFM VPN OR MWIRELESS BEFORE YOU CONNECT. Instructions [here](https://its.umich.edu/enterprise/wifi-networks/vpn/getting-started)
+Instructions 
 
 The MASA server connection parameters are as follows:
 
