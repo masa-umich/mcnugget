@@ -28,15 +28,17 @@ A typical workflow with McNugget involves the following steps:
 
 ## Install the Visualization UI
 
-To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this, simply follow the instructions [here](https://docs.synnaxlabs.com/visualize/get-started?).
+To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this, simply follow the instructions [here](https://docs.synnaxlabs.com/console/get-started?).
 
 The next step is to connect to the MASA cluster. Instructions for this can be found [here
-](https://docs.synnaxlabs.com/visualize/connect-a-cluster).
+](https://docs.synnaxlabs.com/console/connect-a-cluster). 
+
+PLEASE NOTE THAT YOU NEED TO BE CONNECTED TO THE UOFM VPN OR MWIRELESS BEFORE YOU CONNECT. Instructions [here](https://its.umich.edu/enterprise/wifi-networks/vpn/getting-started)
 
 The MASA server connection parameters are as follows:
 
 - **Name**: `MASA Remote`
-- **Host**: `masa.synnaxlabs.com`
+- **Host**: `synnax.masa.engin.umich.edu`
 - **Port**: `80`
 - **Username**: `synnax`
 - **Password**: `seldon`
