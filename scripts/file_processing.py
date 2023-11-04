@@ -65,6 +65,8 @@ The meaningful data behind a channel is represented internally by:
     - * "tc_offset": str
 Note that the sensor type is already known from the dictionary it is stored under
 
+sets calibration info by using client.
+gse_pt_01_pt_slope, gse_pt_01_pt_offset, gse_tc_01_tc_type, gse_tc_01_tc_offset
 """
 
 
@@ -105,6 +107,7 @@ def abstract_data(source) -> {str: [{str: {str: str}}]}:
         data = process_url(source)
     else:
         data = process_name(source)
+    validate_sheet(data)
     result = {"DEV": default_device_channels(data[TITLES[DEVICE_COL]]), "VLV": [], "PT": [], "TC": []}
     for r in range(len(data[TITLES[NAME_COL]])):
         if data[TITLES[SENSOR_TYPE_COL]][r] == "VLV":
@@ -226,12 +229,35 @@ def update_or_create_channel(ch_name: str, ch_as_dict: {str: str}) -> None:
 
 def update_channel(ch_name: str, ch_as_dict: {str: str}) -> int:
     print(f"There is not yet functionality to update existing channels - {ch_name} not updated")
+    if ch_as_dict.get("pt_slope"):
+        print("there is not yet functionality to update calibration info, but if there was...")
+        print(f"{ch_name}_pt_slope = " + str(ch_as_dict["pt_slope"]))
+        print(f"{ch_name}_pt_offset = " + str(ch_as_dict["pt_offset"]))
+        #  client.channels.kv.update(ch_name + "_pt_slope", ch_as_dict.get("pt_slope"))
+        #  client.channels.kv.update(ch_name + "_pt_slope", ch_as_dict.get("pt_slope"))
+    if ch_as_dict.get("tc_type"):
+        print("there is not yet functionality to update calibration info, but if there was...")
+        # client.channels.kv.update(ch_name + "_tc_type", ch_as_dict.get("tc_type"))
+        # client.channels.kv.update(ch_name + "_tc_offset", ch_as_dict.get("tc_offset"))
+        print(f"{ch_name}_tc_type = " + str(ch_as_dict["tc_type"]))
+        print(f"{ch_name}_tc_offset = " + str(ch_as_dict["tc_offset"]))
     return 0
 
 
 def create_channel(ch_name: str, ch_as_dict: {str: str}) -> int:
     print(f"creating channel {ch_name}")
-    # print(ch_as_dict)
+    if ch_as_dict.get("pt_slope"):
+        print("there is not yet functionality to update calibration info, but if there was...")
+        print(f"{ch_name}_pt_slope = " + str(ch_as_dict["pt_slope"]))
+        print(f"{ch_name}_pt_offset = " + str(ch_as_dict["pt_offset"]))
+        #  client.channels.kv.update(ch_name + "_pt_slope", ch_as_dict.get("pt_slope"))
+        #  client.channels.kv.update(ch_name + "_pt_slope", ch_as_dict.get("pt_slope"))
+    if ch_as_dict.get("tc_type"):
+        print("there is not yet functionality to update calibration info, but if there was...")
+        # client.channels.kv.update(ch_name + "_tc_type", ch_as_dict.get("tc_type"))
+        # client.channels.kv.update(ch_name + "_tc_offset", ch_as_dict.get("tc_offset"))
+        print(f"{ch_name}_tc_type = " + str(ch_as_dict["tc_type"]))
+        print(f"{ch_name}_tc_offset = " + str(ch_as_dict["tc_offset"]))
     if ch_as_dict.get("is_index"):
         return client.channels.create(data_type=DataType(ch_as_dict["data_type"]), name=ch_name,
                                       is_index=True).key
@@ -288,6 +314,24 @@ def find_index(ch_name: str) -> int:
         return confirmed_index_channels.get(ch_name)
     else:
         raise "attempting to access index channel before it has been verified"
+
+
+def validate_sheet(df: pd.DataFrame) -> None:
+    for r in range(len(df)):
+        for c in range(7):
+            if not df[TITLES[c]][r]:
+                raise f"{df[TITLES[NAME_COL]][r]} column {c} cannot be empty"
+        if df[TITLES[DATA_TYPE_COL]][r] not in ["timestamp", "uint8", "uint16", "uint32", "uint64",
+                                        "int8", "int16", "int32", "int64", "float32", "float64"]:
+            raise f"invalid data type for {df[TITLES[NAME_COL]][r]} in column {DATA_TYPE_COL}"
+        if df[TITLES[SENSOR_TYPE_COL]][r] == "PT":
+            if not (df[TITLES[SENSOR_TYPE_COL]][r] and df[TITLES[SENSOR_TYPE_COL]][r]):
+                raise f"define calibration info for {df[TITLES[NAME_COL]][r]} in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
+        elif df[TITLES[SENSOR_TYPE_COL]][r] == "TC":
+            if not (df[TITLES[SENSOR_TYPE_COL]][r] and df[TITLES[SENSOR_TYPE_COL]][r]):
+                raise f"define calibration info for {df[TITLES[NAME_COL]][r]} in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
+        elif df[TITLES[SENSOR_TYPE_COL]][r] != "VLV":
+            raise f"invalid sensor type for {df[TITLES[NAME_COL]][r]} in column {SENSOR_TYPE_COL} - must be VLV, PT, or TC"
 
 
 if __name__ == "__main__":
