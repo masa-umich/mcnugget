@@ -2,48 +2,70 @@
 
 The McChicken of Data Analysis. It's not gonna change your life, but it gets the job done.
 
-## Get Started
+## 0 - Overview
 
 McNugget is an analysis toolkit that automatically reads and writes data from the MASA
 Synnax Data Processing Server (no configuration required!), which you can use to analyze
 MASA's 2023 and later data.
 
-## A Typical Workflow
+## 1 - Installation
 
-A typical workflow with McNugget involves the following steps:
+### 1.0 - Connect to MWireless or the UofM VPN
 
-1. Finding the range (time range) of data you're interested in getting access to. The ideal
-   way to do this is to use the [Synnax Visualization UI](https://docs.synnaxlabs.com/visualize/get-started)
-   to plot different areas of data. Once you've found the range you're interested in, copy it to your clipboard.
+To work with McNugget, **you'll need to be connected to the UofM VPN or MWireless.** Instructions for installing
+and using the VPN can be found [here](https://its.umich.edu/enterprise/wifi-networks/vpn/getting-started).
 
-2. Create a new script describing the analysis you intend on doing (for example, `cda.py`).
+### 1.1 - Install the Synnax CA Certificates
 
-3. In your script import the `mcnugget.query.read` method to read the data for the channel's you're interested in.
+The next step is to install the Synnax encryption certificates. These allow you to communicate with the database in a
+secure manner. To install them, run the corresponding command for your operating system:
 
-4. Perform analysis.
+#### MacOS
 
-5. Print out the results or plot the data.
+```bash
+curl -sfL https://raw.githubusercontent.com/masa-umich/mcnugget/main/scripts/install_certs_macos.sh | sh -
+```
 
-6. Push your changes!
+Note that you will be prompted for your password.
 
-## Install the Visualization UI
+#### Windows
 
-To get started with McNugget, you'll need to install the Synnax Visualization UI. To do this, simply follow the instructions [here](https://docs.synnaxlabs.com/visualize/get-started?).
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/masa-umich/mcnugget/main/scripts/install_certs_windows.ps1 -OutFile install_certs_windows.ps1
+```
 
-The next step is to connect to the MASA cluster. Instructions for this can be found [here
-](https://docs.synnaxlabs.com/visualize/connect-a-cluster).
+Then, run the following command in **powershell**:
 
-The MASA server connection parameters are as follows:
+```powershell
+.\install_certs_windows.ps1
+```
+
+### 1.2 - Install the Synnax Console
+
+The Synnax Console is the tool we use for test ops and data visualization. It's also very useful for analysis. 
+To install it, follow the instructions [here](https://docs.synnaxlabs.com/console/get-started?). Then, follow the 
+instructions [here](https://docs.synnaxlabs.com/console/connect-a-cluster?) to connect to the MASA server. Use the 
+following connection parameters: 
 
 - **Name**: `MASA Remote`
-- **Host**: `masa.synnaxlabs.com`
+- **Host**: `synnax.masa.engin.umich.edu`
 - **Port**: `80`
 - **Username**: `synnax`
 - **Password**: `seldon`
+- **Secure**: `true`
 
-## Install McNugget
+**Please note that the console ONLY works on the latest versions of MacOS (Sonoma), Windows 10, and Windows 11**
 
-To kick things off, you'll need to clone this repository using `git`. If you don't have `git` installed, you can find instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). Once you have `git` installed, create a new project/folder in your [editor](#what-editor-should-i-use). We recommend the
+If you find that plots don't display, you may need to udate your version of MacOS **or** your version of Microsoft Edge
+on Windows.
+
+### 1.3 -  Install McNugget
+
+#### Clone the Repository
+
+To kick things off, you'll need to clone this repository using `git`. If you don't have `git` installed, you can find
+instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). Once you have `git` installed,
+create a new project/folder in your [editor](#what-editor-should-i-use). We recommend the
 directory `~/Desktop/masa-umich/`. Then, run the following command:
 
 ```bash
@@ -52,28 +74,21 @@ git clone https://github.com/masa-umich/mcnugget.git
 
 This will download the mcnugget source code into the directory `~/Desktop/masa-umich/mcnugget/`.
 
-After downloading the source, the next step is to install and set up Python. You'll need vesrion 3.11. If you don't have
-Python installed, see the [Python Installation Guide](https://www.python.org/downloads/) for instructions.
-If you're not sure what version you're running, use the following command:
+#### Install Python
 
-```bash
-python --version
-```
+After downloading the source, the next step is to install and set up Python. You'll need version 3.11. If you don't have
+Python installed, see the [Synnax Python Guide](https://docs.synnaxlabs.com/python-client/troubleshooting?). If you're
+still having trouble, send a message in the `#software` Slack channel.
 
-If you don't see `3.11.x` or higher in the output, you'll need to upgrade your Python installation. If you see
-the output `command not found`, your python installation use the `python3` or `python3.11` command instead of `python`.
-If you get an error saying `command not found`, try using `python3` or `python3.11` instead. The same goes for
-the commands involving `pip` (try `pip3` or `pip3.11` instead). If you're still having trouble, ask for help in the
-`#software` slack channel.
-
-McNugget uses a virtual environment tool called `poetry` to manage it's dependencies
-and configuration. To install poetry, run the following command:
+McNugget uses a virtual environment tool called `poetry` to manage its dependencies and configuration. To install poetry, 
+run the following command:
 
 ```bash
 pip install poetry
 ```
 
-Then, we need to make sure the virtual environment we use is created in the same directory as our project (if you don't know what a virtual environment is, don't worry).
+Then, we need to make sure the virtual environment we use is created in the same directory as our project (if you don't
+know what a virtual environment is, don't worry).
 
 ```
 poetry config virtualenvs.in-project true
@@ -125,10 +140,14 @@ from mcnugget.time import elapsed_seconds
 
 If you're interested in what each import does, here's a brief description:
 
-- `import matplotlib.pyplot as plt` is a plotting library that we use to plot data. It's a 1-1 port of the MATLAB plotting library.
-- `import synnax as sy` is a library that we use to define time ranges. We'll use this to define the range of data we want to read.
-- `from mcnugget.query import read` is a method that we use to read data from the data server. We'll use this to read the data we want to analyze.
-- `from mcnugget.time import elapsed_seconds` is a handy utility to conver tthe values in a time channel to elapsed seconds.
+- `import matplotlib.pyplot as plt` is a plotting library that we use to plot data. It's a 1-1 port of the MATLAB
+  plotting library.
+- `import synnax as sy` is a library that we use to define time ranges. We'll use this to define the range of data we
+  want to read.
+- `from mcnugget.query import read` is a method that we use to read data from the data server. We'll use this to read
+  the data we want to analyze.
+- `from mcnugget.time import elapsed_seconds` is a handy utility to conver tthe values in a time channel to elapsed
+  seconds.
 
 ### Finding the data you're interested in
 
@@ -201,7 +220,7 @@ If you're moving from MATLAB or haven't used an IDE before, you may be wondering
 MATLAB like experience we recommend using [PyCharm](https://www.jetbrains.com/pycharm/). The free version is fine for
 all of our use cases, but you can also get the pro version for free if you're a student.
 
-If you're lookin for a lightweight editor, we recommend [VSCode](https://code.visualstudio.com/). It's the most widely
+If you're looking for a lightweight editor, we recommend [VSCode](https://code.visualstudio.com/). It's the most widely
 used editor by far.
 
 **TLDR: Use VSCode**
