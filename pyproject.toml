@@ -18,7 +18,7 @@ synnax = "^0.8.0"
 black = "^23.1.0"
 
 [tool.synnax]
-host = "masa.synnaxlabs.com"
+host = "synnax.masa.engin.umich.edu"
 port = 80
 username = "synnax"
 password = "seldon"
