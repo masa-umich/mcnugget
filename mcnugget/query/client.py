@@ -8,7 +8,7 @@ import toml
 TOML = toml.load(Path(os.path.dirname(__file__)).parent.parent / "pyproject.toml")['tool']['synnax']
 
 try:
-    CLIENT = Synnax(
+    client = Synnax(
         host=TOML["host"],
         port=TOML["port"],
         username=TOML["username"],

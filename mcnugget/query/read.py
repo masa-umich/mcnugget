@@ -1,5 +1,5 @@
 from synnax import TimeRange
-from mcnugget.query.client import CLIENT
+from mcnugget.query.client import client
 from enum import Enum
 from pandas import DataFrame
 
@@ -64,5 +64,5 @@ def read(
     df = DataFrame()
     for chan in [*channels]:
         print(f"Reading data for channel: {chan}")
-        df[chan] = CLIENT.read(tr.start, tr.end, chan)[0]
+        df[chan] = client.read(tr.start, tr.end, chan)[0]
     return df
