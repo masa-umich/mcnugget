@@ -1,4 +1,4 @@
-# Blowdown Modelling Project
+# blowdown Modelling Project
 # https://www.et.byu.edu/~wheeler/Tank_Blowdown_Math.pdf
 # https://en.wikipedia.org/wiki/Choked_flow
 import matplotlib.pyplot as plt
@@ -190,7 +190,7 @@ def solve(engine: EngineModel, ox_tank: PropTank, fuel_tank: PropTank):
     # Graph values
     fig, axs = plt.subplots(3,1)
     fig.set_size_inches((12, 8))
-    fig.suptitle("ME-5 Transient Blowdown Engine Performance")
+    fig.suptitle("ME-5 Transient blowdown Engine Performance")
     axs[0].plot(t_range, np.array(F_graph)/1000)
     axs[1].plot(t_range, np.array(Pc_graph)/1e5)
     axs[2].plot(t_range, np.array(Cstar_graph))

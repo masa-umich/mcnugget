@@ -12,7 +12,7 @@ toml = "^0.10.2"
 matplotlib = "^3.7.1"
 scipy = "^1.10.1"
 pyfluids = "^2.3.2"
-synnax = "^0.13.4"
+synnax = "^0.13.8"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
