@@ -12,17 +12,30 @@ toml = "^0.10.2"
 matplotlib = "^3.7.1"
 scipy = "^1.10.1"
 pyfluids = "^2.3.2"
-synnax = "^0.13.8"
+#synnax = "^0.13.8"
+synnax = { path = "../../synnaxlabs/synnax/client/py", develop = true }
+click = "^8.1.7"
+gspread = "^5.12.0"
+openpyxl = "^3.1.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
+pytest = "^7.4.3"
+
+[tool.poetry.scripts]
+mcnugget = "mcnugget.cli.cli:mcnugget"
 
 [tool.synnax]
-host = "synnax.masa.engin.umich.edu"
-port = 80
+#host = "synnax.masa.engin.umich.edu"
+#port = 80
+#username = "synnax"
+#password = "seldon"
+#secure = true
+host = "localhost"
+port = 9090
 username = "synnax"
 password = "seldon"
-secure = true
+secure = false
 
 [build-system]
 requires = ["poetry-core"]
