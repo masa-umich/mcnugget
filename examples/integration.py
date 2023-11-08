@@ -1,47 +1,35 @@
 import numpy as np
-
-import synnax as sy
 import matplotlib.pyplot as plt
-from mcnugget.query import read_during_state, ECStates
-from mcnugget.tests import TPC
+from mcnugget.client import client
 
-# tr defines the time range we're interested in reading. An easy way to figure this
-# out is to use the visualiation UI to copy the range (http://docs.synnaxlabs.com/visualize/select-a-range).
-# In this case we're interested in the tank pressure during a TPC test.
-tr = TPC["02-19-23-02"]
+# We're going to fetch a named range from the server. This range represents a test we
+# ran on october 28th to test Gooster. If you don't know what the name of your range is,
+# use the Synnax console to find it.
+rng = client.ranges.retrieve("October 28 Gooster")
 
-# This channel contains the timestamps for the data.
-TIME_CH = "Time"
-# We'll integrate under this pressure curve.
-PT_CH = "ec.pressure[9]"
+# This channel contains our 2K bottle pressure for the range.
+bottle_pressure = rng.gse_pressure_20
 
-# Read the data from the specified channels when (ec.STATE) is in HOTFIRE.
-# This makes sure we're only plotting data from during the test.
-# Note: this is the default state, so we don't really need to specify it.
-data = read_during_state(tr, TIME_CH, PT_CH, state=ECStates.HOTFIRE)
+# This channel contains the timestamps recorded by the GSE DAQ.
+time = rng.gse_time
 
-# Pick out our timestamps
-time = data[TIME_CH].to_numpy()
-# Pick out our pressure data
-pressure = data[PT_CH].to_numpy()
-# Get the mean
-pressure = pressure - np.mean(pressure)
+# Offset the pressure by its mean.
+adj_pressure = bottle_pressure - np.mean(bottle_pressure)
 
 # Integrate the pressure curve
-integrated = np.trapz(pressure, time)
+integrated = np.trapz(adj_pressure, time)
 
 # Plot the data
-plt.plot(time, pressure)
+plt.plot(time, adj_pressure)
 
 # Set the labels
 plt.xlabel("Time (ns)")
 plt.ylabel("Pressure (psi)")
 
 # Highlight the area under the curve
-plt.fill_between(time, pressure, alpha=0.5)
+plt.fill_between(time, adj_pressure, alpha=0.5)
 
 plt.annotate("Area: {:.2f}".format(integrated), xy=(0.5, 0.8), xycoords="axes fraction")
 
 # Show the plot
 plt.show()
-

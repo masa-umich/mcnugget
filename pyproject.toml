@@ -12,13 +12,13 @@ toml = "^0.10.2"
 matplotlib = "^3.7.1"
 scipy = "^1.10.1"
 pyfluids = "^2.3.2"
-synnax = "^0.8.0"
+synnax = "^0.13.8"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
 
 [tool.synnax]
-host = "masa.synnaxlabs.com"
+host = "synnax.masa.engin.umich.edu"
 port = 80
 username = "synnax"
 password = "seldon"

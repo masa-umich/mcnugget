@@ -1,29 +1,20 @@
-import synnax as sy
 import matplotlib.pyplot as plt
-from mcnugget.query import read_during_state, ECStates
-from mcnugget.tests import TPC
-from mcnugget.time import elapsed_seconds
+import synnax as sy
+from mcnugget.client import client
 
-# tr defines the time range we're interested in reading. An easy way to figure this
-# out is to use the visualiation UI to copy the range (http://docs.synnaxlabs.com/visualize/select-a-range).
-# In this case we're interested in the tank pressure during a TPC test.
-tr = TPC["02-19-23-02"]
+# We're going to fetch a named range from the server. This range represents a test we
+# ran on october 28th to test Gooster. If you don't know what the name of your range is,
+# use the Synnax console to find it.
+rng = client.ranges.retrieve("October 28 Gooster")
 
-# This channel contains the timestamps for the data.
-TIME_CH = "Time"
-# This channel contains the pressure data we're interested in plotting.
-PT_CH = "ec.pressure[9]"
+# This channel contains our 2K bottle pressure for the range.
+bottle_pressure = rng.gse_pressure_20
 
-# Read the data from the specified channels when (ec.STATE) is in MANUAL.
-# If we wanted to read data during a test, we could switch this to ECStates.HOTFIRE.
-data = read_during_state(tr, TIME_CH, PT_CH, state=ECStates.HOTFIRE)
-# Pick out our timestamps
-time = elapsed_seconds(data[TIME_CH].to_numpy())
-# Pick out our pressure data
-pressure = data[PT_CH].to_numpy()
+# Converts our timestamps to elapsed seconds since the start of the range.
+elapsed_time = sy.elapsed_seconds(rng.gse_time)
 
 # Plot the data
-plt.plot(time, pressure)
+plt.plot(elapsed_time, bottle_pressure)
 
 # Set the labels
 plt.xlabel("Time (s)")
@@ -31,5 +22,3 @@ plt.ylabel("Pressure (psi)")
 
 # Show the plot
 plt.show()
-
-
