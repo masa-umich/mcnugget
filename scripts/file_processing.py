@@ -19,8 +19,15 @@ PT_OFFSET_COL = 6
 TC_TYPE_COL = 7
 TC_OFFSET_COL = 8
 TITLES = [
-    "Alias", "Device", "Port", "Sensor Type", "Units",
-    "PT Slope (psi/mv)", "PT Offset (mv)", "TC Type", "TC Offset (K)"
+    "Alias",
+    "Device",
+    "Port",
+    "Sensor Type",
+    "Units",
+    "PT Slope (psi/mv)",
+    "PT Offset (mv)",
+    "TC Type",
+    "TC Offset (K)",
 ]
 #  note that the above titles are used when extracting from an excel sheet and need to match the headers of the sheet
 
@@ -47,8 +54,10 @@ def main():
     start_time = time.time()
     n = len(sys.argv)
     if n != 2:
-        print("Usage: file_processing.py sheet"
-              "\nsheet must be a filepath to an excel sheet, url of a google sheet, or name of a google sheet.")
+        print(
+            "Usage: file_processing.py sheet"
+            "\nsheet must be a filepath to an excel sheet, url of a google sheet, or name of a google sheet."
+        )
         return 1
     else:
         source = sys.argv[1]
@@ -110,8 +119,7 @@ def validate_sheet(df: pd.DataFrame) -> None:
                 raise f"duplicate port number in row {r} column {PORT_COL}"
             ai[df[TITLES[PORT_COL]][r]] = True
             if not (df[TITLES[SENSOR_TYPE_COL]][r] and df[TITLES[SENSOR_TYPE_COL]][r]):
-                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " \
-                      f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
+                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
             if int(df[TITLES[PORT_COL]][r]) < 1 or int(df[TITLES[PORT_COL]][r]) > 80:
                 raise f"port number for {df[TITLES[ALIAS_COL]][r]} is not within the valid range"
         elif df[TITLES[SENSOR_TYPE_COL]][r] == "TC":
@@ -119,8 +127,7 @@ def validate_sheet(df: pd.DataFrame) -> None:
                 raise f"duplicate port number in row {r} column {PORT_COL}"
             ai[df[TITLES[PORT_COL]][r]] = True
             if not (df[TITLES[SENSOR_TYPE_COL]][r] and df[TITLES[SENSOR_TYPE_COL]][r]):
-                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " \
-                      f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
+                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
             if int(df[TITLES[PORT_COL]][r]) < 1 or int(df[TITLES[PORT_COL]][r]) > 80:
                 raise f"port number for {df[TITLES[ALIAS_COL]][r]} is not within the valid range"
         elif df[TITLES[SENSOR_TYPE_COL]][r] == "VLV":
@@ -130,8 +137,7 @@ def validate_sheet(df: pd.DataFrame) -> None:
             if int(df[TITLES[PORT_COL]][r]) < 1 or int(df[TITLES[PORT_COL]][r]) > 32:
                 raise f"port number for {df[TITLES[ALIAS_COL]][r]} is not within the valid range"
         else:
-            raise f"invalid sensor type for {df[TITLES[ALIAS_COL]][r]} " \
-                  f"in column {SENSOR_TYPE_COL} - must be VLV, PT, or TC"
+            raise f"invalid sensor type for {df[TITLES[ALIAS_COL]][r]} " f"in column {SENSOR_TYPE_COL} - must be VLV, PT, or TC"
 
 
 def update_active_range(data: pd.DataFrame) -> None:
@@ -153,13 +159,15 @@ def process_valve(data: pd.DataFrame, r: int) -> None:
         name += "0"
     name += data[TITLES[PORT_COL]][r]
     alias = data[TITLES[ALIAS_COL]][r]
-    client.channels.retrieve(name).set_alias({
-        name + "_i": alias + " Current",
-        name + "_en": alias + " English",
-        name + "_v": alias + " Voltage",
-        name + "_plugged": alias + " Plugged",
-        name + "cmd": alias + " Command"
-    })
+    client.channels.retrieve(name).set_alias(
+        {
+            name + "_i": alias + " Current",
+            name + "_en": alias + " English",
+            name + "_v": alias + " Voltage",
+            name + "_plugged": alias + " Plugged",
+            name + "cmd": alias + " Command",
+        }
+    )
     print("updated" + name)
 
 
@@ -169,10 +177,12 @@ def process_pt(data: pd.DataFrame, r: int) -> None:
         name += "0"
     name += data[TITLES[PORT_COL]][r]
     client.channels.retrieve(name).set_alias(data[TITLES[ALIAS_COL]][r])
-    active_range.meta_data.set({
-        name + "_pt_slope": data[TITLES[PT_SLOPE_COL]][r],
-        name + "_pt_offset": data[TITLES[PT_OFFSET_COL]][r]
-    })
+    active_range.meta_data.set(
+        {
+            name + "_pt_slope": data[TITLES[PT_SLOPE_COL]][r],
+            name + "_pt_offset": data[TITLES[PT_OFFSET_COL]][r],
+        }
+    )
     print("updated " + name)
 
 
@@ -182,10 +192,12 @@ def process_tc(data: pd.DataFrame, r: int) -> None:
         name += "0"
     name += data[TITLES[PORT_COL]][r]
     client.channels.retrieve(name).set_alias(data[TITLES[ALIAS_COL]][r])
-    active_range.meta_data.set({
-        name + "_tc_type": data[TITLES[TC_TYPE_COL]][r],
-        name + "_tc_offset": data[TITLES[TC_OFFSET_COL]][r]
-    })
+    active_range.meta_data.set(
+        {
+            name + "_tc_type": data[TITLES[TC_TYPE_COL]][r],
+            name + "_tc_offset": data[TITLES[TC_OFFSET_COL]][r],
+        }
+    )
     print("updated " + name)
 
 

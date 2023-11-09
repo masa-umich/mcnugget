@@ -21,8 +21,17 @@ PT_OFFSET_COL = 8
 TC_TYPE_COL = 9
 TC_OFFSET_COL = 10
 TITLES = [
-    "Name", "Alias", "Device", "Port", "Data Type", "Sensor Type", "Units",
-    "PT Slope (psi/mv)", "PT Offset (mv)", "TC Type", "TC Offset (K)"
+    "Name",
+    "Alias",
+    "Device",
+    "Port",
+    "Data Type",
+    "Sensor Type",
+    "Units",
+    "PT Slope (psi/mv)",
+    "PT Offset (mv)",
+    "TC Type",
+    "TC Offset (K)",
 ]
 #  note that the above titles are used when extracting from an excel sheet and need to match the headers of the sheet
 confirmed_index_channels = {}
@@ -72,8 +81,10 @@ def main():
     start_time = time.time()
     n = len(sys.argv)
     if n != 2:
-        print("Usage: file_processing.py sheet"
-              "\nsheet must be a filepath to an excel sheet, url of a google sheet, or name of a google sheet.")
+        print(
+            "Usage: file_processing.py sheet"
+            "\nsheet must be a filepath to an excel sheet, url of a google sheet, or name of a google sheet."
+        )
         return 1
     else:
         source = sys.argv[1]
@@ -105,7 +116,12 @@ def abstract_data(source) -> {str: [{str: {str: str}}]}:
         data = process_url(source)
     else:
         data = process_name(source)
-    result = {"DEV": default_device_channels(data[TITLES[DEVICE_COL]]), "VLV": [], "PT": [], "TC": []}
+    result = {
+        "DEV": default_device_channels(data[TITLES[DEVICE_COL]]),
+        "VLV": [],
+        "PT": [],
+        "TC": [],
+    }
     for r in range(len(data[TITLES[NAME_COL]])):
         if data[TITLES[SENSOR_TYPE_COL]][r] == "VLV":
             for ch in valve_channel(data, r):
@@ -127,10 +143,26 @@ def default_device_channels(devices: [str]) -> [{str: {str: str}}]:
     for device in devices:
         # print(device)
         if (device + "_time") not in partial_result:
-            partial_result.append({device + "_time": {"data_type": "timestamp",
-                                                      "device": device, "is_index": True}})
-            partial_result.append({device + "_ambientize": {"data_type": "INT64",
-                                                            "device": device, "index": device + "_time"}})
+            partial_result.append(
+                {
+                    device
+                    + "_time": {
+                        "data_type": "timestamp",
+                        "device": device,
+                        "is_index": True,
+                    }
+                }
+            )
+            partial_result.append(
+                {
+                    device
+                    + "_ambientize": {
+                        "data_type": "INT64",
+                        "device": device,
+                        "index": device + "_time",
+                    }
+                }
+            )
     return partial_result
 
 
@@ -143,56 +175,78 @@ def valve_channel(data, r) -> [{str: {str: str}}]:
     valve_name = data[TITLES[NAME_COL]][r]
     device = data[TITLES[DEVICE_COL]][r]
     partial_result = [
-        {valve_name + "_time": {
-            "data_type": "timestamp",
-            "device": device,
-            "is_index": True}},
-        {valve_name + "_en": {
-            "data_type": "uint8",
-            "device": device,
-            "index": device + "_time"}},
-        {valve_name + "_cmd": {
-            "data_type": "uint8",
-            "device": device,
-            "index": device + "_time"}},
-        {valve_name + "_v": {
-            "data_type": "float32",
-            "device": device,
-            "index": device + "_time"}},
-        {valve_name + "_i": {
-            "data_type": "float32",
-            "device": device,
-            "index": device + "_time"}},
-        {valve_name + "_plugged": {
-            "data_type": "uint32",
-            "device": device,
-            "index": device + "_time"}}
+        {
+            valve_name
+            + "_time": {"data_type": "timestamp", "device": device, "is_index": True}
+        },
+        {
+            valve_name
+            + "_en": {"data_type": "uint8", "device": device, "index": device + "_time"}
+        },
+        {
+            valve_name
+            + "_cmd": {
+                "data_type": "uint8",
+                "device": device,
+                "index": device + "_time",
+            }
+        },
+        {
+            valve_name
+            + "_v": {
+                "data_type": "float32",
+                "device": device,
+                "index": device + "_time",
+            }
+        },
+        {
+            valve_name
+            + "_i": {
+                "data_type": "float32",
+                "device": device,
+                "index": device + "_time",
+            }
+        },
+        {
+            valve_name
+            + "_plugged": {
+                "data_type": "uint32",
+                "device": device,
+                "index": device + "_time",
+            }
+        },
     ]
     return partial_result
 
 
 def pt_channel(data, r) -> [{str: {str: str}}]:
     device = data[TITLES[DEVICE_COL]][r]
-    return [{
-        data[TITLES[NAME_COL]][r]: {
-            "data_type": data[TITLES[DATA_TYPE_COL]][r],
-            "device": device,
-            "pt_slope": data[TITLES[PT_SLOPE_COL]][r],
-            "pt_offset": data[TITLES[PT_OFFSET_COL]][r],
-            "index": device + "_time"
-        }}]
+    return [
+        {
+            data[TITLES[NAME_COL]][r]: {
+                "data_type": data[TITLES[DATA_TYPE_COL]][r],
+                "device": device,
+                "pt_slope": data[TITLES[PT_SLOPE_COL]][r],
+                "pt_offset": data[TITLES[PT_OFFSET_COL]][r],
+                "index": device + "_time",
+            }
+        }
+    ]
 
 
 def tc_channel(data, r) -> {str: {str: str}}:
     device = data[TITLES[DEVICE_COL]][r]
-    return [{
-        data["Name"][r]: {
-            "data_type": data[TITLES[DATA_TYPE_COL]][r],
-            "device": device,
-            "tc_type": data[TITLES[TC_TYPE_COL]][r],
-            "tc_offset": data[TITLES[TC_OFFSET_COL]][r],
-            "index": device + "_time"
-        }}]
+    return [
+        {
+            data["Name"][r]: {
+                "data_type": data[TITLES[DATA_TYPE_COL]][r],
+                "device": device,
+                "tc_type": data[TITLES[TC_TYPE_COL]][r],
+                "tc_offset": data[TITLES[TC_OFFSET_COL]][r],
+                "index": device + "_time",
+            }
+        }
+    ]
 
 
 def update_or_create_channel(ch_name: str, ch_as_dict: {str: str}) -> None:
@@ -225,7 +279,9 @@ def update_or_create_channel(ch_name: str, ch_as_dict: {str: str}) -> None:
 
 
 def update_channel(ch_name: str, ch_as_dict: {str: str}) -> int:
-    print(f"There is not yet functionality to update existing channels - {ch_name} not updated")
+    print(
+        f"There is not yet functionality to update existing channels - {ch_name} not updated"
+    )
     return 0
 
 
@@ -233,11 +289,15 @@ def create_channel(ch_name: str, ch_as_dict: {str: str}) -> int:
     print(f"creating channel {ch_name}")
     # print(ch_as_dict)
     if ch_as_dict.get("is_index"):
-        return client.channels.create(data_type=DataType(ch_as_dict["data_type"]), name=ch_name,
-                                      is_index=True).key
+        return client.channels.create(
+            data_type=DataType(ch_as_dict["data_type"]), name=ch_name, is_index=True
+        ).key
     else:
-        return client.channels.create(data_type=DataType(ch_as_dict["data_type"]), name=ch_name,
-                                      index=find_index(ch_as_dict["index"])).key
+        return client.channels.create(
+            data_type=DataType(ch_as_dict["data_type"]),
+            name=ch_name,
+            index=find_index(ch_as_dict["index"]),
+        ).key
 
 
 def channel_exists(ch_name: str) -> bool:

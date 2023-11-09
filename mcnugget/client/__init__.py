@@ -5,7 +5,9 @@ from synnax import Synnax
 
 import toml
 
-TOML = toml.load(Path(os.path.dirname(__file__)).parent.parent / "pyproject.toml")['tool']['synnax']
+TOML = toml.load(Path(os.path.dirname(__file__)).parent.parent / "pyproject.toml")[
+    "tool"
+]["synnax"]
 
 try:
     client = Synnax(

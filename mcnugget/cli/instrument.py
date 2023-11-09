@@ -1,9 +1,9 @@
+import click
 import pandas as pd
 from dataclasses import dataclass
 import gspread
-import synnax as sy
 from rich import print
-import click
+import synnax as sy
 from mcnugget.client import client
 
 ALIAS_COL = "Name"
@@ -27,9 +27,7 @@ LC_TYPE = "LC"
 VALID_TYPES = [PT_TYPE, TC_TYPE, VLV_TYPE, LC_TYPE]
 
 GSE_AI_TIME = sy.Channel(
-    name="gse_ai_time",
-    is_index=True,
-    data_type=sy.DataType.TIMESTAMP
+    name="gse_ai_time", is_index=True, data_type=sy.DataType.TIMESTAMP
 )
 
 GSE_DI_TIME = sy.Channel(
@@ -39,9 +37,7 @@ GSE_DI_TIME = sy.Channel(
 )
 
 GSE_DOA_TIME = sy.Channel(
-    name="gse_doa_time",
-    is_index=True,
-    data_type=sy.DataType.TIMESTAMP
+    name="gse_doa_time", is_index=True, data_type=sy.DataType.TIMESTAMP
 )
 
 
@@ -67,9 +63,7 @@ def pure_instrument(sheet: str | None, client: sy.Synnax):
         data = process_name(sheet)
 
     ctx = Context(
-        client=client,
-        active_range=client.ranges.retrieve_active(),
-        indexes={}
+        client=client, active_range=client.ranges.retrieve_active(), indexes={}
     )
 
     create_device_channels(ctx)
@@ -113,7 +107,6 @@ def process_name(source) -> pd.DataFrame:
 
 
 def process_row(ctx: Context, index: int, row: dict):
-    print(f"Row [purple]{index}[/purple]")
     type_ = row[TYPE_COL]
     if type_ == VLV_TYPE:
         return process_valve(ctx, index, row)
@@ -125,16 +118,16 @@ def process_row(ctx: Context, index: int, row: dict):
         return
 
     print(
-        f"""[red]Invalid sensor or actuator type '{type}' in row {index}[/red]\n[blue]Valid types are: {VLV_TYPE}, {PT_TYPE}, {TC_TYPE}[/blue]""")
+        f"""[purple]Row {index} - [/purple][red]Invalid sensor or actuator type '{type}' in row {index}[/red]\n[blue]Valid types are: {VLV_TYPE}, {PT_TYPE}, {TC_TYPE}[/blue]"""
+    )
 
 
 def get_device(index: int, row: dict) -> (str, bool):
     device = row[DEVICE_COL]
     if device not in VALID_DEVICES:
-        print(f"""
-        [red]Invalid device name '{device}' in row {index}[/red]
-        [blue]Valid devices are: {VALID_DEVICES}[/blue]
-        """)
+        print(
+            f"""[red]Invalid device name '{device}' in row {index}[/red]\n[blue]Valid devices are: {VALID_DEVICES}[/blue]"""
+        )
         return "", False
 
     return device, True
@@ -149,17 +142,21 @@ def get_port(index: int, row: dict, device: Device) -> (int, bool):
         port = int(port)
     except ValueError:
         print(
-            f"""[red]Invalid port number '{port}' in row {index}[/red]\n[blue]Value must be a positive integer[/blue]""")
+            f"""[red]Invalid port number '{port}' in row {index}[/red]\n[blue]Value must be a positive integer[/blue]"""
+        )
         return -1, False
     if device == GSE_DEVICE and port not in GSE_VALID_PORTS:
         print(
-            f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are: {GSE_VALID_PORTS}[/blue]""")
+            f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are: {GSE_VALID_PORTS}[/blue]"""
+        )
         return -1, False
     return port, True
 
 
 def create_device_channels(ctx: Context) -> (dict, bool):
-    res = ctx.client.channels.create([GSE_AI_TIME, GSE_DI_TIME], retrieve_if_name_exists=True)
+    res = ctx.client.channels.create(
+        [GSE_AI_TIME, GSE_DI_TIME], retrieve_if_name_exists=True
+    )
     ctx.indexes["gse_ai"] = res[0]
     ctx.indexes["gse_di"] = res[1]
 
@@ -184,10 +181,14 @@ def process_valve(ctx: Context, index: int, row: dict):
         return
 
     if port not in VALID_VALVE_PORTS:
-        print(f"""[red]Valves can only be connected to ports {VALID_VALVE_PORTS.start} through {VALID_VALVE_PORTS.stop}[/red]""")
+        print(
+            f"""[red]Valves can only be connected to ports {VALID_VALVE_PORTS.start} through {VALID_VALVE_PORTS.stop}[/red]"""
+        )
         return
 
-    print(f"[blue]Configuring valve {port} on {device} port {VALVE_AI_PORT_OFFSET + port}[/blue]")
+    print(
+        f"[purple]Row {index} - [/purple][blue]Configuring valve {port} on {device} port {VALVE_AI_PORT_OFFSET + port}[/blue]"
+    )
 
     ack_channel = sy.Channel(
         name=f"gse_doa_{port}",
@@ -207,38 +208,51 @@ def process_valve(ctx: Context, index: int, row: dict):
     input_channels = [ack_channel, i_channel, v_channel]
 
     try:
-        input_channels = ctx.client.channels.create(input_channels, retrieve_if_name_exists=True)
+        input_channels = ctx.client.channels.create(
+            input_channels, retrieve_if_name_exists=True
+        )
     except Exception as e:
-        print(f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]""")
+        print(
+            f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
+            ""
+        )
         return
 
     cmd_time_channel = sy.Channel(
-        name=f"gse_doc_{port}_time",
-        data_type=sy.DataType.TIMESTAMP,
-        is_index=True
+        name=f"gse_doc_{port}_time", data_type=sy.DataType.TIMESTAMP, is_index=True
     )
 
     try:
-        cmd_time_channel = ctx.client.channels.create(cmd_time_channel, retrieve_if_name_exists=True)
+        cmd_time_channel = ctx.client.channels.create(
+            cmd_time_channel, retrieve_if_name_exists=True
+        )
     except Exception as e:
-        print(f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]""")
+        print(
+            f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
+            ""
+        )
         return
 
     cmd_channel = sy.Channel(
-        name=f"gse_doc_{port}",
-        data_type=sy.DataType.UINT8,
-        index=cmd_time_channel.key
+        name=f"gse_doc_{port}", data_type=sy.DataType.UINT8, index=cmd_time_channel.key
     )
 
     try:
-        cmd_channel = ctx.client.channels.create(cmd_channel, retrieve_if_name_exists=True)
+        cmd_channel = ctx.client.channels.create(
+            cmd_channel, retrieve_if_name_exists=True
+        )
     except Exception as e:
-        print(f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]""")
+        print(
+            f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
+            ""
+        )
         return
 
     name = str(row[ALIAS_COL])
     if len(name) == 0:
-        print(f"[orange]Alias for {device} valve {port} is empty. We won't set any aliases for this channel.[/orange]")
+        print(
+            f"[orange]Alias for {device} valve {port} is empty. We won't set any aliases for this channel.[/orange]"
+        )
 
     name = name + "_"
     aliases = {
@@ -246,12 +260,14 @@ def process_valve(ctx: Context, index: int, row: dict):
         i_channel.name: name + "i",
         v_channel.name: name + "v",
         cmd_channel.name: name + "cmd",
-        cmd_time_channel.name: name + "cmd_time"
+        cmd_time_channel.name: name + "cmd_time",
     }
     try:
         ctx.active_range.set_alias(aliases)
     except Exception as e:
-        print(f"""[red]Failed to set aliases for {device} valve {port}[/red]\n[blue]Error: {e}[/blue]""")
+        print(
+            f"""[red]Failed to set aliases for {device} valve {port}[/red]\n[blue]Error: {e}[/blue]"""
+        )
         return
 
 
@@ -281,10 +297,14 @@ def process_pt(ctx: Context, index: int, row: dict):
     if not ok:
         return False
     if port not in PT_VALID_PORTS:
-        print(f"[red]Pressure transducers can only be connected to ports {PT_VALID_PORTS}[/red]")
+        print(
+            f"[red]Pressure transducers can only be connected to ports {PT_VALID_PORTS}[/red]"
+        )
         return False
 
-    print(f"[green]Configuring {device} pressure transducer on port {port}[/green]")
+    print(
+        f"[purple]Row {index} - [/purple][blue]Configuring PT {port} on {device} port {port}[/blue]"
+    )
 
     name = f"{device}_ai_{pt_analog_port(port)}"
 
@@ -293,14 +313,17 @@ def process_pt(ctx: Context, index: int, row: dict):
             name=name,
             data_type=sy.DataType.FLOAT32,
             index=ctx.indexes["gse_ai"].key,
-            retrieve_if_name_exists=True
+            retrieve_if_name_exists=True,
         )
     except sy.NoResultsError:
-        print(f"""[orange]Channel {name} does not exist. We can continue, but this is likely an error.[/orange]""")
+        print(
+            f"""[orange]Channel {name} does not exist. We can continue, but this is likely an error.[/orange]"""
+        )
         return False
     except Exception as e:
         print(
-            f"""[red]Failed to retrieve channel for {device} pressure transducer {port}[/red]\n[blue]Error: {e}[/blue]""")
+            f"""[red]Failed to retrieve channel for {device} pressure transducer {port}[/red]\n[blue]Error: {e}[/blue]"""
+        )
         return False
 
     max_pressure = row[PT_MAX_PRESSURE_COL]
@@ -309,26 +332,32 @@ def process_pt(ctx: Context, index: int, row: dict):
         max_pressure = float(max_pressure)
     except ValueError:
         print(
-            f"""[red]Invalid value for PT max pressure '{max_pressure}' in row {index}[/red]\n[blue]Value must be a positive number[/blue]""")
+            f"""[red]Invalid value for PT max pressure '{max_pressure}' in row {index}[/red]\n[blue]Value must be a positive number[/blue]"""
+        )
         return False
 
     slope = (PT_MAX_OUTPUT_VOLTAGE - PT_OFFSET) / max_pressure
     try:
         ctx.active_range.meta_data.set({f"{name}_pt_slope": slope})
     except Exception as e:
-        print(f"""[red]Failed to set slope for {device} pressure transducer {port}[/red]\n[blue]Error: {e}[/blue]""")
+        print(
+            f"""[red]Failed to set slope for {device} pressure transducer {port}[/red]\n[blue]Error: {e}[/blue]"""
+        )
         return False
 
     alias = str(row[ALIAS_COL]).rstrip()
     if len(alias) == 0:
         print(
-            f"""[orange]Alias for {device} pressure transducer {port} is empty. We won't set any aliases for this channel.[/orange]""")
+            f"""[orange]Alias for {device} pressure transducer {port} is empty. We won't set any aliases for this channel.[/orange]"""
+        )
         return True
 
     try:
         ctx.active_range.set_alias({name: alias})
     except Exception as e:
-        print(f"""[red]Failed to set alias for {device} pressure transducer {port}[/red]\n[blue]Error: {e}[/blue]""")
+        print(
+            f"""[red]Failed to set alias for {device} pressure transducer {port}[/red]\n[blue]Error: {e}[/blue]"""
+        )
         return False
 
     return True
@@ -354,12 +383,14 @@ def process_tc(ctx: Context, index: int, row: dict):
         return False
 
     if port not in TC_VALID_PORTS:
-        print(f"""
-        [red]Thermocouples can only be connected to ports {TC_VALID_PORTS}[/red]
-        """)
+        print(
+            f"""[red]Thermocouples can only be connected to ports {TC_VALID_PORTS}[/red]"""
+        )
         return False
 
-    print(f"[green]Configuring thermocouple {port} on {device} port {TC_PORT_OFFSET + port}[/green]")
+    print(
+        f"[purple]Row {index} - [/purple][blue]Configuring TC {port} on {device} port {TC_PORT_OFFSET + port}[/blue]"
+    )
 
     port += TC_PORT_OFFSET
 
@@ -374,42 +405,54 @@ def process_tc(ctx: Context, index: int, row: dict):
     try:
         ch = ctx.client.channels.create(ch, retrieve_if_name_exists=True)
     except Exception as e:
-        print(f"""[red]Failed to retrieve channel for {device} thermocouple {port}[/red]\n Error: {e}""")
+        print(
+            f"""[red]Failed to retrieve channel for {device} thermocouple {port}[/red]\n Error: {e}"""
+        )
         return False
 
     tc_type = str(row[TC_TYPE_COL]).rstrip()
     if len(tc_type) == 0:
-        print(f"[red]Invalid value for TC type '{tc_type}' in row {index}[/red]\n[blue]Value must be a valid thermocouple type[/blue]")
+        print(
+            f"[red]Invalid value for TC type '{tc_type}' in row {index}[/red]\n[blue]Value must be a valid thermocouple type[/blue]"
+        )
         return True
 
     tc_offset = str(row[TC_OFFSET_COL]).rstrip()
     if len(tc_offset) == 0:
-        print(f"[orange]Invalid value for TC offset '{tc_offset}' in row {index}[/orange]\n[blue]We'll use the default value of 0[/blue]")
+        print(
+            f"[orange]Invalid value for TC offset '{tc_offset}' in row {index}[/orange]\n[blue]We'll use the default value of 0[/blue]"
+        )
         return True
 
     try:
-        ctx.active_range.meta_data.set({f"{name}_tc_type": tc_type, f"{name}_tc_offset": tc_offset})
+        ctx.active_range.meta_data.set(
+            {f"{name}_tc_type": tc_type, f"{name}_tc_offset": tc_offset}
+        )
     except Exception as e:
-        print(f"""
+        print(
+            f"""
         [red]Failed to set thermocouple type and offset for {device} thermocouple {port}[/red]
         [blue]Error: {e}[/blue]
-        """)
+        """
+        )
         return False
 
     alias = str(row[ALIAS_COL]).rstrip()
     if len(alias) == 0:
-        print(f"""
+        print(
+            f"""
         [orange]Alias for {device} thermocouple {port} is empty. We won't set any aliases for this channel.[/orange]
-        """)
+        """
+        )
         return True
 
     try:
         ctx.active_range.set_alias({name: alias})
     except Exception as e:
-        print(f"""
+        print(
+            f"""
         [red]Failed to set alias for {device} thermocouple {port}[/red]
         [blue]Error: {e}[/blue]
-        """)
+        """
+        )
         return False
-
-# %%

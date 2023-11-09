@@ -24,7 +24,7 @@ LOX_MPV_NAME = "ec.vlv6.en (hs)"
 FUEL_MPV_NAME = "ec.vlv7.en (hs)"
 TIME_NAME = "Time (hs)"
 
-#tr = sy.TimeRange(1681142937492482600, 1681142943980569600)
+# tr = sy.TimeRange(1681142937492482600, 1681142943980569600)
 tr = sy.TimeRange(1681142937689518000, 1681142945217309700)
 
 DATA = read(
@@ -36,8 +36,8 @@ DATA = read(
 
 TIME_DATA = elapsed_seconds(DATA[TIME_NAME])
 
-FUEL_DENSITY = 1000 # kg/m^3
-LOX_DENSITY = 533.38 # kg/m^3
+FUEL_DENSITY = 1000  # kg/m^3
+LOX_DENSITY = 533.38  # kg/m^3
 
 LOX_DOM = DATA[LOX_DOME_NAME] * 0.6 * 6894.75729
 LOX_TANK_D = DATA[LOX_TANK_NAME] * 6894.75729
@@ -62,12 +62,14 @@ plt.plot(TIME_DATA, MASS_FLOW_RATE_INJ, label="Mass flow rate (kg/s)", color="re
 plt.plot(TIME_DATA, MASS_FLOW_RATE_LINE, label="Mass flow rate (kg/s)", color="orange")
 plt.legend()
 
-print(f"""
+print(
+    f"""
     "LOX dome: {DATA[LOX_DOME_NAME][0]}",
     "Lox tank: {DATA[LOX_TANK_NAME][0]}",
     "Injector Mass flow rate: {MASS_FLOW_RATE_INJ[0]}",
     "Feed line Mass flow rate: {MASS_FLOW_RATE_LINE[0]}",
-""")
+"""
+)
 
 TOTAL_INJ = np.trapz(MASS_FLOW_RATE_INJ, TIME_DATA)
 TOTAL_LINE = np.trapz(MASS_FLOW_RATE_LINE, TIME_DATA)

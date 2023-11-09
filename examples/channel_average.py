@@ -11,7 +11,9 @@ rng = client.ranges.retrieve("October 28 Gooster")
 time = sy.elapsed_seconds(rng.gse_time)
 
 # get the vectorized average of the data using numpy
-avg = np.average([rng.gse_pressure_20, rng.gse_pressure_13, rng.gse_pressure_12], axis=0)
+avg = np.average(
+    [rng.gse_pressure_20, rng.gse_pressure_13, rng.gse_pressure_12], axis=0
+)
 
 plt.plot(time, avg)
 
