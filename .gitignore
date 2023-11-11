@@ -3,3 +3,8 @@
 **/__pycache__
 **/*.png
 **/.DS_Store
+/.venv/
+/dist/
+/venv/
+/scripts/alternative_file_processing.py
+/scripts/credentials.json
