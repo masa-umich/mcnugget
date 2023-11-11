@@ -17,6 +17,7 @@ synnax = { path = "../../synnaxlabs/synnax/client/py", develop = true }
 click = "^8.1.7"
 gspread = "^5.12.0"
 openpyxl = "^3.1.2"
+jupyter = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"

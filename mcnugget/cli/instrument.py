@@ -50,15 +50,16 @@ class Context:
 
 @click.command()
 @click.argument("sheet", type=click.Path(exists=False), required=True)
-def instrument(sheet: str | None):
-    pure_instrument(sheet, client=client)
+@click.option("--gcreds", type=click.Path(exists=False), required=False)
+def instrument(sheet: str | None, gcreds: str | None):
+    pure_instrument(sheet, client=client, gcreds=gcreds)
 
 
-def pure_instrument(sheet: str | None, client: sy.Synnax):
+def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = None):
     if ".xlsx" in sheet:
         data = process_excel(sheet)
     elif "docs.google.com" in sheet:
-        data = process_url(sheet)
+        data = process_url(sheet, gcreds)
     else:
         data = process_name(sheet)
 
@@ -79,9 +80,9 @@ def process_excel(source) -> pd.DataFrame:
     return workbook
 
 
-def process_url(source) -> pd.DataFrame:
+def process_url(source, creds) -> pd.DataFrame:
     try:
-        gspread_client = gspread.service_account("credentials.json")
+        gspread_client = gspread.service_account(creds)
     except FileNotFoundError:
         raise "to authenticate to the gcloud server, you must add a valid credentials.json file in this directory"
     sheet = gspread_client.open_by_url(source)
@@ -97,7 +98,7 @@ def extract_google_sheet(sheet: gspread.Spreadsheet) -> pd.DataFrame:
 
 def process_name(source) -> pd.DataFrame:
     try:
-        gspread_client = gspread.service_account("credentials.json")
+        gspread_client = gspread.service_account("../../credentials.json")
     except FileNotFoundError:
         raise "to authenticate to the gcloud server, you must add a valid credentials.json file in this directory"
     sheet = gspread_client.open(source)
@@ -180,19 +181,19 @@ def process_valve(ctx: Context, index: int, row: dict):
     if not ok:
         return
 
+    print(
+        f"[purple]Row {index} - [/purple][blue]Configuring valve {port} on {device} port {VALVE_AI_PORT_OFFSET + port}[/blue]"
+    )
+
     if port not in VALID_VALVE_PORTS:
         print(
             f"""[red]Valves can only be connected to ports {VALID_VALVE_PORTS.start} through {VALID_VALVE_PORTS.stop}[/red]"""
         )
         return
 
-    print(
-        f"[purple]Row {index} - [/purple][blue]Configuring valve {port} on {device} port {VALVE_AI_PORT_OFFSET + port}[/blue]"
-    )
-
     ack_channel = sy.Channel(
         name=f"gse_doa_{port}",
-        data_type=sy.DataType.FLOAT32,
+        data_type=sy.DataType.UINT8,
         index=ctx.indexes["gse_ai"].key,
     )
     i_channel = sy.Channel(
