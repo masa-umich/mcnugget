@@ -6,8 +6,7 @@ import time
 from synnax import Synnax
 
 client = Synnax()
-# active_range = sy.Range # for testing
-active_range = client.ranges.active
+active_range = client.ranges.active() # still not sure how to access this?
 
 ALIAS_COL = 0
 DEVICE_COL = 1
@@ -62,11 +61,11 @@ def main():
     else:
         source = sys.argv[1]
     print("reading from " + source)
-    do_the_thing(source)
+    process_source(source)
     print("time to execute: " + str(time.time() - start_time))
 
 
-def do_the_thing(source) -> None:
+def process_source(source) -> None:
     if ".xlsx" in source:
         data = process_excel(source)
     elif "docs.google.com" in source:
@@ -119,7 +118,8 @@ def validate_sheet(df: pd.DataFrame) -> None:
                 raise f"duplicate port number in row {r} column {PORT_COL}"
             ai[df[TITLES[PORT_COL]][r]] = True
             if not (df[TITLES[SENSOR_TYPE_COL]][r] and df[TITLES[SENSOR_TYPE_COL]][r]):
-                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
+                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " \
+                      f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
             if int(df[TITLES[PORT_COL]][r]) < 1 or int(df[TITLES[PORT_COL]][r]) > 80:
                 raise f"port number for {df[TITLES[ALIAS_COL]][r]} is not within the valid range"
         elif df[TITLES[SENSOR_TYPE_COL]][r] == "TC":
@@ -127,7 +127,8 @@ def validate_sheet(df: pd.DataFrame) -> None:
                 raise f"duplicate port number in row {r} column {PORT_COL}"
             ai[df[TITLES[PORT_COL]][r]] = True
             if not (df[TITLES[SENSOR_TYPE_COL]][r] and df[TITLES[SENSOR_TYPE_COL]][r]):
-                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
+                raise f"define calibration info for {df[TITLES[ALIAS_COL]][r]} " \
+                      f"in columns {TC_TYPE_COL} and {TC_OFFSET_COL}"
             if int(df[TITLES[PORT_COL]][r]) < 1 or int(df[TITLES[PORT_COL]][r]) > 80:
                 raise f"port number for {df[TITLES[ALIAS_COL]][r]} is not within the valid range"
         elif df[TITLES[SENSOR_TYPE_COL]][r] == "VLV":
@@ -137,13 +138,11 @@ def validate_sheet(df: pd.DataFrame) -> None:
             if int(df[TITLES[PORT_COL]][r]) < 1 or int(df[TITLES[PORT_COL]][r]) > 32:
                 raise f"port number for {df[TITLES[ALIAS_COL]][r]} is not within the valid range"
         else:
-            raise f"invalid sensor type for {df[TITLES[ALIAS_COL]][r]} " f"in column {SENSOR_TYPE_COL} - must be VLV, PT, or TC"
+            raise f"invalid sensor type for {df[TITLES[ALIAS_COL]][r]} " \
+                  f"in column {SENSOR_TYPE_COL} - must be VLV, PT, or TC"
 
 
 def update_active_range(data: pd.DataFrame) -> None:
-    print()
-    print(data)
-    print()
     for r in range(len(data[TITLES[ALIAS_COL]])):
         if data[TITLES[SENSOR_TYPE_COL]][r] == "VLV":
             process_valve(data, r)
@@ -208,45 +207,3 @@ def extract_google_sheet(sheet: Spreadsheet) -> pd.DataFrame:
 
 if __name__ == "__main__":
     main()
-
-
-"""
-1. Read and process sheet name
-Excel:
-    A. Validate file path
-    B. Extract using pd method
-Google:
-    A. Validate gspread client
-    B. Extract sheet data
-    C. 'Cache' data (1 api call)
-2. Validate/create device time-index channel(s)
-3. Validate/create device ambientize channel(s)
-4. Validate/create device sub-channel(s)
-    A. PT/TC channels
-        - calibration info
-        - channel info
-        - change active range
-    B. Valve channels
-        - create/validate valve_time
-        - create/validate 5 subchannels (_en, _cmd, _v, _i, _plugged)
-5. Return
-
-- store channels as dictionary objects with the name as the key
-- when needed, check the key and update or create based on the values
-
-The meaningful data behind a channel is represented internally by:
-- key=name
-- values=dict
-    - "data_type": sy.DataType
-    - "device": str
-    - "index": str
-    - "is_index: bool
-    - * "pt_slope": str
-    - * "pt_offset": str
-    - * "tc_type": str
-    - * "tc_offset": str
-Note that the sensor type is already known from the dictionary it is stored under
-
-sets calibration info by using client.
-gse_pt_01_pt_slope, gse_pt_01_pt_offset, gse_tc_01_tc_type, gse_tc_01_tc_offset
-"""
