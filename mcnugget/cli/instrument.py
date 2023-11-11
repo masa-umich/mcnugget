@@ -215,7 +215,6 @@ def process_valve(ctx: Context, index: int, row: dict):
     except Exception as e:
         print(
             f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
-            ""
         )
         return
 
