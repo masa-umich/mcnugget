@@ -11,7 +11,6 @@ DEVICE_COL = "Device"
 PORT_COL = "Port"
 TYPE_COL = "Type"
 PT_MAX_PRESSURE_COL = "Max Pressure (PSI)"
-TC_TYPE_COL = "TC Type"
 TC_OFFSET_COL = "TC Offset (K)"
 GSE_DEVICE = "gse"
 
@@ -222,7 +221,7 @@ def process_valve(ctx: Context, index: int, row: dict, port: int):
         return
 
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring valve {port} on {device} port {port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring valve {port - VALVE_AI_PORT_OFFSET} on {device} port {port}[/blue]"
     )
 
     ack_channel = sy.Channel(
@@ -241,16 +240,20 @@ def process_valve(ctx: Context, index: int, row: dict, port: int):
         index=ctx.indexes["gse_di"].key,
     )
     input_channels = [ack_channel, i_channel, v_channel]
-
-    try:
-        input_channels = ctx.client.channels.create(
-            input_channels, retrieve_if_name_exists=True
-        )
-    except Exception as e:
-        print(
-            f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
-        )
-        return
+    retrieved_channels = []
+    for channel in input_channels:
+        try:
+            retrieved_channel = ctx.client.channels.create(channel, retrieve_if_name_exists=True)
+            retrieved_channels.append(retrieved_channel)
+            if retrieved_channel.data_type != channel.data_type:
+                print(
+                    f"""[purple]Row {index} - [/purple][red]Was expecting data_type {channel.data_type}, but found a channel with data_type {retrieved_channel.data_type}[/red]"""
+                )
+        except Exception as e:
+            print(
+                f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
+            )
+            return
 
     cmd_time_channel = sy.Channel(
         name=f"gse_doc_{port}_time", data_type=sy.DataType.TIMESTAMP, is_index=True
@@ -322,7 +325,7 @@ def process_pt(ctx: Context, index: int, row: dict, port: int):
         return False
 
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring PT {port} on {device} port {port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring PT {port - PT_PORT_OFFSET} on {device} port {port}[/blue]"
     )
 
     name = f"{device}_ai_{port}"
@@ -386,8 +389,9 @@ def process_pt(ctx: Context, index: int, row: dict, port: int):
 # ||||||||||||||||||||||||||||||||||||||||||||| THERMOCOUPLES ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-TC_PORT_OFFSET = 65
+TC_PORT_OFFSET = 64
 TC_VALID_PORTS = range(0+TC_PORT_OFFSET, 16+TC_PORT_OFFSET)
+TC_DEFAULT_VAL = "K"
 
 
 def process_tc(ctx: Context, index: int, row: dict, port: int):
@@ -397,7 +401,7 @@ def process_tc(ctx: Context, index: int, row: dict, port: int):
         return False
 
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring TC {port} on {device} port {port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring TC {port - TC_PORT_OFFSET} on {device} port {port}[/blue]"
     )
 
     name = f"{device}_ai_{port}"
@@ -421,19 +425,14 @@ def process_tc(ctx: Context, index: int, row: dict, port: int):
             f"""[orange]Invalid data type for {device} thermocouple {port} - should be FLOAT32.[/orange]"""
         )
 
-    tc_type = str(row[TC_TYPE_COL]).rstrip()
-    if len(tc_type) == 0:
-        print(
-            f"[red]Invalid value for TC type '{tc_type}' in row {index}[/red]\n[blue]Value must be a valid thermocouple type[/blue]"
-        )
-        return True
-
+    tc_type = TC_DEFAULT_VAL
     tc_offset = str(row[TC_OFFSET_COL]).rstrip()
     if len(tc_offset) == 0:
         print(
-            f"[orange]Invalid value for TC offset '{tc_offset}' in row {index}[/orange]\n[blue]We'll use the default value of 0[/blue]"
+            f"[orange]Invalid value for TC offset '{tc_offset}' in row {index}[/orange]"
+            f"\n[blue]We'll use the default value of 0[/blue]"
         )
-        return True
+        tc_offset = 0
 
     try:
         ctx.active_range.meta_data.set(
@@ -455,7 +454,7 @@ def process_tc(ctx: Context, index: int, row: dict, port: int):
         [orange]Alias for {device} thermocouple {port} is empty. We won't set any aliases for this channel.[/orange]
         """
         )
-        return True
+        return False
 
     try:
         ctx.active_range.set_alias({name: alias})
