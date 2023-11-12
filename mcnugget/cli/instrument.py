@@ -56,20 +56,22 @@ def instrument(sheet: str | None, gcreds: str | None):
 
 
 def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = None):
+    print(sheet)
     if ".xlsx" in sheet:
         data = process_excel(sheet)
     elif "docs.google.com" in sheet:
         data = process_url(sheet, gcreds)
     else:
-        data = process_name(sheet)
+        data = process_name(sheet, gcreds)
 
     ctx = Context(
         client=client, active_range=client.ranges.retrieve_active(), indexes={}
     )
 
     create_device_channels(ctx)
+    existing_ports = {int, bool}
     for index, row in data.iterrows():
-        process_row(ctx, index, row)
+        process_row(ctx, index, row, existing_ports)
 
 
 def process_excel(source) -> pd.DataFrame:
@@ -96,9 +98,9 @@ def extract_google_sheet(sheet: gspread.Spreadsheet) -> pd.DataFrame:
     return pd.DataFrame(vals[1:], columns=vals[0])
 
 
-def process_name(source) -> pd.DataFrame:
+def process_name(source, creds) -> pd.DataFrame:
     try:
-        gspread_client = gspread.service_account("../../credentials.json")
+        gspread_client = gspread.service_account(creds)
     except FileNotFoundError:
         raise "to authenticate to the gcloud server, you must add a valid credentials.json file in this directory"
     sheet = gspread_client.open(source)
@@ -107,7 +109,13 @@ def process_name(source) -> pd.DataFrame:
     return extract_google_sheet(sheet)
 
 
-def process_row(ctx: Context, index: int, row: dict):
+def process_row(ctx: Context, index: int, row: dict, ports: {int, str}):
+    if ports.get(row[PORT_COL]):
+        print(
+            f"""[purple]Row {index} - [/purple]Port {row[PORT_COL]} is already in use by channel {ports.get(row[PORT_COL])} and was not updated."""
+        )
+    else:
+        ports[row[PORT_COL]] = row[ALIAS_COL]
     type_ = row[TYPE_COL]
     if type_ == VLV_TYPE:
         return process_valve(ctx, index, row)
@@ -409,6 +417,11 @@ def process_tc(ctx: Context, index: int, row: dict):
             f"""[red]Failed to retrieve channel for {device} thermocouple {port}[/red]\n Error: {e}"""
         )
         return False
+
+    if ch.data_type != sy.DataType.FLOAT32:
+        print(
+            f"""[orange]Invalid data type for {device} thermocouple {port} - should be FLOAT32.[/orange]"""
+        )
 
     tc_type = str(row[TC_TYPE_COL]).rstrip()
     if len(tc_type) == 0:
