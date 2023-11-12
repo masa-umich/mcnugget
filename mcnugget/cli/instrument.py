@@ -68,8 +68,14 @@ def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = N
         client=client, active_range=client.ranges.retrieve_active(), indexes={}
     )
 
+    if ctx.active_range is None:
+        print(
+            """[red]Active Range not found - aborting[/red]"""
+        )
+        raise "ActiveRangeNotFound"
+
     create_device_channels(ctx)
-    existing_ports = {int, bool}
+    existing_ports = {}
     for index, row in data.iterrows():
         process_row(ctx, index, row, existing_ports)
 
@@ -109,20 +115,24 @@ def process_name(source, creds) -> pd.DataFrame:
     return extract_google_sheet(sheet)
 
 
-def process_row(ctx: Context, index: int, row: dict, ports: {int, str}):
-    if ports.get(row[PORT_COL]):
-        print(
-            f"""[purple]Row {index} - [/purple]Port {row[PORT_COL]} is already in use by channel {ports.get(row[PORT_COL])} and was not updated."""
-        )
-    else:
-        ports[row[PORT_COL]] = row[ALIAS_COL]
+def process_row(ctx: Context, index: int, row: dict, ports: dict):
     type_ = row[TYPE_COL]
+    port, ok = get_port(index, row, Device, type_)
+    if not ok:
+        return
+    if ports.get(port) is not None:
+        print(
+            f"""[purple]Row {index} - [/purple][red]Port {port} is already in use by channel {ports.get(port)} and was not updated.[/red]"""
+        )
+        return
+    else:
+        ports[port] = row[ALIAS_COL]
     if type_ == VLV_TYPE:
-        return process_valve(ctx, index, row)
+        return process_valve(ctx, index, row, port)
     if type_ == PT_TYPE:
-        return process_pt(ctx, index, row)
+        return process_pt(ctx, index, row, port)
     if type_ == TC_TYPE:
-        return process_tc(ctx, index, row)
+        return process_tc(ctx, index, row, port)
     if type_ == LC_TYPE:
         return
 
@@ -145,7 +155,7 @@ def get_device(index: int, row: dict) -> (str, bool):
 GSE_VALID_PORTS = range(0, 80)
 
 
-def get_port(index: int, row: dict, device: Device) -> (int, bool):
+def get_port(index: int, row: dict, device: Device, type_: str) -> (int, bool):
     port = row[PORT_COL]
     try:
         port = int(port)
@@ -154,12 +164,39 @@ def get_port(index: int, row: dict, device: Device) -> (int, bool):
             f"""[red]Invalid port number '{port}' in row {index}[/red]\n[blue]Value must be a positive integer[/blue]"""
         )
         return -1, False
-    if device == GSE_DEVICE and port not in GSE_VALID_PORTS:
+    if type_ == VLV_TYPE:
+        port += VALVE_AI_PORT_OFFSET
+        if port not in VALID_VALVE_PORTS:
+            print(
+                f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are {VALID_VALVE_PORTS}[/blue]"""
+            )
+        return port, True
+    elif type_ == PT_TYPE:
+        if port + PT_PORT_OFFSET not in PT_VALID_PORTS:
+            print(
+                f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are {PT_VALID_PORTS}[/blue]"""
+            )
+        # had to hard-code in port 36 because it is mapped to 60, idk why
+        if port == 36:
+            return 60 + PT_PORT_OFFSET, True
+        return port + PT_PORT_OFFSET, True
+    elif type_ == TC_TYPE:
+        port += TC_PORT_OFFSET
+        if port not in TC_VALID_PORTS:
+            print(
+                f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are {TC_VALID_PORTS}[/blue]"""
+            )
+        return port, True
+    elif type_ == LC_TYPE:
         print(
-            f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are: {GSE_VALID_PORTS}[/blue]"""
+            f"""[yellow]LC types not implemented yet[/yellow]"""
         )
         return -1, False
-    return port, True
+    else:
+        print(
+            f"""[red]Unable to retrieve port - invalid sensor type in row {index}[/red]"""
+        )
+        return -1, False
 
 
 def create_device_channels(ctx: Context) -> (dict, bool):
@@ -175,42 +212,31 @@ def create_device_channels(ctx: Context) -> (dict, bool):
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 VALVE_AI_PORT_OFFSET = 36
-VALID_VALVE_PORTS = range(0, 24)
+VALID_VALVE_PORTS = range(0 + VALVE_AI_PORT_OFFSET, 24 + VALVE_AI_PORT_OFFSET)
 
 
-def process_valve(ctx: Context, index: int, row: dict):
+def process_valve(ctx: Context, index: int, row: dict, port: int):
     # get the device name
     device, ok = get_device(index, row)
     if not ok:
         return
 
-    # get the port number
-    port, ok = get_port(index, row, device)
-    if not ok:
-        return
-
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring valve {port} on {device} port {VALVE_AI_PORT_OFFSET + port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring valve {port} on {device} port {port}[/blue]"
     )
 
-    if port not in VALID_VALVE_PORTS:
-        print(
-            f"""[red]Valves can only be connected to ports {VALID_VALVE_PORTS.start} through {VALID_VALVE_PORTS.stop}[/red]"""
-        )
-        return
-
     ack_channel = sy.Channel(
-        name=f"gse_doa_{port}",
+        name=f"gse_doa_{port - VALVE_AI_PORT_OFFSET}",
         data_type=sy.DataType.UINT8,
         index=ctx.indexes["gse_ai"].key,
     )
     i_channel = sy.Channel(
-        name=f"gse_ai_{port + VALVE_AI_PORT_OFFSET}",
+        name=f"gse_ai_{port}",
         data_type=sy.DataType.FLOAT32,
         index=ctx.indexes["gse_ai"].key,
     )
     v_channel = sy.Channel(
-        name=f"gse_di_{port}",
+        name=f"gse_di_{port - VALVE_AI_PORT_OFFSET}",
         data_type=sy.DataType.FLOAT32,
         index=ctx.indexes["gse_di"].key,
     )
@@ -283,38 +309,23 @@ def process_valve(ctx: Context, index: int, row: dict):
 # ||||||||||||||||||||||||||||||||||||||||||||| PRESSURE TRANSDUCERS |||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-PT_VALID_PORTS = range(0, 37)
+PT_PORT_OFFSET = 0
+PT_VALID_PORTS = range(0+PT_PORT_OFFSET, 37+PT_PORT_OFFSET)
 PT_MAX_OUTPUT_VOLTAGE = 4500
 PT_OFFSET = 500
 
 
-def pt_analog_port(port: int) -> int:
-    if port == 36:
-        return 60
-    return port
-
-
-def process_pt(ctx: Context, index: int, row: dict):
+def process_pt(ctx: Context, index: int, row: dict, port: int):
     # get the device name
     device, ok = get_device(index, row)
     if not ok:
-        return False
-
-    # get the port number
-    port, ok = get_port(index, row, device)
-    if not ok:
-        return False
-    if port not in PT_VALID_PORTS:
-        print(
-            f"[red]Pressure transducers can only be connected to ports {PT_VALID_PORTS}[/red]"
-        )
         return False
 
     print(
         f"[purple]Row {index} - [/purple][blue]Configuring PT {port} on {device} port {port}[/blue]"
     )
 
-    name = f"{device}_ai_{pt_analog_port(port)}"
+    name = f"{device}_ai_{port}"
 
     try:
         ctx.client.channels.create(
@@ -375,32 +386,19 @@ def process_pt(ctx: Context, index: int, row: dict):
 # ||||||||||||||||||||||||||||||||||||||||||||| THERMOCOUPLES ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-TC_PORT_OFFSET = 64
-TC_VALID_PORTS = range(0, 16)
+TC_PORT_OFFSET = 65
+TC_VALID_PORTS = range(0+TC_PORT_OFFSET, 16+TC_PORT_OFFSET)
 
 
-def process_tc(ctx: Context, index: int, row: dict):
+def process_tc(ctx: Context, index: int, row: dict, port: int):
     # get the device name
     device, ok = get_device(index, row)
     if not ok:
         return False
 
-    # get the port number
-    port, ok = get_port(index, row, device)
-    if not ok:
-        return False
-
-    if port not in TC_VALID_PORTS:
-        print(
-            f"""[red]Thermocouples can only be connected to ports {TC_VALID_PORTS}[/red]"""
-        )
-        return False
-
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring TC {port} on {device} port {TC_PORT_OFFSET + port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring TC {port} on {device} port {port}[/blue]"
     )
-
-    port += TC_PORT_OFFSET
 
     name = f"{device}_ai_{port}"
 
