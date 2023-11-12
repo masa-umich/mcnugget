@@ -77,6 +77,7 @@ def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = N
     existing_ports = {}
     for index, row in data.iterrows():
         process_row(ctx, index, row, existing_ports)
+    client.ranges.set_active(ctx.active_range.key)
 
 
 def process_excel(source) -> pd.DataFrame:
