@@ -212,18 +212,40 @@ poetry install
 
 in the root directory of the repository.
 
-## Frequently Asked Questions
+## What Editor should I use?
 
-### What editor should I use?
+## The Dictionary Answer
 
-If you're moving from MATLAB or haven't used an IDE before, you may be wondering what editor to use. For the most
-MATLAB like experience we recommend using [PyCharm](https://www.jetbrains.com/pycharm/). The free version is fine for
-all of our use cases, but you can also get the pro version for free if you're a student.
+If you're moving from MATLAB or haven't used an IDE before, you may be wondering what editor to use. For the most MATLAB like experience we recommend using [DataSpell](https://www.jetbrains.com/dataspell/). The free version is fine for all of our use cases, but you can also get the pro version for free if you're a student.
 
-If you're looking for a lightweight editor, we recommend [VSCode](https://code.visualstudio.com/). It's the most widely
-used editor by far.
+If you're looking for a lightweight editor, we recommend [VSCode](https://code.visualstudio.com/). It's the most widely used editor by far.
 
-**TLDR: Use VSCode**
+## Emiliano's Opinion
+
+### 1 - Sign up for GitHub pro for students
+
+GitHub pro for students gives you access to copilot AI autocompletion and JetBrains IDEs 
+for free. You can sign up [here](https://education.github.com/pack). 
+
+### 2 - Install DataSpell
+
+While VSCode is lightweight and multi-purpose, DataSpell has much better Python syntax
+highlighting and error checking out of the box. It also gives you really nice debug
+and run buttons like MATLAB. 
+
+If you have github pro, you can get DataSpell and ALL of the JetBrains IDEs for free [here](https://www.jetbrains.com/community/education/#students).
+
+### 3 - Sign up for github copilot
+
+If you're new to Python or coming from MATLAB, github copilot is a godsend. It's an AI
+that autocompletes your code for you. You can sign up [here](https://copilot.github.com/)
+for free with your github pro account.
+
+### 4 - Install the copilot plugin for DataSpell
+
+The copilot plugin for DataSpell allows you to use copilot directly in DataSpell. You can
+install it by going to `File > Settings > Plugins` and searching for `copilot`.
+
 
 ### Why is it called McNugget?
 

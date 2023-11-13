@@ -23,7 +23,7 @@ def NBP():
     ).Output[0]
     print("--- Initial State ---")
     print("Density: {} kg/m^3".format(1 / vol))
-    print("Energy: {} J/kg".format(energy))
+    print("Energy: {} J/kg".format(energy)
     print(f"Pressure: {p1*PA_TO_PSI} psi | Temperature: {T1} K")
 
     print("Now, increasing the volume by 1 liter and getting the new internal energy:")

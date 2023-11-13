@@ -12,12 +12,13 @@ toml = "^0.10.2"
 matplotlib = "^3.7.1"
 scipy = "^1.10.1"
 pyfluids = "^2.3.2"
-#synnax = "^0.13.8"
-synnax = { path = "../../synnaxlabs/synnax/client/py", develop = true }
+synnax = "^0.13.10"
+#synnax = { path = "../../synnaxlabs/synnax/client/py", develop = true }
 click = "^8.1.7"
 gspread = "^5.12.0"
 openpyxl = "^3.1.2"
 jupyter = "^1.0.0"
+refprop-connector = "^0.3.7"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
@@ -27,16 +28,11 @@ pytest = "^7.4.3"
 mcnugget = "mcnugget.cli.cli:mcnugget"
 
 [tool.synnax]
-#host = "synnax.masa.engin.umich.edu"
-#port = 80
-#username = "synnax"
-#password = "seldon"
-#secure = true
-host = "localhost"
-port = 9090
+host = "synnax.masa.engin.umich.edu"
+port = 80
 username = "synnax"
 password = "seldon"
-secure = false
+secure = true
 
 [build-system]
 requires = ["poetry-core"]
