@@ -7,12 +7,8 @@ from mcnugget.query import read
 from mcnugget.tests import VALVE_TIMINGS
 from mcnugget.time import elapsed_seconds
 
-def calculate_valve_timing(
-        tr: sy.TimeRange,
-        valve: str,
-        pt: str,
-        time: str = "Time"
-):
+
+def calculate_valve_timing(tr: sy.TimeRange, valve: str, pt: str, time: str = "Time"):
     """
     Calculates the valve timing for a given valve and pressure transducer.
 
@@ -41,10 +37,11 @@ def calculate_valve_timing(
     plt.title(f"Timing 1: {pt_leading_edge - valve_leading_edge:.3f} s")
     plt.show()
 
+
 if __name__ == "__main__":
     calculate_valve_timing(
         sy.TimeRange(1681142937035672000, 1681142937470433500),
         "ec.vlv7.en (hs)",
         "ec.pressure[12] (hs)",
-        "Time (hs)"
+        "Time (hs)",
     )
