@@ -33,9 +33,9 @@ T = float(input("Input TC temp in K: "))
 
 # Get densities and gamma from REFPROP and convert flowrate to kg/s
 # - Flowmeter standardized to 100 psi at 70 deg. F
-rho_actual = RP.REFPROPdll("NITROGEN","TP","D", MASS_BASE_SI,0,0,P,T,[1.0]).Output[0]
-gamma = RP.REFPROPdll("NITROGEN","TP","CP/CV", MASS_BASE_SI,0,0,P,T,[1.0]).Output[0]
-rho_standard = RP.REFPROPdll("NITROGEN","TP","D", MASS_BASE_SI,0,0,100*6894.76,294.261,[1.0]).Output[0]
+rho_actual = RP.REFPROPdll("NITROGEN","TP","D", MASS_BASE_SI,0,0,T,P,[1.0]).Output[0]
+gamma = RP.REFPROPdll("NITROGEN","TP","CP/CV", MASS_BASE_SI,0,0,T,P,[1.0]).Output[0]
+rho_standard = RP.REFPROPdll("NITROGEN","TP","D", MASS_BASE_SI,0,0,294.261,100*6894.76,[1.0]).Output[0]
 flowrate = flowrate*rho_standard
 
 # Calculate and output CdA
