@@ -56,12 +56,18 @@ def instrument(sheet: str | None, gcreds: str | None):
 
 def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = None):
     print(sheet)
-    if ".xlsx" in sheet:
-        data = process_excel(sheet)
-    elif "docs.google.com" in sheet:
-        data = process_url(sheet, gcreds)
-    else:
-        data = process_name(sheet, gcreds)
+    sheet_type = process_source(sheet)
+    data = pd.DataFrame()
+    match sheet_type:
+        case "filepath":
+            data = process_excel(sheet)
+        case "url":
+            data = process_url(sheet, gcreds)
+        case "name":
+            data = process_name(sheet, gcreds)
+
+    if data.empty:
+        raise f"No values detected in instrumentation sheet - aborting. Attempted to process sheet as {sheet_type}"
 
     ctx = Context(
         client=client, active_range=client.ranges.retrieve_active(), indexes={}
@@ -78,6 +84,15 @@ def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = N
     for index, row in data.iterrows():
         process_row(ctx, index, row, existing_ports)
     client.ranges.set_active(ctx.active_range.key)
+
+
+def process_source(source) -> str:
+    if ".xlsx" in source:
+        return "filepath"
+    elif "docs.google.com" in source:
+        return "url"
+    else:
+        return "name"
 
 
 def process_excel(source) -> pd.DataFrame:
@@ -134,6 +149,9 @@ def process_row(ctx: Context, index: int, row: dict, ports: dict):
     if type_ == TC_TYPE:
         return process_tc(ctx, index, row, port)
     if type_ == LC_TYPE:
+        print(
+            f"""[purple]Row {index} - [/purple][yellow]LC type handling not implemented yet"""
+        )
         return
 
     print(
