@@ -60,21 +60,25 @@ def main():
     print(
         """[purple]Commencing instrumentation update procedure[/purple]"""
     )
-    sheet = create_popup()
-    print(f"would run instrumentation on {sheet}")
-    # pure_instrument(sheet, client, gcreds=None)
+    sheet, gcreds = create_popup()
+    # print(f"would run instrumentation on {sheet}")
+    pure_instrument(sheet, client, gcreds=None)
 
 
 global selected_value
-selected_value = None
+selected_value = None  # this is necessary; trust
 global confirm_button
-confirm_button = None
+confirm_button = None  # this is also necessary; trust
+global gcreds_value
+gcreds_value = None
+global gcreds_button
+gcreds_button = None
+
 
 def create_popup():
-
     def set_selected_value(x):
         global selected_value
-        if x is not None:
+        if x is not None and x != '':
             selected_value = x
         confirm_button.config(text=f"Confirm\n{selected_value}")
 
@@ -82,11 +86,24 @@ def create_popup():
         global selected_value
         return selected_value
 
+    def get_gcreds():
+        global gcreds_value
+        return gcreds_value
+
     def clear_popup():
-        if get_selected_value() is not None:
-            popup.destroy()
-        else:
+        if get_selected_value() is None:
             messagebox.showinfo(title="Warning", message="Please choose a source")
+        elif ".xlsx" not in get_selected_value() and get_gcreds() is None:
+            messagebox.showinfo(title="Warning", message="Please provide valid gcreds if retrieving from a google sheet.")
+        else:
+            popup.destroy()
+
+    def choose_gcreds():
+        global gcreds_value
+        foo = filedialog.askopenfilename(filetypes=[("Excel files", "*.json")])
+        if foo is not None and foo != '':
+            gcreds_value = foo
+        gcreds_button.config(text=f"Retrieving gcreds from:\n{get_gcreds()}")
 
     popup = tk.Tk()
     popup.title("Instrumentation Update")
@@ -106,15 +123,15 @@ def create_popup():
     # Set the window dimensions and position
     popup.geometry(f"{window_width}x{window_height}+{window_x}+{window_y}")
 
-    file_button = tk.Button(popup, text="Select File", height=3, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+    file_button = tk.Button(popup, text="Select File", height=2, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
         filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])))
     file_button.pack(padx=10, pady=10)
 
-    url_button = tk.Button(popup, text="Google Sheet URL", height=3, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+    url_button = tk.Button(popup, text="Google Sheet URL", height=2, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
         simpledialog.askstring("Input", "Enter the URL of the Google Sheet")))
     url_button.pack(padx=10, pady=10)
 
-    name_button = tk.Button(popup, text="Google Sheet by Name", height=3, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+    name_button = tk.Button(popup, text="Google Sheet by Name", height=2, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
         simpledialog.askstring("Input", "Enter the name of the Google Sheet")))
     name_button.pack(padx=10, pady=10)
 
@@ -123,11 +140,16 @@ def create_popup():
     confirm_button.configure(highlightbackground='green2')
     confirm_button.pack(padx=20, pady=20)
 
+    global gcreds_button
+    gcreds_button = tk.Button(popup, text=f"Retrieving gcreds from:\n{get_gcreds()}", height=2, width=60, font=("Helvetica", 18), command=lambda: choose_gcreds())
+    gcreds_button.pack(padx=20, pady=10)
+
     popup.mainloop()
 
-    while True:
-        if get_selected_value() is not None:
-            return get_selected_value()
+    print(f"Running instrumentation updates from [yellow]{get_selected_value()}[/yellow]")
+    if get_gcreds():
+        print(f"Using gcreds from [yellow]{get_gcreds()}[/yellow]")
+    return get_selected_value(), get_gcreds()
 
 
 def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = None):
