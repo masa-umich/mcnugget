@@ -5,6 +5,8 @@ import gspread
 from rich import print
 import synnax as sy
 from mcnugget.client import client
+import tkinter as tk
+from tkinter import filedialog, messagebox, simpledialog
 
 ALIAS_COL = "Name"
 DEVICE_COL = "Device"
@@ -52,6 +54,80 @@ class Context:
 @click.option("--gcreds", type=click.Path(exists=False), required=False)
 def instrument(sheet: str | None, gcreds: str | None):
     pure_instrument(sheet, client=client, gcreds=gcreds)
+
+
+def main():
+    print(
+        """[purple]Commencing instrumentation update procedure[/purple]"""
+    )
+    sheet = create_popup()
+    print(f"would run instrumentation on {sheet}")
+    # pure_instrument(sheet, client, gcreds=None)
+
+
+global selected_value
+selected_value = None
+global confirm_button
+confirm_button = None
+
+def create_popup():
+
+    def set_selected_value(x):
+        global selected_value
+        if x is not None:
+            selected_value = x
+        confirm_button.config(text=f"Confirm\n{selected_value}")
+
+    def get_selected_value():
+        global selected_value
+        return selected_value
+
+    def clear_popup():
+        if get_selected_value() is not None:
+            popup.destroy()
+        else:
+            messagebox.showinfo(title="Warning", message="Please choose a source")
+
+    popup = tk.Tk()
+    popup.title("Instrumentation Update")
+    # Get the screen width and height
+    screen_width = popup.winfo_screenwidth()
+    screen_height = popup.winfo_screenheight()
+    # popup.config(background='navy')
+
+    # Set the window dimensions to be half of the screen size
+    window_width = screen_width // 2
+    window_height = screen_height // 2
+
+    # Calculate the position of the window to be centered on the screen
+    window_x = (screen_width - window_width) // 2
+    window_y = (screen_height - window_height) // 2
+
+    # Set the window dimensions and position
+    popup.geometry(f"{window_width}x{window_height}+{window_x}+{window_y}")
+
+    file_button = tk.Button(popup, text="Select File", height=3, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+        filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])))
+    file_button.pack(padx=10, pady=10)
+
+    url_button = tk.Button(popup, text="Google Sheet URL", height=3, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+        simpledialog.askstring("Input", "Enter the URL of the Google Sheet")))
+    url_button.pack(padx=10, pady=10)
+
+    name_button = tk.Button(popup, text="Google Sheet by Name", height=3, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+        simpledialog.askstring("Input", "Enter the name of the Google Sheet")))
+    name_button.pack(padx=10, pady=10)
+
+    global confirm_button
+    confirm_button = tk.Button(popup, text=f"Click to confirm source:\n{get_selected_value()}", height=3, width=60, font=("Helvetica", 18), command=lambda: clear_popup())
+    confirm_button.configure(highlightbackground='green2')
+    confirm_button.pack(padx=20, pady=20)
+
+    popup.mainloop()
+
+    while True:
+        if get_selected_value() is not None:
+            return get_selected_value()
 
 
 def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = None):
@@ -485,3 +561,7 @@ def process_tc(ctx: Context, index: int, row: dict, port: int):
         """
         )
         return False
+
+
+if __name__ == "__main__":
+    main()
