@@ -11,6 +11,7 @@ DEVICE_COL = "Device"
 PORT_COL = "Port"
 TYPE_COL = "Type"
 PT_MAX_PRESSURE_COL = "Max Pressure (PSI)"
+PT_OFFSET_COL = "PT Offset (PSI)"
 TC_TYPE_COL = "TC Type"
 TC_OFFSET_COL = "TC Offset (K)"
 GSE_DEVICE = "gse"
@@ -63,13 +64,15 @@ def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = N
     else:
         data = process_name(sheet)
 
+    active = client.ranges.retrieve_active()
     ctx = Context(
-        client=client, active_range=client.ranges.retrieve_active(), indexes={}
+        client=client, active_range=active, indexes={}
     )
 
     create_device_channels(ctx)
     for index, row in data.iterrows():
         process_row(ctx, index, row)
+    client.ranges.set_active(active.key)
 
 
 def process_excel(source) -> pd.DataFrame:
@@ -116,7 +119,7 @@ def process_row(ctx: Context, index: int, row: dict):
     if type_ == TC_TYPE:
         return process_tc(ctx, index, row)
     if type_ == LC_TYPE:
-        return
+        return process_lc(ctx, index, row)
 
     print(
         f"""[purple]Row {index} - [/purple][red]Invalid sensor or actuator type '{type}' in row {index}[/red]\n[blue]Valid types are: {VLV_TYPE}, {PT_TYPE}, {TC_TYPE}[/blue]"""
@@ -156,10 +159,52 @@ def get_port(index: int, row: dict, device: Device) -> (int, bool):
 
 def create_device_channels(ctx: Context) -> (dict, bool):
     res = ctx.client.channels.create(
-        [GSE_AI_TIME, GSE_DI_TIME], retrieve_if_name_exists=True
+        [GSE_AI_TIME, GSE_DI_TIME, GSE_DOA_TIME], retrieve_if_name_exists=True
     )
     ctx.indexes["gse_ai"] = res[0]
     ctx.indexes["gse_di"] = res[1]
+    ctx.indexes["gse_doa"] = res[2]
+
+    analog_inputs = [
+        sy.Channel(
+            name=f"gse_ai_{i}",
+            data_type=sy.DataType.FLOAT32,
+            index=ctx.indexes["gse_ai"].key,
+        ) for i in range(0, 80)
+    ]
+    digital_inputs = [
+        sy.Channel(
+            name=f"gse_di_{i}",
+            data_type=sy.DataType.FLOAT32,
+            index=ctx.indexes["gse_di"].key,
+        ) for i in range(0, 24)
+    ]
+    client.channels.create(analog_inputs, retrieve_if_name_exists=True)
+    client.channels.create(digital_inputs, retrieve_if_name_exists=True)
+    digital_command_times = [
+        sy.Channel(
+            name=f"gse_doc_{i}_time",
+            data_type=sy.DataType.TIMESTAMP,
+            is_index=True,
+        ) for i in range(0, 24)
+    ]
+    digital_command_times = client.channels.create(digital_command_times, retrieve_if_name_exists=True)
+    digital_commands = [
+        sy.Channel(
+            name=f"gse_doc_{i}",
+            data_type=sy.DataType.UINT8,
+            index=digital_command_times[i].key,
+        ) for i in range(0, 24)
+    ]
+    client.channels.create(digital_commands, retrieve_if_name_exists=True)
+    digital_output_acks = [
+        sy.Channel(
+            name=f"gse_doa_{i}",
+            data_type=sy.DataType.UINT8,
+            index=ctx.indexes["gse_doa"].key,
+        ) for i in range(0, 24)
+    ]
+    client.channels.create(digital_output_acks, retrieve_if_name_exists=True)
 
 
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -270,14 +315,18 @@ def process_valve(ctx: Context, index: int, row: dict):
         )
         return
 
+    ctx.active_range.meta_data.set({
+        f"{i_channel.name}_type": "VLV",
+    })
+
 
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||| PRESSURE TRANSDUCERS |||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 PT_VALID_PORTS = range(0, 37)
-PT_MAX_OUTPUT_VOLTAGE = 4500
-PT_OFFSET = 500
+PT_MAX_OUTPUT_VOLTAGE = 4.5
+PT_OFFSET = 0.5
 
 
 def pt_analog_port(port: int) -> int:
@@ -327,6 +376,7 @@ def process_pt(ctx: Context, index: int, row: dict):
         return False
 
     max_pressure = row[PT_MAX_PRESSURE_COL]
+    offset = row[PT_OFFSET_COL]
     # try to convert max_pressure to a float
     try:
         max_pressure = float(max_pressure)
@@ -338,7 +388,11 @@ def process_pt(ctx: Context, index: int, row: dict):
 
     slope = (PT_MAX_OUTPUT_VOLTAGE - PT_OFFSET) / max_pressure
     try:
-        ctx.active_range.meta_data.set({f"{name}_pt_slope": slope})
+        ctx.active_range.meta_data.set({
+            f"{name}_type": "PT",
+            f"{name}_pt_slope": slope,
+            f"{name}_pt_offset": (PT_OFFSET if port == 3† else 0) / max_pressure
+        })
     except Exception as e:
         print(
             f"""[red]Failed to set slope for {device} pressure transducer {port}[/red]\n[blue]Error: {e}[/blue]"""
@@ -426,7 +480,12 @@ def process_tc(ctx: Context, index: int, row: dict):
 
     try:
         ctx.active_range.meta_data.set(
-            {f"{name}_tc_type": tc_type, f"{name}_tc_offset": tc_offset}
+
+            {
+                f"{name}_type": "TC",
+                f"{name}_tc_type": tc_type,
+                f"{name}_tc_offset": tc_offset,
+            }
         )
     except Exception as e:
         print(
@@ -456,3 +515,52 @@ def process_tc(ctx: Context, index: int, row: dict):
         """
         )
         return False
+
+
+LC_PORT_OFFSET = 60
+
+
+def process_lc(ctx: Context, index: int, row: dict):
+    # get the device name
+    device, ok = get_device(index, row)
+    if not ok:
+        return False
+
+    # get the port number
+    port, ok = get_port(index, row, device)
+    if not ok:
+        return False
+
+    # if port not in TC_VALID_PORTS:
+    #     print(
+    #         f"""[red]Load cells can only be connected to ports {TC_VALID_PORTS}[/red]"""
+    #     )
+    #     return False
+
+    print(
+        f"[purple]Row {index} - [/purple][blue]Configuring LC {port} on {device} port {LC_PORT_OFFSET + port}[/blue]"
+    )
+
+    port += LC_PORT_OFFSET
+
+    name = f"{device}_ai_{port}"
+
+    sy.Channel(
+        name=name,
+        data_type=sy.DataType.FLOAT32,
+        index=ctx.indexes["gse_ai"].key,
+    )
+
+    try:
+        ctx.active_range.meta_data.set(
+
+            {
+                f"{name}_type": "LC",
+            }
+        )
+    except Exception as e:
+        print(
+            f"""
+        [red]Failed to set load cell type and offset for {device} load cell {port}[/red]
+        [blue]Error: {e}[/blue
+        """)
