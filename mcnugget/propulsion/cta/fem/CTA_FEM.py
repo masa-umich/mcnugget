@@ -22,7 +22,7 @@ class Model:
         for v in range(input_tbl.shape[0]):
             setattr(self, input_tbl.loc[v,'variable'], input_tbl.loc[v,'value'])
         # initialize the finite element model    
-        self.model = tfem.Model
+        self.model = tfem.Model()
         # calculate other geometry values
         self.calc_geometry
         
@@ -42,6 +42,12 @@ class Model:
         # the meshing algorithm should already have default size controls, 
         # so won't specify number of divisions in each call
         
+        # the liner and jacket are broken up into separate solids for the 
+        # sections between and below each fin to help with applying convections
+        # the fins are named finN for N from 0 to self.n_fin-1 
+        # the liner and jacket solids above and below finN are linerN/jacketN
+        # the liner and jacket solids to the +theta side of N are N.5
+        
         # set the mesh divisions
         # TODO: set list of angular divisions to line up the liner/jacket with 
         # the fins
@@ -51,35 +57,73 @@ class Model:
             divs_fin_start,divs_fin_end
             )))
         
-        # liner
-        self.model.make_solid('revolve',r1=lambda x: self.r_liner_in(x),
-                              r2=lambda x: self.r_liner_out(x),
-                              x1=0,x2=self.L_c+self.L_n,
-                              material='C18150')
-        # jacket
-        self.model.make_solid('revolve',r1=lambda x: self.r_jacket_in(x),
-                              r2=lambda x: self.r_jacket_out(x),
-                              x1=0,x2=self.L_c+self.L_n,
-                              material='Al6061')
-        # fins
         # iterate over each fin
         for n in range(self.n_fin):
+            # fin
             self.model.make_solid('revolve',r1=lambda x: self.r_liner_out(x),
                                   r2=lambda x: self.r_jacket_in(x),
                                   x1=0,x2=self.L_c+self.L_n,
                                   theta1=n*2*np.pi/self.n_fin,
                                   theta2=n*2*np.pi/self.n_fin+self.dtheta_fin,
-                                  material='C18150')
+                                  material='C18150',name='fin{}'.format(n))
+            # liner below fin
+            self.model.make_solid('revolve',r1=lambda x: self.r_liner_in(x),
+                                  r2=lambda x: self.r_liner_out(x),
+                                  x1=0,x2=self.L_c+self.L_n,
+                                  theta1=n*2*np.pi/self.n_fin,
+                                  theta2=n*2*np.pi/self.n_fin+self.dtheta_fin,
+                                  material='C18150',name='liner{}'.format(n))
+            # liner between fins
+            self.model.make_solid('revolve',r1=lambda x: self.r_liner_in(x),
+                              r2=lambda x: self.r_liner_out(x),
+                              x1=0,x2=self.L_c+self.L_n,
+                              theta1=n*2*np.pi/self.n_fin+self.dtheta_fin,
+                              theta2=np.mod(n+1,self.n_fin)*2*np.pi/self.n_fin,
+                              material='C18150',name='liner{}'.format(n+0.5))
+            # jacket above fin
+            self.model.make_solid('revolve',r1=lambda x: self.r_jacket_in(x),
+                                  r2=lambda x: self.r_jacket_out(x),
+                                  x1=0,x2=self.L_c+self.L_n,
+                                  theta1=n*2*np.pi/self.n_fin,
+                                  theta2=n*2*np.pi/self.n_fin+self.dtheta_fin,
+                                  material='C18150',name='jacket{}'.format(n))
+            # jacket between fins
+            self.model.make_solid('revolve',r1=lambda x: self.r_jacket_in(x),
+                              r2=lambda x: self.r_jacket_out(x),
+                              x1=0,x2=self.L_c+self.L_n,
+                              theta1=n*2*np.pi/self.n_fin+self.dtheta_fin,
+                              theta2=np.mod(n+1,self.n_fin)*2*np.pi/self.n_fin,
+                              material='C18150',name='jacket{}'.format(n+0.5))
+            
         # now the mesh should be complete
 
-
-        
-                
-    
     def build_system(self):
         # contacts
+        for n in range(self.n_fin):
+            # bottom of fins
+            self.model.make_contact('liner{}'.format(n),'fin{}'.format(n))
+            # top of fins
+            # contact conductance from A Heat Transfer Textbook p76
+            self.model.make_contact('fin{}'.format(n),'jacket{}'.format(n),
+                                    h=10e3)
+            # between liner sections
+            self.model.make_contact('liner{}'.format(n),
+                                    'liner{}'.format(n+0.5))
+            self.model.make_contact('liner{}'.format(n+0.5),
+                                    'liner{}'.format(np.mod(n+1,self.n_fin)))
+            # between jacket sections
+            self.model.make_contact('jacket{}'.format(n),
+                                    'jacket{}'.format(n+0.5))
+            self.model.make_contact('jacket{}'.format(n+0.5),
+                                    'jacket{}'.format(np.mod(n+1,self.n_fin)))
+            
+        # convective boundaries
+        for n in range(self.n_fin):
+            # top of liner to fuel
+            self.model.make_convection('liner{}'.format(n),'+r',
+                                       h=lambda x: self.get_hc(x),
+                                       T=lambda x: self.get_Tc(x))
         
-        # 
         pass
     
     def calc_geometry(self):
@@ -106,6 +150,7 @@ class Model:
     def r_jacket_out(self,x):
         '''Returns the radius of the outer jacket wall at the given location'''
         pass
+    
     
     
     
