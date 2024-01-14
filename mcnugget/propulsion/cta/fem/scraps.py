@@ -31,3 +31,13 @@ Created on Sat Jan 13 17:09:24 2024
         self.model.make_solid('revolve',r=lambda x: x,x1=self.x_bell_start,
                               x2=self.L_c+self.L_n)
         #test
+        
+        
+        # set the mesh divisions
+        # TODO: set list of angular divisions to line up the liner/jacket with 
+        # the fins
+        divs_fin_start = np.linspace(0,2*np.pi-1/self.n_fin,self.n_fin)
+        divs_fin_end = divs_fin_start+self.dtheta_fin
+        self.model.set_theta_divs(sorted(np.concatenate(
+            divs_fin_start,divs_fin_end
+            )))

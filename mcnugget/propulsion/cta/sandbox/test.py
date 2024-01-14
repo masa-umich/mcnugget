@@ -5,6 +5,7 @@ Created on Sun Jan 14 15:31:19 2024
 @author: Nate Campbell
 """
 
+import class2
 import class1
 
 c1 = class1.Class1()

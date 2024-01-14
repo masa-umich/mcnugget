@@ -24,17 +24,45 @@ class Model:
         # initialize the finite element model    
         self.model = tfem.Model()
         # calculate other geometry values
-        self.calc_geometry
-        
+        self.calc_geometry()
+        # setup the model
+        self.setup()
+        # convergence tolerance
+        self.tol = 0.1 # K
+        # convection to ambient air from outside of jacket
+        # TODO: find a source for these values
+        self.h_amb = 1 # W/m^2-K
+        self.T_amb = 300 # K
             
     def setup(self):
-        self.model.generate_mesh
-        self.model.build_system
+        self.generate_mesh()
+        self.build_contacts()
         
     def solve(self):
-        self.model.solve
-        # update coolant temperatures
-        # update heat transfer coefficients
+        # set initial coolant temperatures
+        self.init_cooling()
+        # set the convection boundaries
+        self.set_boundaries()
+        # solve the wall temepratures
+        self.model.solve()
+        
+        max_Tc = self.get_max_Tc()
+        is_converged = False
+        while not is_converged:
+            prev_max_Tc = max_Tc
+            # calculate the coolant temepratures
+            self.update_cooling()
+            max_Tc = self.get_max_Tc()
+            
+            # update the convection based on the new coolant temepratures
+            self.set_boundaries()
+            # resolve the wall temperatures
+            self.model.solve()
+            # determine convergence based on how much the maximum fuel 
+            # temperature changed in the iteration
+            is_converged = abs(max_Tc-prev_max_Tc) < self.tol:
+                
+        # TODO: check that the model is converged, ideally based on the heat 
     
     def generate_mesh(self):
         '''Builds the mesh.'''
@@ -47,16 +75,7 @@ class Model:
         # the fins are named finN for N from 0 to self.n_fin-1 
         # the liner and jacket solids above and below finN are linerN/jacketN
         # the liner and jacket solids to the +theta side of N are N.5
-        
-        # set the mesh divisions
-        # TODO: set list of angular divisions to line up the liner/jacket with 
-        # the fins
-        divs_fin_start = np.linspace(0,2*np.pi-1/self.n_fin,self.n_fin)
-        divs_fin_end = divs_fin_start+self.dtheta_fin
-        self.model.set_theta_divs(sorted(np.concatenate(
-            divs_fin_start,divs_fin_end
-            )))
-        
+                
         # iterate over each fin
         for n in range(self.n_fin):
             # fin
@@ -97,7 +116,7 @@ class Model:
             
         # now the mesh should be complete
 
-    def build_system(self):
+    def build_contacts(self):
         # contacts
         for n in range(self.n_fin):
             # bottom of fins
@@ -117,39 +136,116 @@ class Model:
             self.model.make_contact('jacket{}'.format(n+0.5),
                                     'jacket{}'.format(np.mod(n+1,self.n_fin)))
             
+    def set_boundaries(self):
         # convective boundaries
         for n in range(self.n_fin):
-            # top of liner to fuel
-            self.model.make_convection('liner{}'.format(n),'+r',
-                                       h=lambda x: self.get_hc(x),
-                                       T=lambda x: self.get_Tc(x))
+            # outer liner to fuel
+            self.model.make_convection('liner{}'.format(n+0.5),'+r',
+                                       h_of_x=lambda x: self.get_hc_liner(x),
+                                       T_of_x=lambda x: self.get_Tc(x))
+            # -theta side of fins
+            self.model.make_convection('fin{}'.format(n),'-theta',
+                                       h_of_x=lambda x: self.get_hc_liner(x),
+                                       T_of_x=lambda x: self.get_Tc(x))
+            # +theta side of fins
+            self.model.make_convection('fin{}'.format(n),'+theta',
+                                       h_of_x=lambda x: self.get_hc_liner(x),
+                                       T_of_x=lambda x: self.get_Tc(x))
+            # inner jacket to fuel
+            self.model.make_convection('jacket{}'.format(n+0.5),'-r',
+                                       h_of_x=lambda x: self.get_hc_jacket(x),
+                                       T_of_x=lambda x: self.get_Tc(x))
+            # hot gas to inner liner
+            self.model.make_convection('liner{}'.format(n+0.5),'-r',
+                                       h_of_x=lambda x: self.get_hg(x),
+                                       T_of_x=lambda x: self.get_Taw(x))
+            # outer jacket to ambient
+            self.model.make_convection('jacket{}'.format(n),'+r',
+                                       h_of_x=lambda x: self.h_amb,
+                                       T_of_x=lambda x: self.T_amb)
         
         pass
     
     def calc_geometry(self):
         '''Sets geometry parameters derived from the primary inputs.'''
         # length of the chamber cylinder
+        # TODO
         self.L_cyl = np.nan
         # location of start of nozzle bell
+        # TODO
         self.x_bell_start = np.nan
         # angular width of fin
+        # TODO
         self.dtheta_fin = np.nan
         
     def r_liner_in(self,x):
         '''Returns the radius of the inner liner wall at the given location'''
+        # TODO
         pass
     
     def r_liner_out(self,x):
         '''Returns the radius of the liner outer wall at the given location'''
+        # TODO
         pass
     
     def r_jacket_in(self,x):
         '''Returns the radius of the inner jacket wall at the given location'''
+        # TODO
         pass
     
     def r_jacket_out(self,x):
         '''Returns the radius of the outer jacket wall at the given location'''
+        # TODO
         pass
+    
+    def get_hc_liner(self,x):
+        '''Returns the htc between the coolant liquid and liner at the given 
+        location.'''
+        # TODO
+        pass
+    
+    def get_hc_jacket(self,x):
+        '''Returns the htc between the coolant liquid and jacket at the given 
+        location.'''
+        # TODO
+        pass
+    
+    def get_hg(self,x):
+        '''Returns the hot gas htc at the given location.'''
+        # TODO
+        pass
+    
+    def get_Tc(self,x):
+        '''Returns the temeprature of the coolant liquid at the given location.
+        '''
+        # TODO
+        pass
+    
+    def get_Taw(self,x):
+        '''Returns the adiabatic wall temperature of the hot gas at the 
+        given location.'''
+        # TODO
+        pass
+    
+    def init_cooling(self):
+        '''Sets initial temepratures in the coolant liquid.'''
+        # TODO
+        pass
+    
+    def update_cooling(self):
+        '''Updates the coolant temepratures based on the current wall 
+        temepratures.'''
+        # TODO
+        pass
+    
+    def get_max_Tc(self):
+        '''Returns the coolant temperature at the end of the passsage.'''
+        # TODO
+        pass
+    
+    
+    
+    
     
     
     

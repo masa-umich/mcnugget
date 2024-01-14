@@ -9,7 +9,7 @@ import class2
 
 class Class1:
     def __init__(self):
-        self.class2 = class2.Class2
+        self.class2 = class2.Class2()
         
     def func1(self):
         print('calling class2.func3')
@@ -18,4 +18,3 @@ class Class1:
     def func2(self,x):
         return x**2
         
-

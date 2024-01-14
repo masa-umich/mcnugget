@@ -7,5 +7,5 @@ Created on Sun Jan 14 15:30:23 2024
 
 class Class2:
     def func3(self,func):
-        print('f(3) = {}',func(3))
+        print('f(3) = ',func(3))
     
