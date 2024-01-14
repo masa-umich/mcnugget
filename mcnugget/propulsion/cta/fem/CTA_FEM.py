@@ -45,16 +45,22 @@ class Model:
         # set the mesh divisions
         # TODO: set list of angular divisions to line up the liner/jacket with 
         # the fins
-        self.model.set_theta_divs([])
+        divs_fin_start = np.linspace(0,2*np.pi-1/self.n_fin,self.n_fin)
+        divs_fin_end = divs_fin_start+self.dtheta_fin
+        self.model.set_theta_divs(sorted(np.concatenate(
+            divs_fin_start,divs_fin_end
+            )))
         
         # liner
         self.model.make_solid('revolve',r1=lambda x: self.r_liner_in(x),
                               r2=lambda x: self.r_liner_out(x),
-                              x1=0,x2=self.L_c+self.L_n)
+                              x1=0,x2=self.L_c+self.L_n,
+                              material='C18150')
         # jacket
         self.model.make_solid('revolve',r1=lambda x: self.r_jacket_in(x),
                               r2=lambda x: self.r_jacket_out(x),
-                              x1=0,x2=self.L_c+self.L_n)
+                              x1=0,x2=self.L_c+self.L_n,
+                              material='Al6061')
         # fins
         # iterate over each fin
         for n in range(self.n_fin):
@@ -62,7 +68,8 @@ class Model:
                                   r2=lambda x: self.r_jacket_in(x),
                                   x1=0,x2=self.L_c+self.L_n,
                                   theta1=n*2*np.pi/self.n_fin,
-                                  theta2=n*2*np.pi/self.n_fin+self.dtheta_fin)
+                                  theta2=n*2*np.pi/self.n_fin+self.dtheta_fin,
+                                  material='C18150')
         # now the mesh should be complete
 
 
@@ -70,6 +77,9 @@ class Model:
                 
     
     def build_system(self):
+        # contacts
+        
+        # 
         pass
     
     def calc_geometry(self):
