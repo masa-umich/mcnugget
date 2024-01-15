@@ -10,16 +10,19 @@ import numpy as np
 class Model:
     '''Represents a three-dimensional thermal finite element model.'''
     
-    def __Model__():
-        pass
+    def __Model__(self):
+        # default numbers of elements through solid dimensions
+        self.r_numel = 2
+        self.theta_numel = 2
+        self.x_numel = 2
+        # maximum node number created
+        self.max_noden = -1
+        
     
     def solve(self):
         '''Solve for all temperatures.'''
         pass
-    
-    def set_theta_divs(self,theta_divs):
-        pass
-    
+       
     def make_solid(self,shape,**args):
         '''Adds a solid body to the model.
         
@@ -60,8 +63,40 @@ class Model:
             
         '''
         
+        # do all calculations in this function and store the body-specific
+        # results in the body objects instead of doing calculations in the 
+        # Bodies
+                
+        # number of nodes in this body
+        num_bnodes = self.x_numel*self.theta_numel*self.x_numel
         # make a matrix with node numbers
-        shape_nodes = np.array()
+        body_nodes = np.reshape(np.linspace(
+            self.max_noden+1,self.max_noden+1+num_bnodes-1,num_bnodes
+            ),(self.x_numel,self.theta_numel,self.x_numel))
+        
+        # get the coordinate of each node
+        
+        
+        
+    def set_r_numel(self,numel):
+        '''Sets the number of elements that will be made through the radial 
+        dimension of new solids created.'''
+        
+        self.r_numel = numel
+        
+    def set_theta_numel(self,numel):
+        '''Sets the number of elements that will be made through the tangential
+        dimension of new solids created.'''
+
+        self.theta_numel = numel
+        
+    def set_x_numel(self,numel):
+        '''Sets the number of elements that will be made through the axial 
+        dimension of new solids created.'''
+        
+        self.x_numel = numel
+        
+            
         
         
     

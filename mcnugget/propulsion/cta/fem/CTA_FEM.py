@@ -67,8 +67,11 @@ class Model:
     def generate_mesh(self):
         '''Builds the mesh.'''
         # call make_solid to make the bodies
-        # the meshing algorithm should already have default size controls, 
-        # so won't specify number of divisions in each call
+
+        # set the number of divisions in each solid
+        self.model.set_r_numel(3)
+        self.model.set_theta_numel(3)
+        self.model.set_x_numel(20)
         
         # the liner and jacket are broken up into separate solids for the 
         # sections between and below each fin to help with applying convections
