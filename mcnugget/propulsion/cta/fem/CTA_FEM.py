@@ -60,7 +60,7 @@ class Model:
             self.model.solve()
             # determine convergence based on how much the maximum fuel 
             # temperature changed in the iteration
-            is_converged = abs(max_Tc-prev_max_Tc) < self.tol:
+            is_converged = abs(max_Tc-prev_max_Tc) < self.tol
                 
         # TODO: check that the model is converged, ideally based on the heat 
     

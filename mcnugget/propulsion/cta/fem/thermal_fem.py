@@ -6,6 +6,7 @@ Created on Sat Jan 13 16:38:32 2024
 """
 
 import numpy as np
+import pandas as pd
 
 class Model:
     '''Represents a three-dimensional thermal finite element model.'''
@@ -17,6 +18,11 @@ class Model:
         self.x_numel = 2
         # maximum node number created
         self.max_noden = -1
+        # table with node information
+        self.node_tbl = pd.DataFrame({'r':[],'theta':[],'z':[]})
+        # dict with node connections
+        self.node_connect = dict()
+        
         
     
     def solve(self):
@@ -68,14 +74,22 @@ class Model:
         # Bodies
                 
         # number of nodes in this body
-        num_bnodes = self.x_numel*self.theta_numel*self.x_numel
+        num_bnodes = self.r_numel*self.theta_numel*self.x_numel
         # make a matrix with node numbers
         body_nodes = np.reshape(np.linspace(
             self.max_noden+1,self.max_noden+1+num_bnodes-1,num_bnodes
-            ),(self.x_numel,self.theta_numel,self.x_numel))
+            ),(self.r_numel,self.theta_numel,self.x_numel))
         
-        # get the coordinate of each node
+
+        # initialize variables for the node table data
+        node_nums = np.zeros((num_bnodes,1))
+        node_r = np.zeros((num_bnodes,1))
+        node_theta = np.zeros((num_bnodes,1))
+        node_x = np.zeros((num_bnodes,1))
         
+        node_x = np.linspace(args['x1'],args['x2'],self.x_numel)
+                    
+
         
         
     def set_r_numel(self,numel):
@@ -97,6 +111,12 @@ class Model:
         self.x_numel = numel
         
             
+class Body:
+    '''Represents a solid body in the model.'''
+    def __init__(self):
+        self.node_dict = {
+            'r+':[],'r-':[],'theta+':[],'theta-':[],'x+':[],'x-':[]
+            }
         
         
     

@@ -41,3 +41,11 @@ Created on Sat Jan 13 17:09:24 2024
         self.model.set_theta_divs(sorted(np.concatenate(
             divs_fin_start,divs_fin_end
             )))
+        
+        
+        
+        # get the coordinate of each node
+        n_idx = 0 # node index
+        for r_idx in range(self.r_numel):
+            for th_idx in range(self.theta_numel):
+                for x_idx in range(self.x_numel):
