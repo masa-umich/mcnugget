@@ -22,6 +22,8 @@ class Model:
         self.node_tbl = pd.DataFrame({'r':[],'theta':[],'z':[]})
         # dict with node connections
         self.node_connect = dict()
+        # dict of Body objects with the names as the keys
+        self.bodies = dict()
         
         
     
@@ -69,6 +71,9 @@ class Model:
             
         '''
         
+        # the name of this solid
+        name = args['name']
+        
         # do all calculations in this function and store the body-specific
         # results in the body objects instead of doing calculations in the 
         # Bodies
@@ -80,14 +85,7 @@ class Model:
         body_nodes = np.reshape(np.linspace(
             self.max_noden+1,self.max_noden+1+num_bnodes-1,num_bnodes
             ),(self.r_numel,self.theta_numel,self.x_numel))
-        
-
-        # initialize variables for the node table data
-        node_nums = np.zeros((num_bnodes,1))
-        node_r = np.zeros((num_bnodes,1))
-        node_theta = np.zeros((num_bnodes,1))
-        node_x = np.zeros((num_bnodes,1))
-        
+                
         # np.linspace puts the vector in the third dimension
         # https://stackoverflow.com/questions/22981845/3-dimensional-array-in-numpy 
         node_theta = (np.linspace(args['theta1'],args['theta2'],
@@ -96,10 +94,42 @@ class Model:
         node_x = (np.linspace(args['x1'],args['x2'],self.x_numel)+np.zeros((
             self.r_numel,self.theta_numel,self.x_numel))).transpose((0,1,2))
         
+        # node_x[0] and node_x[self.numel_r] should be the same
         node_r1 = args['r1'](node_x[0])
-        node_r2 = args['r2'](node_x[self.numel_x])
+        node_r2 = args['r2'](node_x[self.numel_r])
+        # linear interpolation
+        node_r = node_r1 + (node_r2-node_r1)*np.linspace(
+            0,1,self.numel_r)[:,np.newaxis,np.newaxis]
         
-        # now interpolate or something idk
+        # reshape these 3d arrays into one dimensional lists and put into table
+        # all of these arrays should have the same shape, and corresponding
+        # locations, so they just need to be reshaped in the same order
+        
+        body_node_tbl = pd.DataFrame(
+            data={
+                'r':node_r.reshape(-1),
+                'theta':node_theta.reshape(-1),
+                'x':node_x.reshape(-1)
+            },
+            index=body_nodes.reshape(-1)
+            )
+        
+        # make the Body object for this body
+        self.bodies[name] = Body(name,args['material'])
+        # sort the nodes into faces
+        self.bodes[name].faces['r+'] = body_nodes[-1,:,:]
+        self.bodies[name].faces['r-'] = body_nodes[0,:,:]
+        self.bodies[name].faces['theta+'] = body_nodes[:,-1,:]
+        self.bodies[name].faces['theta-'] = body_nodes[:,0,:]
+        self.bodies[name].faces['z+'] = body_nodes[:,:,-1]
+        self.bodies[name].faces['z-'] = body_nodes[:,:,0]
+        
+        # get the surface areas for the nodes
+        # r+ face
+        el_areas = None  
+        
+        
+        
         
         
         
@@ -129,10 +159,16 @@ class Model:
             
 class Body:
     '''Represents a solid body in the model.'''
-    def __init__(self):
-        self.node_dict = {
+    def __init__(self,name,material):
+        # the name and material of this body
+        self.name = name
+        self.material = material
+        # stores nodes numbers that belong on each of the six faces
+        self.faces = {
             'r+':[],'r-':[],'theta+':[],'theta-':[],'x+':[],'x-':[]
             }
+        # stores the surface area that nodes have on this body
+        self.node_area = pd.Series(name='area')
         
         
     
