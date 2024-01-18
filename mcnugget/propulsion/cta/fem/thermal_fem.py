@@ -14,8 +14,8 @@ class Model:
     def __Model__(self):
         # default numbers of elements through solid dimensions
         self.r_numel = 2
-        self.theta_numel = 2
-        self.x_numel = 2
+        self.theta_numel = 3
+        self.x_numel = 4
         # maximum node number created
         self.max_noden = -1
         # table with node information
@@ -76,6 +76,7 @@ class Model:
         # number of nodes in this body
         num_bnodes = self.r_numel*self.theta_numel*self.x_numel
         # make a matrix with node numbers
+        # dimensions: (r,th,x)
         body_nodes = np.reshape(np.linspace(
             self.max_noden+1,self.max_noden+1+num_bnodes-1,num_bnodes
             ),(self.r_numel,self.theta_numel,self.x_numel))
@@ -87,8 +88,23 @@ class Model:
         node_theta = np.zeros((num_bnodes,1))
         node_x = np.zeros((num_bnodes,1))
         
-        node_x = np.linspace(args['x1'],args['x2'],self.x_numel)
-                    
+        # np.linspace puts the vector in the third dimension
+        # https://stackoverflow.com/questions/22981845/3-dimensional-array-in-numpy 
+        node_theta = (np.linspace(args['theta1'],args['theta2'],
+                                 self.theta_numel)+np.zeros((
+             self.x_numel,self.r_numel,self.theta_numel))).transpose((1,2,0))
+        node_x = (np.linspace(args['x1'],args['x2'],self.x_numel)+np.zeros((
+            self.r_numel,self.theta_numel,self.x_numel))).transpose((0,1,2))
+        
+        node_r1 = args['r1'](node_x[0])
+        node_r2 = args['r2'](node_x[self.numel_x])
+        
+        # now interpolate or something idk
+        
+        
+        
+
+           
 
         
         

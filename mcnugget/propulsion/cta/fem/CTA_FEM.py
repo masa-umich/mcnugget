@@ -78,6 +78,9 @@ class Model:
         # the fins are named finN for N from 0 to self.n_fin-1 
         # the liner and jacket solids above and below finN are linerN/jacketN
         # the liner and jacket solids to the +theta side of N are N.5
+        
+        # TODO: will need to input the theta limits as functions too to account
+        #       for how the fin separation changes with the local nozzle radius
                 
         # iterate over each fin
         for n in range(self.n_fin):
