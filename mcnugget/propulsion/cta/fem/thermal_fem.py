@@ -7,6 +7,7 @@ Created on Sat Jan 13 16:38:32 2024
 
 import numpy as np
 import pandas as pd
+import geometry_tools
 
 class Model:
     '''Represents a three-dimensional thermal finite element model.'''
@@ -117,23 +118,69 @@ class Model:
         # make the Body object for this body
         self.bodies[name] = Body(name,args['material'])
         # sort the nodes into faces
-        self.bodes[name].faces['r+'] = body_nodes[-1,:,:]
-        self.bodies[name].faces['r-'] = body_nodes[0,:,:]
-        self.bodies[name].faces['theta+'] = body_nodes[:,-1,:]
-        self.bodies[name].faces['theta-'] = body_nodes[:,0,:]
-        self.bodies[name].faces['z+'] = body_nodes[:,:,-1]
-        self.bodies[name].faces['z-'] = body_nodes[:,:,0]
+        self.bodies[name].faces['r+']     = body_nodes[-1,:,:].copy()
+        self.bodies[name].faces['r-']     = body_nodes[0,:,:].copy()
+        self.bodies[name].faces['theta+'] = body_nodes[:,-1,:].copy()
+        self.bodies[name].faces['theta-'] = body_nodes[:,0,:].copy()
+        self.bodies[name].faces['z+']     = body_nodes[:,:,-1].copy()
+        self.bodies[name].faces['z-']     = body_nodes[:,:,0].copy()
         
         # get the surface areas for the nodes
-        # r+ face
-        el_areas = None  
+        # r+ face - [-1,:,:]
+        # self.bodies[name].areas['face'].loc[body_nodes[coords]] = area 
+        
+        # calculate the midpoints
+        # midpoint arrays on the r+ face, x and theta coordintes
+        (mid_rp_x,mid_rp_th) = geometry_tools.array_midpoints(
+            node_x[-1],node_theta[-1])
+        # midpoint arrary of r coordinates for the r+ face
+        mid_rp_r1 = args['r1'](mid_rp_x)
+        mid_rp_r2 = args['r2'](mid_rp_x)
+        mid_rp_r = mid_rp_r1 + (mid_rp_r2-mid_rp_r1)*np.linspace(
+            0,1,self.numel_r)[:,np.newaxis,np.newaxis]
+        
+        # calculate areas by splitting each face into two triangles
+        for th_idx in range(self.theta_numel):
+            for x_idx in range(self.x_numel):
+                # node number
+                node = body_nodes[-1,th_idx,x_idx]
+                # area of triangle 1
+                tr1 = geometry_tools.cyl_tri_area(
+                    (
+                    mid_rp_r[-1,th_idx,x_idx],
+                    mid_rp_th[-1,th_idx,x_idx],
+                    mid_rp_x[-1,th_idx,x_idx]
+                    ),(
+                    mid_rp_r[-1,th_idx+1,x_idx],
+                    mid_rp_th[-1,th_idx+1,x_idx],
+                    mid_rp_x[-1,th_idx+1,x_idx]
+                    ),(
+                    mid_rp_r[-1,th_idx,x_idx+1],
+                    mid_rp_th[-1,th_idx,x_idx+1],
+                    mid_rp_x[-1,th_idx,x_idx+1]                        
+                    ))
+                tr2 = geometry_tools.cyl_tri_area(
+                    (
+                    mid_rp_r[-1,th_idx+1,x_idx+1],
+                    mid_rp_th[-1,th_idx+1,x_idx+1],
+                    mid_rp_x[-1,th_idx+1,x_idx+1]
+                    ),(
+                    mid_rp_r[-1,th_idx+1,x_idx],
+                    mid_rp_th[-1,th_idx+1,x_idx],
+                    mid_rp_x[-1,th_idx+1,x_idx]
+                    ),(
+                    mid_rp_r[-1,th_idx,x_idx+1],
+                    mid_rp_th[-1,th_idx,x_idx+1],
+                    mid_rp_x[-1,th_idx,x_idx+1]                        
+                    ))                
+                self.bodies[name].areas['r+'][node] = tr1+tr2
+                
         
         
         
         
         
         
-
            
 
         
@@ -167,8 +214,14 @@ class Body:
         self.faces = {
             'r+':[],'r-':[],'theta+':[],'theta-':[],'x+':[],'x-':[]
             }
-        # stores the surface area that nodes have on this body
-        self.node_area = pd.Series(name='area')
+        # stores the surface area that nodes have on this body, organized by 
+        # faces
+        # each value is a pd.Series indexed by node numbers
+        self.areas = {
+            'r+':pd.Series(),'r-':pd.Series(),
+            'theta+':pd.Series(),'theta-':pd.Series(),
+            'x+':pd.Series(),'x-':pd.Series()
+            }
         
         
     
