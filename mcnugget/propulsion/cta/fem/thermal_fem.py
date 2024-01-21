@@ -5,14 +5,18 @@ Created on Sat Jan 13 16:38:32 2024
 @author: natecamp
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import geometry_tools
+import math
+import matplotlib as mpl
+
 
 class Model:
     '''Represents a three-dimensional thermal finite element model.'''
     
-    def __Model__(self):
+    def __init__(self):
         # default numbers of elements through solid dimensions
         self.r_numel = 2
         self.theta_numel = 3
@@ -20,16 +24,38 @@ class Model:
         # maximum node number created
         self.max_noden = -1
         # table with node information
-        self.node_tbl = pd.DataFrame({'r':[],'theta':[],'z':[]})
+        # r, theta, and z coordinates 
+        # sol_id is the index for the node in the solution matrix
+        self.node_tbl = pd.DataFrame({'r':[],'theta':[],'x':[],'sol_id':[]})
         # dict with node connections
         self.node_connect = dict()
         # dict of Body objects with the names as the keys
         self.bodies = dict()
+        # the solution matrix (A of Ax=b)
+        self.sol_mat = []
+        # the solution vector (b of Ax=b)
+        self.sol_vec = []
+        # the temperature results
+        # this should be a pd.Series indexed by the sol_ids
+        self.T = []
         
-        
-    
     def solve(self):
-        '''Solve for all temperatures.'''
+        '''Solve for all temperatures.
+        
+        http://masa.eecs.umich.edu/wiki/index.php/Thrust_Chamber_Thermal_Modeling
+        '''
+        # make a copy of the node table that has the sol_id as the first index
+        # and the node number as the second index
+        sol_tbl = self.node_tbl.set_index('sol_id',append=True).swap_level()
+        # count the number of sol_ids
+        num_T = len(set(self.node_tbl['sol_id']))
+        # initialize solution system
+        self.sol_mat = np.zeros((num_T,num_T))
+        self.sol_vec = np.zeros((num_T,1))
+        
+        # add the solid conduction resistances
+        
+        
         pass
        
     def make_solid(self,shape,**args):
@@ -56,20 +82,30 @@ class Model:
         '''Adds a solid revolved body to the model.
                 
         Keyword Inputs:
-            r1 (function) - returns the inner radius of the body as a function 
-                            of x location
-            r2 (function) - returns the outer radius of the body as a function 
-                            of x location
+            r1 (function) 
+             - returns the inner radius of the body as a function of x location
+            r2 (function) 
+             - returns the outer radius of the body as a function of x location
             x1 (float) - the minimum x dimension of the body
+            
             x2 (float) - the maximum x dimension of the body
+            
             theta1 (float) - the minimum theta dimension of the body
+            
             theta2 (float) - the maximum theta dimension of the body
-            material (string) - the material used for the capacitance of nodes 
-                                and thermal resistance between nodes
-                              - currently supports C18150, Al6061
-                              - data from ./input_sheets/materials.xlsx
+            
+            material (string) 
+             - the material used for the capacitance of nodes and thermal 
+               resistance between nodes
+             - currently supports C18150, Al6061
+             - data from ./input_sheets/materials.xlsx
+                              
             name (string) - a label used for applying contacts and boundaries
             
+        Calculations
+         - coordinates of each node
+         - area of each face element (stored in Body object)
+         - the connections between nodes
         '''
         
         # the name of this solid
@@ -87,33 +123,37 @@ class Model:
             self.max_noden+1,self.max_noden+1+num_bnodes-1,num_bnodes
             ),(self.r_numel,self.theta_numel,self.x_numel))
                 
-        # np.linspace puts the vector in the third dimension
         # https://stackoverflow.com/questions/22981845/3-dimensional-array-in-numpy 
-        node_theta = (np.linspace(args['theta1'],args['theta2'],
-                                 self.theta_numel)+np.zeros((
-             self.x_numel,self.r_numel,self.theta_numel))).transpose((1,2,0))
-        node_x = (np.linspace(args['x1'],args['x2'],self.x_numel)+np.zeros((
-            self.r_numel,self.theta_numel,self.x_numel))).transpose((0,1,2))
+        node_theta = np.linspace(args['theta1'],args['theta2'],
+            self.theta_numel)[np.newaxis,:,np.newaxis]+np.zeros((
+            self.r_numel,self.theta_numel,self.x_numel))
+        node_x = np.linspace(args['x1'],args['x2'],self.x_numel)[
+            np.newaxis,np.newaxis,:]+np.zeros((
+            self.r_numel,self.theta_numel,self.x_numel))
         
-        # node_x[0] and node_x[self.numel_r] should be the same
+        # node_x[0] and node_x[self.r_numel] should be the same
         node_r1 = args['r1'](node_x[0])
-        node_r2 = args['r2'](node_x[self.numel_r])
+        node_r2 = args['r2'](node_x[-1])
         # linear interpolation
         node_r = node_r1 + (node_r2-node_r1)*np.linspace(
-            0,1,self.numel_r)[:,np.newaxis,np.newaxis]
+            0,1,self.r_numel)[:,np.newaxis,np.newaxis]
         
         # reshape these 3d arrays into one dimensional lists and put into table
         # all of these arrays should have the same shape, and corresponding
         # locations, so they just need to be reshaped in the same order
+        # the sol_id is initially the node number for all nodes, and can be 
+        # changed if it becomes part of a contact
         
         body_node_tbl = pd.DataFrame(
             data={
                 'r':node_r.reshape(-1),
                 'theta':node_theta.reshape(-1),
-                'x':node_x.reshape(-1)
+                'x':node_x.reshape(-1),
+                'sol_id':body_nodes.reshape(-1)
             },
             index=body_nodes.reshape(-1)
             )
+        self.node_tbl = pd.concat((self.node_tbl,body_node_tbl))
         
         # make the Body object for this body
         self.bodies[name] = Body(name,args['material'])
@@ -122,68 +162,217 @@ class Model:
         self.bodies[name].faces['r-']     = body_nodes[0,:,:].copy()
         self.bodies[name].faces['theta+'] = body_nodes[:,-1,:].copy()
         self.bodies[name].faces['theta-'] = body_nodes[:,0,:].copy()
-        self.bodies[name].faces['z+']     = body_nodes[:,:,-1].copy()
-        self.bodies[name].faces['z-']     = body_nodes[:,:,0].copy()
+        self.bodies[name].faces['x+']     = body_nodes[:,:,-1].copy()
+        self.bodies[name].faces['x-']     = body_nodes[:,:,0].copy()
         
         # get the surface areas for the nodes
-        # r+ face - [-1,:,:]
-        # self.bodies[name].areas['face'].loc[body_nodes[coords]] = area 
+        self.calc_body_areas(args,name,body_nodes,node_r,node_theta,node_x,
+                             body_node_tbl)
         
-        # calculate the midpoints
-        # midpoint arrays on the r+ face, x and theta coordintes
-        (mid_rp_x,mid_rp_th) = geometry_tools.array_midpoints(
-            node_x[-1],node_theta[-1])
-        # midpoint arrary of r coordinates for the r+ face
-        mid_rp_r1 = args['r1'](mid_rp_x)
-        mid_rp_r2 = args['r2'](mid_rp_x)
-        mid_rp_r = mid_rp_r1 + (mid_rp_r2-mid_rp_r1)*np.linspace(
-            0,1,self.numel_r)[:,np.newaxis,np.newaxis]
-        
-        # calculate areas by splitting each face into two triangles
-        for th_idx in range(self.theta_numel):
-            for x_idx in range(self.x_numel):
-                # node number
-                node = body_nodes[-1,th_idx,x_idx]
-                # area of triangle 1
-                tr1 = geometry_tools.cyl_tri_area(
-                    (
-                    mid_rp_r[-1,th_idx,x_idx],
-                    mid_rp_th[-1,th_idx,x_idx],
-                    mid_rp_x[-1,th_idx,x_idx]
-                    ),(
-                    mid_rp_r[-1,th_idx+1,x_idx],
-                    mid_rp_th[-1,th_idx+1,x_idx],
-                    mid_rp_x[-1,th_idx+1,x_idx]
-                    ),(
-                    mid_rp_r[-1,th_idx,x_idx+1],
-                    mid_rp_th[-1,th_idx,x_idx+1],
-                    mid_rp_x[-1,th_idx,x_idx+1]                        
-                    ))
-                tr2 = geometry_tools.cyl_tri_area(
-                    (
-                    mid_rp_r[-1,th_idx+1,x_idx+1],
-                    mid_rp_th[-1,th_idx+1,x_idx+1],
-                    mid_rp_x[-1,th_idx+1,x_idx+1]
-                    ),(
-                    mid_rp_r[-1,th_idx+1,x_idx],
-                    mid_rp_th[-1,th_idx+1,x_idx],
-                    mid_rp_x[-1,th_idx+1,x_idx]
-                    ),(
-                    mid_rp_r[-1,th_idx,x_idx+1],
-                    mid_rp_th[-1,th_idx,x_idx+1],
-                    mid_rp_x[-1,th_idx,x_idx+1]                        
-                    ))                
-                self.bodies[name].areas['r+'][node] = tr1+tr2
-                
+        # node connections
+        for r_idx in range(self.r_numel):
+            for th_idx in range(self.theta_numel):
+                for x_idx in range(self.x_numel):
+                    # node number
+                    node = body_nodes[r_idx,th_idx,x_idx]
+                    # initialize the list of nodes that connect to this one
+                    self.node_connect[node] = set()
+                    # add r- node
+                    if r_idx > 0:
+                        node_rn = body_nodes[r_idx-1,th_idx,x_idx]
+                        self.node_connect[node].add(node_rn)
+                    # add r+ node
+                    if r_idx < self.r_numel-1:
+                        node_rp = body_nodes[r_idx+1,th_idx,x_idx]
+                        self.node_connect[node].add(node_rp)
+                    # add th- node
+                    if th_idx > 0:
+                        node_thn = body_nodes[r_idx,th_idx-1,x_idx]
+                        self.node_connect[node].add(node_thn)
+                    # add th+ node
+                    if th_idx < self.theta_numel-1:
+                        node_thp = body_nodes[r_idx,th_idx+1,x_idx]
+                        self.node_connect[node].add(node_thp)
+                    # add x- node
+                    if x_idx > 0:
+                        node_xn = body_nodes[r_idx,th_idx,x_idx-1]
+                        self.node_connect[node].add(node_xn)
+                    # add x+ node
+                    if x_idx < self.x_numel-1:
+                        node_xp = body_nodes[r_idx,th_idx,x_idx+1]
+                        self.node_connect[node].add(node_xp)
         
         
+    def calc_body_areas(self,args,name,body_nodes,node_r,node_theta,node_x,
+                        body_node_tbl):
         
-        
-        
-        
-           
+        # r+ face - [-1,:,:], r- face - [0,:,:]
+        for (face,r_idx) in [('r+',-1),('r-',0)]:
+            
+            # calculate the midpoints
+            # midpoint arrays on the r face, x and theta coordintes
+            (mid_r_x,mid_r_th) = geometry_tools.array_midpoints(
+                node_x[r_idx],node_theta[r_idx])
+            # midpoint arrary of r coordinates for the r face
+            mid_r_r1 = args['r1'](mid_r_x)
+            mid_r_r2 = args['r2'](mid_r_x)
+            mid_r_r = mid_r_r1 + (mid_r_r2-mid_r_r1)*np.linspace(
+                0,1,self.r_numel)[:,np.newaxis,np.newaxis]
+            if face == 'r+':
+                mid_r_r = args['r2'](mid_r_x)
+            else:
+                mid_r_r = args['r1'](mid_r_x)
+            
+            # calculate areas by splitting each face into two triangles
+            for th_idx in range(self.theta_numel):
+                for x_idx in range(self.x_numel):
+                    # node numbers
+                    node0 = body_nodes[r_idx,th_idx,x_idx]
+                    # node1 = body_nodes[r_idx,th_idx+1,x_idx]
+                    # node2 = body_nodes[r_idx,th_idx,x_idx+1]
+                    # node3 = body_nodes[r_idx,th_idx+1,x_idx+1]
+                    
+                    # area of triangles 1 and 2
+                    # triangle 1 is points 0,1,2
+                    # triangle 2 is points 3,1,2
+                    tr1 = geometry_tools.cyl_tri_area(
+                        (
+                        mid_r_r[th_idx,x_idx],
+                        mid_r_th[th_idx,x_idx],
+                        mid_r_x[th_idx,x_idx]
+                        ),(
+                        mid_r_r[th_idx+1,x_idx],
+                        mid_r_th[th_idx+1,x_idx],
+                        mid_r_x[th_idx+1,x_idx]
+                        ),(
+                        mid_r_r[th_idx,x_idx+1],
+                        mid_r_th[th_idx,x_idx+1],
+                        mid_r_x[th_idx,x_idx+1]
+                        ))
+                    tr2 = geometry_tools.cyl_tri_area(
+                        (
+                        mid_r_r[th_idx+1,x_idx+1],
+                        mid_r_th[th_idx+1,x_idx+1],
+                        mid_r_x[th_idx+1,x_idx+1]
+                        ),(
+                        mid_r_r[th_idx+1,x_idx],
+                        mid_r_th[th_idx+1,x_idx],
+                        mid_r_x[th_idx+1,x_idx]
+                        ),(
+                        mid_r_r[th_idx,x_idx+1],
+                        mid_r_th[th_idx,x_idx+1],
+                        mid_r_x[th_idx,x_idx+1]
+                        ))
+                    # add areas of triangles to make area of 4-sided element
+                    self.bodies[name].areas[face][node0] = tr1+tr2
+    
+        # th+ face - [:,-1,:], th- face - [:,0,:]
+        for (face,th_idx) in [('theta+',-1),('theta-',0)]:
+            
+            # calculate the midpoints
+            # midpoint arrays on the theta face, x and r coordintes
+            (mid_th_x,mid_th_r) = geometry_tools.array_midpoints(
+                node_x[:,th_idx],node_r[:,th_idx])
+            # midpoint arrary of theta coordinates for the theta face
+            # TODO: update this when implementing theta profiles
+            # assumes that the theta values are constant over the face
+            mid_th_th = node_theta[0,th_idx,0]+np.zeros((
+                self.r_numel+1,self.x_numel+1))
+            assert(
+                math.isclose(node_theta[-1,th_idx,-1],node_theta[0,th_idx,0]))
+            
+            # calculate areas by splitting each face into two triangles
+            for r_idx in range(self.r_numel):
+                for x_idx in range(self.x_numel):
+                    # node numbers
+                    node0 = body_nodes[r_idx,th_idx,x_idx]
+                    
+                    # area of triangles 1 and 2
+                    # triangle 1 is points 0,1,2
+                    # triangle 2 is points 3,1,2
+                    tr1 = geometry_tools.cyl_tri_area(
+                        (
+                        mid_th_r[r_idx,x_idx],
+                        mid_th_th[r_idx,x_idx],
+                        mid_th_x[r_idx,x_idx]
+                        ),(
+                        mid_th_r[r_idx+1,x_idx],
+                        mid_th_th[r_idx+1,x_idx],
+                        mid_th_x[r_idx+1,x_idx]
+                        ),(
+                        mid_th_r[r_idx,x_idx+1],
+                        mid_th_th[r_idx,x_idx+1],
+                        mid_th_x[r_idx,x_idx+1]
+                        ))
+                    tr2 = geometry_tools.cyl_tri_area(
+                        (
+                        mid_th_r[r_idx+1,x_idx+1],
+                        mid_th_th[r_idx+1,x_idx+1],
+                        mid_th_x[r_idx+1,x_idx+1]
+                        ),(
+                        mid_th_r[r_idx+1,x_idx],
+                        mid_th_th[r_idx+1,x_idx],
+                        mid_th_x[r_idx+1,x_idx]
+                        ),(
+                        mid_th_r[r_idx,x_idx+1],
+                        mid_th_th[r_idx,x_idx+1],
+                        mid_th_x[r_idx,x_idx+1]
+                        ))
+                    # add areas of triangles to make area of 4-sided element
+                    self.bodies[name].areas[face][node0] = tr1+tr2
 
-        
+        # x+ face - [:,:,-1], x- face - [:,:,0]
+        for (face,x_idx) in [('x+',-1),('x-',0)]:
+            
+            # calculate the midpoints
+            # midpoint arrays on the x face, theta and r coordintes
+            (mid_x_th,mid_x_r) = geometry_tools.array_midpoints(
+                node_theta[:,:,x_idx],node_r[:,:,x_idx])
+            # midpoint arrary of theta coordinates for the x face
+            # assumes that the theta values are constant over the face
+            mid_x_x = node_x[0,0,x_idx]+np.zeros((
+                self.r_numel+1,self.theta_numel+1))
+            assert(math.isclose(node_x[-1,-1,x_idx],node_x[0,0,x_idx]))
+            
+            # calculate areas by splitting each face into two triangles
+            for r_idx in range(self.r_numel):
+                for th_idx in range(self.theta_numel):
+                    # node numbers
+                    node0 = body_nodes[r_idx,th_idx,x_idx]
+                    
+                    # area of triangles 1 and 2
+                    # triangle 1 is points 0,1,2
+                    # triangle 2 is points 3,1,2
+                    tr1 = geometry_tools.cyl_tri_area(
+                        (
+                        mid_x_r[r_idx,th_idx],
+                        mid_x_th[r_idx,th_idx],
+                        mid_x_x[r_idx,th_idx]
+                        ),(
+                        mid_x_r[r_idx+1,th_idx],
+                        mid_x_th[r_idx+1,th_idx],
+                        mid_x_x[r_idx+1,th_idx]
+                        ),(
+                        mid_x_r[r_idx,th_idx+1],
+                        mid_x_th[r_idx,th_idx+1],
+                        mid_x_x[r_idx,th_idx+1]
+                        ))
+                    tr2 = geometry_tools.cyl_tri_area(
+                        (
+                        mid_x_r[r_idx+1,th_idx+1],
+                        mid_x_th[r_idx+1,th_idx+1],
+                        mid_x_x[r_idx+1,th_idx+1]
+                        ),(
+                        mid_x_r[r_idx+1,th_idx],
+                        mid_x_th[r_idx+1,th_idx],
+                        mid_x_x[r_idx+1,th_idx]
+                        ),(
+                        mid_x_r[r_idx,th_idx+1],
+                        mid_x_th[r_idx,th_idx+1],
+                        mid_x_x[r_idx,th_idx+1]
+                        ))
+                    # add areas of triangles to make area of 4-sided element
+                    self.bodies[name].areas[face][node0] = tr1+tr2
         
     def set_r_numel(self,numel):
         '''Sets the number of elements that will be made through the radial 
@@ -202,6 +391,27 @@ class Model:
         dimension of new solids created.'''
         
         self.x_numel = numel
+        
+    def plot_mesh(self):
+        '''Plots the mesh nodes and returns the Axes object.'''
+        fig = plt.figure(figsize=(10,10))
+        ax = fig.add_subplot(projection='3d')
+        
+        # plot a line from each node to each of its connections
+        for start_node in self.node_connect.keys():
+            # get the coordinates of start_node
+            r0,th0,x0 = self.node_tbl.loc[start_node,['r','theta','x']]
+            # make cartesian point
+            p0 = geometry_tools.cyl_to_cart((r0,th0,x0))
+            # loop over the nodes that connect
+            for end_node in self.node_connect[start_node]:
+                r1,th1,x1 = self.node_tbl.loc[end_node,['r','theta','x']]
+                p1 = geometry_tools.cyl_to_cart((r1,th1,x1))
+                # plot the line from start_node to end_node
+                ax.plot([p0[0],p1[0]],[p0[1],p1[1]],[p0[2],p1[2]])
+        
+        plt.show()
+        return ax
         
             
 class Body:
@@ -223,8 +433,7 @@ class Body:
             'x+':pd.Series(),'x-':pd.Series()
             }
         
-        
-    
+
     
     
     
