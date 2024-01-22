@@ -46,14 +46,45 @@ class Model:
         '''
         # make a copy of the node table that has the sol_id as the first index
         # and the node number as the second index
-        sol_tbl = self.node_tbl.set_index('sol_id',append=True).swap_level()
+        sol_tbl = self.node_tbl.set_index('sol_id',append=True).swaplevel()
         # count the number of sol_ids
-        num_T = len(set(self.node_tbl['sol_id']))
+        sol_id = list(dict.fromkeys(sol_tbl.index.get_level_values(0)))
+        num_T = len(sol_id)
+
+        # need to make sure there aren't gaps in the sol_ids
+        # the sol_idx will be a new index that doesn't have gaps
+        # use this Series to get the sol_idx from the sol_id, and use the 
+        # sol_idx to index the solution matrix
+        sol_idx = pd.Series(data=list(range(num_T)),index=sol_id)
+        
         # initialize solution system
         self.sol_mat = np.zeros((num_T,num_T))
         self.sol_vec = np.zeros((num_T,1))
         
         # add the solid conduction resistances
+        # R = t/kA
+        
+        # TODO: make sure body is a reference, not a copy
+        for body in self.bodies:
+            for node0 in body.nodes:
+                
+                for (face,node1) in self.node_connect[node0]:
+                    
+                    # distance between the nodes
+                    L = self.node_dist(node0,node1)
+                    # node areas normal to heat flow
+                    A0 = body.areas[face].loc[node0]
+                    A1 = body.areas[face].loc[node1]
+                    # just take the average ig
+                    A = (A0+A1)/2
+                    # get thermal conductivity from the Body's Material
+                    k = body.material.get('k')
+                    # thermal resistance
+                    R = L/(k*A)
+                    
+                    
+                    
+                
         
         
         pass
@@ -154,6 +185,7 @@ class Model:
             index=body_nodes.reshape(-1)
             )
         self.node_tbl = pd.concat((self.node_tbl,body_node_tbl))
+        self.nodes = body_nodes.reshape(-1)
         
         # make the Body object for this body
         self.bodies[name] = Body(name,args['material'])
@@ -180,34 +212,39 @@ class Model:
                     # add r- node
                     if r_idx > 0:
                         node_rn = body_nodes[r_idx-1,th_idx,x_idx]
-                        self.node_connect[node].add(node_rn)
+                        self.node_connect[node].add(('r',node_rn))
                     # add r+ node
                     if r_idx < self.r_numel-1:
                         node_rp = body_nodes[r_idx+1,th_idx,x_idx]
-                        self.node_connect[node].add(node_rp)
+                        self.node_connect[node].add(('r',node_rp))
                     # add th- node
                     if th_idx > 0:
                         node_thn = body_nodes[r_idx,th_idx-1,x_idx]
-                        self.node_connect[node].add(node_thn)
+                        self.node_connect[node].add(('theta',node_thn))
                     # add th+ node
                     if th_idx < self.theta_numel-1:
                         node_thp = body_nodes[r_idx,th_idx+1,x_idx]
-                        self.node_connect[node].add(node_thp)
+                        self.node_connect[node].add(('theta',node_thp))
                     # add x- node
                     if x_idx > 0:
                         node_xn = body_nodes[r_idx,th_idx,x_idx-1]
-                        self.node_connect[node].add(node_xn)
+                        self.node_connect[node].add(('x',node_xn))
                     # add x+ node
                     if x_idx < self.x_numel-1:
                         node_xp = body_nodes[r_idx,th_idx,x_idx+1]
-                        self.node_connect[node].add(node_xp)
+                        self.node_connect[node].add(('x',node_xp))
         
         
     def calc_body_areas(self,args,name,body_nodes,node_r,node_theta,node_x,
                         body_node_tbl):
+        '''Calculate all external and internal node surface areas in the
+        three planes and store to self.bodies[name].areas'''
+        
+        # TODO: should store the current numel values in the body objects
         
         # r+ face - [-1,:,:], r- face - [0,:,:]
-        for (face,r_idx) in [('r+',-1),('r-',0)]:
+        face = 'r'
+        for r_idx in range(self.r_numel):
             
             # calculate the midpoints
             # midpoint arrays on the r face, x and theta coordintes
@@ -216,12 +253,7 @@ class Model:
             # midpoint arrary of r coordinates for the r face
             mid_r_r1 = args['r1'](mid_r_x)
             mid_r_r2 = args['r2'](mid_r_x)
-            mid_r_r = mid_r_r1 + (mid_r_r2-mid_r_r1)*np.linspace(
-                0,1,self.r_numel)[:,np.newaxis,np.newaxis]
-            if face == 'r+':
-                mid_r_r = args['r2'](mid_r_x)
-            else:
-                mid_r_r = args['r1'](mid_r_x)
+            mid_r_r = mid_r_r1 + (mid_r_r2-mid_r_r1)*(r_idx/(self.r_numel-1))
             
             # calculate areas by splitting each face into two triangles
             for th_idx in range(self.theta_numel):
@@ -267,7 +299,8 @@ class Model:
                     self.bodies[name].areas[face][node0] = tr1+tr2
     
         # th+ face - [:,-1,:], th- face - [:,0,:]
-        for (face,th_idx) in [('theta+',-1),('theta-',0)]:
+        face = 'theta'
+        for th_idx in range(self.theta_numel):
             
             # calculate the midpoints
             # midpoint arrays on the theta face, x and r coordintes
@@ -322,7 +355,8 @@ class Model:
                     self.bodies[name].areas[face][node0] = tr1+tr2
 
         # x+ face - [:,:,-1], x- face - [:,:,0]
-        for (face,x_idx) in [('x+',-1),('x-',0)]:
+        face = 'x'
+        for x_idx in range(self.x_numel):
             
             # calculate the midpoints
             # midpoint arrays on the x face, theta and r coordintes
@@ -404,7 +438,7 @@ class Model:
             # make cartesian point
             p0 = geometry_tools.cyl_to_cart((r0,th0,x0))
             # loop over the nodes that connect
-            for end_node in self.node_connect[start_node]:
+            for face,end_node in self.node_connect[start_node]:
                 r1,th1,x1 = self.node_tbl.loc[end_node,['r','theta','x']]
                 p1 = geometry_tools.cyl_to_cart((r1,th1,x1))
                 # plot the line from start_node to end_node
@@ -412,6 +446,13 @@ class Model:
         
         plt.show()
         return ax
+    
+    def node_dist(self,node0,node1):
+        '''Returns the distance between the two nodes.'''
+        
+        r0,th0,x0 = self.node_tbl.loc[node0,['r','theta','x']]
+        r1,th1,x1 = self.node_tbl.loc[node1,['r','theta','x']]
+        return geometry_tools.cyl_dist(r0,th0,x0,r1,th1,x1)
         
             
 class Body:
@@ -419,21 +460,43 @@ class Body:
     def __init__(self,name,material):
         # the name and material of this body
         self.name = name
-        self.material = material
+        self.material = Material(material)
         # stores nodes numbers that belong on each of the six faces
         self.faces = {
             'r+':[],'r-':[],'theta+':[],'theta-':[],'x+':[],'x-':[]
             }
         # stores the surface area that nodes have on this body, organized by 
-        # faces
+        # normal
         # each value is a pd.Series indexed by node numbers
         self.areas = {
-            'r+':pd.Series(),'r-':pd.Series(),
-            'theta+':pd.Series(),'theta-':pd.Series(),
-            'x+':pd.Series(),'x-':pd.Series()
+            'r':pd.Series(),
+            'theta':pd.Series(),
+            'x':pd.Series()
             }
+        # list of node numbers in this Body
+        self.nodes = []
         
-
+class Material:
+    '''Represents a material with temperature dependent properties.
+    
+    Available properties: k [W/(m*K)]
+    
+    Uses default data sheet at ./input_sheets/materials.xlsx
+    '''
+    
+    def __init__(self,name):
+        
+        fname = 'input_sheets/materials.xlsx'
+        self.data = pd.read_excel(fname,sheet_name=name)
+        
+    def get(self,prop,T=None):
+        '''Returns the value of prop at temperature T [K].'''
+        if T is None:
+            return self.data.loc[0,prop]
+        else:
+            return np.interp(self.data['T'],T,self.data['prop'])
+        
+        
     
     
     
