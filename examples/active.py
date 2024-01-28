@@ -7,12 +7,12 @@ client = sy.Synnax(
     password="seldon",
     secure=True,
 )
-rng = client.ranges.create(
-    name="Dec 9 Level Sensing Cryoflow",
-    time_range=sy.TimeRange(
-        start=sy.TimeStamp.now(),
-        end=sy.TimeStamp.now() + 5 * sy.TimeSpan.SECOND,
-    ),
-)
-rng = client.ranges.retrieve("Dec 9 Level Sensing Cryoflow")
+# rng = client.ranges.create(
+#     name="Dec 9 Level Sensing Cryoflow",
+#     time_range=sy.TimeRange(
+#         start=sy.TimeStamp.now(),
+#         end=sy.TimeStamp.now() + 5 * sy.TimeSpan.SECOND,
+#     ),
+# )
+rng = client.ranges.retrieve("Dec 10 WT TPC Test")
 client.ranges.set_active(rng.key)
