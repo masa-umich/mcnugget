@@ -2,14 +2,18 @@ import time
 import synnax as sy
 from synnax.control.controller import Controller
 
-CLOSE_ALL_THRESHOLD = 250
-VALVE_1_THRESHOLD = 250 - 10
-VALVE_2_THRESHOLD = 250 - 20
-PT = "pressure"
+# TPC Control Bound
+BOUND = 5  # PSI
+TPC_UPPER_BOUND = 50  # PSI
+TPC_LOWER_BOUND = TPC_UPPER_BOUND - BOUND
 
-PRESS_TARGET = 250
-PRESS_STEP = 250
-PRESS_STEP_DELAY = (2 * sy.TimeSpan.SECOND).seconds
+L_STAND_PRESS_TARGET = 65
+SCUBA_PRESS_TARGET = 275  # PSI
+
+PRESS_1_STEP = 10  # PSI
+PRESS_2_STEP = 50  # PSI
+
+PRESS_STEP_DELAY = (1 * sy.TimeSpan.SECOND).seconds  # Seconds
 
 client = sy.Synnax(
     host="localhost",
@@ -20,80 +24,120 @@ client = sy.Synnax(
 )
 
 
-
 def run_tpc(auto: Controller):
-    pressure = auto["pressure"]
-    one_open = auto["tpc_vlv_1_ack"]
-    two_open = auto["tpc_vlv_2_ack"]
+    pressure = auto[L_STAND_PT]
+    one_open = auto[TPC_CMD_ACK]
 
-    if pressure > CLOSE_ALL_THRESHOLD:
-        if one_open or two_open:
-            print("CLOSING ALL VALVES")
-            auto.set({
-                "tpc_vlv_1_cmd": 0,
-                "tpc_vlv_2_cmd": 0,
-            })
-    elif pressure < VALVE_2_THRESHOLD:
-        if not one_open or not two_open:
-            print("OPENING ALL VALVES")
-            auto.set({
-                "tpc_vlv_1_cmd": 1,
-                "tpc_vlv_2_cmd": 1,
-            })
-    elif pressure < VALVE_1_THRESHOLD:
-        if not one_open:
-            print("OPENING VALVE 1")
-            auto.set({"tpc_vlv_1_cmd": 1})
+    if pressure > TPC_UPPER_BOUND:
+        if one_open:
+            auto[TPC_CMD] = False
+    elif pressure < TPC_LOWER_BOUND:
+        auto[TPC_CMD] = True
 
     return pressure < 15
 
 
+TPC_CMD = "gse_doc_1"
+TPC_CMD_ACK = "gse_doa_1"
+MPV_CMD = "gse_doc_2"
+PRESS_ISO_CMD = "gse_doc_3"
+# Normally open
+VENT_CMD = "gse_doc_4"
+
+SCUBA_PT = "gse_ai_1"
+L_STAND_PT = "gse_ai_2"
+
 with client.control.acquire(
-        "bang_bang_tpc",
+        "Autosequence",
         write=[
-            "tpc_vlv_1_cmd",
-            "tpc_vlv_2_cmd",
-            "mpv_cmd",
-            "press_vlv_cmd",
-            "vent_vlv_cmd",
+            TPC_CMD,
+            MPV_CMD,
+            PRESS_ISO_CMD,
+            VENT_CMD
         ],
-        read=["pressure", "tpc_vlv_1_ack", "tpc_vlv_2_ack"],
-        write_authorities=[255]
+        read=[TPC_CMD_ACK, SCUBA_PT, L_STAND_PT],
+        write_authorities=[250]
 ) as auto:
-    # Make sure we're in a good starting state
-    auto.set({
-        "tpc_vlv_1_cmd": 0,
-        "tpc_vlv_2_cmd": 0,
-        "mpv_cmd": 0,
-        "press_vlv_cmd": 0,
-        "vent_vlv_cmd": 0,
-    })
+    try:
+        print("Starting TPC Test. Setting initial system state.")
+        auto.set({
+            TPC_CMD: 0,
+            MPV_CMD: 0,
+            PRESS_ISO_CMD: 0,
+            VENT_CMD: 1,
+        })
 
-    print("Waiting for pressure to drop")
+        time.sleep(2)
 
-    # Pressurize the l-stand
-    curr_target = PRESS_STEP
-    while True:
-        auto["press_vlv_cmd"] = True
-        auto.wait_until(lambda c: c.pressure > curr_target)
-        auto["press_vlv_cmd"] = False
-        curr_target += PRESS_STEP
-        if auto["pressure"] > PRESS_TARGET:
-            break
+        print(f"Pressing SCUBA and L-Stand to 50 PSI")
+
+        # Pressurize l-stand and scuba to 50 PSI
+        # Open TPC Valve
+        auto[TPC_CMD] = True
+
+        curr_target = PRESS_1_STEP
+        while True:
+            print(f"Pressing L-Stand to {curr_target} PSI")
+            auto[PRESS_ISO_CMD] = True
+            auto.wait_until(lambda c: c[L_STAND_PT] > curr_target)
+            auto[PRESS_ISO_CMD] = False
+            curr_target += PRESS_1_STEP
+            curr_target = min(curr_target, L_STAND_PRESS_TARGET)
+            if auto[L_STAND_PT] > L_STAND_PRESS_TARGET:
+                break
+            print("Taking a nap")
+            time.sleep(PRESS_STEP_DELAY)
+
+        print("Pressurized. Waiting for five seconds")
         time.sleep(PRESS_STEP_DELAY)
+        # ISO off TESCOM and press scuba with ISO
+        auto[TPC_CMD] = False
 
-    print("Pressurized. Waiting for five seconds")
-    time.sleep(3)
+        curr_target = L_STAND_PRESS_TARGET + PRESS_2_STEP
+        while True:
+            auto[PRESS_ISO_CMD] = True
+            auto.wait_until(lambda c: c[SCUBA_PT] > curr_target)
+            auto[PRESS_ISO_CMD] = False
+            curr_target += PRESS_2_STEP
+            curr_target = min(curr_target, SCUBA_PRESS_TARGET)
+            if auto[SCUBA_PT] > SCUBA_PRESS_TARGET:
+                break
+            print("Taking a nap")
+            time.sleep(PRESS_STEP_DELAY)
 
-    print("Opening MPV")
-    auto["mpv_cmd"] = 1
-    auto.wait_until(lambda c: run_tpc(c))
-    print("Test complete. Safeing System")
+        print("Pressurized. Waiting for five seconds")
+        time.sleep(2)
 
-    auto.set({
-        "tpc_vlv_1_cmd": 0,
-        "tpc_vlv_2_cmd": 0,
-        "press_vlv_cmd": 0,
-        "mpv_cmd": 1,
-        "vent_vlv_cmd": 1,
-    })
+        # auto.wait_until(lambda c: c[L_STAND_PT] < 51)
+
+        start = sy.TimeStamp.now()
+
+        print("Opening MPV")
+        auto[MPV_CMD] = 1
+        auto.wait_until(lambda c: run_tpc(c))
+        print("Test complete. Safeing System")
+
+        rng = client.ranges.create(
+            name=f"{start.__str__()[11:16]} Bang Bang TPC Sim",
+            time_range=sy.TimeRange(start, sy.TimeStamp.now()),
+        )
+
+        auto.set({
+            TPC_CMD: 1,
+            PRESS_ISO_CMD: 0,
+            # Open vent
+            VENT_CMD: 0,
+            MPV_CMD: 0,
+        })
+        time.sleep(100)
+    except KeyboardInterrupt:
+        print("Test interrupted. Safeing System")
+        auto.set({
+            TPC_CMD: 1,
+            PRESS_ISO_CMD: 0,
+            # Open vent
+            VENT_CMD: 0,
+            # Leave MPV open
+            MPV_CMD: 1,
+        })
+
