@@ -2,7 +2,7 @@ import time
 import synnax as sy
 from synnax.control.controller import Controller
 
-# CLOSE_ALL_THRESHOLD = 250               # threshold at which everything stops
+# CLOSE_ALL_THRESHOLD = 250                 # threshold at which everything stops
 
 # V1_TARGET = 500                           # MEOP for v1
 V1_MAX = 1000                               # MAWP for v1
@@ -10,7 +10,7 @@ V1_MAX = 1000                               # MAWP for v1
 V1_CHANNEL = "gse_vlv_1"                    # TODO name of channel for v1
 V1_ACK = V1_CHANNEL + "_ack"
 V1_CMD = V1_CHANNEL + "_cmd"
-V1_PRESS = V1_CHANNEL               # TODO: define this?
+V1_PRESS = V1_CHANNEL                       # TODO: define this?
 
 # V2_TARGET = 100                           # MEOP for v2
 V2_MAX = 250                                # MAWP for v2
@@ -56,7 +56,8 @@ with client.control.acquire(
     print("Waiting for pressure to drop")
 
 
-def pressurize(cmd: str, ack: str, target: int, max_p: int, step: int):
+#Pressurizing the system    
+def pressurize(cmd: str, ack: str, target: int, max_p: int, step: int): 
     print(f"pressurizing to {target} at step {step} using {cmd}")
     input(f"PRESS ANY KEY TO CONTINUE")
     auto.set(cmd, 1)
@@ -69,7 +70,7 @@ def pressurize(cmd: str, ack: str, target: int, max_p: int, step: int):
             break
         time.sleep(PRESS_STEP_DELAY)
 
-
+#Closing vavle if pressure is too high and opening valve if pressure is not at target
 def runsafe(cmd: str, ack: str, target: int, max_p: int) -> bool:
     valve_open = auto[ack]
     pressure = auto["pressure"]                         #TODO
