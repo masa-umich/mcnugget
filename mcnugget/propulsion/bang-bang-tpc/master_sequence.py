@@ -12,7 +12,7 @@ client = sy.Synnax(
 # specifies the default delay between increments
 INC_DELAY = 1
 
-# TODO - configure this to match the valves in testing
+# TODO - configure this to match the valve(s) in testing
 def main():
     # this creates a valve that will be pressurized 
             # to somewhere between 485 and 492.5 psi in increments of 97
@@ -25,6 +25,14 @@ def main():
                                max=500, 
                                inc=97,
                                )
+    
+    # this waits for an input
+    input(f"pressurizing {valve.chan} to {valve.target_low} - press any key to confirm")
+    # this runs the valve procedure
+    valve.run()
+    # this closes the valve
+    print(f"Finished test - press any key to close {valve.chan}")
+    close_all([valve])
 
 
 
@@ -119,15 +127,28 @@ class autosequence_valve:
                 auto[self.cmd] = True
 
     # closes the valve
-    def shut_down(self, auto):
-        print(f"finished - closing {self.cmd}")
+    def close(self, auto):
+        print(f"closing {self.cmd}")
         auto[self.cmd] = False
+    
+    # opens the valve
+    def close(self, auto):
+        print(f"opening {self.cmd}")
+        auto[self.cmd] = True
 
+    ### END OF AUTOSEQUENCE_VALVE CLASS ###
+
+
+    ### USEFUL FUNCTIONS FOR WORKING WITH VALVES ###
 
 # closes all the valves in the list
-def shut_down(self, valves):
+def close_all(self, valves):
     for valve in valves:
-        valve.shut_down()
+        valve.close()
+
+def open_all(self, valves):
+    for valve in valves:
+        valve.open()
     
 # TODO - check this for every test and make sure its right
 def abort(self):
@@ -142,4 +163,5 @@ def abort(self):
     ) as auto:
         auto["valve_cmd"] = False
 
+# this runs the main function defined at the top of the program
 main()
