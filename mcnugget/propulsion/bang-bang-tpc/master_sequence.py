@@ -9,7 +9,24 @@ client = sy.Synnax(
     secure=False
 )
 
+# specifies the default delay between increments
 INC_DELAY = 1
+
+# TODO - configure this to match the valves in testing
+def main():
+    # this creates a valve that will be pressurized 
+            # to somewhere between 485 and 492.5 psi in increments of 97
+    valve = autosequence_valve(chan="channel name goes here", 
+                               cmd="channel_cmd", 
+                               ack="channel_ack",
+                               press="channel_press", 
+                               target_high=492.5, 
+                               target_low=485,
+                               max=500, 
+                               inc=97,
+                               )
+
+
 
 class autosequence_valve:
     # defines a valve with the following properties:
@@ -24,12 +41,13 @@ class autosequence_valve:
     # inc_wait: the delay between pressure incrementation (in seconds)
 
     # this function is called when a new valve is initiated
-    def __init__(self, chan: str, cmd: str, ack: str, press: str, final_target: int, max: int, inc: int, inc_delay=INC_DELAY):
+    def __init__(self, chan: str, cmd: str, ack: str, press: str, target_low: float, target_high: float, max: float, inc: float, inc_delay=INC_DELAY):
         self.chan = chan
         self.cmd = cmd
         self.ack = ack
         self.press = press
-        self.target = final_target
+        self.target_low = target_low
+        self.target_high = target_high
         self.max = max
         self.inc = inc
         self.inc_delay = inc_delay
@@ -61,7 +79,7 @@ class autosequence_valve:
                 auto[self.cmd] = 0
 
                 # checks if the valve is fully pressurized, otherwise increments the target
-                if auto[self.press] >= self.target:
+                if auto[self.press] >= self.target_low:
                     print(f"final target reached for valve {self.chan}")
                     break
                 partial_target += self.inc
@@ -71,24 +89,31 @@ class autosequence_valve:
 
     # this function checks the pressure against target pressure and max pressure
     # it returns true iff the pressure has reached the target
-    def run_valve(self, auto, target: int):
+    def run_valve(self, auto):
         pressure = auto[self.press]
         open = auto[self.ack]
 
-        # shuts off if the pressure is above the max
-        if pressure > self.max:
-            if not open:
-                print(f"closing valve {self.chan}")
+        # shuts off if the pressure is above the max or if pressure is negative
+        if pressure > self.max or pressure < 0:
+            if open:
+                print(f"unstable pressure for {self.chan} - ABORTING")
             auto[self.cmd] = False  # this executes either way for safety
+            abort()
+
+        # closes the valve if pressure is above the high end of the target
+        if pressure > self.target_high:
+            if open:
+                print(f"closing valve {self.chan}")
+                auto[self.cmd] = False
 
         # returns True if the target pressure is reached
-        elif pressure >= self.target:
+        elif pressure >= self.target_low:
             if open:
                 print(f"reached target for valve {self.chan}")
                 return True
         
         # if the pressure has not reached the target, opens the valve
-        elif pressure < self.target:
+        elif pressure < self.target_low:
             if not open:
                 print(f"opening valve {self.chan}")
                 auto[self.cmd] = True
@@ -103,3 +128,18 @@ class autosequence_valve:
 def shut_down(self, valves):
     for valve in valves:
         valve.shut_down()
+    
+# TODO - check this for every test and make sure its right
+def abort(self):
+    # this gives the function access to the channels
+    with client.control.acquire(
+        "bang_bang_tpc",
+        write=[
+            self.cmd
+        ],
+        read=self.ack,
+        write_authorities=[255]
+    ) as auto:
+        auto["valve_cmd"] = False
+
+main()
