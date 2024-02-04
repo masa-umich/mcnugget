@@ -19,6 +19,7 @@ gspread = "^5.12.0"
 openpyxl = "^3.1.2"
 jupyter = "^1.0.0"
 refprop-connector = "^0.3.7"
+requests = "^2.31.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
@@ -32,7 +33,12 @@ host = "synnax.masa.engin.umich.edu"
 port = 80
 username = "synnax"
 password = "seldon"
-secure = true
+secure = false
+#host = "localhost"
+#port = 9090
+#username = "synnax"
+#password = "seldon"
+#secure = false
 
 [build-system]
 requires = ["poetry-core"]

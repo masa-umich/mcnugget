@@ -1,17 +1,20 @@
 import click
+import math
 import pandas as pd
 from dataclasses import dataclass
 import gspread
 from rich import print
 import synnax as sy
 from mcnugget.client import client
+from rich.prompt import Prompt, Confirm
 
 ALIAS_COL = "Name"
 DEVICE_COL = "Device"
 PORT_COL = "Port"
 TYPE_COL = "Type"
 PT_MAX_PRESSURE_COL = "Max Pressure (PSI)"
-PT_OFFSET_COL = "PT Offset (PSI)"
+OPT_PT_OFFSET_COL = "PT Offset (V - Optional)"
+OPT_PT_SLOPE_COL = "PT Slope (PSI/V - Optional)"
 TC_TYPE_COL = "TC Type"
 TC_OFFSET_COL = "TC Offset (K)"
 GSE_DEVICE = "gse"
@@ -65,6 +68,12 @@ def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = N
         data = process_name(sheet)
 
     active = client.ranges.retrieve_active()
+    if active is None:
+        active = prompt_active_range(client)
+        if active is None:
+            print(f"""[red] Cannot proceed without a configured active range. [/red]""")
+            return
+
     ctx = Context(
         client=client, active_range=active, indexes={}
     )
@@ -73,6 +82,22 @@ def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = N
     for index, row in data.iterrows():
         process_row(ctx, index, row)
     client.ranges.set_active(active.key)
+
+
+def prompt_active_range(client: sy.Synnax) -> sy.Range | None:
+    print(f"""[orange]No active active range found in the Synnax cluster.""")
+    if not Confirm.ask(f"""[blue]Would you like to create a new active range?[/blue]"""):
+        return None
+    name = Prompt.ask(f"""[blue]What would you like to name the new active range?[/blue]""")
+    rng = client.ranges.create(
+        name=name,
+        time_range=sy.TimeRange(
+            start=sy.TimeStamp.now(),
+            end=sy.TimeStamp.now() + 1 * sy.TimeSpan.HOUR,
+        ),
+    )
+    client.ranges.set_active(rng.key)
+    return rng
 
 
 def process_excel(source) -> pd.DataFrame:
@@ -170,14 +195,14 @@ def create_device_channels(ctx: Context) -> (dict, bool):
             name=f"gse_ai_{i}",
             data_type=sy.DataType.FLOAT32,
             index=ctx.indexes["gse_ai"].key,
-        ) for i in range(0, 80)
+        ) for i in range(1, 81)
     ]
     digital_inputs = [
         sy.Channel(
             name=f"gse_di_{i}",
             data_type=sy.DataType.FLOAT32,
             index=ctx.indexes["gse_di"].key,
-        ) for i in range(0, 24)
+        ) for i in range(1, 25)
     ]
     client.channels.create(analog_inputs, retrieve_if_name_exists=True)
     client.channels.create(digital_inputs, retrieve_if_name_exists=True)
@@ -186,15 +211,15 @@ def create_device_channels(ctx: Context) -> (dict, bool):
             name=f"gse_doc_{i}_time",
             data_type=sy.DataType.TIMESTAMP,
             is_index=True,
-        ) for i in range(0, 24)
+        ) for i in range(1, 25)
     ]
     digital_command_times = client.channels.create(digital_command_times, retrieve_if_name_exists=True)
     digital_commands = [
         sy.Channel(
             name=f"gse_doc_{i}",
             data_type=sy.DataType.UINT8,
-            index=digital_command_times[i].key,
-        ) for i in range(0, 24)
+            index=digital_command_times[i - 1].key,
+        ) for i in range(1, 25)
     ]
     client.channels.create(digital_commands, retrieve_if_name_exists=True)
     digital_output_acks = [
@@ -202,7 +227,7 @@ def create_device_channels(ctx: Context) -> (dict, bool):
             name=f"gse_doa_{i}",
             data_type=sy.DataType.UINT8,
             index=ctx.indexes["gse_doa"].key,
-        ) for i in range(0, 24)
+        ) for i in range(1, 25)
     ]
     client.channels.create(digital_output_acks, retrieve_if_name_exists=True)
 
@@ -212,7 +237,7 @@ def create_device_channels(ctx: Context) -> (dict, bool):
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 VALVE_AI_PORT_OFFSET = 36
-VALID_VALVE_PORTS = range(0, 24)
+VALID_VALVE_PORTS = range(1, 25)
 
 
 def process_valve(ctx: Context, index: int, row: dict):
@@ -324,14 +349,14 @@ def process_valve(ctx: Context, index: int, row: dict):
 # ||||||||||||||||||||||||||||||||||||||||||||| PRESSURE TRANSDUCERS |||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-PT_VALID_PORTS = range(0, 37)
+PT_VALID_PORTS = range(1, 38)
 PT_MAX_OUTPUT_VOLTAGE = 4.5
 PT_OFFSET = 0.5
 
 
 def pt_analog_port(port: int) -> int:
-    if port == 36:
-        return 60
+    if port == 37:
+        return 61
     return port
 
 
@@ -376,22 +401,45 @@ def process_pt(ctx: Context, index: int, row: dict):
         return False
 
     max_pressure = row[PT_MAX_PRESSURE_COL]
-    offset = row[PT_OFFSET_COL]
-    # try to convert max_pressure to a float
-    try:
-        max_pressure = float(max_pressure)
-    except ValueError:
-        print(
-            f"""[red]Invalid value for PT max pressure '{max_pressure}' in row {index}[/red]\n[blue]Value must be a positive number[/blue]"""
-        )
-        return False
+    opt_offset = row[OPT_PT_OFFSET_COL]
+    opt_slope = row[OPT_PT_SLOPE_COL]
+    # check if its non nan, NOT an empty stringja
+    if opt_slope != "" and not math.isnan(opt_slope):
+        try:
+            print(f"""[blue]Using optional PT slope '{opt_slope}' for {device} pressure transducer {port}[/blue]""")
+            slope = float(opt_slope)
+        except ValueError:
+            print(
+                f"""[red]Invalid value for PT slope '{opt_slope}' for {device} pressure transducer {port}[/red]\n[blue]Value must be a positive number[/blue]"""
+            )
+            return False
+    else:
+        try:
+            max_pressure = float(max_pressure)
+            slope = max_pressure / (PT_MAX_OUTPUT_VOLTAGE - PT_OFFSET)
+        except ValueError:
+            print(
+                f"""[red]Invalid value for PT max pressure '{max_pressure}' for {device} pressure transducer {port}[/red]\n[blue]Value must be a positive number[/blue]"""
+            )
+            return False
 
-    slope = (PT_MAX_OUTPUT_VOLTAGE - PT_OFFSET) / max_pressure
+    if opt_offset != "" and not math.isnan(opt_offset):
+        try:
+            print(f"""[blue]Using optional PT offset '{opt_offset}' for {device} pressure transducer {port}[/blue]""")
+            offset = float(opt_offset)
+        except ValueError:
+            print(
+                f"""[red]Invalid value for PT offset '{opt_offset}' for {device} pressure transducer {port}[/red]\n[blue]Value must be a positive number[/blue]"""
+            )
+            return False
+    else:
+        offset = PT_OFFSET
+
     try:
         ctx.active_range.meta_data.set({
             f"{name}_type": "PT",
             f"{name}_pt_slope": slope,
-            f"{name}_pt_offset": (PT_OFFSET if port == 3† else 0) / max_pressure
+            f"{name}_pt_offset": offset,
         })
     except Exception as e:
         print(
@@ -422,7 +470,7 @@ def process_pt(ctx: Context, index: int, row: dict):
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 TC_PORT_OFFSET = 64
-TC_VALID_PORTS = range(0, 16)
+TC_VALID_PORTS = range(1, 17)
 
 
 def process_tc(ctx: Context, index: int, row: dict):
@@ -443,7 +491,7 @@ def process_tc(ctx: Context, index: int, row: dict):
         return False
 
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring TC {port} on {device} port {TC_PORT_OFFSET + port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring TC {port} on {device} port {port + TC_PORT_OFFSET}[/blue]"
     )
 
     port += TC_PORT_OFFSET
@@ -457,7 +505,7 @@ def process_tc(ctx: Context, index: int, row: dict):
     )
 
     try:
-        ch = ctx.client.channels.create(ch, retrieve_if_name_exists=True)
+        ctx.client.channels.create(ch, retrieve_if_name_exists=True)
     except Exception as e:
         print(
             f"""[red]Failed to retrieve channel for {device} thermocouple {port}[/red]\n Error: {e}"""
@@ -553,7 +601,6 @@ def process_lc(ctx: Context, index: int, row: dict):
 
     try:
         ctx.active_range.meta_data.set(
-
             {
                 f"{name}_type": "LC",
             }

@@ -12,7 +12,6 @@ import geometry_tools
 import math
 import matplotlib as mpl
 
-
 class Model:
     '''Represents a three-dimensional thermal finite element model.'''
     
@@ -26,6 +25,7 @@ class Model:
         # table with node information
         # r, theta, and z coordinates 
         # sol_id is the index for the node in the solution matrix
+        # indexed by the node number 
         self.node_tbl = pd.DataFrame({'r':[],'theta':[],'x':[],'sol_id':[]})
         # dict with node connections
         self.node_connect = dict()
@@ -37,18 +37,15 @@ class Model:
         self.sol_vec = []
         # the temperature results
         # this should be a pd.Series indexed by the sol_ids
-        self.T = []
+        self.T = None
         
     def solve(self):
         '''Solve for all temperatures.
         
         http://masa.eecs.umich.edu/wiki/index.php/Thrust_Chamber_Thermal_Modeling
         '''
-        # make a copy of the node table that has the sol_id as the first index
-        # and the node number as the second index
-        sol_tbl = self.node_tbl.set_index('sol_id',append=True).swaplevel()
-        # count the number of sol_ids
-        sol_id = list(dict.fromkeys(sol_tbl.index.get_level_values(0)))
+        # extract the list of unique solution ids
+        sol_id = list(dict.fromkeys(self.node_tbl['sol_id']))
         num_T = len(sol_id)
 
         # need to make sure there aren't gaps in the sol_ids
@@ -60,15 +57,28 @@ class Model:
         # initialize solution system
         self.sol_mat = np.zeros((num_T,num_T))
         self.sol_vec = np.zeros((num_T,1))
-        
+                
         # add the solid conduction resistances
         # R = t/kA
         
         # TODO: make sure body is a reference, not a copy
         for body in self.bodies:
             for node0 in body.nodes:
+                # node0 corresponds to the i index, or the row of the matrix
                 
+                # solution id for node0
+                sol_id0 = self.node_tbl.loc[node0,'sol_id']
+                # solution index for node0
+                sol_idx0 = sol_idx.loc[sol_id0]
+                                
                 for (face,node1) in self.node_connect[node0]:
+                    # node1 corresponds to the j index, or the column of the 
+                    # matrix
+                    
+                    # solution id
+                    sol_id1 = self.node_tbl.loc[node1,'sol_id']
+                    # solution index
+                    sol_idx1 = sol_idx.loc[sol_id0]
                     
                     # distance between the nodes
                     L = self.node_dist(node0,node1)
@@ -80,15 +90,42 @@ class Model:
                     # get thermal conductivity from the Body's Material
                     k = body.material.get('k')
                     # thermal resistance
-                    R = L/(k*A)
+                    Rij = L/(k*A)
                     
+                    # now put this thermal resistance in the solution matrix
+                    # add -1/Rij in i row, i col
+                    self.sol_mat[sol_idx0,sol_idx0] += -1/Rij
+                    # add 1/Rij in i row, j col
+                    self.sol_mat[sol_idx0,sol_idx1] += 1/Rij
                     
-                    
+        # now iterate over the convection objects 
+        # add the -Gai Ti and Gai Ta
+        for convect in self.convects:
+            body = self.bodies[convect.body_name]
+            for node0 in body.faces[convect.face_name]:
+                sol_id0 = self.node_tbl.loc[node0,'sol_id']
+                sol_idx0 = sol_idx.loc[sol_id0]
                 
+                # get the area of this node
+                # the face_name has a +/- on the end, so yeet to index the 
+                # areas dict
+                # index value of the areas dict with the r/x/theta direction
+                # inex the area in the Series with the node number
+                A = body.areas[convect.face_name[:-1]].loc[node0]
+                
+                # get the x coordinate of nodei
+                xi = self.node_tbl.loc[node0,'x']
+                # add -Gai to row i, col i
+                self.sol_mat[sol_idx0,sol_idx0] += convect.h(xi)*A
+                # add -Gai Ta to b row i
+                self.sol_vec.loc[sol_idx0] += -convect.h(xi)*A * convect.T_inf
         
-        
-        pass
-       
+        # now just solve the system
+        T_vec = np.linalg.solve(self.sol_mat,self.sol_vec)
+        # put into a series indexed by the sol_id
+        self.T = pd.Series(data=T_vec,index=sol_id)
+            
+
     def make_solid(self,shape,**args):
         '''Adds a solid body to the model.
         
@@ -466,7 +503,7 @@ class Body:
             'r+':[],'r-':[],'theta+':[],'theta-':[],'x+':[],'x-':[]
             }
         # stores the surface area that nodes have on this body, organized by 
-        # normal
+        # normal direction
         # each value is a pd.Series indexed by node numbers
         self.areas = {
             'r':pd.Series(),
@@ -497,6 +534,32 @@ class Material:
             return np.interp(self.data['T'],T,self.data['prop'])
         
         
+class Convect:
+    '''Represents a convection boundary condition applied to the face of 
+    a boday with a heat transfer coefficient, h(x) [W/m^2*K] and 
+    freestream T [K].
     
+    '''
     
+    def __init__(self,body_name,face_name,h,T):
+        '''    
+        Inputs:
+        body_name: string
+         - the name used to create the body this is applied to
+         
+        face_name: 'r+', 'r-', 'theta+', 'theta-', 'x+', or 'x-'
+         - the face this is applied to
+         
+        h: function of axial location x
+         - returns the desired heat transfer coefficient in W/m^2*K
+         
+        T: freestream temperature in K
+         '''
+         
+        self.body_name = body_name
+        self.face_name = face_name
+        self.h = h
+        self.T = T
+        
+        
     
