@@ -1,42 +1,43 @@
 import synnax as sy
 
-# this function pressurizes a valve to a pressure in specified increments
-def press_valve(vlv: str, cmd: str, press: str, target: float, inc: float, auto):
-    partial_target = inc
-    input(f"pressurizing {vlv} to {target} - press Enter to continue")
-    while True:
-        print(f"pressurizing {vlv} to {partial_target}")
-        auto[cmd] = True
-        auto.wait_until(lambda auto: auto[press] >= partial_target)
-        if partial_target >= target:
-            print("final pressure reached for {vlv}")
-            break
-        partial_target += inc
+# this defines a class that can be used for both regular valves and vents
+class Valve:
+    def __init__(self, auto, name: str, cmd: str, ack: str, default_open: bool, 
+                mawp: float, requires_confirm: bool = True):
+        self.name = name
+        self.cmd = cmd
+        self.ack = ack
+        self.default_open = default_open
+        self.auto = auto
+        self.requires_confirm = requires_confirm
+        self.mawp = mawp
 
-# # this function depresses a valve to a pressure in specified increments
-# def depress_valve(vlv: str, cmd: str, press: str, target: float, auto):
-#     partial_target = auto[press] - inc
-#     input(f"depressurizing {vlv} to {target} - press Enter to continue")
-#     while True:
-#         print(f"depressurizing {vlv} to {partial_target}")
-#         auto[cmd] = False
-#         auto.wait_until(lambda auto: auto[press] <= partial_target)
-#         if partial_target <= target:
-#             print("final pressure reached for {vlv}")
-#             break
-#         partial_target -= inc
+    # this energizes the valve until the target pressure is reached
+    def pressurize(self, pressure: str, target: float, inc: float):
+        partial_target = inc
+        if self.requires_confirm:
+            input(f"pressurizing {self.name} to {target} - press Enter to continue")
+        while True:
+            print(f"pressurizing {self.name} to {partial_target}")
+            self.auto[self.cmd] = True
+            self.auto.wait_until(lambda auto: auto[pressure] >= partial_target)
+            if partial_target >= target:
+                print(f"{self.name} has reached {target}")
+                break
+            partial_target += inc
 
-# this function checks pressures and returns FALSE if an abort is needed
-def run_safety(max_list: [float], press_list: [str], auto):
-    for max, press in max_list, press_list:
-        if auto[press] >= max:
-            print("valve {vlv.vlv} above MAWP - aborting")
-            return False
-        # if auto[press] <= vlv.min:
-        #     print("valve {vlv.vlv} fell below minimum pressure - aborting")
-        #     return False
-        #     break
-    return True
+    # closes a vent or opens a valve
+    def energize(self):
+        self.auto[self.cmd] = not self.default_open
+
+    # opens a vent or closes a valve
+    def de_energize(self):
+        self.auto[self.cmd] = self.default_open
+
+    # returns true iff the valve is below the MAWP
+    def check_safe(self, pressure: str):
+        return self.auto[pressure] < self.mawp
+
 
 # this function initializes `auto` for the channels specified
 def initialize_for_autosequence(cmds: [str], acks: [str], pressures: [str]):

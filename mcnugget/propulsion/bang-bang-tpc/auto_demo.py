@@ -1,6 +1,5 @@
 import auto_utilities
 import threading
-import time
 
 
 '''
