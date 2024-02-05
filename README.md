@@ -134,8 +134,8 @@ at the top of your file as follows (feel free to copy and paste):
 ```python
 import matplotlib.pyplot as plt
 import synnax as sy
-from mcnugget.query import read
-from mcnugget.time import elapsed_seconds
+from mcnugget.client import client
+
 ```
 
 If you're interested in what each import does, here's a brief description:
@@ -144,27 +144,22 @@ If you're interested in what each import does, here's a brief description:
   plotting library.
 - `import synnax as sy` is a library that we use to define time ranges. We'll use this to define the range of data we
   want to read.
-- `from mcnugget.query import read` is a method that we use to read data from the data server. We'll use this to read
-  the data we want to analyze.
-- `from mcnugget.time import elapsed_seconds` is a handy utility to conver tthe values in a time channel to elapsed
-  seconds.
 
 ### Finding the data you're interested in
 
-There are two ways to find the data you're interested in. The first is to use one of the pre-chosen
-tests. The list of tests can be found in (`mcnugget/tests.py`). The tests are categorized by type,
-then sorted by date and test number. For example, the first test in the `TPC` category is `02-19-23-02`.
+The best way to find the list of ranges you're interested in is by using the console and following this [guide](https://docs.synnaxlabs.com/console/querying-data).
+Once you've found it, you can bring in the range and plot some data on it like so:
 
-If you find the test you're looking for, import the test type and extract the test as follows:
+```py
+import matplotlib.pyplot as plt
+import synnax as sy
+from mcnugget.client import client
 
-```python
-# After all the other imports
-from mcnugget.tests import TPC
+rng = client.ranges.retrieve("My Cool Range")
 
-TEST = TPC["02-19-23-02"]
+plt.plot(sy.elapsed_seconds(rng.gse_time), rng.gse_ai_1)
+plt.show()
 ```
-
-If you can't find the test you're looking for, you can add it yourself!
 
 ## Common Errors
 
