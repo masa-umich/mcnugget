@@ -72,7 +72,12 @@ TESCOM_1 = auto_utilities.Valve(auto=auto, name="tescom 1", cmd=TESCOM_1_CMD, ac
                                 default_open=False, mawp=MAXIMUM, requires_confirm=False)
 TESCOM_2 = auto_utilities.Valve(auto=auto, name="tescom 2", cmd=TESCOM_2_CMD, ack=TESCOM_2_ACK, 
                                 default_open=False, mawp=MAXIMUM, requires_confirm=False)
-
+ISO_PRESS = auto_utilities.Valve(auto=auto, name="ISO Press", cmd=SCUBA_CMD, ack=None, 
+                                default_open=False, mawp=MAXIMUM, requires_confirm=False)
+MPV = auto_utilities.Valve(auto=auto, name="MPV", cmd=MPV_CMD, ack=None, 
+                                default_open=False, mawp=MAXIMUM, requires_confirm=False)
+VENT = auto_utilities.Valve(auto=auto, name="MPV Vent", cmd=VENT_CMD, ack=None, 
+                                default_open=True, mawp=MAXIMUM, requires_confirm=False)
 
 
 def run_tpc(auto: Controller):
@@ -123,86 +128,68 @@ def run_tpc(auto: Controller):
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
         return pressure < 15
 
+try:
+    print("Starting TPC Test. Setting initial system state.")
+    ISO_PRESS.de_energize()
+    TESCOM_1.de_energize()
+    TESCOM_2.de_energize()
+    MPV.de_energize()
+    VENT.de_energize()
 
-    # try:
-    #     print("Starting TPC Test. Setting initial system state.")
-    #     auto.set({
-    #         TPC_CMD: 0,
-    #         MPV_CMD: 0,
-    #         PRESS_ISO_CMD: 0,
-    #         VENT_CMD: 1,
-    #     })
+    time.sleep(2)
 
-    #     time.sleep(2)
+    print(f"Pressing SCUBA and L-Stand to 80 PSI")
+    TESCOM_1.energize()
+    TESCOM_2.energize()
+    ISO_PRESS.energize()
+    # pressurizes SCUBA (and L-stand by extension) to 80 psi in 8 increments
+    ISO_PRESS.pressurize(SCUBA_PT, 80, 10)
+    
+    print("closing TESCOMS and pressing SCUBA to 425 psi")
+    TESCOM_1.de_energize()
+    TESCOM_2.de_energize()
+    # pressurizes SCUBA to 425 psi in 10 increments
+    ISO_PRESS.pressurize(SCUBA_PT, 425, 34.5)
+    
+    # closes ISO_PRESS in preparation for TPC control
+    ISO_PRESS.de_energize()
 
-    #     print(f"Pressing SCUBA and L-Stand to 50 PSI")
+    print("SCUBA pressurized to 425 psi - beginning TPC control in 5")
+    time.sleep(1)
+    print("4")
+    time.sleep(1)
+    print("3")
+    time.sleep(1)
+    print("2")
+    time.sleep(1)
+    print("1")
+    time.sleep(1)
 
-    #     # Pressurize l-stand and scuba to 50 PSI
-    #     # Open TPC Valve
-    #     auto[TPC_CMD] = True
+    print("Opening MPV")
+    MPV.energize()
+    start = sy.TimeStamp.now()  
 
-    #     curr_target = PRESS_1_STEP
-    #     while True:
-    #         print(f"Pressing L-Stand to {curr_target} PSI")
-    #         auto[PRESS_ISO_CMD] = True
-    #         auto.wait_until(lambda c: c[L_STAND_PT] > curr_target)
-    #         auto[PRESS_ISO_CMD] = False
-    #         curr_target += PRESS_1_STEP
-    #         curr_target = min(curr_target, L_STAND_PRESS_TARGET)
-    #         if auto[L_STAND_PT] > L_STAND_PRESS_TARGET:
-    #             break
-    #         print("Taking a nap")
-    #         time.sleep(PRESS_STEP_DELAY)
+    auto.wait_until(run_tpc())
 
-    #     print("Pressurized. Waiting for five seconds")
-    #     time.sleep(PRESS_STEP_DELAY)
-    #     # ISO off TESCOM and press scuba with ISO
-    #     auto[TPC_CMD] = False
+    print("Test complete. Safeing System")
 
-    #     curr_target = L_STAND_PRESS_TARGET + PRESS_2_STEP
-    #     while True:
-    #         auto[PRESS_ISO_CMD] = True
-    #         auto.wait_until(lambda c: c[SCUBA_PT] > curr_target)
-    #         auto[PRESS_ISO_CMD] = False
-    #         curr_target += PRESS_2_STEP
-    #         curr_target = min(curr_target, SCUBA_PRESS_TARGET)
-    #         if auto[SCUBA_PT] > SCUBA_PRESS_TARGET:
-    #             break
-    #         print("Taking a nap")
-    #         time.sleep(PRESS_STEP_DELAY)
+    rng = client.ranges.create(
+        name=f"{start.__str__()[11:16]} Bang Bang TPC Sim",
+        time_range=sy.TimeRange(start, sy.TimeStamp.now()),
+    )
 
-    #     print("Pressurized. Waiting for five seconds")
-    #     time.sleep(2)
+    ISO_PRESS.de_energize()
+    TESCOM_1.energize()
+    TESCOM_2.energize()
+    VENT.energize()
+    MPV.energize()
 
-    #     # auto.wait_until(lambda c: c[L_STAND_PT] < 51)
+except KeyboardInterrupt:
+    print("Test interrupted. Safeing System")
+    ISO_PRESS.de_energize()
+    TESCOM_1.energize()
+    TESCOM_2.energize()
+    VENT.energize()
+    MPV.energize()
 
-    #     start = sy.TimeStamp.now()
-
-    #     print("Opening MPV")
-    #     auto[MPV_CMD] = 1
-    #     auto.wait_until(lambda c: run_tpc(c))
-    #     print("Test complete. Safeing System")
-
-    #     rng = client.ranges.create(
-    #         name=f"{start.__str__()[11:16]} Bang Bang TPC Sim",
-    #         time_range=sy.TimeRange(start, sy.TimeStamp.now()),
-    #     )
-
-    #     auto.set({
-    #         TPC_CMD: 1,
-    #         PRESS_ISO_CMD: 0,
-    #         # Open vent
-    #         VENT_CMD: 0,
-    #         MPV_CMD: 0,
-    #     })
-    #     time.sleep(100)
-    # except KeyboardInterrupt:
-    #     print("Test interrupted. Safeing System")
-    #     auto.set({
-    #         TPC_CMD: 1,
-    #         PRESS_ISO_CMD: 0,
-    #         # Open vent
-    #         VENT_CMD: 0,
-    #         # Leave MPV open
-    #         MPV_CMD: 1,
-    #     })
+print("end of autosequence - waiting 60 seconds")
