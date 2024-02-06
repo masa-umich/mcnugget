@@ -1,8 +1,8 @@
-import synnax as sy
+from synnax import Synnax, Controller
 
 # this defines a class that can be used for both regular valves and vents
 class Valve:
-    def __init__(self, auto, name: str, cmd: str, ack: str, default_open: bool, 
+    def __init__(self, auto: Controller, name: str, cmd: str, ack: str, default_open: bool, 
                 mawp: float, requires_confirm: bool = True):
         self.name = name
         self.cmd = cmd
@@ -41,7 +41,7 @@ class Valve:
 
 # this function initializes `auto` for the channels specified
 def initialize_for_autosequence(cmds: [str], acks: [str], pressures: [str]):
-    client = sy.Synnax(
+    client = Synnax(
         host="localhost",
         port=9090,
         username="synnax",
