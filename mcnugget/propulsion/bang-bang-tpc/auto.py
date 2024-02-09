@@ -39,7 +39,7 @@ def run_tpc(auto: Controller):
 
 TPC_CMD = "gse_doc_1"
 TPC_CMD_ACK = "gse_doa_1"
-MPV_CMD = "gse_doc_2"
+MPV_CMD = "gse_doc_5"
 PRESS_ISO_CMD = "gse_doc_3"
 # Normally open
 VENT_CMD = "gse_doc_4"

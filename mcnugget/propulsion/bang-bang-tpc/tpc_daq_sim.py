@@ -11,10 +11,12 @@ client = sy.Synnax(
 )
 
 DAQ_TIME = "daq_time"
-TPC_CMD = "gse_doc_1"
-TPC_ACK = "gse_doa_1"
-MPV_CMD = "gse_doc_2"
-MPV_ACK = "gse_doa_2"
+TPC_CMD_1 = "gse_doc_1"
+TPC_ACK_1 = "gse_doa_1"
+TPC_CMD_2 = "gse_doc_2"
+TPC_ACK_2 = "gse_doa_2"
+MPV_CMD = "gse_doc_5"
+MPV_ACK = "gse_doa_5"
 PRESS_ISO_CMD = "gse_doc_3"
 PRESS_ISO_ACK = "gse_doa_3"
 # Normally open
@@ -30,7 +32,7 @@ daq_time = client.channels.create(
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 5):
+for i in range(1, 6):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
         data_type=sy.DataType.TIMESTAMP,
@@ -68,11 +70,12 @@ client.channels.create(
     retrieve_if_name_exists=True
 )
 
-rate = (sy.Rate.HZ * 20).period.seconds
+rate = (sy.Rate.HZ * 50).period.seconds
 
 DAQ_STATE = {
     # Valves
-    TPC_CMD: 0,
+    TPC_CMD_1: 0,
+    TPC_CMD_2: 0,
     MPV_CMD: 0,
     PRESS_ISO_CMD: 0,
     VENT_CMD: 0,
@@ -85,12 +88,13 @@ MPV_LAST_OPEN = None
 scuba_pressure = 0
 l_stand_pressure = 0
 
-with client.new_streamer([TPC_CMD, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as streamer:
+with client.new_streamer([TPC_CMD_1, TPC_CMD_2, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as streamer:
     with client.new_writer(
             sy.TimeStamp.now(),
             channels=[
                 DAQ_TIME,
-                TPC_ACK,
+                TPC_ACK_1,
+                TPC_ACK_2,
                 MPV_ACK,
                 PRESS_ISO_ACK,
                 VENT_ACK,
@@ -106,13 +110,13 @@ with client.new_streamer([TPC_CMD, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as strea
                     while streamer.received:
                         f = streamer.read()
                         for k in f.columns:
-                            print(k, f[k])
                             DAQ_STATE[k] = f[k][0]
 
                 mpv_open = DAQ_STATE[MPV_CMD] == 1
-                tpc_open = DAQ_STATE[TPC_CMD] == 1
+                tpc_1_open = DAQ_STATE[TPC_CMD_1] == 1
+                tpc_2_open = DAQ_STATE[TPC_CMD_2] == 1
                 press_iso_open = DAQ_STATE[PRESS_ISO_CMD] == 1
-                vent_open = DAQ_STATE[VENT_CMD] == 1
+                vent_open = DAQ_STATE[VENT_CMD] == 0
 
                 if mpv_open and MPV_LAST_OPEN is None:
                     MPV_LAST_OPEN = sy.TimeStamp.now()
@@ -125,14 +129,18 @@ with client.new_streamer([TPC_CMD, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as strea
                 if press_iso_open:
                     scuba_delta += 2.5
 
-                if tpc_open and scuba_pressure > 0 and not l_stand_pressure > scuba_pressure:
+                if tpc_1_open and scuba_pressure > 0 and not l_stand_pressure > scuba_pressure:
                     scuba_delta -= 1
                     l_stand_delta += 1
 
-                if not vent_open:
+                if tpc_2_open and scuba_pressure > 0 and not l_stand_pressure > scuba_pressure:
+                    scuba_delta -= 1
+                    l_stand_delta += 1
+
+                if vent_open:
                     l_stand_delta -= 1.5
 
-                if not vent_open and tpc_open:
+                if vent_open and tpc_1_open:
                     scuba_delta -= 1
 
                 if mpv_open:
@@ -149,10 +157,11 @@ with client.new_streamer([TPC_CMD, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as strea
 
                 ok = w.write({
                     DAQ_TIME: now,
-                    TPC_ACK: int(tpc_open),
+                    TPC_ACK_1: int(tpc_1_open),
+                    TPC_ACK_2: int(tpc_2_open),
                     MPV_ACK: int(mpv_open),
                     PRESS_ISO_ACK: int(press_iso_open),
-                    VENT_ACK: int(vent_open),
+                    VENT_ACK: not int(vent_open),
                     SCUBA_PT: scuba_pressure,
                     L_STAND_PT: l_stand_pressure,
                 })

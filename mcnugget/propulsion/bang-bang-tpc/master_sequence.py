@@ -156,7 +156,7 @@ def abort(self):
     with client.control.acquire(
         "bang_bang_tpc",
         write=[
-            self.cmd
+            self.cmd_chan
         ],
         read=self.ack,
         write_authorities=[255]
