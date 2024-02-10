@@ -11,17 +11,21 @@ client = sy.Synnax(
 )
 
 DAQ_TIME = "daq_time"
-TPC_CMD_1 = "gse_doc_1"
-TPC_ACK_1 = "gse_doa_1"
-TPC_CMD_2 = "gse_doc_2"
-TPC_ACK_2 = "gse_doa_2"
-MPV_CMD = "gse_doc_5"
-MPV_ACK = "gse_doa_5"
-PRESS_ISO_CMD = "gse_doc_3"
-PRESS_ISO_ACK = "gse_doa_3"
+TPC_1_OPEN_CMD = "gse_doc_1"
+TPC_1_OPEN_ACK = "gse_doa_1"
+TPC_1_CLOSE_CMD = "gse_doc_2"
+TPC_1_CLOSE_ACK = "gse_doa_2"
+TPC_2_OPEN_CMD = "gse_doc_3"
+TPC_2_OPEN_ACK = "gse_doa_3"
+TPC_2_CLOSE_CMD = "gse_doc_4"
+TPC_2_CLOSE_ACK = "gse_doa_4"
+PRESS_ISO_CMD = "gse_doc_5"
+PRESS_ISO_ACK = "gse_doa_5"
 # Normally open
-VENT_CMD = "gse_doc_4"
-VENT_ACK = "gse_doa_4"
+VENT_CMD = "gse_doc_6"
+VENT_ACK = "gse_doa_6"
+MPV_CMD = "gse_doc_7"
+MPV_ACK = "gse_doa_7"
 SCUBA_PT = "gse_ai_1"
 L_STAND_PT = "gse_ai_2"
 
@@ -32,7 +36,7 @@ daq_time = client.channels.create(
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 6):
+for i in range(1, 8):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
         data_type=sy.DataType.TIMESTAMP,
@@ -74,8 +78,10 @@ rate = (sy.Rate.HZ * 50).period.seconds
 
 DAQ_STATE = {
     # Valves
-    TPC_CMD_1: 0,
-    TPC_CMD_2: 0,
+    TPC_1_OPEN_CMD: 0,
+    TPC_2_OPEN_CMD: 0,
+    TPC_1_CLOSE_CMD: 1,
+    TPC_2_CLOSE_CMD: 1,
     MPV_CMD: 0,
     PRESS_ISO_CMD: 0,
     VENT_CMD: 0,
@@ -88,13 +94,15 @@ MPV_LAST_OPEN = None
 scuba_pressure = 0
 l_stand_pressure = 0
 
-with client.new_streamer([TPC_CMD_1, TPC_CMD_2, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as streamer:
+with client.new_streamer([TPC_1_OPEN_CMD, TPC_2_OPEN_CMD, TPC_1_CLOSE_CMD, TPC_2_CLOSE_CMD, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as streamer:
     with client.new_writer(
             sy.TimeStamp.now(),
             channels=[
                 DAQ_TIME,
-                TPC_ACK_1,
-                TPC_ACK_2,
+                TPC_1_OPEN_ACK,
+                TPC_2_OPEN_ACK,
+                TPC_1_CLOSE_ACK,
+                TPC_2_CLOSE_ACK,
                 MPV_ACK,
                 PRESS_ISO_ACK,
                 VENT_ACK,
@@ -113,8 +121,12 @@ with client.new_streamer([TPC_CMD_1, TPC_CMD_2, MPV_CMD, PRESS_ISO_CMD, VENT_CMD
                             DAQ_STATE[k] = f[k][0]
 
                 mpv_open = DAQ_STATE[MPV_CMD] == 1
-                tpc_1_open = DAQ_STATE[TPC_CMD_1] == 1
-                tpc_2_open = DAQ_STATE[TPC_CMD_2] == 1
+                tpc_1_open = DAQ_STATE[TPC_1_OPEN_CMD] == 1
+                tpc_1_close = DAQ_STATE[TPC_1_CLOSE_CMD] == 1
+                tpc_2_open = DAQ_STATE[TPC_2_OPEN_CMD] == 1
+                tpc_2_close = DAQ_STATE[TPC_2_CLOSE_CMD] == 1
+                # if (tpc_1_open == tpc_1_close) or (tpc_2_open == tpc_2_close):
+                #     raise Exception("Dual solenoid both open or both closed")
                 press_iso_open = DAQ_STATE[PRESS_ISO_CMD] == 1
                 vent_open = DAQ_STATE[VENT_CMD] == 0
 
@@ -157,8 +169,10 @@ with client.new_streamer([TPC_CMD_1, TPC_CMD_2, MPV_CMD, PRESS_ISO_CMD, VENT_CMD
 
                 ok = w.write({
                     DAQ_TIME: now,
-                    TPC_ACK_1: int(tpc_1_open),
-                    TPC_ACK_2: int(tpc_2_open),
+                    TPC_1_OPEN_ACK: int(tpc_1_open),
+                    TPC_2_OPEN_ACK: int(tpc_2_open),
+                    TPC_1_CLOSE_ACK: int(tpc_1_close),
+                    TPC_2_CLOSE_ACK: int(tpc_2_close),
                     MPV_ACK: int(mpv_open),
                     PRESS_ISO_ACK: int(press_iso_open),
                     VENT_ACK: not int(vent_open),

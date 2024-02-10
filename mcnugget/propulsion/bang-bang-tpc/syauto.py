@@ -28,20 +28,23 @@ class Valve:
         # for reg. valve, normally_open is false so cmd is set to True
         # for vent valve, normally_open is true so cmd is set to False
         self.auto[self.cmd_chan] = not self.normally_open
-        self.auto.wait_until(self.ack_chan != self.normally_open)
+        if self.wait_for_ack:
+            self.auto.wait_until(self.ack_chan != self.normally_open)
 
 
     def close(self):
         # for reg. valve, normally_open is false so cmd is set to False
         # for vent valve, normally_open is true so cmd is set to True
         self.auto[self.cmd_chan] = self.normally_open
-        self.auto.wait_until(self.ack_chan == self.normally_open)
+        if self.wait_for_ack:
+            self.auto.wait_until(self.ack_chan == self.normally_open)
 
     # returns true iff the valve is below the MAWP
     def check_safe(self, pressure: str):
         return self.auto[pressure] < self.mawp
 
-class DualTescomValve(Valve):
+
+class DualTescomValve:
     def __init__(
         self,
         auto: Controller,
@@ -53,10 +56,12 @@ class DualTescomValve(Valve):
         wait_for_ack: bool = False,
         open_cmd_ack: str = "",
         close_cmd_ack: str = "",
-
     ):
-        super.__init__(self, auto, "multiple cmd channels", name, 
-                       "multiple ack channels", normally_open, mawp, wait_for_ack)
+        self.name = name
+        self.normally_open = normally_open
+        self.auto = auto
+        self.wait_for_ack = wait_for_ack
+        self.mawp = mawp
         self.open_cmd_chan = open_cmd_chan
         self.close_cmd_chan = close_cmd_chan
         self.open_cmd_ack = open_cmd_ack
@@ -64,16 +69,20 @@ class DualTescomValve(Valve):
 
     # energizes the open_cmd_chan valve to open the valve
     def open(self):
-        self.auto[self.open_cmd_chan] = True
-        self.auto[self.close_cmd_chan] = False
+        self.auto.set({
+            self.close_cmd_chan: False,
+            self.open_cmd_chan: True,
+        })
         if self.wait_for_ack:
             self.auto.wait_until(self.open_cmd_ack)
 
 
     # energizes the close_cmd_chan valve to close the valve
     def close(self):
-        self.auto[self.close_cmd_chan] = True
-        self.auto[self.open_cmd_chan] = False
+        self.auto.set({
+            self.close_cmd_chan: True,
+            self.open_cmd_chan: False,
+        })
         if self.wait_for_ack:
             self.auto.wait_until(self.close_cmd_ack)
 
@@ -104,7 +113,7 @@ def open_all(auto: Controller, valves: list[Valve]):
 
 
 # this energizes the valve until the target pressure is reached
-def pressurize(valve: Valve, pressure: str, target: float, inc: float, delay: float = 0.5):
+def pressurize(valve: Valve, pressure: str, target: float, inc: float, delay: float = 1):
     partial_target = inc
     while True:
         print(f"pressurizing {valve.name} to {partial_target}")
