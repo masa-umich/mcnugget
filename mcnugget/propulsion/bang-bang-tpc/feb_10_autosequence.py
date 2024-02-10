@@ -48,7 +48,7 @@ READ_FROM = [TPC_1_CLOSE_ACK, TPC_1_OPEN_ACK, TPC_2_CLOSE_ACK, TPC_2_OPEN_ACK, S
 
 TARGET_1 = 80
 BOUND_1 = TARGET_1 - 10
-TARGET_2 = BOUND_1
+TARGET_2 = BOUND_1 - 10
 BOUND_2 = TARGET_2 - 10
 MAXIMUM = TARGET_1 + 20
 MINIMUM = BOUND_2 - 20
@@ -118,23 +118,20 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         tpc_vlv_1.close()
         tpc_vlv_2.close()
         mpv.close()
-        vent.close()
+        vent.open()
 
         time.sleep(2)
 
         print(f"Pressing SCUBA and L-Stand to 80 PSI")
         tpc_vlv_1.open()
-        # Get rid of this
-        tpc_vlv_2.open()
         # pressurizes press tank and fuel tank to 80 psi in 8 increments
         press_iso.pressurize(L_STAND_PT, 80, 10)
 
         print("Closing tpc valves and pressing SCUBA to 425 psi")
         tpc_vlv_1.close()
-        tpc_vlv_2.close()
 
         # pressurizes press tank to 425 psi in 10 increments
-        press_iso.pressurize(SCUBA_PT, 800, 200)
+        press_iso.pressurize(SCUBA_PT, 425, 34.5)
 
         print("SCUBA pressurized to 425 psi - beginning TPC control test in 5")
         time.sleep(5)

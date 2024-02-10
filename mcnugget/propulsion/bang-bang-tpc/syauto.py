@@ -65,6 +65,7 @@ class DualTescomValve(Valve):
     # energizes the open_cmd_chan valve to open the valve
     def open(self):
         self.auto[self.open_cmd_chan] = True
+        self.auto[self.close_cmd_chan] = False
         if self.wait_for_ack:
             self.auto.wait_until(self.open_cmd_ack)
 
@@ -72,6 +73,7 @@ class DualTescomValve(Valve):
     # energizes the close_cmd_chan valve to close the valve
     def close(self):
         self.auto[self.close_cmd_chan] = True
+        self.auto[self.open_cmd_chan] = False
         if self.wait_for_ack:
             self.auto.wait_until(self.close_cmd_ack)
 
