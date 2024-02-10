@@ -41,6 +41,40 @@ class Valve:
     def check_safe(self, pressure: str):
         return self.auto[pressure] < self.mawp
 
+class DualTescomValve(Valve):
+    def __init__(
+        self,
+        auto: Controller,
+        close_cmd_chan: str,
+        open_cmd_chan: str,
+        name: str = "",
+        normally_open: bool = False,
+        mawp: float = 0,
+        wait_for_ack: bool = False,
+        open_cmd_ack: str = "",
+        close_cmd_ack: str = "",
+
+    ):
+        super.__init__(self, auto, "multiple cmd channels", name, 
+                       "multiple ack channels", normally_open, mawp, wait_for_ack)
+        self.open_cmd_chan = open_cmd_chan
+        self.close_cmd_chan = close_cmd_chan
+        self.open_cmd_ack = open_cmd_ack
+        self.close_cmd_ack = close_cmd_ack
+
+    # energizes the open_cmd_chan valve to open the valve
+    def open(self):
+        self.auto[self.open_cmd_chan] = True
+        if self.wait_for_ack:
+            self.auto.wait_until(self.open_cmd_ack)
+
+
+    # energizes the close_cmd_chan valve to close the valve
+    def close(self):
+        self.auto[self.close_cmd_chan] = True
+        if self.wait_for_ack:
+            self.auto.wait_until(self.close_cmd_ack)
+
 
 def open_close_many_valves(auto: Controller, valves_to_close: [Valve], valves_to_open: [Valve]):
     dict1 = {valve.cmd_chan: not valve.normally_open for valve in valves_to_close}

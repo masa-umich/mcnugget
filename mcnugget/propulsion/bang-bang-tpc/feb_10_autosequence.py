@@ -29,18 +29,22 @@ client = sy.Synnax(
     secure=False
 )
 
-TPC_1_CMD = "gse_doc_1"
-TPC_1_ACK = "gse_doa_1"
-TPC_2_CMD = "gse_doc_2"
-TPC_2_ACK = "gse_doa_2"
+TPC_1_OPEN_CMD = "gse_doc_1"
+TPC_1_OPEN_ACK = "gse_doa_1"
+TPC_1_CLOSE_CMD = "gse_doc_2"
+TPC_1_CLOSE_ACK = "gse_doa_2"
+TPC_2_OPEN_CMD = "gse_doc_3"
+TPC_2_OPEN_ACK = "gse_doa_3"
+TPC_2_CLOSE_CMD = "gse_doc_4"
+TPC_2_CLOSE_ACK = "gse_doa_4"
 PRESS_ISO_CMD = "gse_doc_3"
 VENT_CMD = "gse_doc_4"
 MPV_CMD = "gse_doc_5"
 SCUBA_PT = "gse_ai_1"
 L_STAND_PT = "gse_ai_2"
 
-WRITE_TO = [TPC_1_CMD, TPC_2_CMD, PRESS_ISO_CMD, VENT_CMD, MPV_CMD]
-READ_FROM = [TPC_1_ACK, TPC_2_ACK, SCUBA_PT, L_STAND_PT]
+WRITE_TO = [TPC_1_CLOSE_CMD, TPC_1_OPEN_CMD, TPC_2_CLOSE_CMD, TPC_2_OPEN_CMD, PRESS_ISO_CMD, VENT_CMD, MPV_CMD]
+READ_FROM = [TPC_1_CLOSE_ACK, TPC_1_OPEN_ACK, TPC_2_CLOSE_ACK, TPC_2_OPEN_ACK, SCUBA_PT, L_STAND_PT]
 
 TARGET_1 = 80
 BOUND_1 = TARGET_1 - 10
@@ -51,8 +55,10 @@ MINIMUM = BOUND_2 - 20
 
 # this initializes a connection to the client with access to all the needed channels
 with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM) as auto:
-    tpc_vlv_1 = syauto.Valve(auto=auto, cmd=TPC_1_CMD)
-    tpc_vlv_2 = syauto.Valve(auto=auto, cmd=TPC_2_CMD)
+    tpc_vlv_1 = syauto.DualTescomValve(auto=auto, open_cmd_chan=TPC_1_OPEN_CMD, close_cmd_chan=TPC_1_CLOSE_CMD,
+                                       open_cmd_ack=TPC_1_OPEN_ACK, close_cmd_ack=TPC_1_CLOSE_ACK)
+    tpc_vlv_2 = syauto.DualTescomValve(auto=auto, open_cmd_chan=TPC_2_OPEN_CMD, close_cmd_chan=TPC_2_CLOSE_CMD,
+                                       open_cmd_ack=TPC_2_OPEN_ACK, close_cmd_ack=TPC_2_CLOSE_ACK)
     press_iso = syauto.Valve(auto=auto, cmd=PRESS_ISO_CMD)
     mpv = syauto.Valve(auto=auto, cmd=MPV_CMD)
     vent = syauto.Valve(auto=auto, cmd=VENT_CMD, normally_open=True)
@@ -60,8 +66,8 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
     def run_tpc(auto_: Controller):
         pressure = auto_[L_STAND_PT]
-        one_open = auto_[TPC_1_ACK]
-        two_open = auto_[TPC_2_ACK]
+        one_open = auto_[TPC_1_OPEN_ACK]
+        two_open = auto_[TPC_2_OPEN_ACK]
 
         # aborts if the pressure is above the accepted maximum
         if pressure > MAXIMUM:
