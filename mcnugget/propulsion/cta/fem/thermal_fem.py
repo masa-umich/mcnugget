@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import geometry_tools
 import math
-import matplotlib as mpl
 
 class Model:
     '''Represents a three-dimensional thermal finite element model.'''
@@ -38,6 +37,8 @@ class Model:
         # the temperature results
         # this should be a pd.Series indexed by the sol_ids
         self.T = None
+        # list of Convect objects to represent the convection boundaries applied
+        self.convects = []
         
     def solve(self):
         '''Solve for all temperatures.
@@ -62,7 +63,7 @@ class Model:
         # R = t/kA
         
         # TODO: make sure body is a reference, not a copy
-        for body in self.bodies:
+        for body_name,body in self.bodies.items():
             for node0 in body.nodes:
                 # node0 corresponds to the i index, or the row of the matrix
                 
@@ -78,7 +79,7 @@ class Model:
                     # solution id
                     sol_id1 = self.node_tbl.loc[node1,'sol_id']
                     # solution index
-                    sol_idx1 = sol_idx.loc[sol_id0]
+                    sol_idx1 = sol_idx.loc[sol_id1]
                     
                     # distance between the nodes
                     L = self.node_dist(node0,node1)
@@ -102,7 +103,7 @@ class Model:
         # add the -Gai Ti and Gai Ta
         for convect in self.convects:
             body = self.bodies[convect.body_name]
-            for node0 in body.faces[convect.face_name]:
+            for node0 in body.faces[convect.face_name].reshape(-1):
                 sol_id0 = self.node_tbl.loc[node0,'sol_id']
                 sol_idx0 = sol_idx.loc[sol_id0]
                 
@@ -116,14 +117,14 @@ class Model:
                 # get the x coordinate of nodei
                 xi = self.node_tbl.loc[node0,'x']
                 # add -Gai to row i, col i
-                self.sol_mat[sol_idx0,sol_idx0] += convect.h(xi)*A
+                self.sol_mat[sol_idx0,sol_idx0] += -convect.h(xi)*A
                 # add -Gai Ta to b row i
-                self.sol_vec.loc[sol_idx0] += -convect.h(xi)*A * convect.T_inf
+                self.sol_vec[sol_idx0] += -convect.h(xi)*A * convect.T(xi)
         
         # now just solve the system
         T_vec = np.linalg.solve(self.sol_mat,self.sol_vec)
         # put into a series indexed by the sol_id
-        self.T = pd.Series(data=T_vec,index=sol_id)
+        self.T = pd.Series(data=T_vec[:,0],index=sol_id)
             
 
     def make_solid(self,shape,**args):
@@ -144,7 +145,23 @@ class Model:
         pass
     
     def make_convection(self,body_name,direction,**args):
-        pass
+        '''Adds a convection boundary condition.
+        
+        Inputs:
+            body_name: string
+             - the name used to create the body this is applied to
+             
+            face_name: 'r+', 'r-', 'theta+', 'theta-', 'x+', or 'x-'
+             - the face this is applied to
+
+        Keyword Inputs: 
+            h: function of axial location x
+             - returns the desired heat transfer coefficient in W/m^2*K
+             
+            T: function of axial location x
+             - returns the freestream temperature in K
+        '''
+        self.convects.append(Convect(body_name,direction,args['h'],args['T']))
     
     def make_revolve(self,**args):
         '''Adds a solid revolved body to the model.
@@ -222,7 +239,6 @@ class Model:
             index=body_nodes.reshape(-1)
             )
         self.node_tbl = pd.concat((self.node_tbl,body_node_tbl))
-        self.nodes = body_nodes.reshape(-1)
         
         # make the Body object for this body
         self.bodies[name] = Body(name,args['material'])
@@ -233,6 +249,9 @@ class Model:
         self.bodies[name].faces['theta-'] = body_nodes[:,0,:].copy()
         self.bodies[name].faces['x+']     = body_nodes[:,:,-1].copy()
         self.bodies[name].faces['x-']     = body_nodes[:,:,0].copy()
+
+        # store the body nodes in the body
+        self.bodies[name].nodes = body_nodes.reshape(-1)
         
         # get the surface areas for the nodes
         self.calc_body_areas(args,name,body_nodes,node_r,node_theta,node_x,
@@ -544,16 +563,17 @@ class Convect:
     def __init__(self,body_name,face_name,h,T):
         '''    
         Inputs:
-        body_name: string
-         - the name used to create the body this is applied to
-         
-        face_name: 'r+', 'r-', 'theta+', 'theta-', 'x+', or 'x-'
-         - the face this is applied to
-         
-        h: function of axial location x
-         - returns the desired heat transfer coefficient in W/m^2*K
-         
-        T: freestream temperature in K
+            body_name: string
+             - the name used to create the body this is applied to
+             
+            face_name: 'r+', 'r-', 'theta+', 'theta-', 'x+', or 'x-'
+             - the face this is applied to
+             
+            h: function of axial location x
+             - returns the desired heat transfer coefficient in W/m^2*K
+             
+            T: function of axial location x
+             - returns the freestream temperature in K
          '''
          
         self.body_name = body_name
