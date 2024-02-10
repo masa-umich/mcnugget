@@ -11,23 +11,23 @@ client = sy.Synnax(
 )
 
 DAQ_TIME = "daq_time"
-TPC_1_OPEN_CMD = "gse_doc_1"
-TPC_1_OPEN_ACK = "gse_doa_1"
-TPC_1_CLOSE_CMD = "gse_doc_2"
-TPC_1_CLOSE_ACK = "gse_doa_2"
+TPC_1_OPEN_CMD = "gse_doc_5"
+TPC_1_OPEN_ACK = "gse_doa_5"
+TPC_1_CLOSE_CMD = "gse_doc_6"
+TPC_1_CLOSE_ACK = "gse_doa_6"
 TPC_2_OPEN_CMD = "gse_doc_3"
 TPC_2_OPEN_ACK = "gse_doa_3"
 TPC_2_CLOSE_CMD = "gse_doc_4"
 TPC_2_CLOSE_ACK = "gse_doa_4"
-PRESS_ISO_CMD = "gse_doc_5"
-PRESS_ISO_ACK = "gse_doa_5"
+PRESS_ISO_CMD = "gse_doc_11"
+PRESS_ISO_ACK = "gse_doa_11"
 # Normally open
-VENT_CMD = "gse_doc_6"
-VENT_ACK = "gse_doa_6"
-MPV_CMD = "gse_doc_7"
-MPV_ACK = "gse_doa_7"
-SCUBA_PT = "gse_ai_1"
-L_STAND_PT = "gse_ai_2"
+VENT_CMD = "gse_doc_8"
+VENT_ACK = "gse_doa_8"
+MPV_CMD = "gse_doc_9"
+MPV_ACK = "gse_doa_9"
+SCUBA_PT = "gse_ai_8"
+L_STAND_PT = "gse_ai_1"
 
 daq_time = client.channels.create(
     name=DAQ_TIME,
@@ -36,7 +36,7 @@ daq_time = client.channels.create(
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 8):
+for i in range(1, 12):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
         data_type=sy.DataType.TIMESTAMP,

@@ -29,14 +29,14 @@ client = sy.Synnax(
     secure=False
 )
 
-TPC_1_OPEN_CMD = "gse_doc_5"
-TPC_1_OPEN_ACK = "gse_doa_5"
-TPC_1_CLOSE_CMD = "gse_doc_6"
-TPC_1_CLOSE_ACK = "gse_doa_6"
-TPC_2_OPEN_CMD = "gse_doc_3"
-TPC_2_OPEN_ACK = "gse_doa_3"
-TPC_2_CLOSE_CMD = "gse_doc_4"
-TPC_2_CLOSE_ACK = "gse_doa_4"
+TPC_1_OPEN_CMD = "gse_doc_6"
+TPC_1_OPEN_ACK = "gse_doa_6"
+TPC_1_CLOSE_CMD = "gse_doc_5"
+TPC_1_CLOSE_ACK = "gse_doa_5"
+TPC_2_OPEN_CMD = "gse_doc_10"
+TPC_2_OPEN_ACK = "gse_doa_10"
+TPC_2_CLOSE_CMD = "gse_doc_7"
+TPC_2_CLOSE_ACK = "gse_doa_7"
 PRESS_ISO_CMD = "gse_doc_11"
 VENT_CMD = "gse_doc_8"
 MPV_CMD = "gse_doc_9"
