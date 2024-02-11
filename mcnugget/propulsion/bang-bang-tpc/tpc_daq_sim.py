@@ -11,14 +11,14 @@ client = sy.Synnax(
 )
 
 DAQ_TIME = "daq_time"
-TPC_1_OPEN_CMD = "gse_doc_5"
-TPC_1_OPEN_ACK = "gse_doa_5"
-TPC_1_CLOSE_CMD = "gse_doc_6"
-TPC_1_CLOSE_ACK = "gse_doa_6"
-TPC_2_OPEN_CMD = "gse_doc_3"
-TPC_2_OPEN_ACK = "gse_doa_3"
-TPC_2_CLOSE_CMD = "gse_doc_4"
-TPC_2_CLOSE_ACK = "gse_doa_4"
+TPC_1_OPEN_CMD = "gse_doc_7" #left 
+TPC_1_OPEN_ACK = "gse_doa_7"
+TPC_1_CLOSE_CMD = "gse_doc_10"
+TPC_1_CLOSE_ACK = "gse_doa_10"
+TPC_2_OPEN_CMD = "gse_doc_5" #right
+TPC_2_OPEN_ACK = "gse_doa_5"
+TPC_2_CLOSE_CMD = "gse_doc_6"
+TPC_2_CLOSE_ACK = "gse_doa_6"
 PRESS_ISO_CMD = "gse_doc_11"
 PRESS_ISO_ACK = "gse_doa_11"
 # Normally open
