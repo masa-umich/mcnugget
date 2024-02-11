@@ -132,11 +132,11 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         print("Closing tpc valves and pressing SCUBA to 220 psi")
         tpc_vlv_1.close()
 
-        # pressurizes press tank to 220 psi in 7 increments
-        syauto.pressurize(press_iso, SCUBA_PT, 220, 20)
+        # pressurizes press tank to 230 psi in 5 increments
+        syauto.pressurize(press_iso, SCUBA_PT, 230, 30)
 
-        print("SCUBA pressurized to 200 psi - beginning TPC control test in 5")
-        time.sleep(5)
+        print("SCUBA pressurized to 230 psi - beginning TPC control test in 5")
+        time.sleep(2)
 
         print("Opening MPV")
         mpv.open()
