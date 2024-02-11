@@ -124,7 +124,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         time.sleep(2)
 
         vent.close()
-        print(f"Pressing SCUBA and L-Stand to " + TARGET_1 + " PSI")
+        print(f"Pressing SCUBA and L-Stand to " + str(TARGET_1) + " PSI")
         tpc_vlv_1.open()
         # pressurizes press tank and fuel tank to 90 psi in 9 increments
         syauto.pressurize(press_iso, L_STAND_PT, TARGET_1, 10)
