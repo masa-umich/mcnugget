@@ -30,29 +30,29 @@ ISO_PRESS = "iso press channel here"
 TPC_PRESS = ISO_PRESS
 
 
-'''
-This function opens and closes the four valves specified to maintain pressure
-FOUR THRESHOLDS produce FIVE REGIONS which trigger different actions
-
-    - ABOVE threshold 1
-        1-closed, 2-closed, 3-closed, 4-closed
-
-    - ABOVE threshold 2 but BELOW threshold 1
-        1-open, 2-closed, 3-closed, 4-closed
-
-    - ABOVE threshold 3 but BELOW threshold 2
-        1-open, 2-open, 3-closed, 4-closed
-
-    - ABOVE threshold 4 but BELOW threshold 3
-        1-open, 2-open, 3-open, 4-closed
-
-    - BELOW threshold 4
-        1-open, 2-open, 3-open, 4-open
-
-This means valves are opening or closing to keep the pressure between T1 and T2, 
-then between T2 and T3, between T3 and T4, and so on.
-'''
 def run_tpc(auto: Controller, valves: list[syauto.Valve], thresholds: list[float], press_chan: str):
+    """
+    This function opens and closes the four valves specified to maintain pressure
+    FOUR THRESHOLDS produce FIVE REGIONS which trigger different actions
+
+        - ABOVE threshold 1
+            1-closed, 2-closed, 3-closed, 4-closed
+
+        - ABOVE threshold 2 but BELOW threshold 1
+            1-open, 2-closed, 3-closed, 4-closed
+
+        - ABOVE threshold 3 but BELOW threshold 2
+            1-open, 2-open, 3-closed, 4-closed
+
+        - ABOVE threshold 4 but BELOW threshold 3
+            1-open, 2-open, 3-open, 4-closed
+
+        - BELOW threshold 4
+            1-open, 2-open, 3-open, 4-open
+
+    This means valves are opening or closing to keep the pressure between T1 and T2, 
+    then between T2 and T3, between T3 and T4, and so on.
+    """
 
     v1 = valves[0]
     v2 = valves[1]
