@@ -68,6 +68,7 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
             print("pressure has exceeded acceptable range - ABORTING and opening all vents")
             syauto.open_all_valves(vents)
 
+        # aborts if the pressure is below the accepted minimum
         if pressure < MIN_PRESSURE:
             print(f"pressure below {MIN_PRESSURE} - ABORTING and opening all vents")
             syauto.open_all_valves(vents)
@@ -78,11 +79,12 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
 
     try:
         print("Starting TPC Test. Setting initial system state.")
+        #starting opening all valves and closing all vents
         syauto.open_all_valves(valves)
         syauto.close_all_valves(vents)
         time.sleep(2)
-
        
+        print("Purging system for " + TEST_DURATION + " seconds")
         auto.wait_until(TEST_DURATION, run_shakedown(auto))
 
         print("Test complete. Safing System")
@@ -91,11 +93,15 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
             name=f"{start.__str__()[11:16]} shakedown Sim",
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
+    except KeyboardInterrupt as e:
+        # Handle Ctrl+C interruption
+        if str(e) == "Interrupted by user.":
+            print("Test interrupted. Safeing System")
+            syauto.open_close_many_valves(auto, valves, vents)
 
-       
-
-    except KeyboardInterrupt:
-        print("Test interrupted. Safeing System")
-        syauto.open_close_many_valves(auto, valves, vents)
+        # Handle 'x' key interruption
+        elif str(e) == "Interrupted by user. (x)":
+            print("Test interrupted. Safeing System")
+            syauto.open_close_many_valves(auto, valves, vents)
 
     time.sleep(60)
