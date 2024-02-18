@@ -87,7 +87,7 @@ class DualTescomValve:
             self.auto.wait_until(self.close_cmd_ack)
 
 
-def open_close_many_valves(auto: Controller, valves_to_close: [Valve], valves_to_open: [Valve]):
+def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves_to_close: list[Valve]):
     dict1 = {valve.cmd_chan: not valve.normally_open for valve in valves_to_close}
     dict2 = {valve.cmd_chan: valve.normally_open for valve in valves_to_open}
     dict = dict1 + dict2
@@ -95,7 +95,7 @@ def open_close_many_valves(auto: Controller, valves_to_close: [Valve], valves_to
         dict
     })
 
-def open_close_many_valves(auto: Controller, valves_to_close: [Valve], valves_to_open: [Valve]):
+def open_close_many_valves(auto: Controller, valves_to_close: list[Valve], valves_to_open: list[Valve]):
     auto.set({
         valve.cmd_chan: (not valve.normally_open) if valve in valves_to_close 
         else valve.normally_open 
