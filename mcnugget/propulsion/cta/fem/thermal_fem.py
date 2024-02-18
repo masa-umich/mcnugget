@@ -39,6 +39,8 @@ class Model:
         self.T = None
         # list of Convect objects to represent the convection boundaries applied
         self.convects = []
+        # tolerance for merging nodes in contacts
+        self.contact_tol = 1e-9
         
     def solve(self):
         '''Solve for all temperatures.
@@ -142,7 +144,15 @@ class Model:
         pass
     
     def make_contact(self,body_name_1,body_name_2,h=None):
-        pass
+        # TODO: need to handle case of more than two coincident nodes
+        for node0 in self.bodies[body_name_1].nodes:
+            for node1 in self.bodies[body_name_2].nodes:
+                if self.node_dist(node0,node1) < self.contact_tol:
+                    # set the sol_id of node 1 to the number of node 0
+                    self.node_tbl.sol_id[
+                        self.node_tbl.sol_id==self.node_tbl.sol_id[node1]
+                        ] = self.node_tbl.sol_id[node0]
+                    # TODO: log
     
     def make_convection(self,body_name,direction,**args):
         '''Adds a convection boundary condition.
@@ -207,6 +217,7 @@ class Model:
         body_nodes = np.reshape(np.linspace(
             self.max_noden+1,self.max_noden+1+num_bnodes-1,num_bnodes
             ),(self.r_numel,self.theta_numel,self.x_numel))
+        self.max_noden = np.max(body_nodes)
                 
         # https://stackoverflow.com/questions/22981845/3-dimensional-array-in-numpy 
         node_theta = np.linspace(args['theta1'],args['theta2'],
@@ -483,7 +494,7 @@ class Model:
         self.x_numel = numel
         
     def plot_mesh(self):
-        '''Plots the mesh nodes and returns the Axes object.'''
+        '''Plots the mesh nodes and returns the Figure and Axes object.'''
         fig = plt.figure(figsize=(10,10))
         ax = fig.add_subplot(projection='3d')
         
@@ -501,14 +512,23 @@ class Model:
                 ax.plot([p0[0],p1[0]],[p0[1],p1[1]],[p0[2],p1[2]])
         
         plt.show()
-        return ax
+        return fig, ax
     
     def node_dist(self,node0,node1):
-        '''Returns the distance between the two nodes.'''
+        '''Returns the distance between the two nodes.
+        
+        Inputs:
+            node0,node1 - node numbers'''
         
         r0,th0,x0 = self.node_tbl.loc[node0,['r','theta','x']]
         r1,th1,x1 = self.node_tbl.loc[node1,['r','theta','x']]
         return geometry_tools.cyl_dist(r0,th0,x0,r1,th1,x1)
+    
+    def export_to_xlsx(self,fname):
+        with pd.ExcelWriter(fname) as writer:
+            self.T.to_excel(writer,sheet_name='T')
+            self.node_tbl.to_excel(writer,sheet_name='nodes')
+        print('writing data to {}'.format(fname))
         
             
 class Body:
@@ -580,6 +600,7 @@ class Convect:
         self.face_name = face_name
         self.h = h
         self.T = T
+        
         
         
     
