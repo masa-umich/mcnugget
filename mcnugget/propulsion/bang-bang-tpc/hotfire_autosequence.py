@@ -32,22 +32,28 @@ TPC_PRESS = ISO_PRESS
 
 '''
 This function opens and closes the four valves specified to maintain pressure
-There are FOUR THRESHOLDS which trigger different actions
+FOUR THRESHOLDS produce FIVE REGIONS which trigger different actions
 
-    - if the pressure rises above threshold 1, valves 1-4 (all valves) will close
-    - if the pressure rises above threshold 2, valves 2-4 will close
-    - if the pressure rises above threshold 3, valves 3-4 will close
-    - if the pressure rises above threshold 4, valve 4 will close
+    - ABOVE threshold 1
+        1-closed, 2-closed, 3-closed, 4-closed
 
-    - if the pressure falls below threshold 1, valve 1 will open
-    - if the pressure falls below threshold 2, valve 1-2 will open
-    - if the pressure falls below threshold 3, valve 1-3 will open
-    - if the pressure falls below threshold 4, valve 1-4 will open
+    - ABOVE threshold 2 but BELOW threshold 1
+        1-open, 2-closed, 3-closed, 4-closed
+
+    - ABOVE threshold 3 but BELOW threshold 2
+        1-open, 2-open, 3-closed, 4-closed
+
+    - ABOVE threshold 4 but BELOW threshold 3
+        1-open, 2-open, 3-open, 4-closed
+
+    - BELOW threshold 4
+        1-open, 2-open, 3-open, 4-open
 
 This means valves are opening or closing to keep the pressure between T1 and T2, 
- then between T2 and T3, between T3 and T4, and so on.
+then between T2 and T3, between T3 and T4, and so on.
 '''
 def run_tpc(auto: Controller, valves: list[syauto.Valve], thresholds: list[float], press_chan: str):
+
     v1 = valves[0]
     v2 = valves[1]
     v3 = valves[2]
@@ -61,29 +67,23 @@ def run_tpc(auto: Controller, valves: list[syauto.Valve], thresholds: list[float
     pressure = auto[press_chan]
 
     if pressure > t1:
-        syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
+        syauto.open_close_many_valves(auto, [], [v1, v2, v3, v4])
+        # closes 1-4
 
-    elif pressure > t2:
-        syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
+    elif pressure < t1 and pressure > t2:
+        syauto.open_close_many_valves(auto, [v1], [v2, v3, v4])
+        # opens 1, closes 2-4
 
-    elif pressure > t3:
-        syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
+    elif pressure < t2 and pressure > t3:
+        syauto.open_close_many_valves(auto, [v1, v2], [v3, v4])
+        # opens 1-2, closes 3-4
 
-    elif pressure > t4:
-        syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
-
-
-    if pressure < t1:
-        syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
-
-    elif pressure < t2:
-        syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
-
-    elif pressure < t3:
-        syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
+    elif pressure < t3 and pressure > t4:
+        syauto.open_close_many_valves(auto, [v1, v2, v3], [v4])
+        # opens 1-3, closes 4
 
     elif pressure < t4:
         syauto.open_close_many_valves(auto, [v1, v2, v3, v4], [])
+        # opens 1-4
 
-    # if the pressure drops below 15, the tanks are mostly empty and the test is finished
     return pressure < 15
