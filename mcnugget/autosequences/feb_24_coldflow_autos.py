@@ -71,8 +71,8 @@ v23_in = "gse_doa_23"
 v23_out = "gse_doc_23"
 v24_in = "gse_doa_24"
 v24_out = "gse_doc_24"
-v25_in = "gse_doa_25"
-v25_out = "gse_doc_25"
+# v25_in = "gse_doa_25"
+# v25_out = "gse_doc_25"
 
 # sensor names to channel names
 A1 = "gse_ai_1"
