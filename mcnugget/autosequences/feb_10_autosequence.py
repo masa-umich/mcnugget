@@ -29,15 +29,16 @@ client = sy.Synnax(
     secure=False
 )
 
-TPC_1_OPEN_CMD = "gse_doc_5"
-TPC_1_OPEN_ACK = "gse_doa_5"
-TPC_1_CLOSE_CMD = "gse_doc_6"
-TPC_1_CLOSE_ACK = "gse_doa_6"
-TPC_2_OPEN_CMD = "gse_doc_3"
-TPC_2_OPEN_ACK = "gse_doa_3"
-TPC_2_CLOSE_CMD = "gse_doc_4"
-TPC_2_CLOSE_ACK = "gse_doa_4"
+TPC_1_OPEN_CMD = "gse_doc_7" #left
+TPC_1_OPEN_ACK = "gse_doa_7" 
+TPC_1_CLOSE_CMD = "gse_doc_10" 
+TPC_1_CLOSE_ACK = "gse_doa_10"
+TPC_2_OPEN_CMD = "gse_doc_5" #right
+TPC_2_OPEN_ACK = "gse_doa_5"
+TPC_2_CLOSE_CMD = "gse_doc_6"
+TPC_2_CLOSE_ACK = "gse_doa_6"
 PRESS_ISO_CMD = "gse_doc_11"
+PRESS_ISO_ACK = "gse_doa_11"
 VENT_CMD = "gse_doc_8"
 MPV_CMD = "gse_doc_9"
 SCUBA_PT = "gse_ai_8"
@@ -46,10 +47,10 @@ L_STAND_PT = "gse_ai_1"
 WRITE_TO = [TPC_1_CLOSE_CMD, TPC_1_OPEN_CMD, TPC_2_CLOSE_CMD, TPC_2_OPEN_CMD, PRESS_ISO_CMD, VENT_CMD, MPV_CMD]
 READ_FROM = [TPC_1_CLOSE_ACK, TPC_1_OPEN_ACK, TPC_2_CLOSE_ACK, TPC_2_OPEN_ACK, SCUBA_PT, L_STAND_PT]
 
-TARGET_1 = 80
-BOUND_1 = TARGET_1 - 10
-TARGET_2 = BOUND_1 - 10
-BOUND_2 = TARGET_2 - 10
+TARGET_1 = 90
+BOUND_1 = TARGET_1 - 2
+TARGET_2 = BOUND_1 - 2
+BOUND_2 = TARGET_2 - 2
 MAXIMUM = TARGET_1 + 20
 MINIMUM = BOUND_2 - 20
 
@@ -123,19 +124,19 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         time.sleep(2)
 
         vent.close()
-        print(f"Pressing SCUBA and L-Stand to 80 PSI")
+        print(f"Pressing SCUBA and L-Stand to " + str(TARGET_1) + " PSI")
         tpc_vlv_1.open()
-        # pressurizes press tank and fuel tank to 80 psi in 8 increments
-        syauto.pressurize(press_iso, L_STAND_PT, 80, 10)
+        # pressurizes press tank and fuel tank to 90 psi in 9 increments
+        syauto.pressurize(press_iso, L_STAND_PT, TARGET_1, 10)
 
-        print("Closing tpc valves and pressing SCUBA to 425 psi")
+        print("Closing tpc valves and pressing SCUBA to 220 psi")
         tpc_vlv_1.close()
 
-        # pressurizes press tank to 425 psi in 10 increments
-        syauto.pressurize(press_iso, SCUBA_PT, 425, 34.5)
+        # pressurizes press tank to 230 psi in 5 increments
+        syauto.pressurize(press_iso, SCUBA_PT, 230, 30)
 
-        print("SCUBA pressurized to 425 psi - beginning TPC control test in 5")
-        time.sleep(5)
+        print("SCUBA pressurized to 230 psi - beginning TPC control test in 5")
+        time.sleep(2)
 
         print("Opening MPV")
         mpv.open()

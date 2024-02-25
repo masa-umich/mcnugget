@@ -1,5 +1,5 @@
 import time
-from synnax import Synnax
+from synnax import Synnax as sy
 from synnax.control.controller import Controller
 
 
@@ -23,14 +23,12 @@ class Valve:
         self.wait_for_ack = wait_for_ack
         self.mawp = mawp
 
-
     def open(self):
         # for reg. valve, normally_open is false so cmd is set to True
         # for vent valve, normally_open is true so cmd is set to False
         self.auto[self.cmd_chan] = not self.normally_open
         if self.wait_for_ack:
             self.auto.wait_until(self.ack_chan != self.normally_open)
-
 
     def close(self):
         # for reg. valve, normally_open is false so cmd is set to False
@@ -76,8 +74,8 @@ class DualTescomValve:
         if self.wait_for_ack:
             self.auto.wait_until(self.open_cmd_ack)
 
-
     # energizes the close_cmd_chan valve to close the valve
+
     def close(self):
         self.auto.set({
             self.close_cmd_chan: True,
@@ -87,21 +85,12 @@ class DualTescomValve:
             self.auto.wait_until(self.close_cmd_ack)
 
 
-def open_close_many_valves(auto: Controller, valves_to_close: [Valve], valves_to_open: [Valve]):
-    dict1 = {valve.cmd_chan: not valve.normally_open for valve in valves_to_close}
-    dict2 = {valve.cmd_chan: valve.normally_open for valve in valves_to_open}
-    dict = dict1 + dict2
+def open_close_many_valves(auto: Controller, valves_to_close: list[Valve], valves_to_open: list[Valve]):
     auto.set({
-        dict
-    })
-
-def open_close_many_valves(auto: Controller, valves_to_close: [Valve], valves_to_open: [Valve]):
-    auto.set({
-        valve.cmd_chan: (not valve.normally_open) if valve in valves_to_close 
-        else valve.normally_open 
+        valve.cmd_chan: (not valve.normally_open) if valve in valves_to_close
+        else valve.normally_open
         for valve in valves_to_open
     })
-    # trust
 
 
 def close_all(auto: Controller, valves: list[Valve]):
@@ -125,3 +114,11 @@ def pressurize(valve: Valve, pressure: str, target: float, inc: float, delay: fl
             print(f"{valve.name} has reached {target}")
             break
         partial_target += inc
+
+
+def purge(valves: list[Valve], duration: float = 1):
+    prev_time = time.time()
+    for valve in valves:
+        while (time.time() - prev_time < duration):
+            open_all(valve.auto, valves)
+            time.sleep(1)
