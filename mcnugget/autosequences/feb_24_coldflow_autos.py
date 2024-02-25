@@ -4,22 +4,22 @@ from synnax.control.controller import Controller
 import syauto
 
 # this connects to the synnax server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
+# client = sy.Synnax(
+#     host="localhost",
+#     port=9090,
+#     username="synnax",
+#     password="seldon",
+#     secure=False
+# )
 
 #Connects to masa cluster
-# client = sy.Synnax(
-#     host="MASA Remote",
-#     port=80,
-#     username="synnax.masa.engin.umich.edu",
-#     password="seldon",
-#     secure=True
-# )
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 # change names and numbers to match the actual channels
 # valve names to channel names
