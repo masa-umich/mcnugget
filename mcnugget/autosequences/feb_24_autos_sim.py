@@ -286,8 +286,7 @@ with client.new_streamer(command_channels) as streamer:
                 elif not fuel_mpv_open:
                     FUEL_MPV_LAST_OPEN = None
 
-                fuel_tank_1_delta = 0
-                fuel_tank_2_delta = 0
+                fuel_tank_delta = 0
                 trailer_pneumatics_delta = 0
                 press_tank_delta = 0
                 ox_tank_delta =0
@@ -319,13 +318,13 @@ with client.new_streamer(command_channels) as streamer:
 
                 if (ox_press_open and press_tank_pressure > 0
                         and not ox_tank_1_pressure > press_tank_pressure):
-                    ox_tank_delta -= 1
-                    press_tank_delta += 1
+                    ox_tank_delta += 1
+                    press_tank_delta -= 1
 
                 if (fuel_press_iso_open and press_tank_pressure > 0
                         and not fuel_tank_1_pressure > press_tank_pressure):
-                    fuel_tank_1_delta -= 1
-                    press_tank_delta += 1
+                    fuel_tank_delta += 1
+                    press_tank_delta -= 1
 
                 #updates when vent and one valve is open
                 # if vent_open and tpc_1_open:
@@ -335,13 +334,13 @@ with client.new_streamer(command_channels) as streamer:
                     ox_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - OX_MPV_LAST_OPEN).seconds
                 
                 if fuel_mpv_open:
-                    fuel_tank_1_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_MPV_LAST_OPEN).seconds
+                    fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_MPV_LAST_OPEN).seconds
 
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
                 ox_tank_3_pressure += ox_tank_delta
-                fuel_tank_1_pressure += fuel_tank_1_delta
-                fuel_tank_2_pressure += fuel_tank_2_delta
+                fuel_tank_1_pressure += fuel_tank_delta
+                fuel_tank_2_pressure += fuel_tank_delta
                 trailer_pneumatics_pressure += trailer_pneumatics_delta
                 press_tank_pressure += press_tank_delta
 
