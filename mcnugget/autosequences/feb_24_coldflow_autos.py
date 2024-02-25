@@ -140,7 +140,7 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         auto=auto, cmd=v9_out, ack=v9_in, normally_open=False)
     # engine pneumatics vent is normally open
     engine_pneumatics_vent = syauto.Valve(
-        auto=auto, cmd=v10_out, ack=v10_in, normally_open=True)
+        auto=auto, cmd=v10_out, ack=v10_in, normally_open=False)
     solenoid_manifold = syauto.Valve(
         auto=auto, cmd=v11_out, ack=v11_in, normally_open=False)
 
@@ -238,7 +238,8 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         time.sleep(1)
         
         print("Test complete. Safing System \n")
-        syauto.open_close_many_valves(auto, all_valves, all_vents)
+        #syauto.open_close_many_valves(auto, all_valves, all_vents)
+        syauto.close_all(auto, all_valves)
         syauto.open_all(auto, all_vents)
         print("Valves closed and vents open")
 
