@@ -99,11 +99,11 @@ A20 = "gse_ai_20"
 # List of channels we're going to read from and write to
 WRITE_TO = [v1_out, v2_out, v3_out, v4_out, v5_out, v6_out, v7_out, v8_out, v9_out, v10_out,
             v11_out, v12_out, v13_out, v14_out, v15_out, v16_out, v17_out, v18_out, v19_out, v20_out,
-            v21_out, v22_out, v23_out, v24_out, v25_out]
+            v21_out, v22_out, v23_out, v24_out]
 
 READ_FROM = [v1_in, v2_in, v3_in, v4_in, v5_in, v6_in, v7_in, v8_in, v9_in, v10_in,
              v11_in, v12_in, v13_in, v14_in, v15_in, v16_in, v17_in, v18_in, v19_in, v20_in, v21_in,
-             v22_in, v23_in, v24_in, v25_in,
+             v22_in, v23_in, v24_in,
              A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20]
 
 # Time, pressure, and other parameters to defind during testing
