@@ -12,8 +12,8 @@ client = sy.Synnax(
     secure=False
 )
 
-#change names and numbers to match the actual channels
-#valve names to channel names
+# change names and numbers to match the actual channels
+# valve names to channel names
 v1_in = "gse_doa_1"
 v1_out = "gse_doc_1"
 v2_in = "gse_doa_2"
@@ -65,7 +65,7 @@ v24_out = "gse_doc_24"
 v25_in = "gse_doa_25"
 v25_out = "gse_doc_25"
 
-#sensor names to channel names
+# sensor names to channel names
 A1 = "gse_ai_1"
 A2 = "gse_ai_2"
 A3 = "gse_ai_3"
@@ -87,93 +87,109 @@ A18 = "gse_ai_18"
 A19 = "gse_ai_19"
 A20 = "gse_ai_20"
 
-#List of channels we're going to read from and write to
+# List of channels we're going to read from and write to
 WRITE_TO = [v1_out, v2_out, v3_out, v4_out, v5_out, v6_out, v7_out, v8_out, v9_out, v10_out,
             v11_out, v12_out, v13_out, v14_out, v15_out, v16_out, v17_out, v18_out, v19_out, v20_out]
 
-READ_FROM = [v1_in, v2_in, v3_in, v4_in, v5_in, v6_in, v7_in, v8_in, v9_in, v10_in, 
-            v11_in, v12_in, v13_in, v14_in, v15_in, v16_in, v17_in, v18_in, v19_in, v20_in,
-            A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20]
+READ_FROM = [v1_in, v2_in, v3_in, v4_in, v5_in, v6_in, v7_in, v8_in, v9_in, v10_in,
+             v11_in, v12_in, v13_in, v14_in, v15_in, v16_in, v17_in, v18_in, v19_in, v20_in,
+             A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20]
 
-#Time, pressure, and other parameters to defind during testing
+# Time, pressure, and other parameters to defind during testing
 start = sy.TimeStamp.now()
-TEST_DURATION = 10 #seconds to run the test
-MAX_FUEL_TANK_PRESSURE = 700 #psi
-MAX_TRAILER_PRESSURE = 150 #psi
-MAX_PRESS_TANK_PRESSURE = 4500 #psi
+TEST_DURATION = 10  # seconds to run the test
+MAX_FUEL_TANK_PRESSURE = 700  # psi
+MAX_TRAILER_PRESSURE = 150  # psi
+MAX_PRESS_TANK_PRESSURE = 4500  # psi
 
 print("Starting autosequence")
 with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as auto:
-    
-    #valves for fuel system 
-    fuel_vent = syauto.Valve(auto=auto, cmd=v1_out, ack=v1_in, normally_open = True) #fuel vent is normally open
+
+    # valves for fuel system
+    # fuel vent is normally open
+    fuel_vent = syauto.Valve(auto=auto, cmd=v1_out,
+                             ack=v1_in, normally_open=True)
     fuel_prevalve = syauto.Valve(auto=auto, cmd=v2_out, ack=v2_in)
     fuel_mpv = syauto.Valve(auto=auto, cmd=v3_out, ack=v3_in)
 
-    #valves for purge system
+    # valves for purge system
     fuel_feedline_purge = syauto.Valve(auto=auto, cmd=v4_out, ack=v4_in)
     ox_fill_purge = syauto.Valve(auto=auto, cmd=v5_out, ack=v5_in)
     fuel_pre_press = syauto.Valve(auto=auto, cmd=v6_out, ack=v6_in)
     ox_pre_press = syauto.Valve(auto=auto, cmd=v7_out, ack=v7_in)
     ox_feedline_purge = syauto.Valve(auto=auto, cmd=v8_out, ack=v8_in)
 
-    #pneumatics valves
+    # pneumatics valves
     engine_pneumatics_iso = syauto.Valve(auto=auto, cmd=v9_out, ack=v9_in)
-    engine_pneumatics_vent = syauto.Valve(auto=auto, cmd=v10_out, ack=v10_in, normally_open = True) #engine pneumatics vent is normally open
-    solenoid_manifold = syauto.Valve(auto=auto, cmd=v11_out, ack=v11_in) 
+    # engine pneumatics vent is normally open
+    engine_pneumatics_vent = syauto.Valve(
+        auto=auto, cmd=v10_out, ack=v10_in, normally_open=True)
+    solenoid_manifold = syauto.Valve(auto=auto, cmd=v11_out, ack=v11_in)
 
-    #press system valves
+    # press system valves
     air_drive_ISO_1 = syauto.Valve(auto=auto, cmd=v12_out, ack=v12_in)
     air_drive_ISO_2 = syauto.Valve(auto=auto, cmd=v13_out, ack=v13_in)
     gas_booster_fill = syauto.Valve(auto=auto, cmd=v14_out, ack=v14_in)
     press_fill = syauto.Valve(auto=auto, cmd=v15_out, ack=v15_in)
-    press_vent = syauto.Valve(auto=auto, cmd=v16_out, ack=v16_in, normally_open = True) #press vent is normally open
+    # press vent is normally open
+    press_vent = syauto.Valve(auto=auto, cmd=v16_out,
+                              ack=v16_in, normally_open=True)
     fuel_press_ISO = syauto.Valve(auto=auto, cmd=v17_out, ack=v17_in)
     Ox_press = syauto.Valve(auto=auto, cmd=v18_out, ack=v18_in)
 
-    #ox press system valves
-    ox_low_vent = syauto.Valve(auto=auto, cmd=v19_out, ack=v19_in, normally_open = True) #ox low vent is normally open
+    # ox press system valves
+    # ox low vent is normally open
+    ox_low_vent = syauto.Valve(
+        auto=auto, cmd=v19_out, ack=v19_in, normally_open=True)
     ox_fill_valve = syauto.Valve(auto=auto, cmd=v20_out, ack=v20_in)
-    ox_high_flow_vent = syauto.Valve(auto=auto, cmd=v21_out, ack=v21_in, normally_open = True) #ox high flow vent is normally open
+    # ox high flow vent is normally open
+    ox_high_flow_vent = syauto.Valve(
+        auto=auto, cmd=v21_out, ack=v21_in, normally_open=True)
     ox_MPV = syauto.Valve(auto=auto, cmd=v22_out, ack=v22_in)
 
-    vents = [fuel_vent, engine_pneumatics_vent, press_vent, ox_low_vent, ox_high_flow_vent]
-    valves = [fuel_prevalve, fuel_mpv, fuel_feedline_purge, ox_fill_purge, fuel_pre_press, 
-              ox_pre_press, ox_feedline_purge, engine_pneumatics_iso, solenoid_manifold, 
+    vents = [fuel_vent, engine_pneumatics_vent,
+             press_vent, ox_low_vent, ox_high_flow_vent]
+    valves = [fuel_prevalve, fuel_mpv, fuel_feedline_purge, ox_fill_purge, fuel_pre_press,
+              ox_pre_press, ox_feedline_purge, engine_pneumatics_iso, solenoid_manifold,
               air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, fuel_press_ISO, Ox_press, ox_fill_valve, ox_MPV]
-
-    
 
     def run_shakedown(auto_: Controller):
         fuel_tank_1_pressure = auto_[A1]
         fuel_tank_2_pressure = auto_[A2]
         trailer_pnematics_pressure = auto_[A3]
         press_tank_pressure = auto_[A4]
+        ox_tank_1_pressure = auto_[A5]
+        ox_tank_2_pressure = auto_[A6]
+        ox_tank_3_pressure = auto_[A7]
 
         # aborts if the pressure is above the accepted maximum
-        if (fuel_tank_1_pressure > MAX_FUEL_TANK_PRESSURE or fuel_tank_2_pressure > MAX_FUEL_TANK_PRESSURE or 
-            trailer_pnematics_pressure > MAX_TRAILER_PRESSURE or press_tank_pressure > MAX_PRESS_TANK_PRESSURE):
-            print("pressure has exceeded acceptable range - ABORTING and opening all vents")
+        if (fuel_tank_1_pressure > MAX_FUEL_TANK_PRESSURE or fuel_tank_2_pressure > MAX_FUEL_TANK_PRESSURE or
+                trailer_pnematics_pressure > MAX_TRAILER_PRESSURE or press_tank_pressure > MAX_PRESS_TANK_PRESSURE
+                or ox_tank_1_pressure > MAX_FUEL_TANK_PRESSURE or ox_tank_2_pressure > MAX_FUEL_TANK_PRESSURE or
+                ox_tank_3_pressure > MAX_FUEL_TANK_PRESSURE):
+            print(
+                "pressure has exceeded acceptable range - ABORTING and opening all vents")
             syauto.open_close_many_valves(auto, valves, vents)
             print(f"All vents open, closing pre-valves")
 
         # aborts if the pressure is below the accepted minimum
-        if (fuel_tank_1_pressure < 15 or fuel_tank_2_pressure < 15 or 
-            trailer_pnematics_pressure < 15 or press_tank_pressure < 15):
+        if (fuel_tank_1_pressure < 15 or fuel_tank_2_pressure < 15 or
+                trailer_pnematics_pressure < 15 or press_tank_pressure < 15):
             print(f"pressure below 15 - ABORTING and opening all vents")
             syauto.open_close_many_valves(auto, valves, vents)
             print(f"All vents open, closing pre-valves")
 
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
-        return (fuel_tank_1_pressure < 15) or (fuel_tank_2_pressure < 15) or (trailer_pnematics_pressure < 15) or (press_tank_pressure < 15)
+        return ((fuel_tank_1_pressure < 15) or (fuel_tank_2_pressure < 15)
+                or (trailer_pnematics_pressure < 15) or (press_tank_pressure < 15))
 
     try:
         print("Starting Shakedown Test. Setting initial system state.")
-        #starting opening all valves and closing all vents
-        syauto.open_all_valves(valves)
-        syauto.close_all_valves(vents)
+        # starting opening all valves and closing all vents
+        syauto.open_all(auto,valves)
+        syauto.close_all(auto,vents)
         time.sleep(2)
-       
+
         print("Purging system for " + TEST_DURATION + " seconds")
         auto.wait_until(TEST_DURATION, run_shakedown(auto))
 
