@@ -92,7 +92,6 @@ def open_close_many_valves(auto: Controller, valves_to_close: list[Valve], valve
         else valve.normally_open 
         for valve in valves_to_open
     })
-    # trust
 
 
 def close_all(auto: Controller, valves: list[Valve]):

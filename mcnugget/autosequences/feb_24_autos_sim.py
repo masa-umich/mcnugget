@@ -306,10 +306,11 @@ with client.new_streamer(command_channels) as streamer:
                     ox_tank_delta += 2.5
     
                 if fuel_press_iso_open:
-                    fuel_PT_1_pressure += 2.5
-                    fuel_PT_2_pressure += 2.5
-                    fuel_PT_3_pressure += 2.5
+                    fuel_tank_delta += 2.5
                 
+                if fuel_vent_open:
+                    fuel_tank_delta -= 1.5
+                    
                 if ox_low_vent_open:
                     ox_tank_delta -= 1.5
 

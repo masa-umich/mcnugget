@@ -216,7 +216,8 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         auto.wait_until(run_shakedown, timeout=TEST_DURATION)
 
         print("Test complete. Safing System \n")
-        syauto.open_close_many_valves(auto, valves, vents)
+        syauto.open_close_many_valves(auto, vents, valves)
+        syauto.open_all(auto, vents)
         print("Valves closed and vents open")
 
         rng = client.ranges.create(
