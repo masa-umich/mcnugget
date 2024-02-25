@@ -93,9 +93,9 @@ WRITE_TO = [v1_out, v2_out, v3_out, v4_out, v5_out, v6_out, v7_out, v8_out, v9_o
             v21_out, v22_out, v23_out, v24_out, v25_out]
 
 READ_FROM = [v1_in, v2_in, v3_in, v4_in, v5_in, v6_in, v7_in, v8_in, v9_in, v10_in,
-            v11_in, v12_in, v13_in, v14_in, v15_in, v16_in, v17_in, v18_in, v19_in, v20_in, v21_in,
-            v22_in, v23_in, v24_in, v25_in,
-            A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20]
+             v11_in, v12_in, v13_in, v14_in, v15_in, v16_in, v17_in, v18_in, v19_in, v20_in, v21_in,
+             v22_in, v23_in, v24_in, v25_in,
+             A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20]
 
 # Time, pressure, and other parameters to defind during testing
 start = sy.TimeStamp.now()
@@ -165,13 +165,21 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         auto=auto, cmd=v21_out, ack=v21_in, normally_open=False)
     ox_MPV = syauto.Valve(auto=auto, cmd=v22_out,
                           ack=v22_in, normally_open=False)
+    ox_pre_valve = syauto.Valve(auto=auto, cmd=v23_out,
+                                ack=v23_in, normally_open=False)
 
-    vents = [fuel_vent, engine_pneumatics_vent,
-             press_vent, ox_low_vent, ox_high_flow_vent]
-    valves = [fuel_prevalve, fuel_mpv, fuel_feedline_purge, ox_fill_purge, fuel_pre_press,
-              ox_pre_press, ox_feedline_purge, engine_pneumatics_iso, solenoid_manifold,
-              air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, fuel_press_ISO,
-              ox_press, ox_fill_valve, ox_MPV]
+    pre_valves = [fuel_prevalve, ox_pre_valve]
+    press_valves = [fuel_press_ISO, ox_press]
+    iso_valves = [air_drive_ISO_1, air_drive_ISO_2, engine_pneumatics_iso,
+                  fuel_press_ISO]
+
+    all_vents = [fuel_vent, engine_pneumatics_vent,
+                 press_vent, ox_low_vent]
+
+    all_valves = [fuel_prevalve, fuel_mpv, fuel_feedline_purge, ox_fill_purge, fuel_pre_press,
+                  ox_pre_press, ox_feedline_purge, engine_pneumatics_iso, solenoid_manifold,
+                  air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, fuel_press_ISO,
+                  ox_press, ox_fill_valve, ox_MPV]
 
     def run_shakedown(auto_: Controller):
         fuel_tank_1_pressure = auto_[A1]
@@ -189,14 +197,14 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                 ox_tank_3_pressure > MAX_FUEL_TANK_PRESSURE):
             print(
                 "pressure has exceeded acceptable range - ABORTING and opening all vents")
-            syauto.open_close_many_valves(auto, valves, vents)
+            syauto.open_close_many_valves(auto, all_valves, all_vents)
             print(f"All vents open, closing pre-valves")
 
-        #aborts if the pressure is below the accepted minimum
+        # aborts if the pressure is below the accepted minimum
         if (fuel_tank_1_pressure < 15 or fuel_tank_2_pressure < 15 or
                 trailer_pnematics_pressure < 15 or press_tank_pressure < 15):
             print(f"pressure below 15 - ABORTING and opening all vents")
-            syauto.open_close_many_valves(auto, valves, vents)
+            syauto.open_close_many_valves(auto, all_valves, all_vents)
             print(f"All vents open, closing pre-valves")
 
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
@@ -204,20 +212,20 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                 or (trailer_pnematics_pressure < 15) or (press_tank_pressure < 15))
 
     try:
-        print("Starting Shakedown Test. Setting initial system state.")
         # starting opening all valves and closing all vents
+        print("Starting Shakedown Test. Setting initial system state.")
         # syauto.open_all(auto, valves)
         # syauto.close_all(auto, vents)
-        syauto.open_close_many_valves(auto, vents, valves)
+        syauto.open_close_many_valves(auto, all_vents, pre_valves+press_valves)
         time.sleep(2)
 
         print("Purging system for " + str(TEST_DURATION) + " seconds")
-        syauto.purge(valves, TEST_DURATION)
+        syauto.purge(all_valves, TEST_DURATION)
         auto.wait_until(run_shakedown, timeout=TEST_DURATION)
 
         print("Test complete. Safing System \n")
-        syauto.open_close_many_valves(auto, vents, valves)
-        syauto.open_all(auto, vents)
+        syauto.open_close_many_valves(auto, all_vents, all_valves)
+        syauto.open_all(auto, all_vents)
         print("Valves closed and vents open")
 
         rng = client.ranges.create(
@@ -229,11 +237,11 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         # Handle Ctrl+C interruption
         if str(e) == "Interrupted by user.":
             print("Test interrupted. Safeing System")
-            syauto.open_close_many_valves(auto, valves, vents)
+            syauto.open_close_many_valves(auto, all_valves, all_vents)
 
         # Handle 'x' key interruption
         elif str(e) == "Interrupted by user. (x)":
             print("Test interrupted. Safeing System")
-            syauto.open_close_many_valves(auto, valves, vents)
+            syauto.open_close_many_valves(auto, all_valves, all_vents)
 
     time.sleep(60)
