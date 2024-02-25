@@ -20,7 +20,7 @@ class Model:
                                   usecols=['variable','value'])
         # assign the variables of the input table to the object
         for v in range(input_tbl.shape[0]):
-            setattr(self, input_tbl.loc[v,'variable'], input_tbl.loc[v,'value'])
+            setattr(self, input_tbl.loc[v,'variable'],input_tbl.loc[v,'value'])
         # initialize the finite element model    
         self.model = tfem.Model()
         # calculate other geometry values
@@ -33,6 +33,8 @@ class Model:
         # TODO: find a source for these values
         self.h_amb = 1 # W/m^2-K
         self.T_amb = 300 # K
+        # number of regen stations
+        self.Nc = 100
             
     def setup(self):
         self.generate_mesh()
@@ -146,31 +148,29 @@ class Model:
         # convective boundaries
         for n in range(self.n_fin):
             # outer liner to fuel
-            self.model.make_convection('liner{}'.format(n+0.5),'+r',
-                                       h_of_x=lambda x: self.get_hc_liner(x),
-                                       T_of_x=lambda x: self.get_Tc(x))
+            self.model.make_convection('liner{}'.format(n+0.5),'r+',
+                                       h=lambda x: self.get_hc_liner(x),
+                                       T=lambda x: self.get_Tc(x))
             # -theta side of fins
-            self.model.make_convection('fin{}'.format(n),'-theta',
-                                       h_of_x=lambda x: self.get_hc_liner(x),
-                                       T_of_x=lambda x: self.get_Tc(x))
+            self.model.make_convection('fin{}'.format(n),'theta-',
+                                       h=lambda x: self.get_hc_liner(x),
+                                       T=lambda x: self.get_Tc(x))
             # +theta side of fins
-            self.model.make_convection('fin{}'.format(n),'+theta',
-                                       h_of_x=lambda x: self.get_hc_liner(x),
-                                       T_of_x=lambda x: self.get_Tc(x))
+            self.model.make_convection('fin{}'.format(n),'theta+',
+                                       h=lambda x: self.get_hc_liner(x),
+                                       T=lambda x: self.get_Tc(x))
             # inner jacket to fuel
-            self.model.make_convection('jacket{}'.format(n+0.5),'-r',
-                                       h_of_x=lambda x: self.get_hc_jacket(x),
-                                       T_of_x=lambda x: self.get_Tc(x))
+            self.model.make_convection('jacket{}'.format(n+0.5),'r-',
+                                       h=lambda x: self.get_hc_jacket(x),
+                                       T=lambda x: self.get_Tc(x))
             # hot gas to inner liner
-            self.model.make_convection('liner{}'.format(n+0.5),'-r',
-                                       h_of_x=lambda x: self.get_hg(x),
-                                       T_of_x=lambda x: self.get_Taw(x))
+            self.model.make_convection('liner{}'.format(n+0.5),'r+',
+                                       h=lambda x: self.get_hg(x),
+                                       T=lambda x: self.get_Taw(x))
             # outer jacket to ambient
-            self.model.make_convection('jacket{}'.format(n),'+r',
-                                       h_of_x=lambda x: self.h_amb,
-                                       T_of_x=lambda x: self.T_amb)
-        
-        pass
+            self.model.make_convection('jacket{}'.format(n),'r+',
+                                       h=lambda x: self.h_amb,
+                                       T=lambda x: self.T_amb)
     
     def calc_geometry(self):
         '''Sets geometry parameters derived from the primary inputs.'''
