@@ -226,10 +226,10 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
     try:
         # starting opening all valves and closing all vents
         print("Starting Shakedown Test. Setting initial system state.")
-        #syauto.open_close_many_valves(auto, all_vents, pre_valves+press_valves)
-        syauto.close_all(auto, all_vents)
+        syauto.open_close_many_valves(auto, pre_valves+press_valves, all_vents)
+        # syauto.close_all(auto, all_vents)
         time.sleep(1)
-        syauto.open_all(auto, pre_valves+press_valves)
+        # syauto.open_all(auto, pre_valves+press_valves)
         time.sleep(2)
 
         # print("Purging system for " + str(TEST_DURATION) + " seconds")
@@ -237,10 +237,8 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         auto.wait_until(run_shakedown, timeout=TEST_DURATION)
         time.sleep(1)
         
-        print("Test complete. Safing System \n")
-        #syauto.open_close_many_valves(auto, all_valves, all_vents)
-        syauto.close_all(auto, all_valves)
-        syauto.open_all(auto, all_vents)
+        print("Test complete. Safing System")
+        syauto.open_close_many_valves(auto, all_vents, pre_valves+press_valves)
         print("Valves closed and vents open")
 
         rng = client.ranges.create(
