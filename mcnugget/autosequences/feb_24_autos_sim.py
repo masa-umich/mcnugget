@@ -75,13 +75,14 @@ command_channels = [FUEL_VENT_OUT, FUEL_PREVALVE_OUT, FUEL_MPV_OUT, FUEL_FEEDLIN
 
 
 # Pressure sensors
-FUEL_TANK_1_PRESSURE = "gse_ai_1"  # Fuel tank 1 pressure
-FUEL_TANK_2_PRESSURE = "gse_ai_2"  # Fuel tank 2 pressure
-TRAILER_PNEUMATICS_PRESSURE = "gse_ai_3"  # Trailer pneumatics pressure
-PRESS_TANK_PRESSURE = "gse_ai_4"  # Press tank pressure
-OX_TANK_1_PRESSURE = "gse_ai_5"  # Ox tank 1 pressure
-OX_TANK_2_PRESSURE = "gse_ai_6"  # Ox tank 2 pressure
-OX_TANK_3_PRESSURE = "gse_ai_7"  # Ox tank 3 pressure
+FUEL_PT_1_PRESSURE = "gse_ai_1"  # Fuel tank 1 pressure
+FUEL_PT_2_PRESSURE = "gse_ai_2"  # Fuel tank 2 pressure
+FUEL_PT_3_PRESSURE = "gse_ai_3"  # Fuel tank 3 pressure
+TRAILER_PNEUMATICS_PRESSURE = "gse_ai_4"  # Trailer pneumatics pressure
+PRESS_TANK_PRESSURE = "gse_ai_5"  # Press tank pressure
+OX_TANK_1_PRESSURE = "gse_ai_6"  # Ox tank 1 pressure
+OX_TANK_2_PRESSURE = "gse_ai_7"  # Ox tank 2 pressure
+OX_TANK_3_PRESSURE = "gse_ai_8"  # Ox tank 3 pressure
 
 daq_time = client.channels.create(
     name=DAQ_TIME,
@@ -135,14 +136,21 @@ client.channels.create(
 )
 
 client.channels.create(
-    name=FUEL_TANK_1_PRESSURE,
+    name=FUEL_PT_1_PRESSURE,
     data_type=sy.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
-    name=FUEL_TANK_2_PRESSURE,
+    name=FUEL_PT_2_PRESSURE,
+    data_type=sy.DataType.FLOAT32,
+    index=daq_time.key,
+    retrieve_if_name_exists=True
+)
+
+client.channels.create(
+    name=FUEL_PT_3_PRESSURE,
     data_type=sy.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
@@ -190,8 +198,9 @@ DAQ_STATE = {
     OX_MPV_OUT: 0,
 
     # Pts
-    FUEL_TANK_1_PRESSURE: 0,
-    FUEL_TANK_2_PRESSURE: 0,
+    FUEL_PT_1_PRESSURE: 0,
+    FUEL_PT_2_PRESSURE: 0,
+    FUEL_PT_3_PRESSURE: 0,
     TRAILER_PNEUMATICS_PRESSURE: 0,
     PRESS_TANK_PRESSURE: 0,
     OX_TANK_1_PRESSURE: 0,
@@ -201,8 +210,9 @@ DAQ_STATE = {
 
 OX_MPV_LAST_OPEN = None
 FUEL_MPV_LAST_OPEN = None
-fuel_tank_1_pressure = 0
-fuel_tank_2_pressure = 0
+fuel_PT_1_pressure = 0
+fuel_PT_2_pressure = 0
+fuel_PT_3_pressure = 0
 trailer_pneumatics_pressure = 0
 press_tank_pressure = 0
 ox_tank_1_pressure = 0
@@ -235,8 +245,9 @@ with client.new_streamer(command_channels) as streamer:
                       OX_FILL_VALVE_IN,
                       OX_HIGH_FLOW_VENT_IN, 
                       OX_MPV_IN, 
-                      FUEL_TANK_1_PRESSURE, 
-                      FUEL_TANK_2_PRESSURE,
+                      FUEL_PT_1_PRESSURE, 
+                      FUEL_PT_2_PRESSURE,
+                      FUEL_PT_3_PRESSURE,
                       TRAILER_PNEUMATICS_PRESSURE, 
                       PRESS_TANK_PRESSURE,
                       OX_TANK_1_PRESSURE,
@@ -295,8 +306,9 @@ with client.new_streamer(command_channels) as streamer:
                     ox_tank_delta += 2.5
     
                 if fuel_press_iso_open:
-                    fuel_tank_1_pressure += 2.5
-                    fuel_tank_2_pressure += 2.5
+                    fuel_PT_1_pressure += 2.5
+                    fuel_PT_2_pressure += 2.5
+                    fuel_PT_3_pressure += 2.5
                 
                 if ox_low_vent_open:
                     ox_tank_delta -= 1.5
@@ -322,7 +334,7 @@ with client.new_streamer(command_channels) as streamer:
                     press_tank_delta -= 1
 
                 if (fuel_press_iso_open and press_tank_pressure > 0
-                        and not fuel_tank_1_pressure > press_tank_pressure):
+                        and not fuel_PT_1_pressure > press_tank_pressure):
                     fuel_tank_delta += 1
                     press_tank_delta -= 1
 
@@ -339,8 +351,9 @@ with client.new_streamer(command_channels) as streamer:
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
                 ox_tank_3_pressure += ox_tank_delta
-                fuel_tank_1_pressure += fuel_tank_delta
-                fuel_tank_2_pressure += fuel_tank_delta
+                fuel_PT_1_pressure += fuel_tank_delta
+                fuel_PT_2_pressure += fuel_tank_delta
+                fuel_PT_3_pressure += fuel_tank_delta
                 trailer_pneumatics_pressure += trailer_pneumatics_delta
                 press_tank_pressure += press_tank_delta
 
@@ -350,10 +363,12 @@ with client.new_streamer(command_channels) as streamer:
                     ox_tank_2_pressure = 0
                 if ox_tank_3_pressure < 0:
                     ox_tank_3_pressure = 0
-                if fuel_tank_1_pressure < 0:
-                    fuel_tank_1_pressure = 0
-                if fuel_tank_2_pressure < 0:
-                    fuel_tank_2_pressure = 0
+                if fuel_PT_1_pressure < 0:
+                    fuel_PT_1_pressure = 0
+                if fuel_PT_2_pressure < 0:
+                    fuel_PT_2_pressure = 0
+                if fuel_PT_3_pressure < 0:
+                    fuel_PT_3_pressure = 0
                 if trailer_pneumatics_pressure < 0:
                     trailer_pneumatics_pressure = 0
                 if press_tank_pressure < 0:
@@ -385,8 +400,9 @@ with client.new_streamer(command_channels) as streamer:
                     OX_FILL_VALVE_IN: int(ox_fill_valve_open),
                     OX_HIGH_FLOW_VENT_IN: int(ox_high_flow_vent_open),
                     OX_MPV_IN: int(ox_mpv_open),
-                    FUEL_TANK_1_PRESSURE: fuel_tank_1_pressure,
-                    FUEL_TANK_2_PRESSURE: fuel_tank_2_pressure,
+                    FUEL_PT_1_PRESSURE: fuel_PT_1_pressure,
+                    FUEL_PT_2_PRESSURE: fuel_PT_2_pressure,
+                    FUEL_PT_3_PRESSURE: fuel_PT_3_pressure,
                     TRAILER_PNEUMATICS_PRESSURE: trailer_pneumatics_pressure,
                     PRESS_TANK_PRESSURE: press_tank_pressure,
                     OX_TANK_1_PRESSURE: ox_tank_1_pressure,

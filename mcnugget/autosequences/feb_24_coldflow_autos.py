@@ -215,8 +215,9 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         syauto.purge(valves, TEST_DURATION)
         auto.wait_until(run_shakedown, timeout=TEST_DURATION)
 
-        print("Test complete. Safing System")
+        print("Test complete. Safing System \n")
         syauto.open_close_many_valves(auto, valves, vents)
+        print("Valves closed and vents open")
 
         rng = client.ranges.create(
             name=f"{start.__str__()[11:16]} shakedown Sim",
