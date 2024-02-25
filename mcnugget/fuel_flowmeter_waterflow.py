@@ -41,8 +41,8 @@ dyn_visc = 0.001 #Pa * s
 
 
 data = client.ranges.create(
-    name="Fuel Flow X",
-    time_range = sy.TimeRange(1707070831237728300, 1707070848291456800),
+    name="BB TPC Feb 11 Test #1",
+    time_range = sy.TimeRange(1707673090101871400, 1707673098882826800),
     retrieve_if_name_exists=True
 )
 

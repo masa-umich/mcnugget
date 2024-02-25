@@ -18,16 +18,9 @@ import time
 import synnax as sy
 from synnax.control.controller import Controller
 import syauto
+from mcnugget.client import client
 
 PRESS_STEP_DELAY = (1 * sy.TimeSpan.SECOND).seconds  # Seconds
-
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
 
 TPC_1_OPEN_CMD = "gse_doc_6"
 TPC_1_OPEN_ACK = "gse_doa_6"
