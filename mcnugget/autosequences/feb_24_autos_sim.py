@@ -229,7 +229,7 @@ DAQ_STATE = {
 }
 
 # OX_MPV_LAST_OPEN = None
-FUEL_MPV_LAST_OPEN = None
+#FUEL_MPV_LAST_OPEN = None
 fuel_PT_1_pressure = 500
 fuel_PT_2_pressure = 500
 fuel_PT_3_pressure = 500
@@ -323,10 +323,10 @@ with client.new_streamer(command_channels) as streamer:
                 ox_tank_delta = 0
 
                 if fuel_prevalve_open:
-                    fuel_tank_delta -= 1.0
+                    fuel_tank_delta -= 0.5
 
                 if ox_pre_valve_open:
-                    ox_tank_delta -= 1.0
+                    ox_tank_delta -= 0.5
 
                 if ox_press_open:
                     ox_tank_delta = 0
@@ -335,25 +335,25 @@ with client.new_streamer(command_channels) as streamer:
                     fuel_tank_delta = 0
 
                 if fuel_vent_open:
-                    fuel_tank_delta -= 2.0
+                    fuel_tank_delta -= 4
 
                 if ox_low_vent_open:
-                    ox_tank_delta -= 2.0
+                    ox_tank_delta -= 1.5
 
                 if ox_high_flow_vent_open:
-                    ox_tank_delta -= 2.5
+                    ox_tank_delta -= 2.0
 
                 if engine_pneumatics_iso_open:
                     trailer_pneumatics_delta = 0
 
                 if engine_pneumatics_vent_open:
-                    trailer_pneumatics_delta -= 2.0
+                    trailer_pneumatics_delta -= 1.5
 
                 if press_fill_open:
                     press_tank_delta += 2.5
 
                 if press_vent_open:
-                    press_tank_delta -= 2.0
+                    press_tank_delta -= 4
 
                 # if (ox_press_open and press_tank_pressure > 0
                 #         and not ox_tank_1_pressure > press_tank_pressure):
