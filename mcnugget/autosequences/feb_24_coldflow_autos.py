@@ -228,7 +228,7 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         print("Starting Shakedown Test. Setting initial system state.")
         syauto.open_close_many_valves(auto, pre_valves+press_valves, all_vents)
         # syauto.close_all(auto, all_vents)
-        time.sleep(1)
+        #time.sleep(1)
         # syauto.open_all(auto, pre_valves+press_valves)
         time.sleep(2)
 

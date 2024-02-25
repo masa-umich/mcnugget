@@ -288,7 +288,7 @@ with client.new_streamer(command_channels) as streamer:
                         for k in f.columns:
                             DAQ_STATE[k] = f[k][0]
 
-                fuel_vent_open = DAQ_STATE[FUEL_VENT_OUT] == 0
+                fuel_vent_open = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_open = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
                 fuel_mpv_open = DAQ_STATE[FUEL_MPV_OUT] == 1
                 fuel_feedline_purge_open = DAQ_STATE[FUEL_FEEDLINE_PURGE_OUT] == 1
@@ -297,16 +297,16 @@ with client.new_streamer(command_channels) as streamer:
                 ox_pre_press_open = DAQ_STATE[OX_PRE_PRESS_OUT] == 1
                 ox_feedline_purge_open = DAQ_STATE[OX_FEEDLINE_PURGE_OUT] == 1
                 engine_pneumatics_iso_open = DAQ_STATE[ENGINE_PNEUMATICS_ISO_OUT] == 1
-                engine_pneumatics_vent_open = DAQ_STATE[ENGINE_PNEUMATICS_VENT_OUT] == 0
+                engine_pneumatics_vent_open = DAQ_STATE[ENGINE_PNEUMATICS_VENT_OUT] == 1
                 solenoid_manifold_open = DAQ_STATE[SOLENOID_MANIFOLD_OUT] == 1
                 air_drive_iso_1_open = DAQ_STATE[AIR_DRIVE_ISO_1_OUT] == 1
                 air_drive_iso_2_open = DAQ_STATE[AIR_DRIVE_ISO_2_OUT] == 1
                 gas_booster_fill_open = DAQ_STATE[GAS_BOOSTER_FILL_OUT] == 1
                 press_fill_open = DAQ_STATE[PRESS_FILL_OUT] == 1
-                press_vent_open = DAQ_STATE[PRESS_VENT_OUT] == 0
+                press_vent_open = DAQ_STATE[PRESS_VENT_OUT] == 1
                 fuel_press_iso_open = DAQ_STATE[FUEL_PRESS_ISO_OUT] == 1
                 ox_press_open = DAQ_STATE[OX_PRESS_OUT] == 1
-                ox_low_vent_open = DAQ_STATE[OX_LOW_VENT_OUT] == 0
+                ox_low_vent_open = DAQ_STATE[OX_LOW_VENT_OUT] == 1
                 ox_fill_valve_open = DAQ_STATE[OX_FILL_VALVE_OUT] == 1
                 ox_high_flow_vent_open = DAQ_STATE[OX_HIGH_FLOW_VENT_OUT] == 1
                 ox_mpv_open = DAQ_STATE[OX_MPV_OUT] == 1
@@ -323,53 +323,45 @@ with client.new_streamer(command_channels) as streamer:
                 ox_tank_delta = 0
 
                 if fuel_prevalve_open:
-                    fuel_tank_delta -= 0.5
+                    fuel_tank_delta -= 1.5
 
                 if ox_pre_valve_open:
-                    ox_tank_delta -= 0.5
+                    ox_tank_delta -= 1.5
 
-                if ox_press_open:
+                if ox_press_open and not ox_low_vent_open:
                     # print("ox_press_open")
+                    print(ox_low_vent_open)
                     ox_tank_delta = 0
 
-                if fuel_press_iso_open:
+                if fuel_press_iso_open and not fuel_vent_open:
                     # print("fuel_press_iso_open")
                     fuel_tank_delta = 0
 
-                if engine_pneumatics_iso_open:
+                if engine_pneumatics_iso_open and not engine_pneumatics_vent_open:
                     # print("engine_pneumatics_iso_open")
                     trailer_pneumatics_delta = 0
 
                 if fuel_vent_open:
+                    # print("fuel_vent_open")
                     fuel_tank_delta -= 4
 
                 if ox_low_vent_open:
-                    ox_tank_delta -= 1.5
-
-                if ox_high_flow_vent_open:
+                    # print("ox_low_vent_open")
                     ox_tank_delta -= 2.0
 
+                if ox_high_flow_vent_open:
+                    ox_tank_delta -= 3.0
+
                 if engine_pneumatics_vent_open:
+                    # print("engine_pneumatics_vent_open")
                     trailer_pneumatics_delta -= 1.5
 
                 if press_fill_open:
+                    print("press_fill_open")
                     press_tank_delta += 2.5
 
                 if press_vent_open:
                     press_tank_delta -= 4
-
-                # if (ox_press_open and press_tank_pressure > 0
-                #         and not ox_tank_1_pressure > press_tank_pressure):
-                #     ox_tank_delta += 1
-                #     press_tank_delta -= 1
-
-                # if (fuel_press_iso_open and press_tank_pressure > 0
-                #         and not fuel_PT_1_pressure > press_tank_pressure):
-                #     fuel_tank_delta += 1
-                #     press_tank_delta -= 1
-
-                # if fuel_mpv_open:
-                #     fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_MPV_LAST_OPEN).seconds
 
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
