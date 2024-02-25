@@ -90,7 +90,7 @@ daq_time = client.channels.create(
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 25):
+for i in range(1, 26):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
         data_type=sy.DataType.TIMESTAMP,
@@ -253,7 +253,7 @@ with client.new_streamer(command_channels) as streamer:
                         for k in f.columns:
                             DAQ_STATE[k] = f[k][0]
 
-                fuel_vent_open = DAQ_STATE[FUEL_VENT_OUT] == 1
+                fuel_vent_open = DAQ_STATE[FUEL_VENT_OUT] == 0
                 fuel_prevalve_open = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
                 fuel_mpv_open = DAQ_STATE[FUEL_MPV_OUT] == 1
                 fuel_feedline_purge_open = DAQ_STATE[FUEL_FEEDLINE_PURGE_OUT] == 1
@@ -273,7 +273,7 @@ with client.new_streamer(command_channels) as streamer:
                 ox_press_open = DAQ_STATE[OX_PRESS_OUT] == 1
                 ox_low_vent_open = DAQ_STATE[OX_LOW_VENT_OUT] == 0
                 ox_fill_valve_open = DAQ_STATE[OX_FILL_VALVE_OUT] == 1
-                ox_high_flow_vent_open = DAQ_STATE[OX_HIGH_FLOW_VENT_OUT] == 0
+                ox_high_flow_vent_open = DAQ_STATE[OX_HIGH_FLOW_VENT_OUT] == 1
                 ox_mpv_open = DAQ_STATE[OX_MPV_OUT] == 1
 
                 if ox_mpv_open and OX_MPV_LAST_OPEN is None:
@@ -301,6 +301,9 @@ with client.new_streamer(command_channels) as streamer:
                 
                 if ox_low_vent_open:
                     ox_tank_delta -= 1.5
+
+                if ox_high_flow_vent_open:
+                    ox_tank_delta -= 2.5
 
                 if engine_pneumatics_iso_open:
                     trailer_pneumatics_delta += 2.5
@@ -342,6 +345,12 @@ with client.new_streamer(command_channels) as streamer:
                 trailer_pneumatics_pressure += trailer_pneumatics_delta
                 press_tank_pressure += press_tank_delta
 
+                if ox_tank_1_pressure < 0:
+                    ox_tank_1_pressure = 0
+                if ox_tank_2_pressure < 0:
+                    ox_tank_2_pressure = 0
+                if ox_tank_3_pressure < 0:
+                    ox_tank_3_pressure = 0
                 if fuel_tank_1_pressure < 0:
                     fuel_tank_1_pressure = 0
                 if fuel_tank_2_pressure < 0:
