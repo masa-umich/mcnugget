@@ -1,5 +1,6 @@
 import time
-
+import sys
+sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
 import synnax as sy
 
 client = sy.Synnax(

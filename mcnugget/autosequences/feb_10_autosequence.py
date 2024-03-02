@@ -13,7 +13,8 @@ L-stand Vent (valve)
 4. close valves to seal L-stand
 5. open MPV
 """
-
+import sys
+sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
 import time
 import synnax as sy
 from synnax.control.controller import Controller
