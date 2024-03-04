@@ -2,7 +2,6 @@ import time
 from synnax import Synnax as sy
 from synnax.control.controller import Controller
 
-
 # this defines a class that can be used for both regular valves and vents
 class Valve:
     def __init__(

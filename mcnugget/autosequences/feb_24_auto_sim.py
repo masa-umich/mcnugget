@@ -1,14 +1,14 @@
-import time
+import time 
 import sys
 sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
 import synnax as sy
 
 client = sy.Synnax(
-    host="localhost",
+    host = "localhost",
     port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
+    username = "synnax",
+    password = "seldon",
+    secure = False
 )
 
 DAQ_TIME = "daq_time"
