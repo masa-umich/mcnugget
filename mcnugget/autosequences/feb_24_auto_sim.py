@@ -1,8 +1,8 @@
 import time
 # import sys
 # sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
-from synnax import synnax as sy
-
+import synnax as sy
+from synnax import telem as syt
 client = sy.Synnax(
     host = "localhost",
     port=9090,
@@ -90,7 +90,7 @@ OX_TANK_3_PRESSURE = "gse_ai_10"  # Ox tank 3 pressure
 
 daq_time = client.channels.create(
     name=DAQ_TIME,
-    data_type=sy.DataType.TIMESTAMP,
+    data_type=syt.DataType.TIMESTAMP,
     is_index=True,
     retrieve_if_name_exists=True
 )
@@ -98,7 +98,7 @@ daq_time = client.channels.create(
 for i in range(1, 26):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
-        data_type=sy.DataType.TIMESTAMP,
+        data_type=syt.DataType.TIMESTAMP,
         is_index=True,
         retrieve_if_name_exists=True
     )
@@ -107,12 +107,12 @@ for i in range(1, 26):
         [
             sy.Channel(
                 name=f"gse_doc_{i}",
-                data_type=sy.DataType.UINT8,
+                data_type=syt.DataType.UINT8,
                 index=idx.key
             ),
             sy.Channel(
                 name=f"gse_doa_{i}",
-                data_type=sy.DataType.FLOAT32,
+                data_type=syt.DataType.FLOAT32,
                 index=daq_time.key
             ),
         ],
@@ -120,75 +120,75 @@ for i in range(1, 26):
     )
 client.channels.create(
     name=OX_TANK_1_PRESSURE,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=OX_TANK_2_PRESSURE,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=OX_TANK_3_PRESSURE,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=FUEL_PT_1_PRESSURE,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=FUEL_PT_2_PRESSURE,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=FUEL_PT_3_PRESSURE,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=TRAILER_PNEUMATICS_PRESSURE,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=PRESS_TANK_PT_1,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=PRESS_TANK_PT_2,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
 client.channels.create(
     name=PRESS_TANK_PT_3,
-    data_type=sy.DataType.FLOAT32,
+    data_type=syt.DataType.FLOAT32,
     index=daq_time.key,
     retrieve_if_name_exists=True
 )
 
-rate = (sy.Rate.HZ * 50).period.seconds
+rate = (syt.Rate.HZ * 50).period.seconds
 
 DAQ_STATE = {
     # Valves
