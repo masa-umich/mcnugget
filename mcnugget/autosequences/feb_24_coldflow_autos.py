@@ -1,11 +1,11 @@
 import time
-import sys
-sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
+# import sys
+# sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
 import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 
-#this connects to the synnax server
+# this connects to the synnax server
 client = sy.Synnax(
     host="localhost",
     port=9090,
@@ -16,9 +16,9 @@ client = sy.Synnax(
 
 #Connects to masa cluster
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
+#     host="MASA Remote",
 #     port=80,
-#     username="synnax",
+#     username="synnax.masa.engin.umich.edu",
 #     password="seldon",
 #     secure=True
 # )
@@ -73,8 +73,8 @@ v23_in = "gse_doa_23"
 v23_out = "gse_doc_23"
 v24_in = "gse_doa_24"
 v24_out = "gse_doc_24"
-# v25_in = "gse_doa_25"
-# v25_out = "gse_doc_25"
+v25_in = "gse_doa_25"
+v25_out = "gse_doc_25"
 
 # sensor names to channel names
 A1 = "gse_ai_1"
@@ -101,11 +101,11 @@ A20 = "gse_ai_20"
 # List of channels we're going to read from and write to
 WRITE_TO = [v1_out, v2_out, v3_out, v4_out, v5_out, v6_out, v7_out, v8_out, v9_out, v10_out,
             v11_out, v12_out, v13_out, v14_out, v15_out, v16_out, v17_out, v18_out, v19_out, v20_out,
-            v21_out, v22_out, v23_out, v24_out]
+            v21_out, v22_out, v23_out, v24_out, v25_out]
 
 READ_FROM = [v1_in, v2_in, v3_in, v4_in, v5_in, v6_in, v7_in, v8_in, v9_in, v10_in,
              v11_in, v12_in, v13_in, v14_in, v15_in, v16_in, v17_in, v18_in, v19_in, v20_in, v21_in,
-             v22_in, v23_in, v24_in,
+             v22_in, v23_in, v24_in, v25_in,
              A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20]
 
 # Time, pressure, and other parameters to defind during testing
@@ -260,11 +260,6 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
     except KeyboardInterrupt as e:
         # Handle Ctrl+C interruption
         if str(e) == "Interrupted by user.":
-            print("Test interrupted. Safeing System")
-            syauto.open_close_many_valves(auto, all_valves, all_vents)
-
-        # Handle 'x' key interruption
-        elif str(e) == "Interrupted by user. (x)":
             print("Test interrupted. Safeing System")
             syauto.open_close_many_valves(auto, all_valves, all_vents)
 

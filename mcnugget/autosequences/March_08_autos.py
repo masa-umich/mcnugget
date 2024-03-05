@@ -1,8 +1,5 @@
 import time
-import time
-import sys
-sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
-import synnax as sy
+from synnax import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 
@@ -261,11 +258,6 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
     except KeyboardInterrupt as e:
         # Handle Ctrl+C interruption
         if str(e) == "Interrupted by user.":
-            print("Test interrupted. Safeing System")
-            syauto.open_close_many_valves(auto, all_valves, all_vents)
-
-        # Handle 'x' key interruption
-        elif str(e) == "Interrupted by user. (x)":
             print("Test interrupted. Safeing System")
             syauto.open_close_many_valves(auto, all_valves, all_vents)
 

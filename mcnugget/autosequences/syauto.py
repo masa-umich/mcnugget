@@ -1,6 +1,9 @@
 import time
-from synnax import Synnax as sy
+import sys
+sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
+import synnax as sy
 from synnax.control.controller import Controller
+
 
 # this defines a class that can be used for both regular valves and vents
 class Valve:
@@ -95,16 +98,14 @@ def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves
     commands = {}
     # Close valves to close
     for valve in valves_to_open:
-        commands[valve.cmd_chan] = True
+        commands[valve.cmd_chan] = int(True)
     # Open valves to open
     for valve in valves_to_close:
         if valve.normally_open:
-            commands[valve.cmd_chan] = True
+            commands[valve.cmd_chan] = int(True)
         else:
-            commands[valve.cmd_chan] = False
+            commands[valve.cmd_chan] = int(False)
     auto.set(commands)
-
-
 
 def close_all(auto: Controller, valves: list[Valve]):
     auto.set({valve.cmd_chan: valve.normally_open for valve in valves})
