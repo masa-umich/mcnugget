@@ -1,5 +1,5 @@
 import time
-from synnax import synnax as sy
+import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 
@@ -12,7 +12,7 @@ client = sy.Synnax(
     secure=False
 )
 
-#Connects to masa cluster
+# Connects to masa cluster
 # client = sy.Synnax(
 #     host="synnax.masa.engin.umich.edu",
 #     port=80,
