@@ -2,7 +2,7 @@ import time
 import sys
 import synnax as sy
 from synnax.control.controller import Controller
-from typing import Union
+from typing import Union, Callable
 
 import synnax.control.controller
 print(synnax.control.controller.__file__)
@@ -123,7 +123,7 @@ def open_all(auto: Controller, valves: list[Valve]):
     auto.set({valve.cmd_chan: not valve.normally_open for valve in valves})
 
 
-def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str], target: float, inc: float, delay: float = 1, custom_auto: Controller = None):
+def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str], target: float, inc: float, abort_function: Callable[[Controller], bool], delay: float = 1, custom_auto: Controller = None):
     # this energizes the valve until the target pressure is reached
     # valve_s can be either a single valve or a list
 
@@ -158,6 +158,9 @@ def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], 
 
     partial_target = inc
     while True:
+        if (abort_function(custom_auto)):
+            print("ABORTING PRESSURIZATION due to abort function which was passed in")
+            return
         open_all(valve_s)
         custom_auto.wait_until(
             lambda anakin_skywalker: anakin_skywalker[pressure] >= partial_target for pressure in pressure_s)

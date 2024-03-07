@@ -307,6 +307,25 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                 press_tank_pt_3 < 15 or ox_tank_1_pressure < 15 or ox_tank_2_pressure < 15 or
                 ox_tank_3_pressure < 15)
 
+    def abort_during_press_tank_fill(auto_: Controller):
+        # If any press tank exceeds max pressure, abort
+        if (auto_[PRESS_TANK_PT_1] > MAX_PRESS_TANK_PRESSURE
+            or auto_[PRESS_TANK_PT_3] > MAX_PRESS_TANK_PRESSURE
+                or auto_[PRESS_TANK_PT_3] > MAX_PRESS_TANK_PRESSURE):
+            print("At least one press tank has exceeded maximum pressure, aborting system")
+            syauto.open_close_many_valves(
+                auto_, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
+            return True
+        return False
+        
+        # # If any press tank drop below min pressure, abort
+        # if (press_tank_pt_1 > MIN_PRESS_TANK_PRESSURE
+        #     or press_tank_pt_2 > MIN_PRESS_TANK_PRESSURE
+        #     or press_tank_pt_3 > MIN_PRESS_TANK_PRESSURE):
+        #     print("At least one press tank has dropped below minimum pressure, aborting system")
+        #     syauto.open_close_many_valves(auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
+        #     return True
+
     def equalize_2k_and_press_tanks(auto_: Controller):
         print(
             f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_1} using {press_fill} in increments of {PRESS_INC_1} ")
@@ -315,27 +334,8 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         press_tank_pt_3 = auto_[PRESS_TANK_PT_3]
 
         syauto.pressurize(press_fill, [
-                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_1, PRESS_INC_1)
-
-        # If any press tank exceeds max pressure, abort
-        if (press_tank_pt_1 > MAX_PRESS_TANK_PRESSURE
-            or press_tank_pt_2 > MAX_PRESS_TANK_PRESSURE
-                or press_tank_pt_3 > MAX_PRESS_TANK_PRESSURE):
-            print(
-                "At least one press tank has exceeded maximum pressure, aborting system")
-            syauto.open_close_many_valves(
-                auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
-
-            return True
-
-        # # If any press tank drop below min pressure, abort
-        # if (press_tank_pt_1 > MIN_PRESS_TANK_PRESSURE
-        #     or press_tank_pt_2 > MIN_PRESS_TANK_PRESSURE
-        #     or press_tank_pt_3 > MIN_PRESS_TANK_PRESSURE):
-        #     print("At least one press tank has dropped below minimum pressure, aborting system")
-        #     syauto.open_close_many_valves(auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
-
-        #     return True
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_1, PRESS_INC_1, abort_during_press_tank_fill)
+        
 
     def press_with_gooster(auto_: Controller):
         gas_booster_fill.open()
@@ -343,7 +343,7 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         print(
             f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_2} using {air_drive_ISO_1} and {air_drive_ISO_2} in increments of {PRESS_INC_2}")
         syauto.pressurize([air_drive_ISO_1, air_drive_ISO_2], [
-                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, PRESS_INC_2)
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, PRESS_INC_2, abort_during_press_tank_fill)
 
     try:
         # starting opening all valves and closing all vents
