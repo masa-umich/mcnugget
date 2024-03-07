@@ -118,19 +118,31 @@ def open_all(auto: Controller, valves: list[Valve]):
 
 
 # this energizes the valve until the target pressure is reached
-def pressurize(valve: Valve, pressure: str, target: float, inc: float, delay: float = 1):
+def pressurize(valve, pressure: str, target: float, inc: float, delay: float = 1):
     partial_target = inc
     while True:
-        print(f"pressurizing {valve.name} to {partial_target}")
-        valve.open()
-        valve.auto.wait_until(lambda auto: auto[pressure] >= partial_target)
-        valve.close()
+        if isinstance(valve, dict):
+            valve_name = valve['name']
+            valve_open = valve['open']
+            valve_close = valve['close']
+            valve_auto = valve['auto']
+        elif isinstance(valve, Valve):
+            valve_name = valve.name
+            valve_open = valve.open
+            valve_close = valve.close
+            valve_auto = valve.auto
+        else:
+            raise ValueError("valve parameter must be either a dictionary or a Valve object")
+        
+        print(f"pressurizing {valve_name} to {partial_target}")
+        valve_open()
+        valve_auto.wait_until(lambda auto: auto[pressure] >= partial_target)
+        valve_close()
         time.sleep(delay)
         if partial_target >= target:
-            print(f"{valve.name} has reached {target}")
+            print(f"{valve_name} has reached {target}")
             break
         partial_target += inc
-
 
 def purge(valves: list[Valve], duration: float = 1):
     prev_time = time.time()
