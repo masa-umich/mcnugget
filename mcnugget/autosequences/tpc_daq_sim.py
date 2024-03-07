@@ -37,7 +37,7 @@ daq_time = client.channels.create(
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 12):
+for i in range(1, 20):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
         data_type=sy.DataType.TIMESTAMP,
