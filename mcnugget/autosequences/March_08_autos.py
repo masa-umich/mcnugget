@@ -3,7 +3,7 @@ import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 
-#this connects to the synnax server
+# this connects to the synnax server
 client = sy.Synnax(
     host="localhost",
     port=9090,
@@ -141,8 +141,29 @@ MIN_TRAILER_PRESSURE = 50  # psi
 MIN_PRESS_TANK_PRESSURE = 3900  # psi
 MIN_OX_TANK_PRESSURE = 450  # psi
 
-PRESS_INC = 30.0  # psi
+# PRESS_INC = 30.0  # psi
 
+PRESS_TARGET_1 = 1800
+PRESS_TARGET_2 = 4000
+
+PRESS_INC_1 = 100
+PRESS_INC_2 = 100
+
+# specifies pressure/temp channels
+FUEL_PT_1_PRESSURE = A1
+FUEL_PT_2_PRESSURE = A2
+FUEL_PT_3_PRESSURE = A3
+TRAILER_PNEUMATICS_PRESSURE = A4
+PRESS_TANK_PT_1 = A5
+PRESS_TANK_PT_2 = A6
+PRESS_TANK_PT_3 = A7
+OX_TANK_1_PRESSURE = A8
+OX_TANK_2_PRESSURE = A9
+OX_TANK_3_PRESSURE = A10
+PRESS_TANK_TC_1 = TC1
+PRESS_TANK_TC_2 = TC2
+PRESS_TANK_TC_3 = TC3
+PRESS_TANK_TC_4 = TC4
 
 print("Starting autosequence")
 with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as auto:
@@ -209,7 +230,8 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                                 ack=v23_in, normally_open=False)
 
     pre_valves = [fuel_prevalve, ox_pre_valve]
-    press_valves = [fuel_press_ISO, ox_press, air_drive_ISO_1, air_drive_ISO_2, engine_pneumatics_iso]
+    press_valves = [fuel_press_ISO, ox_press, air_drive_ISO_1,
+                    air_drive_ISO_2, engine_pneumatics_iso]
 
     all_vents = [fuel_vent, engine_pneumatics_vent,
                  press_vent, ox_low_vent]
@@ -220,33 +242,34 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                   ox_press, ox_fill_valve, ox_MPV]
 
     def run_shakedown(auto_: Controller):
-        fuel_pt_1_pressure = auto_[A1]
-        fuel_pt_2_pressure = auto_[A2]
-        fuel_pt_3_pressure = auto_[A3]
-        trailer_pnematics_pressure = auto_[A4]
-        press_tank_pt_1 = auto_[A5]
-        press_tank_pt_2 = auto_[A6]
-        press_tank_pt_3 = auto_[A7]
-        ox_tank_1_pressure = auto_[A8]
-        ox_tank_2_pressure = auto_[A9]
-        ox_tank_3_pressure = auto_[A10]
-        press_tank_tc_1 = auto_[TC1]
-        press_tank_tc_2 = auto_[TC2]
-        press_tank_tc_3 = auto_[TC3]
-        press_tank_tc_4 = auto_[TC4]
+        fuel_pt_1_pressure = auto_[FUEL_PT_1_PRESSURE]
+        fuel_pt_2_pressure = auto_[FUEL_PT_2_PRESSURE]
+        fuel_pt_3_pressure = auto_[FUEL_PT_3_PRESSURE]
+        trailer_pnematics_pressure = auto_[TRAILER_PNEUMATICS_PRESSURE]
+        press_tank_pt_1 = auto_[PRESS_TANK_PT_1]
+        press_tank_pt_2 = auto_[PRESS_TANK_PT_2]
+        press_tank_pt_3 = auto_[PRESS_TANK_PT_3]
+        ox_tank_1_pressure = auto_[OX_TANK_1_PRESSURE]
+        ox_tank_2_pressure = auto_[OX_TANK_2_PRESSURE]
+        ox_tank_3_pressure = auto_[OX_TANK_3_PRESSURE]
+        press_tank_tc_1 = auto_[PRESS_TANK_TC_1]
+        press_tank_tc_2 = auto_[PRESS_TANK_TC_2]
+        press_tank_tc_3 = auto_[PRESS_TANK_TC_3]
+        press_tank_tc_4 = auto_[PRESS_TANK_TC_4]
 
         # aborts if the pressure is above the accepted maximum
-        if (fuel_pt_1_pressure > MAX_FUEL_TANK_PRESSURE 
-            or fuel_pt_2_pressure > MAX_FUEL_TANK_PRESSURE 
-            or fuel_pt_3_pressure > MAX_FUEL_TANK_PRESSURE 
-            or trailer_pnematics_pressure > MAX_TRAILER_PRESSURE 
-            or press_tank_pt_1 > MAX_PRESS_TANK_PRESSURE 
-            or press_tank_pt_2 > MAX_PRESS_TANK_PRESSURE 
+        if (fuel_pt_1_pressure > MAX_FUEL_TANK_PRESSURE
+            or fuel_pt_2_pressure > MAX_FUEL_TANK_PRESSURE
+            or fuel_pt_3_pressure > MAX_FUEL_TANK_PRESSURE
+            or trailer_pnematics_pressure > MAX_TRAILER_PRESSURE
+            or press_tank_pt_1 > MAX_PRESS_TANK_PRESSURE
+            or press_tank_pt_2 > MAX_PRESS_TANK_PRESSURE
             or press_tank_pt_3 > MAX_PRESS_TANK_PRESSURE
-            or ox_tank_1_pressure > MAX_FUEL_TANK_PRESSURE 
-            or ox_tank_2_pressure > MAX_FUEL_TANK_PRESSURE 
-            or ox_tank_3_pressure > MAX_FUEL_TANK_PRESSURE):
-            print("pressure has exceeded acceptable range - ABORTING and opening all vents")
+            or ox_tank_1_pressure > MAX_FUEL_TANK_PRESSURE
+            or ox_tank_2_pressure > MAX_FUEL_TANK_PRESSURE
+                or ox_tank_3_pressure > MAX_FUEL_TANK_PRESSURE):
+            print(
+                "pressure has exceeded acceptable range - ABORTING and opening all vents")
             syauto.open_close_many_valves(auto, all_valves, all_vents)
             print("All vents open, closing pre-valves")
             return
@@ -255,17 +278,24 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         if (press_tank_tc_1 > MAX_PRESS_TANK_TEMP
             or press_tank_tc_2 > MAX_PRESS_TANK_TEMP
             or press_tank_tc_3 > MAX_PRESS_TANK_TEMP
-            or press_tank_tc_4 > MAX_PRESS_TANK_TEMP):
-            print("temperature has exceeded acceptable range - ABORTING and opening all vents")
+                or press_tank_tc_4 > MAX_PRESS_TANK_TEMP):
+            print(
+                "temperature has exceeded acceptable range - ABORTING and opening all vents")
             syauto.open_close_many_valves(auto, all_valves, all_vents)
             print("All vents open, closing pre-valves")
             return
 
         # aborts if the pressure is below the accepted minimum (-20 below target)
-        if (fuel_pt_1_pressure < MIN_FUEL_TANK_PRESSURE or fuel_pt_2_pressure < MIN_FUEL_TANK_PRESSURE or fuel_pt_3_pressure < MIN_FUEL_TANK_PRESSURE or
-                trailer_pnematics_pressure < MIN_TRAILER_PRESSURE or press_tank_pt_1 < MIN_PRESS_TANK_PRESSURE or press_tank_pt_2 < MIN_PRESS_TANK_PRESSURE or
-                press_tank_pt_3 < MIN_PRESS_TANK_PRESSURE or ox_tank_1_pressure < MIN_OX_TANK_PRESSURE or ox_tank_2_pressure < MIN_OX_TANK_PRESSURE or
-                ox_tank_3_pressure < MIN_OX_TANK_PRESSURE):
+        if (fuel_pt_1_pressure < MIN_FUEL_TANK_PRESSURE
+            or fuel_pt_2_pressure < MIN_FUEL_TANK_PRESSURE
+            or fuel_pt_3_pressure < MIN_FUEL_TANK_PRESSURE
+            or trailer_pnematics_pressure < MIN_TRAILER_PRESSURE
+            or press_tank_pt_1 < MIN_PRESS_TANK_PRESSURE
+            or press_tank_pt_2 < MIN_PRESS_TANK_PRESSURE
+            or press_tank_pt_3 < MIN_PRESS_TANK_PRESSURE
+            or ox_tank_1_pressure < MIN_OX_TANK_PRESSURE
+            or ox_tank_2_pressure < MIN_OX_TANK_PRESSURE
+                or ox_tank_3_pressure < MIN_OX_TANK_PRESSURE):
             print(f"pressure below 15 - ABORTING and opening all vents")
             syauto.open_close_many_valves(auto, all_valves, all_vents)
             print(f"All vents open, closing pre-valves")
@@ -276,41 +306,63 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                 trailer_pnematics_pressure < 15 or press_tank_pt_1 < 15 or press_tank_pt_2 < 15 or
                 press_tank_pt_3 < 15 or ox_tank_1_pressure < 15 or ox_tank_2_pressure < 15 or
                 ox_tank_3_pressure < 15)
-    
-    def two_K_Bottle_Eq(auto_: Controller):
-        press_tank_pt_1 = auto_[A5]
-        press_tank_pt_2 = auto_[A6]
-        press_tank_pt_3 = auto_[A7]
-        
-        # open and close press fill in predetermined increments
-        # Press until press Tank PT's equalized w/2K PT
+
+    def equalize_2k_and_press_tanks(auto_: Controller):
+        print(
+            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_1} using {press_fill} in increments of {PRESS_INC_1} ")
+        press_tank_pt_1 = auto_[PRESS_TANK_PT_1]
+        press_tank_pt_2 = auto_[PRESS_TANK_PT_2]
+        press_tank_pt_3 = auto_[PRESS_TANK_PT_3]
+
+        syauto.pressurize(press_fill, [
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_1, PRESS_INC_1)
 
         # If any press tank exceeds max pressure, abort
-        if (press_tank_pt_1 > MAX_PRESS_TANK_PRESSURE 
-            or press_tank_pt_2 > MAX_PRESS_TANK_PRESSURE 
-            or press_tank_pt_3 > MAX_PRESS_TANK_PRESSURE):
-            print("At least one press tank has exceeded maximum pressure, aborting system")
-            syauto.open_close_many_valves(auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
+        if (press_tank_pt_1 > MAX_PRESS_TANK_PRESSURE
+            or press_tank_pt_2 > MAX_PRESS_TANK_PRESSURE
+                or press_tank_pt_3 > MAX_PRESS_TANK_PRESSURE):
+            print(
+                "At least one press tank has exceeded maximum pressure, aborting system")
+            syauto.open_close_many_valves(
+                auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
 
             return True
 
+        # # If any press tank drop below min pressure, abort
+        # if (press_tank_pt_1 > MIN_PRESS_TANK_PRESSURE
+        #     or press_tank_pt_2 > MIN_PRESS_TANK_PRESSURE
+        #     or press_tank_pt_3 > MIN_PRESS_TANK_PRESSURE):
+        #     print("At least one press tank has dropped below minimum pressure, aborting system")
+        #     syauto.open_close_many_valves(auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
+
+        #     return True
+
     def press_with_gooster(auto_: Controller):
         gas_booster_fill.open()
-        syauto.pressurize([air_drive_ISO_1,air_drive_ISO_2], 2K_PT, PRESS_INC)
+        # pressurizes PRESS_TANKS 1-3 to PRESS_TARGET_2 using air_drive and gooster
+        print(
+            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_2} using {air_drive_ISO_1} and {air_drive_ISO_2} in increments of {PRESS_INC_2}")
+        syauto.pressurize([air_drive_ISO_1, air_drive_ISO_2], [
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, PRESS_INC_2)
+
     try:
         # starting opening all valves and closing all vents
         print("Starting Shakedown Test. Setting initial system state.")
-        syauto.open_close_many_valves(auto, pre_valves+press_valves, all_vents)
-        # syauto.close_all(auto, all_vents)
-        #time.sleep(1)
-        # syauto.open_all(auto, pre_valves+press_valves)
-        time.sleep(2)
+        syauto.open_close_many_valves(
+            auto, pre_valves + press_valves, all_vents)
+        time.sleep(1)
+
+        equalize_2k_and_press_tanks(auto)
+
+        input("Press any key to continue")
+
+        press_with_gooster(auto)
 
         # print("Purging system for " + str(TEST_DURATION) + " seconds")
         # syauto.purge(all_valves, TEST_DURATION)
         auto.wait_until(run_shakedown, timeout=TEST_DURATION)
         time.sleep(1)
-        
+
         print("Test complete. Safing System")
         syauto.open_close_many_valves(auto, all_vents, pre_valves+press_valves)
         print("Valves closed and vents open")
