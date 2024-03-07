@@ -186,64 +186,62 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
     # valves for fuel system
     # fuel vent is normally open
-    fuel_vent = syauto.Valve(auto=auto, cmd=v1_out,
-                             ack=v1_in, normally_open=True)
+    fuel_vent = syauto.Valve(auto=auto, cmd=v15_out,
+                             ack=v15_in, normally_open=True)
     fuel_prevalve = syauto.Valve(
-        auto=auto, cmd=v2_out, ack=v2_in, normally_open=False)
-    fuel_mpv = syauto.Valve(auto=auto, cmd=v3_out,
-                            ack=v3_in, normally_open=False)
+        auto=auto, cmd=v22_out, ack=v22_in, normally_open=False)
+    # fuel_mpv = syauto.Valve(auto=auto, cmd=v3_out,
+    #                         ack=v3_in, normally_open=False)
 
     # valves for purge system
     fuel_feedline_purge = syauto.Valve(
-        auto=auto, cmd=v4_out, ack=v4_in, normally_open=False)
+        auto=auto, cmd=v4_out, ack=v7_in, normally_open=False)
     ox_fill_purge = syauto.Valve(
-        auto=auto, cmd=v5_out, ack=v5_in, normally_open=False)
+        auto=auto, cmd=v5_out, ack=v11_in, normally_open=False)
     fuel_pre_press = syauto.Valve(
-        auto=auto, cmd=v6_out, ack=v6_in, normally_open=False)
+        auto=auto, cmd=v6_out, ack=v9_in, normally_open=False)
     ox_pre_press = syauto.Valve(
-        auto=auto, cmd=v7_out, ack=v7_in, normally_open=False)
+        auto=auto, cmd=v7_out, ack=v10_in, normally_open=False)
     ox_feedline_purge = syauto.Valve(
         auto=auto, cmd=v8_out, ack=v8_in, normally_open=False)
 
     # pneumatics valves
     engine_pneumatics_iso = syauto.Valve(
-        auto=auto, cmd=v9_out, ack=v9_in, normally_open=False)
+        auto=auto, cmd=v12_out, ack=v12_in, normally_open=False)
     # engine pneumatics vent is normally closed
     engine_pneumatics_vent = syauto.Valve(
-        auto=auto, cmd=v10_out, ack=v10_in, normally_open=False)
-    solenoid_manifold = syauto.Valve(
-        auto=auto, cmd=v11_out, ack=v11_in, normally_open=False)
+        auto=auto, cmd=v13_out, ack=v13_in, normally_open=False)
 
     # press system valves
     air_drive_ISO_1 = syauto.Valve(
-        auto=auto, cmd=v12_out, ack=v12_in, normally_open=False)
+        auto=auto, cmd=v3_out, ack=v3_in, normally_open=False)
     air_drive_ISO_2 = syauto.Valve(
-        auto=auto, cmd=v13_out, ack=v13_in, normally_open=False)
+        auto=auto, cmd=v4_out, ack=v4_in, normally_open=False)
     gas_booster_fill = syauto.Valve(
-        auto=auto, cmd=v14_out, ack=v14_in, normally_open=False)
-    press_fill = syauto.Valve(auto=auto, cmd=v15_out,
-                              ack=v15_in, normally_open=False)
+        auto=auto, cmd=v20_out, ack=v20_in, normally_open=False)
+    press_fill = syauto.Valve(auto=auto, cmd=v23_out,
+                              ack=v23_in, normally_open=False)
     # press vent is normally open
-    press_vent = syauto.Valve(auto=auto, cmd=v16_out,
-                              ack=v16_in, normally_open=True)
+    press_vent = syauto.Valve(auto=auto, cmd=v18_out,
+                              ack=v18_in, normally_open=True)
     fuel_press_ISO = syauto.Valve(
-        auto=auto, cmd=v17_out, ack=v17_in,  normally_open=False)
-    ox_press = syauto.Valve(auto=auto, cmd=v18_out,
-                            ack=v18_in, normally_open=False)
+        auto=auto, cmd=v2_out, ack=v2_in,  normally_open=False)
+    ox_press = syauto.Valve(auto=auto, cmd=v1_out,
+                            ack=v1_in, normally_open=False)
 
     # ox press system valves
     # ox low vent is normally open
     ox_low_vent = syauto.Valve(
-        auto=auto, cmd=v19_out, ack=v19_in, normally_open=True)
+        auto=auto, cmd=v16_out, ack=v16_in, normally_open=True)
     ox_fill_valve = syauto.Valve(
-        auto=auto, cmd=v20_out, ack=v20_in, normally_open=False)
+        auto=auto, cmd=v19_out, ack=v19_in, normally_open=False)
     # ox high flow vent is normally open
     ox_high_flow_vent = syauto.Valve(
-        auto=auto, cmd=v21_out, ack=v21_in, normally_open=False)
-    ox_MPV = syauto.Valve(auto=auto, cmd=v22_out,
-                          ack=v22_in, normally_open=False)
-    ox_pre_valve = syauto.Valve(auto=auto, cmd=v23_out,
-                                ack=v23_in, normally_open=False)
+        auto=auto, cmd=v17_out, ack=v17_in, normally_open=False)
+    # ox_MPV = syauto.Valve(auto=auto, cmd=v22_out,
+    #                       ack=v22_in, normally_open=False)
+    ox_pre_valve = syauto.Valve(auto=auto, cmd=v21_out,
+                                ack=v21_in, normally_open=False)
 
     pre_valves = [fuel_prevalve, ox_pre_valve]
     press_valves = [fuel_press_ISO, ox_press, air_drive_ISO_1,
@@ -252,10 +250,10 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
     all_vents = [fuel_vent, engine_pneumatics_vent,
                  press_vent, ox_low_vent]
 
-    all_valves = [fuel_prevalve, fuel_mpv, fuel_feedline_purge, ox_fill_purge, fuel_pre_press,
-                  ox_pre_press, ox_feedline_purge, engine_pneumatics_iso, solenoid_manifold,
+    all_valves = [fuel_prevalve, fuel_feedline_purge, ox_fill_purge, fuel_pre_press,
+                  ox_pre_press, ox_feedline_purge, engine_pneumatics_iso,
                   air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, fuel_press_ISO,
-                  ox_press, ox_fill_valve, ox_MPV]
+                  ox_press, ox_fill_valve]
 
     #Returns TRUE if an abort is needed, otherwise returns FALSE
     def abort_during_press_tank_fill(auto_: Controller):

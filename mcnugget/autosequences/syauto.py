@@ -86,14 +86,6 @@ class DualTescomValve:
         if self.wait_for_ack:
             self.auto.wait_until(self.close_cmd_ack)
 
-
-# def open_close_many_valves(auto: Controller, valves_to_close: list[Valve], valves_to_open: list[Valve]):
-#     auto.set({
-#         valve.cmd_chan: (not valve.normally_open) if valve in valves_to_close
-#         else valve.normally_open
-#         for valve in valves_to_open
-#     })
-
 def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves_to_close: list[Valve]):
     commands = {}
     # Open valves to open
@@ -135,7 +127,7 @@ def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s:
     else:
         print("Pressurizing these valves:")
         for v in valve_s:
-            print(v.name)
+            print(str(v.name) + ", ")
 
     if isinstance(pressure_s, str):
         print(f"Reading from one pressure channel: {pressure_s}")
