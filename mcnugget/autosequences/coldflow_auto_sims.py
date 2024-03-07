@@ -166,18 +166,18 @@ for cmd_chan in command_channels:
 for pt in PTs:
     DAQ_STATE[pt]= 0 #start with no pressure
 
-# Set values for pressure sensors
-# DAQ_STATE.update({
-#     FUEL_PT_1_PRESSURE: 0,
-#     FUEL_PT_2_PRESSURE: 0,
-#     FUEL_PT_3_PRESSURE: 0,
-#     PRESS_TANK_PT_1: 0,
-#     PRESS_TANK_PT_2: 0,
-#     PRESS_TANK_PT_3: 0,
-#     OX_TANK_1_PRESSURE: 0,
-#     OX_TANK_2_PRESSURE: 0,
-#     OX_TANK_3_PRESSURE: 0
-# })
+#Set values for pressure sensors
+DAQ_STATE.update({
+    FUEL_PT_1_PRESSURE: 0,
+    FUEL_PT_2_PRESSURE: 0,
+    FUEL_PT_3_PRESSURE: 0,
+    PRESS_TANK_PT_1: 0,
+    PRESS_TANK_PT_2: 0,
+    PRESS_TANK_PT_3: 0,
+    OX_TANK_1_PRESSURE: 0,
+    OX_TANK_2_PRESSURE: 0,
+    OX_TANK_3_PRESSURE: 0
+})
 ox_pre_fill_pressure = 0
 ox_dome_reg_pilot_pressure = 0
 fuel_PT_1_pressure = 500

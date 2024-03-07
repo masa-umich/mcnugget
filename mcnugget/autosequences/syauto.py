@@ -123,13 +123,15 @@ def open_all(auto: Controller, valves: list[Valve]):
     auto.set({valve.cmd_chan: not valve.normally_open for valve in valves})
 
 
-def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str], target: float, inc: float, abort_function: Callable[[Controller], bool], delay: float = 1, custom_auto: Controller = None):
+def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
+               target: float, inc: float, abort_function: Callable[[Controller], bool],
+               delay: float = 1, custom_auto: Controller = None):
     # this energizes the valve until the target pressure is reached
     # valve_s can be either a single valve or a list
 
     # single valve
     if isinstance(valve_s, Valve):
-        print(f"pressurizing {valve_s.name} to {partial_target}")
+        print(f"pressurizing {valve_s.name} to"+ str(target))
         # converts single valve to list with one valve so they are processed the same :o
         if not custom_auto:
             custom_auto = valve_s.auto
@@ -159,7 +161,7 @@ def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], 
     partial_target = inc
     while True:
         if (abort_function(custom_auto)):
-            print("ABORTING PRESSURIZATION due to abort function which was passed in")
+            print("ABORTING PRESSURIZATION due to customized abort function")
             return
         open_all(valve_s)
         custom_auto.wait_until(
