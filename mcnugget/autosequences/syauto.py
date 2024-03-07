@@ -123,7 +123,7 @@ def open_all(auto: Controller, valves: list[Valve]):
     auto.set({valve.cmd_chan: not valve.normally_open for valve in valves})
 
 
-def pressurize(valve_s: Union[list[Valve], Valve], pressure: str, target: float, inc: float, delay: float = 1, custom_auto: Controller = None):
+def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str], target: float, inc: float, delay: float = 1, custom_auto: Controller = None):
     # this energizes the valve until the target pressure is reached
     # valve_s can be either a single valve or a list
 
@@ -144,11 +144,23 @@ def pressurize(valve_s: Union[list[Valve], Valve], pressure: str, target: float,
         if not custom_auto:
             custom_auto = valve_s[0].auto
 
+    # single pressure channel
+    if isinstance(valve_s, Valve):
+        print(f"reading from one pressure channel, {pressure_s}")
+        # converts single pressure to list with one channel so they are processed the same :ooo
+        pressure_s = [pressure_s]
+
+    # list of pressure channels
+    else:
+        print(f"reading from these pressure channels:")
+        for p in pressure_s:
+            print(p)
+
     partial_target = inc
     while True:
         open_all(valve_s)
         custom_auto.wait_until(
-            lambda anakin_skywalker: anakin_skywalker[pressure] >= partial_target)
+            lambda anakin_skywalker: anakin_skywalker[pressure] >= partial_target for pressure in pressure_s)
         close_all(valve_s)
         time.sleep(delay)
         if partial_target >= target:
