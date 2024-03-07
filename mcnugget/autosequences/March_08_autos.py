@@ -328,43 +328,35 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
 
         return False
 
-
-    def equalize_2k_and_press_tanks(auto_: Controller):
-        print(
-            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_1} using {press_fill} in increments of {PRESS_INC_1} ")
-        press_tank_pt_1 = auto_[PRESS_TANK_PT_1]
-        press_tank_pt_2 = auto_[PRESS_TANK_PT_2]
-        press_tank_pt_3 = auto_[PRESS_TANK_PT_3]
-
-        syauto.pressurize(press_fill, [
-                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_1, PRESS_INC_1, abort_during_press_tank_fill)
-        
-
-    def press_with_gooster(auto_: Controller):
-        gas_booster_fill.open()
-        # pressurizes PRESS_TANKS 1-3 to PRESS_TARGET_2 using air_drive and gooster
-        print(
-            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_2} using {air_drive_ISO_1} and {air_drive_ISO_2} in increments of {PRESS_INC_2}")
-        syauto.pressurize([air_drive_ISO_1, air_drive_ISO_2], [
-                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, PRESS_INC_2, abort_during_press_tank_fill)
-
     try:
+        """
+        this code does the following:
+            - sets an initial state with VALVES and VENTS both closed
+            - equalizes pressure between 2K bottles and PRESS_TANKS     {PRESS_TARGET_1}
+            - uses gas booster to pressurize PRESS_TANKS                {PRESS_TARGET_2}
+        """
+
         # starting opening all valves and closing all vents
         print("Starting Shakedown Test. Setting initial system state.")
         syauto.open_close_many_valves(
             auto, pre_valves + press_valves, all_vents)
         time.sleep(1)
 
-        equalize_2k_and_press_tanks(auto)
-
+        print("PHASE 1: 2K Bottle Equalization")
+        print(
+            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_1} using {press_fill} in increments of {PRESS_INC_1} ")
+        syauto.pressurize(press_fill, [
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_1, PRESS_INC_1, abort_during_press_tank_fill)
+        
         input("Press any key to continue")
 
-        press_with_gooster(auto)
-
-        # print("Purging system for " + str(TEST_DURATION) + " seconds")
-        # syauto.purge(all_valves, TEST_DURATION)
-        auto.wait_until(run_shakedown, timeout=TEST_DURATION)
-        time.sleep(1)
+        print("PHASE 2: Pressurization with Gas Booster")
+        gas_booster_fill.open()
+        print(
+            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_2} using {air_drive_ISO_1} and {air_drive_ISO_2} in increments of {PRESS_INC_2}")
+        syauto.pressurize([air_drive_ISO_1, air_drive_ISO_2], [
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, PRESS_INC_2, abort_during_press_tank_fill)
+        gas_booster_fill.close()
 
         print("Test complete. Safing System")
         syauto.open_close_many_valves(auto, all_vents, pre_valves+press_valves)
