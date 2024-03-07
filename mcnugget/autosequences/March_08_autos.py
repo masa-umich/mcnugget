@@ -231,7 +231,23 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                 trailer_pnematics_pressure < 15 or press_tank_pt_1 < 15 or press_tank_pt_2 < 15 or
                 press_tank_pt_3 < 15 or ox_tank_1_pressure < 15 or ox_tank_2_pressure < 15 or
                 ox_tank_3_pressure < 15)
+    def two_K_Bottle_Eq(auto_: Controller):
+        press_tank_pt_1 = auto_[A5]
+        press_tank_pt_2 = auto_[A6]
+        press_tank_pt_3 = auto_[A7]
+        # open and close press fill in predetermined increments
+        # Press until press Tank PT's equalized w/2K PT
 
+        # If any press tank exceeds max pressure, abort
+        if (press_tank_pt_1 > MAX_PRESS_TANK_PRESSURE or press_tank_pt_2 > MAX_PRESS_TANK_PRESSURE or press_tank_pt_3 > MAX_PRESS_TANK_PRESSURE):
+            print("At least one press tank has exceeded maximum pressure, aborting system")
+            syauto.open_close_many_valves(auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
+
+            return True
+
+    def press_with_gooster(auto_: Controller):
+        gas_booster_fill.open()
+        #pressurize()
     try:
         # starting opening all valves and closing all vents
         print("Starting Shakedown Test. Setting initial system state.")
