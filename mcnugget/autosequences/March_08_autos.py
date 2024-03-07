@@ -119,6 +119,8 @@ MIN_TRAILER_PRESSURE = 50  # psi
 MIN_PRESS_TANK_PRESSURE = 3900  # psi
 MIN_OX_TANK_PRESSURE = 450  # psi
 
+PRESS_INC = 30.0  # psi
+
 
 print("Starting autosequence")
 with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as auto:
@@ -235,6 +237,7 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         press_tank_pt_1 = auto_[A5]
         press_tank_pt_2 = auto_[A6]
         press_tank_pt_3 = auto_[A7]
+        
         # open and close press fill in predetermined increments
         # Press until press Tank PT's equalized w/2K PT
 
@@ -247,7 +250,7 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
 
     def press_with_gooster(auto_: Controller):
         gas_booster_fill.open()
-        #pressurize()
+        syauto.pressurize([air_drive_ISO_1,air_drive_ISO_2], 2K_PT, PRESS_INC)
     try:
         # starting opening all valves and closing all vents
         print("Starting Shakedown Test. Setting initial system state.")
