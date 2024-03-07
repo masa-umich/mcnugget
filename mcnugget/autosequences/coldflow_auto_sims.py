@@ -72,7 +72,12 @@ command_channels = [FUEL_VENT_OUT, FUEL_PREVALVE_OUT, FUEL_FEEDLINE_PURGE_OUT,
                     AIR_DRIVE_ISO_1_OUT, AIR_DRIVE_ISO_2_OUT, GAS_BOOSTER_FILL_OUT, PRESS_FILL_OUT,
                     PRESS_VENT_OUT, FUEL_PRESS_ISO_OUT, OX_PRESS_OUT, OX_LOW_VENT_OUT, OX_FILL_VALVE_OUT,
                     OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT]
-
+ack_channels = [FUEL_VENT_IN, FUEL_PREVALVE_IN, FUEL_FEEDLINE_PURGE_IN,
+                OX_FILL_PURGE_IN, FUEL_PRE_PRESS_IN, OX_PRE_PRESS_IN, OX_FEEDLINE_PURGE_IN,
+                ENGINE_PNEUMATICS_ISO_IN, ENGINE_PNEUMATICS_VENT_IN,
+                AIR_DRIVE_ISO_1_IN, AIR_DRIVE_ISO_2_IN, GAS_BOOSTER_FILL_IN, PRESS_FILL_IN,
+                PRESS_VENT_IN, FUEL_PRESS_ISO_IN, OX_PRESS_IN, OX_LOW_VENT_IN, OX_FILL_VALVE_IN,
+                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN]
 
 # Pressure sensors
 OX_PRE_FILL_PT = "gse_ai_1"  # Ox pre-fill pressure
@@ -180,12 +185,12 @@ DAQ_STATE.update({
 })
 ox_pre_fill_pressure = 0
 ox_dome_reg_pilot_pressure = 0
-fuel_PT_1_pressure = 500
-fuel_PT_2_pressure = 500
+fuel_PT_1_pressure = 0
+fuel_PT_2_pressure = 0
 ox_press_pressure = 0
-ox_tank_1_pressure = 500
-ox_tank_2_pressure = 500
-ox_tank_3_pressure = 500
+ox_tank_1_pressure = 0
+ox_tank_2_pressure = 0
+ox_tank_3_pressure = 0
 ox_flowmeter_inlet_pressure = 0
 ox_flowmeter_throat_pressure = 0
 ox_level_sensor = 0
@@ -198,21 +203,21 @@ air_drive_2k_pressure = 0
 air_drive_post_reg_pressure = 0
 press_tank_2k_pressure = 0
 gas_booster_outlet_pressure = 0
-press_tank_PT_1 = 4000
+press_tank_PT_1 = 0
 press_tank_bottle_pre_fill_pressure = 0
 pneumatics_bottle_pt = 0
 engine_pneumatics_pressure = 0
 purge_2k_bottle_pressure = 0
-fuel_PT_3_pressure = 500
+fuel_PT_3_pressure = 0
 purge_post_reg_pressure = 0
-trailer_pneumatics_pressure = 100
-press_tank_PT_2 = 4000
-press_tank_PT_3 = 4000
+trailer_pneumatics_pressure = 0
+press_tank_PT_2 = 0
+press_tank_PT_3 = 0
 
 with client.new_streamer(command_channels) as streamer:
     with client.new_writer(
             sy.TimeStamp.now(),
-            channels=command_channels+PTs+[DAQ_TIME]
+            channels=ack_channels+PTs+[DAQ_TIME]
     ) as w:
         i = 0
         while True:
@@ -288,11 +293,10 @@ with client.new_streamer(command_channels) as streamer:
                     trailer_pneumatics_delta -= 1.5
 
                 if press_fill_open:
-                    if gas_booster_fill_open:
-                        print("gas_booster_fill_open")
+                    if (gas_booster_fill_open and 
+                    (air_drive_iso_1_open or air_drive_iso_2_open)):
                         press_tank_delta += 3.5
                     else:
-                        print("press_fill_open")
                         press_tank_delta += 2.5
 
                 if press_vent_open:
@@ -311,60 +315,60 @@ with client.new_streamer(command_channels) as streamer:
                 press_tank_PT_3 += press_tank_delta
 
                 # no negative pressures pls ;-;
-                if ox_tank_1_pressure < 0:
+                if ox_tank_1_pressure <= 0:
                     ox_tank_1_pressure = 0
 
-                if ox_tank_2_pressure < 0:
+                if ox_tank_2_pressure <= 0:
                     ox_tank_2_pressure = 0
 
-                if ox_tank_3_pressure < 0:
+                if ox_tank_3_pressure <= 0:
                     ox_tank_3_pressure = 0
 
-                if fuel_PT_1_pressure < 0:
+                if fuel_PT_1_pressure <= 0:
                     fuel_PT_1_pressure = 0
 
-                if fuel_PT_2_pressure < 0:
+                if fuel_PT_2_pressure <= 0:
                     fuel_PT_2_pressure = 0
 
-                if fuel_PT_3_pressure < 0:
+                if fuel_PT_3_pressure <= 0:
                     fuel_PT_3_pressure = 0
 
-                if trailer_pneumatics_pressure < 0:
+                if trailer_pneumatics_pressure <= 0:
                     trailer_pneumatics_pressure = 0
 
-                if press_tank_PT_1 < 0:
+                if press_tank_PT_1 <= 0:
                     press_tank_PT_1 = 0
 
-                if press_tank_PT_2 < 0:
+                if press_tank_PT_2 <= 0:
                     press_tank_PT_2 = 0
 
-                if press_tank_PT_3 < 0:
+                if press_tank_PT_3 <= 0:
                     press_tank_PT_3 = 0
 
                 now = sy.TimeStamp.now()
 
                 ok = w.write({
                     DAQ_TIME: now,
-                    FUEL_VENT_OUT: int(fuel_vent_open),
-                    FUEL_PREVALVE_OUT: int(fuel_prevalve_open),
-                    FUEL_FEEDLINE_PURGE_OUT: int(fuel_feedline_purge_open),
-                    OX_FILL_PURGE_OUT: int(ox_fill_purge_open),
-                    FUEL_PRE_PRESS_OUT: int(fuel_pre_press_open),
-                    OX_PRE_PRESS_OUT: int(ox_pre_press_open),
-                    OX_FEEDLINE_PURGE_OUT: int(ox_feedline_purge_open),
-                    ENGINE_PNEUMATICS_ISO_OUT: int(engine_pneumatics_iso_open),
-                    ENGINE_PNEUMATICS_VENT_OUT: int(engine_pneumatics_vent_open),
-                    AIR_DRIVE_ISO_1_OUT: int(air_drive_iso_1_open),
-                    AIR_DRIVE_ISO_2_OUT: int(air_drive_iso_2_open),
-                    GAS_BOOSTER_FILL_OUT: int(gas_booster_fill_open),
-                    PRESS_FILL_OUT: int(press_fill_open),
-                    PRESS_VENT_OUT: int(press_vent_open),
-                    FUEL_PRESS_ISO_OUT: int(fuel_press_iso_open),
-                    OX_PRESS_OUT: int(ox_press_open),
-                    OX_LOW_VENT_OUT: int(ox_low_vent_open),
-                    OX_FILL_VALVE_OUT: int(ox_fill_valve_open),
-                    OX_HIGH_FLOW_VENT_OUT: int(ox_high_flow_vent_open),
-                    OX_PRE_VALVE_OUT: int(ox_pre_valve_open),
+                    FUEL_VENT_IN: int(fuel_vent_open),
+                    FUEL_PREVALVE_IN: int(fuel_prevalve_open),
+                    FUEL_FEEDLINE_PURGE_IN: int(fuel_feedline_purge_open),
+                    OX_FILL_PURGE_IN: int(ox_fill_purge_open),
+                    FUEL_PRE_PRESS_IN: int(fuel_pre_press_open),
+                    OX_PRE_PRESS_IN: int(ox_pre_press_open),
+                    OX_FEEDLINE_PURGE_IN: int(ox_feedline_purge_open),
+                    ENGINE_PNEUMATICS_ISO_IN: int(engine_pneumatics_iso_open),
+                    ENGINE_PNEUMATICS_VENT_IN: int(engine_pneumatics_vent_open),
+                    AIR_DRIVE_ISO_1_IN: int(air_drive_iso_1_open),
+                    AIR_DRIVE_ISO_2_IN: int(air_drive_iso_2_open),
+                    GAS_BOOSTER_FILL_IN: int(gas_booster_fill_open),
+                    PRESS_FILL_IN: int(press_fill_open),
+                    PRESS_VENT_IN: int(press_vent_open),
+                    FUEL_PRESS_ISO_IN: int(fuel_press_iso_open),
+                    OX_PRESS_IN: int(ox_press_open),
+                    OX_LOW_VENT_IN: int(ox_low_vent_open),
+                    OX_FILL_VALVE_IN: int(ox_fill_valve_open),
+                    OX_HIGH_FLOW_VENT_IN: int(ox_high_flow_vent_open),
+                    OX_PRE_VALVE_IN: int(ox_pre_valve_open),
                     OX_PRE_FILL_PT: ox_pre_fill_pressure,
                     OX_PRESS_DOME_PILOT_REG_PT: ox_dome_reg_pilot_pressure,
                     FUEL_PT_1_PRESSURE: fuel_PT_1_pressure,

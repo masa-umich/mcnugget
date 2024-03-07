@@ -4,9 +4,6 @@ import synnax as sy
 from synnax.control.controller import Controller
 from typing import Union, Callable
 
-import synnax.control.controller
-print(synnax.control.controller.__file__)
-
 
 class Valve:
     # this defines a class that can be used for both regular valves and vents
@@ -123,55 +120,50 @@ def open_all(auto: Controller, valves: list[Valve]):
     auto.set({valve.cmd_chan: not valve.normally_open for valve in valves})
 
 
-def pressurize(valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
-               target: float, inc: float, abort_function: Callable[[Controller], bool],
-               delay: float = 1, custom_auto: Controller = None):
-    # this energizes the valve until the target pressure is reached
-    # valve_s can be either a single valve or a list
+def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
+               target: float, inc: float, delay: float = 1):
+    # This energizes the valve until the target pressure is reached.
+    # valve_s can be either a single valve or a list.
 
-    # single valve
+    # if custom_auto is None:
+    #     custom_auto = Controller
+
     if isinstance(valve_s, Valve):
-        print(f"pressurizing {valve_s.name} to"+ str(target))
-        # converts single valve to list with one valve so they are processed the same :o
-        if not custom_auto:
-            custom_auto = valve_s.auto
+        print(f"Pressurizing {valve_s.name} to {target}")
         valve_s = [valve_s]
 
-    # list of valves
     else:
-        print(f"pressurizing these valves to {partial_target}")
+        print("Pressurizing these valves:")
         for v in valve_s:
             print(v.name)
-        # assigns custom_auto to auto from first valve by default
-        if not custom_auto:
-            custom_auto = valve_s[0].auto
 
-    # single pressure channel
-    if isinstance(valve_s, Valve):
-        print(f"reading from one pressure channel, {pressure_s}")
-        # converts single pressure to list with one channel so they are processed the same :ooo
+    if isinstance(pressure_s, str):
+        print(f"Reading from one pressure channel: {pressure_s}")
         pressure_s = [pressure_s]
 
-    # list of pressure channels
     else:
-        print(f"reading from these pressure channels:")
+        print("Reading from these pressure channels:")
         for p in pressure_s:
             print(p)
 
-    partial_target = inc
-    while True:
-        if (abort_function(custom_auto)):
-            print("ABORTING PRESSURIZATION due to customized abort function")
-            return
-        open_all(valve_s)
-        custom_auto.wait_until(
-            lambda anakin_skywalker: anakin_skywalker[pressure] >= partial_target for pressure in pressure_s)
-        close_all(valve_s)
+    partial_target = auto[pressure_s] + inc
+    while partial_target<=target:
+        print(f"Pressurizing to {partial_target}")
+        if isinstance(valve_s, Valve):
+            valve_s.open()
+        else:
+            open_all(auto,valve_s)
+        auto.wait_until(
+            lambda pressure: all(auto[pressure] >= partial_target for pressure in pressure_s),delay
+        )
+        if isinstance(valve_s, Valve):
+            valve_s.close()
+        else:
+            close_all(auto,valve_s)
         time.sleep(delay)
-        if partial_target >= target:
-            print(f"valve(s) have reached {target}")
-            break
         partial_target += inc
+
+    print(f"Valve(s) have reached {target}")
 
 
 def purge(valves: list[Valve], duration: float = 1):
