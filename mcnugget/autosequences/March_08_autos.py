@@ -274,17 +274,6 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
             print("All vents open, closing pre-valves")
             return
 
-        # aborts if the temperature is above the accepted maximum
-        if (press_tank_tc_1 > MAX_PRESS_TANK_TEMP
-            or press_tank_tc_2 > MAX_PRESS_TANK_TEMP
-            or press_tank_tc_3 > MAX_PRESS_TANK_TEMP
-                or press_tank_tc_4 > MAX_PRESS_TANK_TEMP):
-            print(
-                "temperature has exceeded acceptable range - ABORTING and opening all vents")
-            syauto.open_close_many_valves(auto, all_valves, all_vents)
-            print("All vents open, closing pre-valves")
-            return
-
         # aborts if the pressure is below the accepted minimum (-20 below target)
         if (fuel_pt_1_pressure < MIN_FUEL_TANK_PRESSURE
             or fuel_pt_2_pressure < MIN_FUEL_TANK_PRESSURE
@@ -308,16 +297,27 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
                 ox_tank_3_pressure < 15)
 
     def abort_during_press_tank_fill(auto_: Controller):
-        # If any press tank exceeds max pressure, abort
+        # this function returns TRUE if an abort is needed, otherwise returns FALSE
+
+        # If any press tank exceeds max pressure, returns TRUE
         if (auto_[PRESS_TANK_PT_1] > MAX_PRESS_TANK_PRESSURE
             or auto_[PRESS_TANK_PT_3] > MAX_PRESS_TANK_PRESSURE
                 or auto_[PRESS_TANK_PT_3] > MAX_PRESS_TANK_PRESSURE):
-            print("At least one press tank has exceeded maximum pressure, aborting system")
+            print("At least one press tank has exceeded maximum pressure - ABORTING")
             syauto.open_close_many_valves(
                 auto_, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
             return True
-        return False
         
+        # If any press tank temperature is above the accepted maximum, returns TRUE
+        if (auto_[PRESS_TANK_TC_1] > MAX_PRESS_TANK_TEMP
+            or auto_[PRESS_TANK_TC_2] > MAX_PRESS_TANK_TEMP
+            or auto_[PRESS_TANK_TC_3] > MAX_PRESS_TANK_TEMP
+                or auto_[PRESS_TANK_TC_4] > MAX_PRESS_TANK_TEMP):
+            print(
+                "temperature has exceeded acceptable range - ABORTING")
+            syauto.open_close_many_valves(auto, all_valves, all_vents)
+            return True
+
         # # If any press tank drop below min pressure, abort
         # if (press_tank_pt_1 > MIN_PRESS_TANK_PRESSURE
         #     or press_tank_pt_2 > MIN_PRESS_TANK_PRESSURE
@@ -325,6 +325,9 @@ with client.control.acquire(name="shakedown", write=WRITE_TO, read=READ_FROM) as
         #     print("At least one press tank has dropped below minimum pressure, aborting system")
         #     syauto.open_close_many_valves(auto, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill}, all_vents)
         #     return True
+
+        return False
+
 
     def equalize_2k_and_press_tanks(auto_: Controller):
         print(
