@@ -312,7 +312,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         print(
             f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_2} using {air_drive_ISO_1} and {air_drive_ISO_2} in increments of {PRESS_INC_2}")
         syauto.pressurize(auto,[air_drive_ISO_1, air_drive_ISO_2], [
-                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2 - PRESS_TARGET_1, MAX_PRESS_TANK_PRESSURE_2, PRESS_INC_2)
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, MAX_PRESS_TANK_PRESSURE_2, PRESS_INC_2)
         gas_booster_fill.close()
 
         print("Test complete. Safing System")
