@@ -298,7 +298,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         print("PHASE 1: 2K Bottle Equalization")
         print(
             f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_1} using {press_fill} in increments of {PRESS_INC_1} ")
-        syauto.pressurize(auto,press_fill, 
+        syauto.pressurize(auto, press_fill, 
                         [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3],
                         PRESS_TARGET_1, MAX_PRESS_TANK_PRESSURE_1, PRESS_INC_1)
         print("Pressurization phase 1 complete")

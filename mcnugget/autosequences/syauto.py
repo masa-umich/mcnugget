@@ -151,22 +151,22 @@ def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s:
         for p in pressure_s:
             print(p)
 
+    # pressurizes
     partial_target = auto[pressure_s] + inc
-    while partial_target<=target:
+    while partial_target <= target:
         if(auto[pressure_s] > max):
             return
         print(f"Pressurizing to {partial_target}")
-        if isinstance(valve_s, Valve):
-            valve_s.open()
-        else:
-            open_all(auto,valve_s)
+
+        # this opens all valves since a single valve would already be converted to list of size 1
+        open_all(auto,valve_s)
+        
         auto.wait_until(
             lambda pressure: all(auto[pressure] >= partial_target for pressure in pressure_s),delay
         )
-        if isinstance(valve_s, Valve):
-            valve_s.close()
-        else:
-            close_all(auto,valve_s)
+        
+        close_all(auto,valve_s)
+        
         time.sleep(delay)
         partial_target += inc
 
