@@ -21,7 +21,7 @@ client = sy.Synnax(
 #     secure=True
 # )
 
-# change names and numbers to match the actual channels
+
 # valve names to channel names
 v1_in = "gse_doa_1"
 v1_out = "gse_doc_1"
@@ -74,188 +74,53 @@ v24_out = "gse_doc_24"
 # v25_in = "gse_doa_25"
 # v25_out = "gse_doc_25"
 
-# sensor names for PTs
-A1 = "gse_ai_1"
-A2 = "gse_ai_2"
-A3 = "gse_ai_3"
-A4 = "gse_ai_4"
-A5 = "gse_ai_5"
-A6 = "gse_ai_6"
-A7 = "gse_ai_7"
-A8 = "gse_ai_8"
-A9 = "gse_ai_9"
-A10 = "gse_ai_10"
-A11 = "gse_ai_11"
-A12 = "gse_ai_12"
-A13 = "gse_ai_13"
-A14 = "gse_ai_14"
-A15 = "gse_ai_15"
-A16 = "gse_ai_16"
-A17 = "gse_ai_17"
-A18 = "gse_ai_18"
-A19 = "gse_ai_19"
-A20 = "gse_ai_20"
-A21 = "gse_ai_21"
-A22 = "gse_ai_22"
-A23 = "gse_ai_23"
-A24 = "gse_ai_24"
-A25 = "gse_ai_25"
-A26 = "gse_ai_26"
-A27 = "gse_ai_27"
-A28 = "gse_ai_28"
-A29 = "gse_ai_29"
-A30 = "gse_ai_30"
-A31 = "gse_ai_31"
-A32 = "gse_ai_32"
-A33 = "gse_ai_33"
-A34 = "gse_ai_34"
-A35 = "gse_ai_35"
-A36 = "gse_ai_36"
-
-# sensor names for TCs
-TC1 = "gse_tc_1"
-TC2 = "gse_tc_2"
-TC3 = "gse_tc_3"
-TC4 = "gse_tc_4"
-TC5 = "gse_tc_5"
-TC6 = "gse_tc_6"
-TC7 = "gse_tc_7"
-TC8 = "gse_tc_8"
-TC9 = "gse_tc_9"
-TC10 = "gse_tc_10"
-TC11 = "gse_tc_11"
-TC12 = "gse_tc_12"
-TC13 = "gse_tc_13"
-TC14 = "gse_tc_14"
-TC15 = "gse_tc_15"
-TC16 = "gse_tc_16"
-
 # List of channels we're going to read from and write to
-#CHANGE THESE TO LOOPS
 WRITE_TO = []
 READ_FROM = []
 for i in range(1, 25):
     WRITE_TO.append(f"gse_doc_{i}")
     READ_FROM.append(f"gse_doa_{i}")
-for i in range(1, 37):
-    READ_FROM.append(f"gse_ai_{i}")
-for i in range(1, 17):
-    READ_FROM.append(f"gse_tc_{i}")
 
-# Time, pressure, and other parameters to defind during testing
 start = sy.TimeStamp.now()
-TEST_DURATION = 30  # seconds to run the test
-
-MAX_FUEL_TANK_PRESSURE = 700  # psi
-MAX_TRAILER_PRESSURE = 150  # psi
-MAX_PRESS_TANK_PRESSURE_1 = 2000 #psi
-MAX_PRESS_TANK_PRESSURE_2 = 4500  # psi
-MAX_OX_TANK_PRESSURE = 700  # psi
-MAX_PRESS_TANK_TEMP = 140  # celsius
-
-MIN_FUEL_TANK_PRESSURE = 450  # psi
-MIN_TRAILER_PRESSURE = 50  # psi
-MIN_PRESS_TANK_PRESSURE = 3900  # psi
-MIN_OX_TANK_PRESSURE = 450  # psi
-
-# PRESS_INC = 30.0  # psi
-
-PRESS_TARGET_1 = 1800
-PRESS_TARGET_2 = 4000
-
-PRESS_INC_1 = 100
-PRESS_INC_2 = 100
-
-# specifies pressure/temp channels
-FUEL_PT_1_PRESSURE = A3
-FUEL_PT_2_PRESSURE = A4
-FUEL_PT_3_PRESSURE = A35
-TRAILER_PNEUMATICS_PRESSURE = A31
-PRESS_TANK_PT_1 = A22
-PRESS_TANK_PT_2 = A24
-PRESS_TANK_PT_3 = A26
-OX_TANK_1_PRESSURE = A6
-OX_TANK_2_PRESSURE = A7
-OX_TANK_3_PRESSURE = A8
-PRESS_TANK_TC_1 = TC8
-PRESS_TANK_TC_2 = TC9
-PRESS_TANK_TC_3 = TC10
-PRESS_TANK_TC_4 = TC11
 
 print("starting autosequence")
 with client.control.acquire(name="someone tell me what to call this", write=WRITE_TO, read=READ_FROM) as auto:
-    # valves for fuel system
-    # fuel vent is normally open
-    fuel_vent = syauto.Valve(auto=auto, cmd=v15_out,
-                             ack=v15_in, normally_open=True)
+
+    ### THIS SECTION DECLARES THE VALVES WHICH WILL BE USED
+    #TODO: confirm that the specified channels are correct before running this autosequence
+
+    # prevalves
     fuel_prevalve = syauto.Valve(
         auto=auto, cmd=v22_out, ack=v22_in, normally_open=False)
-    fuel_mpv = syauto.Valve(auto=auto, cmd=v3_out,
-                            ack=v3_in, normally_open=False)
-
-    # valves for purge system
-    fuel_feedline_purge = syauto.Valve(
-        auto=auto, cmd=v4_out, ack=v7_in, normally_open=False)
-    ox_fill_purge = syauto.Valve(
-        auto=auto, cmd=v5_out, ack=v11_in, normally_open=False)
-    fuel_pre_press = syauto.Valve(
-        auto=auto, cmd=v6_out, ack=v9_in, normally_open=False)
-    ox_pre_press = syauto.Valve(
-        auto=auto, cmd=v7_out, ack=v10_in, normally_open=False)
-    ox_feedline_purge = syauto.Valve(
-        auto=auto, cmd=v8_out, ack=v8_in, normally_open=False)
-
-    # pneumatics valves
-    engine_pneumatics_iso = syauto.Valve(
-        auto=auto, cmd=v12_out, ack=v12_in, normally_open=False)
-    # engine pneumatics vent is normally closed
-    engine_pneumatics_vent = syauto.Valve(
-        auto=auto, cmd=v13_out, ack=v13_in, normally_open=False)
-
-    # press system valves
-    air_drive_ISO_1 = syauto.Valve(
-        auto=auto, cmd=v3_out, ack=v3_in, normally_open=False)
-    air_drive_ISO_2 = syauto.Valve(
-        auto=auto, cmd=v4_out, ack=v4_in, normally_open=False)
-    gas_booster_fill = syauto.Valve(
-        auto=auto, cmd=v20_out, ack=v20_in, normally_open=False)
-    press_fill = syauto.Valve(auto=auto, cmd=v23_out,
-                              ack=v23_in, normally_open=False)
-    # press vent is normally open
-    press_vent = syauto.Valve(auto=auto, cmd=v18_out,
-                              ack=v18_in, normally_open=True)
+    ox_pre_valve = syauto.Valve(auto=auto, cmd=v21_out,
+                                ack=v21_in, normally_open=False)
+    
+    # ISO valves
     fuel_press_ISO = syauto.Valve(
         auto=auto, cmd=v2_out, ack=v2_in,  normally_open=False)
     ox_press_ISO = syauto.Valve(auto=auto, cmd=v1_out,
                             ack=v1_in, normally_open=False)
 
-    # ox press system valves
-    # ox low vent is normally open
+    # vents
+    fuel_vent = syauto.Valve(auto=auto, cmd=v15_out,
+                             ack=v15_in, normally_open=True)
+    press_vent = syauto.Valve(auto=auto, cmd=v18_out,
+                              ack=v18_in, normally_open=True)
     ox_low_flow_vent = syauto.Valve(
         auto=auto, cmd=v16_out, ack=v16_in, normally_open=True)
-    ox_fill_valve = syauto.Valve(
-        auto=auto, cmd=v19_out, ack=v19_in, normally_open=False)
-    # ox high flow vent is normally open
-    ox_high_flow_vent = syauto.Valve(
-        auto=auto, cmd=v17_out, ack=v17_in, normally_open=False)
-    ox_mpv = syauto.Valve(auto=auto, cmd=v22_out,
-                          ack=v22_in, normally_open=False)
-    ox_pre_valve = syauto.Valve(auto=auto, cmd=v21_out,
-                                ack=v21_in, normally_open=False)
-
-    pre_valves = [fuel_prevalve, ox_pre_valve]
-    press_valves = [fuel_press_ISO, ox_press_ISO, air_drive_ISO_1,
-                    air_drive_ISO_2, engine_pneumatics_iso]
-
-    all_vents = [fuel_vent, engine_pneumatics_vent,
-                 press_vent, ox_low_flow_vent]
-
-    all_valves = [fuel_prevalve, fuel_feedline_purge, ox_fill_purge, fuel_pre_press,
-                  ox_pre_press, ox_feedline_purge, engine_pneumatics_iso,
-                  air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, fuel_press_ISO,
-                  ox_press_ISO, ox_fill_valve]
     
 
+    ###     THIS SECTION RUNS THE AUTOSEQUENCE AS FOLLOWS
+    ###         - opens prevalves
+    ###         - wait for DELAY_1 seconds
+    ###         - opens reg valves
+    ###         - wait for DELAY_2 seconds
+    ###         - closes reg valves
+    ###         - wait for DELAY_1 seconds
+    ###         - closes prevalves and opens vents
+
+
+    # TODO: confirm that these match the desired test specs
     DELAY_1 = 0.5
     DELAY_2 = 25
 
@@ -282,7 +147,7 @@ with client.control.acquire(name="someone tell me what to call this", write=WRIT
     
     print("closing prevalves and opening vents")
     syauto.open_close_many_valves(auto=auto, 
-                                  valves_to_open=[fuel_vent, ox_low_flow_vent, press_vent], 
+                                  valves_to_open=[fuel_vent, press_vent, ox_low_flow_vent], 
                                   valves_to_close=[fuel_prevalve, ox_pre_valve])
 
     input("autosequence complete - press any key to finish")
