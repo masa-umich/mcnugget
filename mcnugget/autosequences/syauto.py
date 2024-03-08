@@ -105,15 +105,28 @@ def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves
 
 
 def close_all(auto: Controller, valves: list[Valve]):
-    auto.set({valve.cmd_chan: valve.normally_open for valve in valves})
+    commands = {}
+    # Open valves to open
+    for valve in valves:
+        if valve.normally_open:
+            commands[valve.cmd_chan] = 0
+        else:
+            commands[valve.cmd_chan] = 1
+    auto.set(commands)
 
 
 def open_all(auto: Controller, valves: list[Valve]):
-    auto.set({valve.cmd_chan: not valve.normally_open for valve in valves})
+    commands = {}
+    for valve in valves:
+        if valve.normally_open:
+            commands[valve.cmd_chan] = 1
+        else:
+            commands[valve.cmd_chan] = 0
 
+    auto.set(commands)
 
 def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
-               target: float, inc: float, delay: float = 1):
+               target: float, max: float, inc: float, delay: float = 1):
     # This energizes the valve until the target pressure is reached.
     # valve_s can be either a single valve or a list.
 
@@ -140,6 +153,8 @@ def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s:
 
     partial_target = auto[pressure_s] + inc
     while partial_target<=target:
+        if(auto[pressure_s] > max):
+            return
         print(f"Pressurizing to {partial_target}")
         if isinstance(valve_s, Valve):
             valve_s.open()

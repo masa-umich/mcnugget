@@ -148,7 +148,8 @@ TEST_DURATION = 30  # seconds to run the test
 
 MAX_FUEL_TANK_PRESSURE = 700  # psi
 MAX_TRAILER_PRESSURE = 150  # psi
-MAX_PRESS_TANK_PRESSURE = 4500  # psi
+MAX_PRESS_TANK_PRESSURE_1 = 2000 #psi
+MAX_PRESS_TANK_PRESSURE_2 = 4500  # psi
 MAX_OX_TANK_PRESSURE = 700  # psi
 MAX_PRESS_TANK_TEMP = 140  # celsius
 
@@ -300,7 +301,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_1} using {press_fill} in increments of {PRESS_INC_1} ")
         syauto.pressurize(auto,press_fill, 
                         [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3],
-                        PRESS_TARGET_1, PRESS_INC_1)
+                        PRESS_TARGET_1, MAX_PRESS_TANK_PRESSURE_1, PRESS_INC_1)
         
         input("Press any key to continue")
 
@@ -309,11 +310,11 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         print(
             f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_2} using {air_drive_ISO_1} and {air_drive_ISO_2} in increments of {PRESS_INC_2}")
         syauto.pressurize(auto,[air_drive_ISO_1, air_drive_ISO_2], [
-                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, PRESS_INC_2)
+                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2 - PRESS_TARGET_1, MAX_PRESS_TANK_PRESSURE_2, PRESS_INC_2)
         gas_booster_fill.close()
 
         print("Test complete. Safing System")
-        syauto.open_close_many_valves(auto, all_vents, pre_valves+press_valves)
+        syauto.open_close_many_valves(auto, all_vents, all_valves)
         print("Valves closed and vents open")
 
         rng = client.ranges.create(
