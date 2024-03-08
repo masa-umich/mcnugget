@@ -84,9 +84,9 @@ for i in range(1, 25):
 start = sy.TimeStamp.now()
 
 print("starting autosequence")
-with client.control.acquire(name="someone tell me what to call this", write=WRITE_TO, read=READ_FROM) as auto:
+with client.control.acquire(name="open prevalves and regs", write=WRITE_TO, read=READ_FROM) as auto:
 
-    ### THIS SECTION DECLARES THE VALVES WHICH WILL BE USED
+    ###     THIS SECTION DECLARES THE VALVES WHICH WILL BE USED     ###
     #TODO: confirm that the specified channels are correct before running this autosequence
 
     # prevalves
@@ -110,7 +110,7 @@ with client.control.acquire(name="someone tell me what to call this", write=WRIT
         auto=auto, cmd=v16_out, ack=v16_in, normally_open=True)
     
 
-    ###     THIS SECTION RUNS THE AUTOSEQUENCE AS FOLLOWS
+    ###     THIS SECTION RUNS THE AUTOSEQUENCE AS FOLLOWS       ###
     ###         - opens prevalves
     ###         - wait for DELAY_1 seconds
     ###         - opens reg valves
