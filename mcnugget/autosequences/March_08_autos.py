@@ -262,9 +262,9 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         press_tank_2_press = auto_[PRESS_TANK_PT_2]
         press_tank_3_press = auto_[PRESS_TANK_PT_3]
         # If any press tank exceeds max pressure, returns TRUE
-        if (press_tank_1_press> MAX_PRESS_TANK_PRESSURE
-            or press_tank_2_press > MAX_PRESS_TANK_PRESSURE
-            or press_tank_3_press > MAX_PRESS_TANK_PRESSURE):
+        if (press_tank_1_press> MAX_PRESS_TANK_PRESSURE_2
+            or press_tank_2_press > MAX_PRESS_TANK_PRESSURE_2
+            or press_tank_3_press > MAX_PRESS_TANK_PRESSURE_2):
             print("At least one press tank has exceeded maximum pressure - ABORTING")
             syauto.close_all(auto_, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill})
             print("Abort complete: air drive isos, gas booster, and press fill closed")
@@ -291,9 +291,8 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         """
 
         # starting opening all valves and closing all vents
-        print("Starting Shakedown Test. Setting initial system state.")
-        syauto.open_close_many_valves(
-            auto, pre_valves + press_valves, all_vents)
+        print("Starting Press Fill Autosequence. Setting initial system state.")
+        syauto.close_all(auto, all_valves+all_vents)
         time.sleep(1)
 
         print("PHASE 1: 2K Bottle Equalization")
@@ -302,7 +301,8 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         syauto.pressurize(auto,press_fill, 
                         [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3],
                         PRESS_TARGET_1, MAX_PRESS_TANK_PRESSURE_1, PRESS_INC_1)
-        
+        print("Pressurization phase 1 complete")
+        press_fill.close()
         input("Press any key to continue")
 
         print("PHASE 2: Pressurization with Gas Booster")
@@ -326,6 +326,6 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         # Handle Ctrl+C interruption
         if str(e) == "Interrupted by user.":
             print("Test interrupted. Safeing System")
-            syauto.open_close_many_valves(auto, all_valves, all_vents)
+            syauto.open_close_many_valves(auto, all_vents, all_valves)
 
     time.sleep(60)

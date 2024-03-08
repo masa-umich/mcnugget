@@ -266,7 +266,7 @@ with client.new_streamer(command_channels) as streamer:
 
                 if ox_press_open and not ox_low_vent_open:
                     # print("ox_press_open")
-                    print(ox_low_vent_open)
+                    #print(ox_low_vent_open)
                     ox_tank_delta = 0
 
                 if fuel_press_iso_open and not fuel_vent_open:
