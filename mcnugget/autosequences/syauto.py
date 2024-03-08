@@ -125,7 +125,7 @@ def open_all(auto: Controller, valves: list[Valve]):
 
     auto.set(commands)
 
-def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
+def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
                target: float, max: float, inc: float, delay: float = 1):
     # This energizes the valve until the target pressure is reached.
     # valve_s can be either a single valve or a list.
@@ -152,20 +152,20 @@ def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s:
             print(p)
 
     # pressurizes
-    partial_target = auto[pressure_s] + inc
+    partial_target = auto_[pressure_s] + inc
     while partial_target <= target:
-        if(auto[pressure_s] > max):
+        if(auto_[pressure_s] > max):
             return
         print(f"Pressurizing to {partial_target}")
 
         # this opens all valves since a single valve would already be converted to list of size 1
-        open_all(auto,valve_s)
+        open_all(auto_,valve_s)
         
-        auto.wait_until(
-            lambda pressure: all(auto[pressure] >= partial_target for pressure in pressure_s),delay
+        auto_.wait_until(
+            lambda pressure: all(auto_[pressure] >= partial_target for pressure in pressure_s),delay
         )
         
-        close_all(auto,valve_s)
+        close_all(auto_,valve_s)
         
         time.sleep(delay)
         partial_target += inc
