@@ -3,11 +3,8 @@ import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 
-<<<<<<< HEAD:mcnugget/autosequences/march_08_auto_2.py
 # this connects to the synnax server for simulations
-=======
-# this connects to the synnax server
->>>>>>> dbb4a0dd798da66dbb782b5bc236da2a03be0a4b:mcnugget/autosequences/prevalve_reg_fire.py
+# this connects to the synnax simulation server
 client = sy.Synnax(
     host="localhost",
     port=9090,
@@ -88,12 +85,8 @@ for i in range(1, 25):
 start = sy.TimeStamp.now()
 
 print("starting autosequence")
-<<<<<<< HEAD:mcnugget/autosequences/march_08_auto_2.py
 with client.control.acquire(name="Press sequence",
                              write=WRITE_TO, read=READ_FROM, write_authorities=250 ) as auto:
-=======
-with client.control.acquire(name="open prevalves and regs", write=WRITE_TO, read=READ_FROM) as auto:
->>>>>>> dbb4a0dd798da66dbb782b5bc236da2a03be0a4b:mcnugget/autosequences/prevalve_reg_fire.py
 
     ###     THIS SECTION DECLARES THE VALVES WHICH WILL BE USED     ###
     #TODO: confirm that the specified channels are correct before running this autosequence
