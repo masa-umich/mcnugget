@@ -1,7 +1,83 @@
+"""
+
+### OVERVIEW ###
+
+This autosequence pressurizes the PRESS_TANKS using regular 2K and Gooster
+
+1. Set Starting State
+    - Energize all normally_open
+    - De-energize all normally_closed
+
+2. 2k Bottle Equalization
+    - Open and close press_fill to raise psi in increments
+    - Stop when 2K bottle and Press Tanks are within 10 psi of each other
+    - Leave press_fill open
+    - WAIT for confirmation
+
+3. Pressurization with Gas Booster
+    - Open gooster_fill
+    - Open and close air_drive_iso_1 and air_drive_iso_2 to raise psi in increments
+    - Stop when Press Tanks reach TARGET_1 psi
+    - Close air_drive_iso_1 and air_drive_iso_2
+    - Close gooster_fill
+    - Close press_fill
+    - WAIT for confirmation
+
+---
+### IMPORTANT INFO ###
+
+When measuring PRESS_TANKS, we measure from 3 PTs and 4 TCs.
+
+The overall pressure of the PRESS_TANKS is considered to be equal to the median of the 3 readings
+
+Any of these conditions will trigger an abort
+    - 2/3 PTs reading an invalid value (below -100 or above MAWP)
+    - 3/4 TCs reading an invalid temperature (above 140)
+
+auto.wait_until(lambda function) is a function which returns when the defined lambda returns TRUE
+
+We will use the runsafe_press_tank_fill(TARGET) function as our lambda, which will check
+    - whether 2/3 PTs read invalid pressures (> MAX_PRESSURE, < -100) -> ABORT
+    - whether 3/4 TCs read invalid temperatures (> MAX_TEMPERATURE) -> ABORT
+    - whether the median PT is above the target temperature -> RETURN
+
+This will allow us to safely pressurize in increments. The custom pressurize function will also
+    require a manual confirm if any of the TCs read a temperature above 120 farenheight.
+
+---
+### VALVES LIST ###
+
+For this test, the only valves we will need to control are:
+
+    ---VALVES---
+    Press Fill Valve
+    Air Drive ISO 1
+    Air Drive ISO 2
+    Gas Booster Fill
+
+    ---VENTS---
+    Press Vent
+
+    ---PT CHANNELS---
+    Press Tank PT 1
+    Press Tank PT 2
+    Press Tank PT 3
+
+    ---TC CHANNELS---
+    Press Tank TC 1
+    Press Tank TC 2
+    Press Tank TC 3
+    Press Tank TC 4
+
+As such, all other valves/vents have been left out! Channel names are left in case they change the day of.
+
+"""
+
 import time
 import synnax as sy
 from synnax.control.controller import Controller
 import syauto
+import statistics
 
 # this connects to the synnax server
 # client = sy.Synnax(
@@ -128,7 +204,7 @@ TC13 = "gse_ai_77"
 TC14 = "gse_ai_78"
 
 # List of channels we're going to read from and write to
-#CHANGE THESE TO LOOPS
+# CHANGE THESE TO LOOPS
 WRITE_TO = []
 READ_FROM = []
 for i in range(1, 25):
@@ -139,185 +215,240 @@ for i in range(1, 37):
 for i in range(1, 17):
     READ_FROM.append(f"gse_tc_{i}")
 
-# Time, pressure, and other parameters to defind during testing
 start = sy.TimeStamp.now()
-TEST_DURATION = 30  # seconds to run the test
 
-MAX_FUEL_TANK_PRESSURE = 700  # psi
-MAX_TRAILER_PRESSURE = 150  # psi
-MAX_PRESS_TANK_PRESSURE_1 = 2000 #psi
-MAX_PRESS_TANK_PRESSURE_2 = 4500  # psi
-MAX_OX_TANK_PRESSURE = 700  # psi
+
+# TODO:
+# PLEASE UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST
+
+MAX_PRESS_TANK_PRESSURE = 4500  # psi
 MAX_PRESS_TANK_TEMP = 140  # celsius
+ALMOST_MAX_PRESS_TANK_TEMP = 120  # celsius
 
-MIN_FUEL_TANK_PRESSURE = 450  # psi
-MIN_TRAILER_PRESSURE = 50  # psi
-MIN_PRESS_TANK_PRESSURE = 3900  # psi
-MIN_OX_TANK_PRESSURE = 450  # psi
+PRESS_TARGET = 4000  # psi
+PRESS_INC = 5  # psi
+PRESS_DELAY = 3  # seconds
 
-# PRESS_INC = 30.0  # psi
-
-PRESS_TARGET_1 = 1800
-PRESS_TARGET_2 = 4000
-
-PRESS_INC_1 = 100
-PRESS_INC_2 = 100
-
-# specifies pressure/temp channels
-FUEL_PT_1_PRESSURE = A3
-FUEL_PT_2_PRESSURE = A4
-FUEL_PT_3_PRESSURE = A35
-TRAILER_PNEUMATICS_PRESSURE = A31
 PRESS_TANK_PT_1 = A22
 PRESS_TANK_PT_2 = A24
 PRESS_TANK_PT_3 = A26
-OX_TANK_1_PRESSURE = A6
-OX_TANK_2_PRESSURE = A7
-OX_TANK_3_PRESSURE = A8
+
 PRESS_TANK_TC_1 = TC8
 PRESS_TANK_TC_2 = TC9
 PRESS_TANK_TC_3 = TC10
 PRESS_TANK_TC_4 = TC11
 
+PRESS_TANK_SUPPLY = A23
+
+# this variable defines how many samples should be averaged for PT or TC data
+RUNNING_MEDIAN_SIZE = 100  # samples - at 200Hz this means every 1/2 second
+
+# TODO: if you edit the list below, also edit the 
+    # `runsafe_press_tank_fill()` function to correctly read in sensor data!
+PTs_and_TCs = [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3, 
+                 PRESS_TANK_TC_1, PRESS_TANK_TC_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]
+
+###     DEFINES ARRAYS FOR MEDIAN PROCESSING ON ANALOG DATA SENSORS     ###
+median_arrs = {}
+for PT_or_TC in PTs_and_TCs:
+    median_arrs[PT_or_TC] = []
+
 print("Starting autosequence")
 with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM) as auto:
 
-    # valves for fuel system
-    # fuel vent is normally open
-    fuel_vent = syauto.Valve(auto=auto, cmd=v15_out,
-                             ack=v15_in, normally_open=True)
-    fuel_prevalve = syauto.Valve(
-        auto=auto, cmd=v22_out, ack=v22_in, normally_open=False)
-    # fuel_mpv = syauto.Valve(auto=auto, cmd=v3_out,
-    #                         ack=v3_in, normally_open=False)
+    ###     DECLARES THE VALVES WHICH WILL BE USED     ###
 
-    # valves for purge system
-    fuel_feedline_purge = syauto.Valve(
-        auto=auto, cmd=v4_out, ack=v7_in, normally_open=False)
-    ox_fill_purge = syauto.Valve(
-        auto=auto, cmd=v5_out, ack=v11_in, normally_open=False)
-    fuel_pre_press = syauto.Valve(
-        auto=auto, cmd=v6_out, ack=v9_in, normally_open=False)
-    ox_pre_press = syauto.Valve(
-        auto=auto, cmd=v7_out, ack=v10_in, normally_open=False)
-    ox_feedline_purge = syauto.Valve(
-        auto=auto, cmd=v8_out, ack=v8_in, normally_open=False)
-
-    # pneumatics valves
-    engine_pneumatics_iso = syauto.Valve(
-        auto=auto, cmd=v12_out, ack=v12_in, normally_open=False)
-    # engine pneumatics vent is normally closed
-    engine_pneumatics_vent = syauto.Valve(
-        auto=auto, cmd=v13_out, ack=v13_in, normally_open=False)
-
-    # press system valves
     air_drive_ISO_1 = syauto.Valve(
         auto=auto, cmd=v3_out, ack=v3_in, normally_open=False)
     air_drive_ISO_2 = syauto.Valve(
         auto=auto, cmd=v4_out, ack=v4_in, normally_open=False)
     gas_booster_fill = syauto.Valve(
         auto=auto, cmd=v20_out, ack=v20_in, normally_open=False)
+    
     press_fill = syauto.Valve(auto=auto, cmd=v23_out,
                               ack=v23_in, normally_open=False)
     # press vent is normally open
     press_vent = syauto.Valve(auto=auto, cmd=v18_out,
                               ack=v18_in, normally_open=True)
-    fuel_press_ISO = syauto.Valve(
-        auto=auto, cmd=v2_out, ack=v2_in,  normally_open=False)
-    ox_press = syauto.Valve(auto=auto, cmd=v1_out,
-                            ack=v1_in, normally_open=False)
 
-    # ox press system valves
-    # ox low vent is normally open
-    ox_low_vent = syauto.Valve(
-        auto=auto, cmd=v16_out, ack=v16_in, normally_open=True)
-    ox_fill_valve = syauto.Valve(
-        auto=auto, cmd=v19_out, ack=v19_in, normally_open=False)
-    # ox high flow vent is normally open
-    ox_high_flow_vent = syauto.Valve(
-        auto=auto, cmd=v17_out, ack=v17_in, normally_open=False)
-    # ox_MPV = syauto.Valve(auto=auto, cmd=v22_out,
-    #                       ack=v22_in, normally_open=False)
-    ox_pre_valve = syauto.Valve(auto=auto, cmd=v21_out,
-                                ack=v21_in, normally_open=False)
+    all_vents = [press_vent]
+    all_valves = [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill]
 
-    pre_valves = [fuel_prevalve, ox_pre_valve]
-    press_valves = [fuel_press_ISO, ox_press, air_drive_ISO_1,
-                    air_drive_ISO_2, engine_pneumatics_iso]
+    ###     DEFINES FUNCTIONS USED IN AUTOSEQUENCE         ###
 
-    all_vents = [fuel_vent, engine_pneumatics_vent,
-                 press_vent, ox_low_vent]
+    def compute_medians(channels: list[str]):
+        # this function takes in a list of channel names and returns a list
+            # where each channel name is replaced by its reading, averaged over RUNNING_MEDIAN_SIZE readings
+        output = []
+        for channel in channels:
+            median_arrs[channel].append(auto[channel])
+            if len(median_arrs[channel]) > RUNNING_MEDIAN_SIZE:
+                median_arrs[channel].pop(0)
+            output.append(statistics.median(median_arrs[channel]))
+        return output
 
-    all_valves = [fuel_prevalve, fuel_feedline_purge, ox_fill_purge, fuel_pre_press,
-                  ox_pre_press, ox_feedline_purge, engine_pneumatics_iso,
-                  air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, fuel_press_ISO,
-                  ox_press, ox_fill_valve]
+    def runsafe_press_tank_fill(partial_target: float):
+        # this function returns True if
+            # the partial_target has been reached
+            # an ABORT was triggered
+        # if an ABORT was triggered, it also closes ALL_VALVES and ALL_VENTS
 
-    #Returns TRUE if an abort is needed, otherwise returns FALSE
-    def abort_during_press_tank_fill(auto_: Controller):
-        press_tank_1_press = auto_[PRESS_TANK_PT_1]
-        press_tank_2_press = auto_[PRESS_TANK_PT_2]
-        press_tank_3_press = auto_[PRESS_TANK_PT_3]
-        # If any press tank exceeds max pressure, returns TRUE
-        if (press_tank_1_press> MAX_PRESS_TANK_PRESSURE_2
-            or press_tank_2_press > MAX_PRESS_TANK_PRESSURE_2
-            or press_tank_3_press > MAX_PRESS_TANK_PRESSURE_2):
-            print("At least one press tank has exceeded maximum pressure - ABORTING")
-            syauto.close_all(auto_, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill})
-            print("Abort complete: air drive isos, gas booster, and press fill closed")
-            return True
+        # this computes PT and TC values with a running average, see compute_medians
+        readings = compute_medians(PTs_and_TCs)
+
+        # aliases each reading to a meaningful value
+        # READINGS aka PTs_and_TCs must be in the same order or this will be incorrect!
+        [pt1, pt2, pt3, tc1, tc2, tc3, tc4] = readings
+
+        pts_below_min = 0
+        pts_above_max = 0
+        for pt in [pt1, pt2, pt3]:
+            if pt < -100:
+                pts_below_min += 1
+            if pt > MAX_PRESS_TANK_PRESSURE:
+                pts_above_max += 1
+
+        tcs_above_max = 0
+        for tc in [tc1, tc2, tc3, tc4]:
+            if tc > MAX_PRESS_TANK_TEMP:
+                tcs_above_max += 1
+
+        if pts_above_max >= 2:
+            print("ABORTING due to 2+ PTs EXCEEDING MAX_PRESS_TANK_PRESSURE")
+            syauto.close_all(auto=auto, valves=(all_valves + all_vents))
+            input("Press any key to continue pressurizing, or ctrl-c to execute abort sequence")
+
+        if pts_below_min >= 2:
+            print("ABORTING due to 2+ PTs BELOW -100 psi")
+            syauto.close_all(auto=auto, valves=(all_valves + all_vents))
+            input("Press any key to continue pressurizing, or ctrl-c to execute abort sequence")
         
-        # If any press tank temperature is above the accepted maximum, returns TRUE
-        if (auto_[PRESS_TANK_TC_1] > MAX_PRESS_TANK_TEMP
-            or auto_[PRESS_TANK_TC_2] > MAX_PRESS_TANK_TEMP
-            or auto_[PRESS_TANK_TC_3] > MAX_PRESS_TANK_TEMP
-                or auto_[PRESS_TANK_TC_4] > MAX_PRESS_TANK_TEMP):
-            print("temperature has exceeded acceptable range - ABORTING")
-            syauto.close_all(auto_, {air_drive_ISO_1, air_drive_ISO_2, press_fill, gas_booster_fill})
-            print("Abort complete: air drive isos, gas booster, and press fill closed")
+        if tcs_above_max >= 3:
+            print("ABORTING due to 3+ TCs EXCEEDING MAX_PRESS_TANK_TEMP")
+            syauto.close_all(auto=auto, valves=(all_valves + all_vents))
+            input("Press any key to continue pressurizing, or ctrl-c to execute abort sequence")
+
+        if statistics.median([pt1, pt2, pt3]) >= partial_target:
+            print(f"press tanks have reached {partial_target}")
             return True
 
-        return False
 
+    def press_phase_1():
+        # this function uses the runsafe_press_tank_fill() function to equalize pressure between 2K supply and press tanks
+        # it returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
+        partial_target = 0
+        while True:
+            press_supply = compute_medians([PRESS_TANK_SUPPLY])
+            partial_target += PRESS_INC
+
+            # this is the only way for the function to return 
+            # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
+            if abs(partial_target - press_supply) < 10:
+                print("PRESS_TANKS pressure is sufficiently close to 2K supply")
+                print("Leaving press_fill open")
+                press_fill.open()
+                return
+            
+
+            # this triggers a manual confirm if median TC is above ALMOST_MAX_PRESS_TANK_TEMP 
+                # without changing the running median for TCs
+            try:
+                tc_readings = []
+                for tc in [PRESS_TANK_TC_1, PRESS_TANK_PT_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]:
+                        tc_readings.append(statistics.median(median_arrs[tc]))
+                        tc_readings.append(0)
+                median_tc = statistics.median(tc_readings)
+
+                if median_tc > ALMOST_MAX_PRESS_TANK_TEMP:
+                    input(f"Press Tank median temperature is above {ALMOST_MAX_PRESS_TANK_TEMP}, press any key to confirm press")
+
+            except statistics.StatisticsError as e:
+                print("no data for TC checks; skipping this iteration")
+
+
+            # opens press_fill until partial_target is reached or abort occurs
+            press_fill.open()
+            auto.wait_until(lambda c: runsafe_press_tank_fill(partial_target=partial_target))
+            press_fill.close()
+
+            time.sleep(PRESS_DELAY)
+
+    def press_phase_2():
+        # this function completes steps 2-4 see section 3 of overview
+        # starts at partial_target = current pressure + increment
+        partial_target = statistics.median(compute_medians([PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3]))
+        partial_target += PRESS_INC
+        while True:
+            partial_target += PRESS_INC
+
+            # this is the only way for the function to return 
+            # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
+            if partial_target >= PRESS_TARGET:
+                print(f"PRESS_TANKS pressure has reached {PRESS_TARGET}")
+                syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
+                print("Both air_drive_iso valves are closed")
+                return
+            
+
+            # this triggers a manual confirm if median TC is above ALMOST_MAX_PRESS_TANK_TEMP 
+                # without changing the running median for TCs
+            try:
+                tc_readings = []
+                for tc in [PRESS_TANK_TC_1, PRESS_TANK_PT_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]:
+                        tc_readings.append(statistics.median(median_arrs[tc]))
+                        tc_readings.append(0)
+                median_tc = statistics.median(tc_readings)
+
+                if median_tc > ALMOST_MAX_PRESS_TANK_TEMP:
+                    input(f"Press Tank median temperature is above {ALMOST_MAX_PRESS_TANK_TEMP}, press any key to confirm press")
+
+            except statistics.StatisticsError as e:
+                print("no data for TC checks; skipping this iteration")
+
+
+            # opens air_drive_iso valves until partial_target is reached or abort occurs
+            syauto.open_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
+            auto.wait_until(lambda c: runsafe_press_tank_fill(partial_target=partial_target))
+            syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
+
+            time.sleep(PRESS_DELAY)
+
+
+    ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
-        """
-        this code does the following:
-            - sets an initial state with VALVES and VENTS both closed
-            - equalizes pressure between 2K bottles and PRESS_TANKS     {PRESS_TARGET_1}
-            - uses gas booster to pressurize PRESS_TANKS                {PRESS_TARGET_2}
-        """
-
-        # starting opening all valves and closing all vents
+        # starts by closing all valves and closing all vents
         print("Starting Press Fill Autosequence. Setting initial system state.")
-        syauto.close_all(auto, all_valves+all_vents)
+        syauto.close_all(auto, all_valves + all_vents)
         time.sleep(1)
 
         print("PHASE 1: 2K Bottle Equalization")
         print(
-            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_1} using {press_fill} in increments of {PRESS_INC_1} ")
-        # syauto.pressurize(auto, press_fill, 
-        #                 [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3],
-        #                 PRESS_TARGET_1, MAX_PRESS_TANK_PRESSURE_1, PRESS_INC_1)
-        syauto.pressurize(auto_=auto, valve_s=press_fill, pressure_s=[PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], 
-                          target=PRESS_TARGET_1, max=MAX_PRESS_TANK_PRESSURE_1, inc=PRESS_INC_1)
+            f"pressurizing PRESS_TANKS using {press_fill} until approximately equal with 2K supply")
+        press_phase_1()
+
         print("Pressurization phase 1 complete")
         press_fill.close()
         input("Press any key to continue")
 
         print("PHASE 2: Pressurization with Gas Booster")
+
+        print("opening gas_booster_fill")
         gas_booster_fill.open()
-        print(
-            f"pressurizing PRESS_TANKS 1-3 to {PRESS_TARGET_2} using {air_drive_ISO_1} and {air_drive_ISO_2} in increments of {PRESS_INC_2}")
-        syauto.pressurize(auto,[air_drive_ISO_1, air_drive_ISO_2], [
-                          PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3], PRESS_TARGET_2, MAX_PRESS_TANK_PRESSURE_2, PRESS_INC_2)
+
+        press_phase_2()
+
+        print("closing gas_booster_fill")
         gas_booster_fill.close()
 
+        print("Pressurization phase 2 complete")
+        input("Press any key to continue")
+
         print("Test complete. Safing System")
-        syauto.open_close_many_valves(auto, all_vents, all_valves)
+        syauto.close_all(auto=auto, valves=(all_vents + all_valves))
         print("Valves closed and vents open")
 
         rng = client.ranges.create(
-            name=f"{start.__str__()[11:16]} shakedown Sim",
+            name=f"{start.__str__()[11:16]} Press Fill",
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
 
@@ -325,6 +456,6 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         # Handle Ctrl+C interruption
         if str(e) == "Interrupted by user.":
             print("Test interrupted. Safeing System")
-            syauto.open_close_many_valves(auto, all_vents, all_valves)
+            syauto.close_all(auto=auto, valves=(all_vents + all_valves))
 
     time.sleep(60)
