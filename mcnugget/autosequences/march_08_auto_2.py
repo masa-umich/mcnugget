@@ -4,22 +4,22 @@ from synnax.control.controller import Controller
 import syauto
 
 # this connects to the synnax server for simulations
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# Connects to masa cluster
 client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
+    host="localhost",
+    port=9090,
     username="synnax",
     password="seldon",
-    secure=True
+    secure=False
 )
+
+# Connects to masa cluster
+# client = sy.Synnax(
+#     host="synnax.masa.engin.umich.edu",
+#     port=80,
+#     username="synnax",
+#     password="seldon",
+#     secure=True
+# )
 
 
 # valve names to channel names
@@ -84,7 +84,8 @@ for i in range(1, 25):
 start = sy.TimeStamp.now()
 
 print("starting autosequence")
-with client.control.acquire(name="someone tell me what to call this", write=WRITE_TO, read=READ_FROM) as auto:
+with client.control.acquire(name="Press sequence",
+                             write=WRITE_TO, read=READ_FROM, write_authorities=250 ) as auto:
 
     ###     THIS SECTION DECLARES THE VALVES WHICH WILL BE USED     ###
     #TODO: confirm that the specified channels are correct before running this autosequence

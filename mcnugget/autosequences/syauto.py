@@ -119,7 +119,7 @@ def open_all(auto: Controller, valves: list[Valve]):
     commands = {}
     for valve in valves:
         if valve.normally_open:
-            commands[valve.cmd_chan] = 1
+            commands[valve.cmd_chan] = 0
         else:
             commands[valve.cmd_chan] = 0
 
