@@ -29,16 +29,16 @@ pytest = "^7.4.3"
 mcnugget = "mcnugget.cli.cli:mcnugget"
 
 [tool.synnax]
-host = "synnax.masa.engin.umich.edu"
-port = 80
-username = "synnax"
-password = "seldon"
-secure = false
 #host = "localhost"
 #port = 9090
 #username = "synnax"
 #password = "seldon"
 #secure = false
+host = "synnax.masa.engin.umich.edu"
+port = 80
+username = "synnax"
+password = "seldon"
+secure = true
 
 [build-system]
 requires = ["poetry-core"]

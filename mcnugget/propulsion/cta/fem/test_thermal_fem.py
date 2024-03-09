@@ -31,6 +31,13 @@ print('areas:\n',model.bodies['rev0'].areas)
 
 plt.close('all')
 model.plot_mesh()
+model.make_convection('rev0','r-',h=lambda x: 100,T=lambda x: 400)
+model.make_convection('rev0','r+',h=lambda x: 10, T=lambda x: 300)
+model.solve()
+
+print('T', model.T)
+
+
 
 
 

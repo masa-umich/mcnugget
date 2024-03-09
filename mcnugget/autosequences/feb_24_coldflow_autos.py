@@ -1,6 +1,4 @@
 import time
-# import sys
-# sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
 import synnax as sy
 from synnax.control.controller import Controller
 import syauto
