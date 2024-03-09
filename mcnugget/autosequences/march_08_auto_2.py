@@ -125,13 +125,13 @@ with client.control.acquire(name="open prevalves and regs", write=WRITE_TO, read
     DELAY_2 = 25
 
     print("opening both prevalves")
-    syauto.open_all([fuel_prevalve, ox_pre_valve])
+    syauto.open_all(auto, [fuel_prevalve, ox_pre_valve])
 
     print(f"waiting {DELAY_1}")
     time.sleep(DELAY_1)
 
     print("opening both regs")
-    syauto.open_all([ox_press_ISO, fuel_press_ISO])
+    syauto.open_all(auto, [ox_press_ISO, fuel_press_ISO])
 
     print(f"waiting {DELAY_2}")
     time.sleep(DELAY_2)
@@ -140,7 +140,7 @@ with client.control.acquire(name="open prevalves and regs", write=WRITE_TO, read
     # opens fuel vent, ox low-flow vent, press vent
     # closes prevalves and MPVs
     print("closing regs")
-    syauto.close_all([ox_press_ISO, fuel_press_ISO])
+    syauto.close_all(auto, [ox_press_ISO, fuel_press_ISO])
     
     print(f"waiting {DELAY_1}")
     time.sleep(DELAY_1)

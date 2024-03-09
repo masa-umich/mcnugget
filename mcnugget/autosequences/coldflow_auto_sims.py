@@ -98,7 +98,7 @@ TRICKLE_PURGE_POST_REG_PT = "gse_ai_15"  # Trickle purge post reg pressure
 TRICKLE_PURGE_PRE_2K_PT = "gse_ai_16"  # Trickle purge pre reg pressure
 AIR_DRIVE_2K_PT = "gse_ai_20"  # Air drive 2k pressure
 AIR_DRIVE_POST_REG_PT = "gse_ai_21"  # Air drive post reg pressure
-PRESS_TANK_2K_PT = "gse_ai_23"  # Press tank pressure
+PRESS_TANK_SUPPLY = "gse_ai_23"  # Press tank pressure
 GAS_BOOSTER_OUTLET_PT = "gse_ai_25"  # Gas booster outlet pressure
 PRESS_TANK_2K_BOTTLE_PRE_FILL_PT = "gse_ai_27"  # Press tank 2k bottle pre-fill pressure
 PNEUMATICS_BOTTLE_PT = "gse_ai_30"  # Pneumatics bottle pressure
@@ -114,7 +114,7 @@ PRESS_TANK_PT_3 = "gse_ai_22"  # Press tank pressure
 PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2_PRESSURE, FUEL_PT_3_PRESSURE, OX_PRESS_PT,
        OX_TANK_1_PRESSURE, OX_TANK_2_PRESSURE, OX_TANK_3_PRESSURE, OX_FLOWMETER_INLET_PT, OX_FLOWMETER_THROAT_PT,
        OX_LEVEL_SENSOR, FUEL_FLOWMETER_INLET_PT, FUEL_FLOWMETER_THROAT_PT, FUEL_LEVEL_SENSOR, TRICKLE_PURGE_POST_REG_PT,
-       TRICKLE_PURGE_PRE_2K_PT, AIR_DRIVE_2K_PT, AIR_DRIVE_POST_REG_PT, PRESS_TANK_2K_PT,
+       TRICKLE_PURGE_PRE_2K_PT, AIR_DRIVE_2K_PT, AIR_DRIVE_POST_REG_PT, PRESS_TANK_SUPPLY,
        GAS_BOOSTER_OUTLET_PT, PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3, PRESS_TANK_2K_BOTTLE_PRE_FILL_PT,
        PNEUMATICS_BOTTLE_PT, TRAILER_PNEMATICS_PT, ENGINE_PNEUMATICS_PT, PURGE_2K_BOTTLE_PT, PURGE_POST_REG_PT]
 
@@ -389,7 +389,7 @@ with client.new_streamer(command_channels) as streamer:
                     TRICKLE_PURGE_PRE_2K_PT: trickle_purge_pre_2k_pressure,
                     AIR_DRIVE_2K_PT: air_drive_2k_pressure,
                     AIR_DRIVE_POST_REG_PT: air_drive_post_reg_pressure,
-                    PRESS_TANK_2K_PT: press_tank_2k_pressure,
+                    PRESS_TANK_SUPPLY: press_tank_2k_pressure,
                     GAS_BOOSTER_OUTLET_PT: gas_booster_outlet_pressure,
                     PRESS_TANK_PT_1: press_tank_PT_1,
                     PRESS_TANK_2K_BOTTLE_PRE_FILL_PT: press_tank_bottle_pre_fill_pressure,

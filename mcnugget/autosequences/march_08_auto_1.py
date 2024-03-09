@@ -419,6 +419,10 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
+        print("beginning other testing")
+        print(auto[PRESS_TANK_SUPPLY])
+        print("finished other testing")
+
         # starts by closing all valves and closing all vents
         print("Starting Press Fill Autosequence. Setting initial system state.")
         syauto.close_all(auto, all_valves + all_vents)
@@ -426,7 +430,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
         print("PHASE 1: 2K Bottle Equalization")
         print(
-            f"pressurizing PRESS_TANKS using {press_fill} until approximately equal with 2K supply")
+            f"pressurizing PRESS_TANKS using {press_fill.name} until approximately equal with 2K supply")
         press_phase_1()
 
         print("Pressurization phase 1 complete")
