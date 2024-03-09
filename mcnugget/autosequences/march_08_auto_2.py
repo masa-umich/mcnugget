@@ -3,23 +3,23 @@ import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 
-# this connects to the synnax server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-# Connects to masa cluster
+# this connects to the synnax server for simulations
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
+
+# Connects to masa cluster
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 
 # valve names to channel names
@@ -84,7 +84,7 @@ for i in range(1, 25):
 start = sy.TimeStamp.now()
 
 print("starting autosequence")
-with client.control.acquire(name="someone tell me what to call this", write=WRITE_TO, read=READ_FROM) as auto:
+with client.control.acquire(name="Opening and Closing Reg Valves", write=WRITE_TO, read=READ_FROM) as auto:
 
     ### THIS SECTION DECLARES THE VALVES WHICH WILL BE USED
     #TODO: confirm that the specified channels are correct before running this autosequence
@@ -122,16 +122,16 @@ with client.control.acquire(name="someone tell me what to call this", write=WRIT
 
     # TODO: confirm that these match the desired test specs
     DELAY_1 = 0.5
-    DELAY_2 = 25
+    DELAY_2 = 2
 
     print("opening both prevalves")
-    syauto.open_all([fuel_prevalve, ox_pre_valve])
+    syauto.open_all(auto, [fuel_prevalve, ox_pre_valve])
 
     print(f"waiting {DELAY_1}")
     time.sleep(DELAY_1)
 
     print("opening both regs")
-    syauto.open_all([ox_press_ISO, fuel_press_ISO])
+    syauto.open_all(auto,[ox_press_ISO, fuel_press_ISO])
 
     print(f"waiting {DELAY_2}")
     time.sleep(DELAY_2)
@@ -140,7 +140,7 @@ with client.control.acquire(name="someone tell me what to call this", write=WRIT
     # opens fuel vent, ox low-flow vent, press vent
     # closes prevalves and MPVs
     print("closing regs")
-    syauto.close_all([ox_press_ISO, fuel_press_ISO])
+    syauto.close_all(auto,[ox_press_ISO, fuel_press_ISO])
     
     print(f"waiting {DELAY_1}")
     time.sleep(DELAY_1)
@@ -151,3 +151,7 @@ with client.control.acquire(name="someone tell me what to call this", write=WRIT
                                   valves_to_close=[fuel_prevalve, ox_pre_valve])
 
     input("autosequence complete - press any key to finish")
+
+#reaction time for test personnel
+# time.sleep(60)
+print("done")

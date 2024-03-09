@@ -4,23 +4,22 @@ from synnax.control.controller import Controller
 import syauto
 
 # this connects to the synnax server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-# Connects to masa cluster
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
 
+# Connects to masa cluster
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 # change names and numbers to match the actual channels
 # valve names to channel names
 v1_in = "gse_doa_1"
@@ -113,22 +112,20 @@ A35 = "gse_ai_35"
 A36 = "gse_ai_36"
 
 # sensor names for TCs
-TC1 = "gse_tc_1"
-TC2 = "gse_tc_2"
-TC3 = "gse_tc_3"
-TC4 = "gse_tc_4"
-TC5 = "gse_tc_5"
-TC6 = "gse_tc_6"
-TC7 = "gse_tc_7"
-TC8 = "gse_tc_8"
-TC9 = "gse_tc_9"
-TC10 = "gse_tc_10"
-TC11 = "gse_tc_11"
-TC12 = "gse_tc_12"
-TC13 = "gse_tc_13"
-TC14 = "gse_tc_14"
-TC15 = "gse_tc_15"
-TC16 = "gse_tc_16"
+TC1 = "gse_ai_65"
+TC2 = "gse_ai_66"
+TC3 = "gse_ai_67"
+TC4 = "gse_ai_68"
+TC5 = "gse_ai_69"
+TC6 = "gse_ai_70"
+TC7 = "gse_ai_71"
+TC8 = "gse_ai_72"
+TC9 = "gse_ai_73"
+TC10 = "gse_ai_74"
+TC11 = "gse_ai_75"
+TC12 = "gse_ai_76"
+TC13 = "gse_ai_77"
+TC14 = "gse_ai_78"
 
 # List of channels we're going to read from and write to
 #CHANGE THESE TO LOOPS
