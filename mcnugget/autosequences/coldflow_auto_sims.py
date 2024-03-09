@@ -111,6 +111,11 @@ PRESS_TANK_PT_1 = "gse_ai_26"  # Press tank pressure
 PRESS_TANK_PT_2 = "gse_ai_24"  # Press tank pressure
 PRESS_TANK_PT_3 = "gse_ai_22"  # Press tank pressure
 
+PRESS_TANK_TC_1 = "gse_tc_5"
+PRESS_TANK_TC_2 = "gse_tc_6"
+PRESS_TANK_TC_3 = "gse_tc_7"
+PRESS_TANK_TC_4 = "gse_tc_8"
+
 PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2_PRESSURE, FUEL_PT_3_PRESSURE, OX_PRESS_PT,
        OX_TANK_1_PRESSURE, OX_TANK_2_PRESSURE, OX_TANK_3_PRESSURE, OX_FLOWMETER_INLET_PT, OX_FLOWMETER_THROAT_PT,
        OX_LEVEL_SENSOR, FUEL_FLOWMETER_INLET_PT, FUEL_FLOWMETER_THROAT_PT, FUEL_LEVEL_SENSOR, TRICKLE_PURGE_POST_REG_PT,
@@ -118,6 +123,7 @@ PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2
        GAS_BOOSTER_OUTLET_PT, PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3, PRESS_TANK_2K_BOTTLE_PRE_FILL_PT,
        PNEUMATICS_BOTTLE_PT, TRAILER_PNEMATICS_PT, ENGINE_PNEUMATICS_PT, PURGE_2K_BOTTLE_PT, PURGE_POST_REG_PT]
 
+TCs = [PRESS_TANK_TC_1, PRESS_TANK_TC_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]
 
 daq_time = client.channels.create(
     name=DAQ_TIME,
@@ -157,6 +163,15 @@ for pt in PTs:
         index=daq_time.key,
         retrieve_if_name_exists=True
     )
+
+for tc in TCs:
+    client.channels.create(
+        name=tc,
+        data_type=sy.DataType.FLOAT32,
+        index=daq_time.key,
+        retrieve_if_name_exists=True
+    )
+
 rate = (sy.Rate.HZ * 50).period.seconds
 
 # Assuming `command_channels` is already defined

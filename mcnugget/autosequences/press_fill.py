@@ -62,6 +62,7 @@ For this test, the only valves we will need to control are:
     Press Tank PT 1
     Press Tank PT 2
     Press Tank PT 3
+    Press Tank Supply
 
     ---TC CHANNELS---
     Press Tank TC 1
@@ -189,22 +190,22 @@ A35 = "gse_ai_35"
 A36 = "gse_ai_36"
 
 # sensor names for TCs
-TC1 = "gse_tc_1"
-TC2 = "gse_tc_2"
-TC3 = "gse_tc_3"
-TC4 = "gse_tc_4"
-TC5 = "gse_tc_5"
-TC6 = "gse_tc_6"
-TC7 = "gse_tc_7"
-TC8 = "gse_tc_8"
-TC9 = "gse_tc_9"
-TC10 = "gse_tc_10"
-TC11 = "gse_tc_11"
-TC12 = "gse_tc_12"
-TC13 = "gse_tc_13"
-TC14 = "gse_tc_14"
-TC15 = "gse_tc_15"
-TC16 = "gse_tc_16"
+TC1 = "gse_tc_1"  # gse_ai_65
+TC2 = "gse_tc_2"  # gse_ai_66
+TC3 = "gse_tc_3"  # gse_ai_67
+TC4 = "gse_tc_4"  # gse_ai_68
+TC5 = "gse_tc_5"  # gse_ai_70
+TC6 = "gse_tc_6"  # gse_ai_71
+TC7 = "gse_tc_7"  # gse_ai_72
+TC8 = "gse_tc_8"  # gse_ai_73
+TC9 = "gse_tc_9"  # gse_ai_74
+TC10 = "gse_tc_10"  # gse_ai_75
+TC11 = "gse_tc_11"  # gse_ai_76
+TC12 = "gse_tc_12"  # gse_ai_77
+TC13 = "gse_tc_13"  # gse_ai_78
+TC14 = "gse_tc_14"  # gse_ai_79
+TC15 = "gse_tc_15"  # gse_ai_80
+TC16 = "gse_tc_16"  # gse_ai_81
 
 # List of channels we're going to read from and write to
 # CHANGE THESE TO LOOPS
