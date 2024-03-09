@@ -62,6 +62,7 @@ For this test, the only valves we will need to control are:
     Press Tank PT 1
     Press Tank PT 2
     Press Tank PT 3
+    Press Tank Supply
 
     ---TC CHANNELS---
     Press Tank TC 1
@@ -96,6 +97,7 @@ client = sy.Synnax(
 #     password="seldon",
 #     secure=True
 # )
+
 # change names and numbers to match the actual channels
 # valve names to channel names
 v1_in = "gse_doa_1"
@@ -188,20 +190,22 @@ A35 = "gse_ai_35"
 A36 = "gse_ai_36"
 
 # sensor names for TCs
-TC1 = "gse_ai_65"
-TC2 = "gse_ai_66"
-TC3 = "gse_ai_67"
-TC4 = "gse_ai_68"
-TC5 = "gse_ai_69"
-TC6 = "gse_ai_70"
-TC7 = "gse_ai_71"
-TC8 = "gse_ai_72"
-TC9 = "gse_ai_73"
-TC10 = "gse_ai_74"
-TC11 = "gse_ai_75"
-TC12 = "gse_ai_76"
-TC13 = "gse_ai_77"
-TC14 = "gse_ai_78"
+TC1 = "gse_tc_1"  # gse_ai_65
+TC2 = "gse_tc_2"  # gse_ai_66
+TC3 = "gse_tc_3"  # gse_ai_67
+TC4 = "gse_tc_4"  # gse_ai_68
+TC5 = "gse_tc_5"  # gse_ai_70
+TC6 = "gse_tc_6"  # gse_ai_71
+TC7 = "gse_tc_7"  # gse_ai_72
+TC8 = "gse_tc_8"  # gse_ai_73
+TC9 = "gse_tc_9"  # gse_ai_74
+TC10 = "gse_tc_10"  # gse_ai_75
+TC11 = "gse_tc_11"  # gse_ai_76
+TC12 = "gse_tc_12"  # gse_ai_77
+TC13 = "gse_tc_13"  # gse_ai_78
+TC14 = "gse_tc_14"  # gse_ai_79
+TC15 = "gse_tc_15"  # gse_ai_80
+TC16 = "gse_tc_16"  # gse_ai_81
 
 # List of channels we're going to read from and write to
 # CHANGE THESE TO LOOPS
@@ -416,6 +420,10 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
+        print("beginning other testing")
+        print(auto[PRESS_TANK_SUPPLY])
+        print("finished other testing")
+
         # starts by closing all valves and closing all vents
         print("Starting Press Fill Autosequence. Setting initial system state.")
         syauto.close_all(auto, all_valves + all_vents)
@@ -423,7 +431,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
         print("PHASE 1: 2K Bottle Equalization")
         print(
-            f"pressurizing PRESS_TANKS using {press_fill} until approximately equal with 2K supply")
+            f"pressurizing PRESS_TANKS using {press_fill.name} until approximately equal with 2K supply")
         press_phase_1()
 
         print("Pressurization phase 1 complete")
