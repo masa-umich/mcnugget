@@ -121,8 +121,8 @@ with client.control.acquire(name="someone tell me what to call this", write=WRIT
 
 
     # TODO: confirm that these match the desired test specs
-    DELAY_1 = 0.5
-    DELAY_2 = 2
+    DELAY_1 = .5
+    DELAY_2 = 25
 
     print("opening both prevalves")
     syauto.open_all(auto, [fuel_prevalve, ox_pre_valve])

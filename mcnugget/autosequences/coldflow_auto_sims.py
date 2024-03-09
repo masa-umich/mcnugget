@@ -1,7 +1,6 @@
 import time
-# import sys
-# sys.path.append("/opt/homebrew/lib/python3.11/site-packages")
 import synnax as sy
+
 client = sy.Synnax(
     host="localhost",
     port=9090,
@@ -266,31 +265,24 @@ with client.new_streamer(command_channels) as streamer:
                     ox_tank_delta -= 1.5
 
                 if ox_press_open and not ox_low_vent_open:
-                    # print("ox_press_open")
-                    #print(ox_low_vent_open)
                     ox_tank_delta = 0
 
                 if fuel_press_iso_open and not fuel_vent_open:
-                    # print("fuel_press_iso_open")
                     fuel_tank_delta = 0
 
                 if engine_pneumatics_iso_open and not engine_pneumatics_vent_open:
-                    # print("engine_pneumatics_iso_open")
                     trailer_pneumatics_delta = 0
 
                 if fuel_vent_open:
-                    # print("fuel_vent_open")
                     fuel_tank_delta -= 4
 
                 if ox_low_vent_open:
-                    # print("ox_low_vent_open")
                     ox_tank_delta -= 2.0
 
                 if ox_high_flow_vent_open:
                     ox_tank_delta -= 3.0
 
                 if engine_pneumatics_vent_open:
-                    # print("engine_pneumatics_vent_open")
                     trailer_pneumatics_delta -= 1.5
 
                 if press_fill_open:

@@ -80,22 +80,22 @@ import syauto
 import statistics
 
 # this connects to the synnax server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# Connects to masa cluster
 client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
+    host="localhost",
+    port=9090,
     username="synnax",
     password="seldon",
-    secure=True
+    secure=False
 )
+
+# Connects to masa cluster
+# client = sy.Synnax(
+#     host="synnax.masa.engin.umich.edu",
+#     port=80,
+#     username="synnax",
+#     password="seldon",
+#     secure=True
+# )
 # change names and numbers to match the actual channels
 # valve names to channel names
 v1_in = "gse_doa_1"
