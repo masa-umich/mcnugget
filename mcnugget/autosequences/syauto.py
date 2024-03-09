@@ -1,10 +1,12 @@
 import time
-from synnax import Synnax as sy
+import sys
+import synnax as sy
 from synnax.control.controller import Controller
+from typing import Union, Callable
 
 
-# this defines a class that can be used for both regular valves and vents
 class Valve:
+    # this defines a class that can be used for both regular valves and vents
     def __init__(
             self,
             auto: Controller,
@@ -84,50 +86,91 @@ class DualTescomValve:
         if self.wait_for_ack:
             self.auto.wait_until(self.close_cmd_ack)
 
-
-# def open_close_many_valves(auto: Controller, valves_to_close: list[Valve], valves_to_open: list[Valve]):
-#     auto.set({
-#         valve.cmd_chan: (not valve.normally_open) if valve in valves_to_close
-#         else valve.normally_open
-#         for valve in valves_to_open
-#     })
-            
 def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves_to_close: list[Valve]):
     commands = {}
-    # Close valves to close
-    for valve in valves_to_open:
-        commands[valve.cmd_chan] = True
     # Open valves to open
+    for valve in valves_to_open:
+        if valve.normally_open:
+            commands[valve.cmd_chan] = 0
+        else:
+            commands[valve.cmd_chan] = 1
+    # Close valves to close
     for valve in valves_to_close:
         if valve.normally_open:
-            commands[valve.cmd_chan] = True
+            commands[valve.cmd_chan] = 1
         else:
-            commands[valve.cmd_chan] = False
+            commands[valve.cmd_chan] = 0
+
     auto.set(commands)
 
 
-
 def close_all(auto: Controller, valves: list[Valve]):
-    auto.set({valve.cmd_chan: valve.normally_open for valve in valves})
+    commands = {}
+    # Open valves to open
+    for valve in valves:
+        if valve.normally_open:
+            commands[valve.cmd_chan] = 0
+        else:
+            commands[valve.cmd_chan] = 1
+    auto.set(commands)
 
 
 def open_all(auto: Controller, valves: list[Valve]):
-    auto.set({valve.cmd_chan: not valve.normally_open for valve in valves})
+    commands = {}
+    for valve in valves:
+        if valve.normally_open:
+            commands[valve.cmd_chan] = 1
+        else:
+            commands[valve.cmd_chan] = 0
 
+    auto.set(commands)
 
-# this energizes the valve until the target pressure is reached
-def pressurize(valve: Valve, pressure: str, target: float, inc: float, delay: float = 1):
-    partial_target = inc
-    while True:
-        print(f"pressurizing {valve.name} to {partial_target}")
-        valve.open()
-        valve.auto.wait_until(lambda auto: auto[pressure] >= partial_target)
-        valve.close()
+def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
+               target: float, max: float, inc: float, delay: float = 1):
+    # This energizes the valve until the target pressure is reached.
+    # valve_s can be either a single valve or a list.
+
+    # if custom_auto is None:
+    #     custom_auto = Controller
+
+    if isinstance(valve_s, Valve):
+        print(f"Pressurizing {valve_s.name} to {target}")
+        valve_s = [valve_s]
+
+    else:
+        print("Pressurizing these valves:")
+        for v in valve_s:
+            print(str(v.name) + ", ")
+
+    if isinstance(pressure_s, str):
+        print(f"Reading from one pressure channel: {pressure_s}")
+        pressure_s = [pressure_s]
+
+    else:
+        print("Reading from these pressure channels:")
+        for p in pressure_s:
+            print(p)
+
+    # pressurizes
+    partial_target = auto_[pressure_s] + inc
+    while partial_target <= target:
+        if(auto_[pressure_s] > max):
+            return
+        print(f"Pressurizing to {partial_target}")
+
+        # this opens all valves since a single valve would already be converted to list of size 1
+        open_all(auto_,valve_s)
+        
+        auto_.wait_until(
+            lambda pressure: all(auto_[pressure] >= partial_target for pressure in pressure_s),delay
+        )
+        
+        close_all(auto_,valve_s)
+        
         time.sleep(delay)
-        if partial_target >= target:
-            print(f"{valve.name} has reached {target}")
-            break
         partial_target += inc
+
+    print(f"Valve(s) have reached {target}")
 
 
 def purge(valves: list[Valve], duration: float = 1):
