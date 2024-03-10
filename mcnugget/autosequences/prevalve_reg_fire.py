@@ -164,5 +164,5 @@ with client.control.acquire(name="Press sequence",
     time.sleep(DELAY_1)
 
     print("opening vents")
-    syauto.open_all(fuel_vent, press_vent, ox_low_flow_vent)
+    syauto.open_all(auto, [fuel_vent, press_vent, ox_low_flow_vent])
 
