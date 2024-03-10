@@ -80,7 +80,7 @@ from synnax.control.controller import Controller
 import syauto
 import statistics
 
-# this connects to the synnax server
+# this connects to the synnax simulation server
 client = sy.Synnax(
     host="localhost",
     port=9090,
@@ -421,7 +421,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
         print("beginning other testing")
-        print(auto[PRESS_TANK_SUPPLY])
+        # print(auto[PRESS_TANK_SUPPLY])
         print("finished other testing")
 
         # starts by closing all valves and closing all vents
@@ -455,6 +455,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         syauto.close_all(auto=auto, valves=(all_vents + all_valves))
         print("Valves closed and vents open")
 
+        #Creating a range inside autosequences
         rng = client.ranges.create(
             name=f"{start.__str__()[11:16]} Press Fill",
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),

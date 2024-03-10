@@ -405,7 +405,8 @@ with client.new_streamer(command_channels) as streamer:
                     ENGINE_PNEUMATICS_PT: engine_pneumatics_pressure,
                     PURGE_2K_BOTTLE_PT: purge_2k_bottle_pressure,
                     PRESS_TANK_PT_2: press_tank_PT_2,
-                    PRESS_TANK_PT_3: press_tank_PT_3
+                    PRESS_TANK_PT_3: press_tank_PT_3,
+                    PURGE_POST_REG_PT: purge_post_reg_pressure
                 })
 
                 i += 1
