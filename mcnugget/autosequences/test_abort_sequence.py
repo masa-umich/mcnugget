@@ -120,8 +120,9 @@ with client.control.acquire(name="Press sequence",
     ###     THIS SECTION RUNS THE AUTOSEQUENCE AS FOLLOWS       ###
     ###      Aborts the autosequence as follows
     ##      1.  Closes all valves and vents
-
+    print("Aborting sequence: closing all vents and valves")
     syauto.close_all(auto,[ox_pre_valve,fuel_prevalve,ox_press_ISO,
                       fuel_press_ISO,ox_dome_reg_pilot_iso,
                       fuel_vent,press_vent,ox_low_flow_vent])
     
+    print("All vents and valves closed")
