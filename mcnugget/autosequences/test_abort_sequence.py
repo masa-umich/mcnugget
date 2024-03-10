@@ -124,3 +124,4 @@ with client.control.acquire(name="Press sequence",
     syauto.close_all(auto,[ox_pre_valve,fuel_prevalve,ox_press_ISO,
                       fuel_press_ISO,ox_dome_reg_pilot_iso,
                       fuel_vent,press_vent,ox_low_flow_vent])
+    
