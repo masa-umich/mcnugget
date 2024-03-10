@@ -1,5 +1,5 @@
 import time
-import keyboard 
+# import keyboard
 import synnax as sy
 from synnax.control.controller import Controller
 import syauto
@@ -22,8 +22,6 @@ client = sy.Synnax(
 #     password="seldon",
 #     secure=True
 # )
-
-keyboard.add_hotkey('ctrl+s', print, args=('triggered', 'hotkey'))
 
 # valve names to channel names
 v1_in = "gse_doa_1"
@@ -90,8 +88,9 @@ friendly_abort = False
 
 print("starting autosequence")
 
-def check_abort():
-    friendly_abort = keyboard.is_pressed('pause')
+
+def nothing():
+    print("")
 
 with client.control.acquire(name="Press sequence",
                              write=WRITE_TO, read=READ_FROM, write_authorities=250 ) as auto:
@@ -146,18 +145,20 @@ with client.control.acquire(name="Press sequence",
         start_prevalve_time = time.time()
         print(f"waiting {DELAY_1}")
         while time.time() - start_prevalve_time < DELAY_1:
-            if friendly_abort:
-                input("Press any key to continue or ctrl-c to fully abort")
-
-        print("opening regs")
+            nothing()
+        syauto.close_all(auto, [fuel_prevalve, ox_pre_valve])
+        print(f"opening regs")
         syauto.open_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso])
 
         print(f"waiting {DELAY_2}")
         time.sleep(DELAY_2)
         start_reg_time = time.time()
         while time.time() - start_reg_time < DELAY_2:
-            if friendly_abort:
-                input("Press any key continue or ctrl-c to fully abort")
+            nothing()
+            # syauto.close_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso, fuel_prevalve, ox_pre_valve])
+            # print("Test interrupted. Aborting system")
+            # input("Press any key to continue or ctrl-c to end test and vent system")
+        syauto.close_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso, fuel_prevalve, ox_pre_valve])
 
         # opens fuel vent, ox low-flow vent, press vent
         # closes prevalves and MPVs
@@ -172,10 +173,10 @@ with client.control.acquire(name="Press sequence",
                                     valves_to_open=[fuel_vent, press_vent, ox_low_flow_vent], 
                                     valves_to_close=[fuel_prevalve, ox_pre_valve])
     
-        # input("autosequence complete - press any key to finish")
-        # time.sleep(0.5)
+        input("autosequence complete - press any key to finish")
+        time.sleep(0.5)
     
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         print("Test interrupted. Aborting system")
         syauto.close_all(auto,[ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso, fuel_prevalve, ox_pre_valve])
 
