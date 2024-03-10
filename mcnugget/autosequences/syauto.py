@@ -109,9 +109,9 @@ def close_all(auto: Controller, valves: list[Valve]):
     # Open valves to open
     for valve in valves:
         if valve.normally_open:
-            commands[valve.cmd_chan] = 0
-        else:
             commands[valve.cmd_chan] = 1
+        else:
+            commands[valve.cmd_chan] = 0
     auto.set(commands)
 
 
@@ -121,7 +121,7 @@ def open_all(auto: Controller, valves: list[Valve]):
         if valve.normally_open:
             commands[valve.cmd_chan] = 0
         else:
-            commands[valve.cmd_chan] = 0
+            commands[valve.cmd_chan] = 1
 
     auto.set(commands)
 
