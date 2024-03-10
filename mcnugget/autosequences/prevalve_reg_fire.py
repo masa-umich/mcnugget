@@ -135,52 +135,34 @@ with client.control.acquire(name="Press sequence",
     DELAY_1 = 1
     DELAY_2 = 3
 
-    try: 
-        time.sleep(1) #TODO: take this out
-        print("opening both prevalves")
-        syauto.open_all(auto, [fuel_prevalve, ox_pre_valve])
+    syauto.close_all(auto=auto, valves=[fuel_press_ISO, ox_press_ISO, ox_dome_reg_pilot_iso, 
+                                        ox_pre_valve, fuel_prevalve, 
+                                        fuel_vent, ox_low_flow_vent, press_vent])
 
-        print(f"waiting {DELAY_1}")
-        # time.sleep(DELAY_1)
-        start_prevalve_time = time.time()
-        print(f"waiting {DELAY_1}")
-        while time.time() - start_prevalve_time < DELAY_1:
-            nothing()
-        syauto.close_all(auto, [fuel_prevalve, ox_pre_valve])
-        print(f"opening regs")
-        syauto.open_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso])
+    print("opening both prevalves")
+    syauto.open_all(auto, [fuel_prevalve, ox_pre_valve])
 
-        print(f"waiting {DELAY_2}")
-        time.sleep(DELAY_2)
-        start_reg_time = time.time()
-        while time.time() - start_reg_time < DELAY_2:
-            nothing()
-            # syauto.close_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso, fuel_prevalve, ox_pre_valve])
-            # print("Test interrupted. Aborting system")
-            # input("Press any key to continue or ctrl-c to end test and vent system")
-        syauto.close_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso, fuel_prevalve, ox_pre_valve])
+    print(f"waiting {DELAY_1}")
+    time.sleep(DELAY_1)
 
-        # opens fuel vent, ox low-flow vent, press vent
-        # closes prevalves and MPVs
-        print("closing regs")
-        syauto.close_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso])
+    print(f"opening ISOs")
+    syauto.open_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso])
 
-        print(f"waiting {DELAY_1}")
-        time.sleep(DELAY_1)
-        
-        print("closing prevalves and opening vents")
-        syauto.open_close_many_valves(auto=auto, 
-                                    valves_to_open=[fuel_vent, press_vent, ox_low_flow_vent], 
-                                    valves_to_close=[fuel_prevalve, ox_pre_valve])
-    
-        input("autosequence complete - press any key to finish")
-        time.sleep(0.5)
-    
-    except KeyboardInterrupt:
-        print("Test interrupted. Aborting system")
-        syauto.close_all(auto,[ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso, fuel_prevalve, ox_pre_valve])
+    print(f"waiting {DELAY_2}")
+    time.sleep(DELAY_2)
 
-def delay_function():
-    print("finished with autosequence")
+    print("closing ISOs")
+    syauto.close_all(auto, [ox_press_ISO, fuel_press_ISO, ox_dome_reg_pilot_iso])
 
-delay_function()
+    print(f"waiting {DELAY_1}")
+    time.sleep(DELAY_1)
+
+    print("closing prevalves")
+    syauto.close_all(auto, [ox_pre_valve, fuel_prevalve])
+
+    print(f"waiting {DELAY_1}")
+    time.sleep(DELAY_1)
+
+    print("opening vents")
+    syauto.open_all(fuel_vent, press_vent, ox_low_flow_vent)
+
