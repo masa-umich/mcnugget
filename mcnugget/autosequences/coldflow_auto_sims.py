@@ -112,10 +112,10 @@ PRESS_TANK_PT_1 = "gse_ai_26"  # Press tank pressure
 PRESS_TANK_PT_2 = "gse_ai_24"  # Press tank pressure
 PRESS_TANK_PT_3 = "gse_ai_22"  # Press tank pressure
 
-PRESS_TANK_TC_1 = "gse_tc_5"
-PRESS_TANK_TC_2 = "gse_tc_6"
-PRESS_TANK_TC_3 = "gse_tc_7"
-PRESS_TANK_TC_4 = "gse_tc_8"
+PRESS_TANK_TC_1 = "gse_ai_69"
+PRESS_TANK_TC_2 = "gse_ai_70"
+PRESS_TANK_TC_3 = "gse_ai_71"
+PRESS_TANK_TC_4 = "gse_ai_72"
 
 PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2_PRESSURE, FUEL_PT_3_PRESSURE, OX_PRESS_PT,
        OX_TANK_1_PRESSURE, OX_TANK_2_PRESSURE, OX_TANK_3_PRESSURE, OX_FLOWMETER_INLET_PT, OX_FLOWMETER_THROAT_PT,
