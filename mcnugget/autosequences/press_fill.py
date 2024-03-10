@@ -255,7 +255,8 @@ PTs_and_TCs = [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3,
 ###     DEFINES ARRAYS FOR MEDIAN PROCESSING ON ANALOG DATA SENSORS     ###
 median_arrs = {}
 for PT_or_TC in PTs_and_TCs:
-    median_arrs[PT_or_TC] = []
+    median_arrs[PT_or_TC] = [0]
+median_arrs[PRESS_TANK_SUPPLY] = [0]
 
 print("Starting autosequence")
 with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM) as auto:
@@ -285,10 +286,16 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             # where each channel name is replaced by its reading, averaged over RUNNING_MEDIAN_SIZE readings
         output = []
         for channel in channels:
-            median_arrs[channel].append(auto[channel])
-            if len(median_arrs[channel]) > RUNNING_MEDIAN_SIZE:
-                median_arrs[channel].pop(0)
-            output.append(statistics.median(median_arrs[channel]))
+            try:
+                median_arrs[channel].append(auto[channel])
+                if len(median_arrs[channel]) > RUNNING_MEDIAN_SIZE:
+                    median_arrs[channel].pop(0)
+                output.append(statistics.median(median_arrs[channel]))
+            except KeyError:
+                if len(median_arrs[channel]) > RUNNING_MEDIAN_SIZE:
+                    median_arrs[channel].pop(0)
+                output.append(statistics.median(median_arrs[channel]))
+
         return output
 
     def runsafe_press_tank_fill(partial_target: float):
@@ -342,7 +349,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         # it returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
         partial_target = 0
         while True:
-            press_supply = compute_medians([PRESS_TANK_SUPPLY])
+            press_supply = compute_medians([PRESS_TANK_SUPPLY])[0]
             partial_target += PRESS_INC
 
             # this is the only way for the function to return 
