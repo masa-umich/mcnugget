@@ -64,19 +64,21 @@ OX_HIGH_FLOW_VENT_OUT = "gse_doc_17"  # Ox high vent
 # OX_MPV_OUT = "gse_doc_26"  # Ox MPV
 OX_PRE_VALVE_IN = "gse_doa_21"  # Ox pre-valve
 OX_PRE_VALVE_OUT = "gse_doc_21"  # Ox pre-valve
+OX_DOME_REG_PILOT_ISO_IN = "gse_doa_5"  # Ox dome reg pilot ISO
+OX_DOME_REG_PILOT_ISO_OUT = "gse_doc_5"  # Ox dome reg pilot ISO
 
 command_channels = [FUEL_VENT_OUT, FUEL_PREVALVE_OUT, FUEL_FEEDLINE_PURGE_OUT,
                     OX_FILL_PURGE_OUT, FUEL_PRE_PRESS_OUT, OX_PRE_PRESS_OUT, OX_FEEDLINE_PURGE_OUT,
                     ENGINE_PNEUMATICS_ISO_OUT, ENGINE_PNEUMATICS_VENT_OUT,
                     AIR_DRIVE_ISO_1_OUT, AIR_DRIVE_ISO_2_OUT, GAS_BOOSTER_FILL_OUT, PRESS_FILL_OUT,
                     PRESS_VENT_OUT, FUEL_PRESS_ISO_OUT, OX_PRESS_OUT, OX_LOW_VENT_OUT, OX_FILL_VALVE_OUT,
-                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT]
+                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT, OX_DOME_REG_PILOT_ISO_OUT]
 ack_channels = [FUEL_VENT_IN, FUEL_PREVALVE_IN, FUEL_FEEDLINE_PURGE_IN,
                 OX_FILL_PURGE_IN, FUEL_PRE_PRESS_IN, OX_PRE_PRESS_IN, OX_FEEDLINE_PURGE_IN,
                 ENGINE_PNEUMATICS_ISO_IN, ENGINE_PNEUMATICS_VENT_IN,
                 AIR_DRIVE_ISO_1_IN, AIR_DRIVE_ISO_2_IN, GAS_BOOSTER_FILL_IN, PRESS_FILL_IN,
                 PRESS_VENT_IN, FUEL_PRESS_ISO_IN, OX_PRESS_IN, OX_LOW_VENT_IN, OX_FILL_VALVE_IN,
-                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN]
+                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN, OX_DOME_REG_PILOT_ISO_IN]
 
 # Pressure sensors
 OX_PRE_FILL_PT = "gse_ai_1"  # Ox pre-fill pressure
@@ -267,6 +269,7 @@ with client.new_streamer(command_channels) as streamer:
                 # ox_mpv_open = DAQ_STATE[OX_MPV_OUT] == 1
                 ox_pre_valve_open = DAQ_STATE[OX_PRE_VALVE_OUT] == 1
                 ox_pre_fill_open = DAQ_STATE[OX_PRE_FILL_PT] ==1
+                ox_dome_reg_pilot_iso_open = DAQ_STATE[OX_DOME_REG_PILOT_ISO_OUT] == 1
 
                 fuel_tank_delta = 0
                 trailer_pneumatics_delta = 0
@@ -378,6 +381,8 @@ with client.new_streamer(command_channels) as streamer:
                     OX_HIGH_FLOW_VENT_IN: int(ox_high_flow_vent_open),
                     OX_PRE_VALVE_IN: int(ox_pre_valve_open),
                     OX_PRE_FILL_PT: ox_pre_fill_pressure,
+                    OX_DOME_REG_PILOT_ISO_IN: int(ox_dome_reg_pilot_iso_open),
+
                     OX_PRESS_DOME_PILOT_REG_PT: ox_dome_reg_pilot_pressure,
                     FUEL_PT_1_PRESSURE: fuel_PT_1_pressure,
                     FUEL_PT_2_PRESSURE: fuel_PT_2_pressure,
