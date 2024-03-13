@@ -1,10 +1,8 @@
 import time
-import sys
 import synnax as sy
 from synnax.control.controller import Controller
 from typing import Union, Callable
 import statistics
-
 
 class Valve:
     # this defines a class that can be used for both regular valves and vents
@@ -154,14 +152,14 @@ def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s
         for p in pressure_s:
             print(p)
 
-    # pressurizes
-    partial_target = auto_[pressure_s] + inc
+    # pressurizes the valve until the target pressure is reached
+    partial_target = get_median_value(auto_, pressure_s) + inc
     while partial_target <= target:
-        if (auto_[pressure_s] > max):
+        if (get_median_value(auto_, pressure_s) > max):
             return
         print(f"Pressurizing to {partial_target}")
 
-        # this opens all valves since a single valve would already be converted to list of size 1
+        # Opens all valves since a single valve would already be converted to list of size 1
         open_all(auto_, valve_s)
 
         auto_.wait_until(
@@ -184,16 +182,19 @@ def purge(valves: list[Valve], duration: float = 1):
             open_all(valve.auto, valves)
             time.sleep(1)
 
-
+#returns a list of medians
 def compute_medians(auto_: Controller, channels: list[str], running_median_size: int = 100):
     # this function takes in a list of channel names and returns a list
     # where each channel name is replaced by its reading, averaged over RUNNING_MEDIAN_SIZE readings
     median_arrs = []
-    for sensor in channels:
-        median_arrs[sensor] = [0]
     for channel in channels:
+        
         if len(median_arrs) > running_median_size:
             median_arrs.pop(0)
-        median_arrs.append(statistics.median(median_arrs[channel]))
+        median_arrs.append(statistics.median(auto_[channel]))
 
     return median_arrs
+
+#returns a single median value
+def get_median_value(auto_: Controller, channels: list[str]):
+    return statistics.median(auto_[channel] for channel in channels)

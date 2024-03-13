@@ -32,13 +32,13 @@ client = sy.Synnax(
 )
 
 #connecting to MASA Remote for testing
-client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
-    username="synnax",
-    password="seldon",
-    secure=True
-)
+# client = sy.Synnax(
+#     host="synnax.masa.engin.umich.edu",
+#     port=80,
+#     username="synnax",
+#     password="seldon",
+#     secure=True
+# )
 
 #Valves autosequence will control
 FUEL_TPC_1_CMD = "gse_doc_25"
@@ -82,7 +82,7 @@ MAXIMUM = TARGET_1 + 20
 MINIMUM = BOUND_2 - 20
 
 # this initializes a connection to the client with access to all the needed channels
-with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM) as auto:
+with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM, write_authorities=252) as auto:
     fuel_tpc_1 = syauto.Valve(auto=auto, cmd=FUEL_TPC_1_CMD, ack=FUEL_TPC_1_ACK, normally_open=False)
     fuel_tpc_2 = syauto.Valve(auto=auto, cmd=FUEL_TPC_2_CMD, ack=FUEL_TPC_2_ACK, normally_open=False)
     fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE_CMD, ack=FUEL_PREVALVE_ACK, normally_open=False)
@@ -144,25 +144,24 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         #confirm what the initial state of the system should be 
         syauto.close_all(auto, [fuel_vent, ox_low_flow_vent])
         print("fuel vent and ox low flow vent closed")
-        time.sleep(2)
+        time.sleep(1)
         print("Initial state set. Beginning pressurization of fuel tank")
 
         print(f"Fuel tanks to {TARGET_1} PSI")
         fuel_tpc_1.open()
         # pressurizes press tank and fuel tank to 90 psi in 9 increments
-        syauto.pressurize(auto, fuel_pre_press, TARGET_1, INC_1)
-
+        syauto.pressurize(auto, fuel_pre_press, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3],TARGET_1,MAXIMUM,INC_1)
         print("Closing fuel tpc valve 1")
         fuel_tpc_1.close()
 
         # pressurizes press tank to 230 psi in 5 increments
         print("Pressurizing fuel tanks to {TARGET_2} psi")
-        syauto.pressurize(auto, fuel_pre_press, TARGET_2, INC_2)
+        syauto.pressurize(auto, fuel_pre_press, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3], TARGET_2,MAXIMUM, INC_2)
 
         print("Fuel tanks pressurized to 230 psi - beginning TPC control test in 5")
         time.sleep(2)
 
-        print("Opening MPV")
+        print("Opening Fuel Prevalve")
         fuel_prevalve.open()
         start = sy.TimeStamp.now()
 
