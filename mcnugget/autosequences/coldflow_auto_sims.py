@@ -340,6 +340,16 @@ with client.new_streamer(command_channels) as streamer:
                 if fuel_pre_press_energized:
                     fuel_tank_delta += 3.0
 
+                if fuel_tpc_1_energized ^ fuel_tpc_2_energized:
+                    fuel_tank_delta += .5
+                
+                if fuel_tpc_2_energized and fuel_tpc_1_energized:
+                    fuel_tank_delta += 1
+
+                if not fuel_tpc_1_energized and not fuel_tpc_2_energized:
+                    fuel_tank_delta -= .75
+                
+
 
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
