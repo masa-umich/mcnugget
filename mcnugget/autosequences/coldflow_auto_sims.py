@@ -341,13 +341,13 @@ with client.new_streamer(command_channels) as streamer:
                     fuel_tank_delta += 3.0
 
                 if fuel_tpc_1_energized and not fuel_tpc_2_energized:
-                    fuel_tank_delta +=  0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
-
+                    fuel_tank_delta += 0.1
+                
                 if fuel_tpc_2_energized and not fuel_tpc_1_energized:
-                    fuel_tank_delta += 0.2*sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
+                    fuel_tank_delta += 0.1
 
                 if fuel_tpc_2_energized and fuel_tpc_1_energized:
-                    fuel_tank_delta += .25*sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
+                    fuel_tank_delta += 1
 
                 if not fuel_tpc_1_energized and not fuel_tpc_2_energized:
                     fuel_tank_delta -= .75
