@@ -91,7 +91,6 @@ MINIMUM = BOUND_2 - 20
 
 # this initializes a connection to the client with access to all the needed channels
 with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM, write_authorities=252) as auto:
-    # print(auto["gse_doa_9"])
     fuel_tpc_1 = syauto.Valve(auto=auto, cmd=FUEL_TPC_1_CMD, ack=FUEL_TPC_1_ACK, normally_open=False)
     fuel_tpc_2 = syauto.Valve(auto=auto, cmd=FUEL_TPC_2_CMD, ack=FUEL_TPC_2_ACK, normally_open=False)
     fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE_CMD, ack=FUEL_PREVALVE_ACK, normally_open=False)
@@ -166,6 +165,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
         if fuel_tank_pressures < 15:
             print("pressure below 15 - FINISHED")
+            print(fuel_tank_pressures)
             return
 
     try:
@@ -198,4 +198,5 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         print("Test interrupted. Safing System")
         # close all prevalves and open all vents
         syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
-        input("press any key to terminate the autosequence")
+        #This line doesn't seem to do anything, ctrl+c is still needed to fully terminate
+        #input("press any key to terminate the autosequence") 
