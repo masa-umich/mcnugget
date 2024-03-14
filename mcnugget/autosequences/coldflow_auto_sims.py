@@ -148,7 +148,7 @@ daq_time = client.channels.create(
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 27):
+for i in range(1, 28):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
         data_type=sy.DataType.TIMESTAMP,
@@ -327,15 +327,19 @@ with client.new_streamer(command_channels) as streamer:
                 if engine_pneumatics_vent_open:
                     trailer_pneumatics_delta -= 1.5
 
+                if press_vent_open:
+                    press_tank_delta -= 4
+
                 if press_fill_open:
                     if (gas_booster_fill_open and
                             (air_drive_iso_1_open or air_drive_iso_2_open)):
                         press_tank_delta += 3.5
                     else:
                         press_tank_delta += 2.5
+                
+                if fuel_pre_press_open:
+                    fuel_tank_delta += 3.0
 
-                if press_vent_open:
-                    press_tank_delta -= 4
 
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
