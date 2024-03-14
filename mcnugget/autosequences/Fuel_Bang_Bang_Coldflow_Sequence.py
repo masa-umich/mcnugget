@@ -102,36 +102,93 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
             print ("fuel_tpc_1 and fuel_tpc_2 closed")
             return
 
-        # if pressure is above TARGET_1, closes both valves
+        '''
+        Pressure is above TARGET_1: 
+        - Nothing happens if no valves are open or only valve 1 is open
+        - Closes valve 2 if valve 2 is open or both are open
+        '''
         if fuel_tank_pressures > TARGET_1:
-            print(f"pressure above {BOUND_1} - closing both valves")
-            syauto.close_all(auto, [fuel_tpc_1, fuel_tpc_2])
-            print ("fuel_tpc_1 and fuel_tpc_2 closed")
+            if fuel_tpc_2_open:
+                print(f"pressure above {BOUND_1} - closing valve 2")
+                fuel_tpc_2.close()
+                print ("fuel_tpc_2 closed")
 
-        # if the pressure is below BOUND_1, opens TESCOM_1
-        if fuel_tank_pressures < BOUND_1:
-            if not fuel_tpc_1_open:
-                print(f"pressure below {BOUND_1} - opening valve 1")
+        '''
+        Target 2  < pressure < bound 1 
+        - No valves open --> 1 valve opens
+        - Only valve 1 open --> nothing happens
+        - Only valve 2 open --> valve 2 closes, valve 1 opens 
+        - Both valves open --> valve 2 closes
+        '''
+        if fuel_tank_pressures < BOUND_1 and fuel_tank_pressures > TARGET_2:
+            print(f"pressure below {BOUND_1} but still above {TARGET_2}")
+            if not fuel_tpc_1_open and not fuel_tpc_2_open:
+                print(f"opening fuel_tpc_1")
                 fuel_tpc_1.open()
                 print ("fuel_tpc_1 opened")
-
-        # if the pressure is above TARGET_2, closes TESCOM_2
-        if fuel_tank_pressures > TARGET_2:
-            if fuel_tpc_2_open:
-                print(f"pressure above {TARGET_2} - closing valve 2")
+            elif fuel_tpc_2_open:       
+                print(f"opening fuel_tpc_1 and closing fuel_tpc_2")         
+                syauto.open_close_many_valves(auto, [fuel_tpc_1], [fuel_tpc_2])
+                print ("fuel tpc_1 opened and fuel tpc_2 closed")
+        '''
+        Bound 2 < pressure < target 2
+        - No valves open --> valve 1 opens
+        - Only valve 1 open --> nothing happens
+        - Only valve 2 open --> valve 1 opens
+        - Both valves open --> nothing happens
+        '''
+        if fuel_tank_pressures < TARGET_2 and fuel_tank_pressures > BOUND_2:
+            print(f"pressure below {TARGET_2} but still above {BOUND_2}")
+            if not fuel_tpc_2_open and not fuel_tpc_1_open:
+                print(f"neither valve open, opening valve 1")
+                fuel_tpc_1.open()
+                print ("fuel_tpc_1 opened")
+            elif fuel_tpc_2_open:
+                print(f"closing fuel_tpc_2")
                 fuel_tpc_2.close()
-
+                print ("fuel_tpc_2 closed")
+        '''
+        Minimum < pressure < bound 2
+        - No valves open --> both valves open
+        - Only valve 1 open --> valve 2 opens
+        - Only valve 2 open --> valve 1 opens
+        - Both valves open --> nothing happens
+        '''
         # if the pressure is below BOUND_2, opens TESCOM_2
-        if fuel_tank_pressures < BOUND_2:
-            if not fuel_tpc_2_open:
-                print(f"pressure below {BOUND_2} - opening valve 2")
-                fuel_tpc_2.open()
+        if fuel_tank_pressures < BOUND_2 and fuel_tank_pressures > MINIMUM:
+            if not fuel_tpc_2_open and not fuel_tpc_1_open:
+                print(f"neither valve open, opening both valves")
+                syauto.open_all(auto, [fuel_tpc_1, fuel_tpc_2])
+                print ("fuel_tpc_1 and fuel_tpc_2 opened")
+            elif fuel_tpc_1_open:
+                print(f"closing fuel_tpc_1 and opening fuel_tpc_2")
+                syauto.open_close_many_valves(auto, [fuel_tpc_2], [fuel_tpc_1])
+                print ("fuel_tpc_1 closed and fuel_tpc_2 opened")
+            elif fuel_tpc_2_open:
+                print(f"closing fuel_tpc_2 and opening fuel_tpc_1")
+                syauto.open_close_many_valves(auto, [fuel_tpc_1], [fuel_tpc_2])
+                print ("fuel_tpc_2 closed and fuel_tpc_1 opened")
 
-        # if the pressure is below MINIMUM, opens both valves
+        '''
+        Pressure below minimum
+        - No valves open --> both valves open
+        - Only valve 1 open --> valve 2 also open
+        - Only valve 2 open --> valve 1 also open
+        - Both valves open --> nothing happens
+        '''
         if fuel_tank_pressures < MINIMUM:
-            if not fuel_tpc_1_open or not fuel_tpc_2_open:
+            if not fuel_tpc_2_open or not fuel_tpc_1_open:
                 print(f"pressure below minimum of {MINIMUM} - opening both valves")
                 syauto.open_all(auto, [fuel_tpc_1, fuel_tpc_2])
+                print ("fuel_tpc_1 and fuel_tpc_2 opened")
+            elif fuel_tpc_1_open:
+                print(f"pressure below minimum of {MINIMUM} - opening valve 2")
+                fuel_tpc_2.open()
+                print ("fuel_tpc_2 opened")
+            elif fuel_tpc_2_open:
+                print(f"pressure below minimum of {MINIMUM} - opening valve 1")
+                fuel_tpc_1.open()
+                print ("fuel_tpc_1 opened")
             return
 
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
