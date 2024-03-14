@@ -165,7 +165,7 @@ for i in range(1, 28):
             ),
             sy.Channel(
                 name=f"gse_doa_{i}",
-                data_type=sy.DataType.FLOAT32,
+                data_type=sy.DataType.UINT8,
                 index=daq_time.key
             ),
         ],
