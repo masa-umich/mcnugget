@@ -70,7 +70,7 @@ for i in range(1,36):
     READ_FROM.append(f"gse_ai_{i}")
 
 #Change these based on testing requirements
-TARGET_1 = 90
+TARGET_1 = 4000
 BOUND_1 = TARGET_1 - 2
 INC_1 = 10
 
@@ -91,7 +91,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
     fuel_pre_press = syauto.Valve(auto=auto, cmd=FUEL_PRE_PRESS_VALVE_CMD, ack=FUEL_PRE_PRESS_VALVE_ACK, normally_open=False)
 
     def run_tpc(auto_: Controller):
-        fuel_tank_pressures = syauto.compute_medians(auto,[FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
+        fuel_tank_pressures = syauto.get_median_value(auto,[FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
         fuel_tpc_1_open = auto_[FUEL_TPC_1_ACK]
         fuel_tpc_2_open = auto_[FUEL_TPC_2_ACK]
 
@@ -112,7 +112,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         if fuel_tank_pressures < BOUND_1:
             if not fuel_tpc_1_open:
                 print(f"pressure below {BOUND_1} - opening valve 1")
-                syauto.open(fuel_tpc_1)
+                fuel_tpc_1.open()
                 print ("fuel_tpc_1 opened")
 
         # if the pressure is above TARGET_2, closes TESCOM_2
@@ -142,29 +142,13 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
     try:
         print("Starting Fuel Bang Bang Coldflow Sequence. Setting initial system state.")
         #confirm what the initial state of the system should be 
-        syauto.close_all(auto, [fuel_vent, ox_low_flow_vent])
-        print("fuel vent and ox low flow vent closed")
+        syauto.close_all(auto, [fuel_vent, ox_low_flow_vent, fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
+        print("All valves and vents closed. Beinning test in 1s")
         time.sleep(1)
-        print("Initial state set. Beginning pressurization of fuel tank")
-
-        print(f"Fuel tanks to {TARGET_1} PSI")
-        fuel_tpc_1.open()
-        # pressurizes press tank and fuel tank to 90 psi in 9 increments
-        syauto.pressurize(auto, fuel_pre_press, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3],TARGET_1,MAXIMUM,INC_1)
-        print("Closing fuel tpc valve 1")
-        fuel_tpc_1.close()
-
-        # pressurizes press tank to 230 psi in 5 increments
-        print("Pressurizing fuel tanks to {TARGET_2} psi")
-        syauto.pressurize(auto, fuel_pre_press, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3], TARGET_2,MAXIMUM, INC_2)
-
-        print("Fuel tanks pressurized to 230 psi - beginning TPC control test in 5")
-        time.sleep(2)
 
         print("Opening Fuel Prevalve")
         fuel_prevalve.open()
         start = sy.TimeStamp.now()
-
         auto.wait_until(run_tpc)
 
         print("Test complete. Safing System")
@@ -179,6 +163,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
     except KeyboardInterrupt:
         print("Test interrupted. Safeing System")
+        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
         #close all prevalves and open all vents
 
     time.sleep(60)
