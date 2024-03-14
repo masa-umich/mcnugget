@@ -128,28 +128,27 @@ with client.control.acquire(name="Demo Autosequence",
 
     # prevalves
     fuel_press = syauto.Valve(
-        auto=auto, cmd="gse_doc_1", ack="gse_doa_1", normally_open=False, name="fuel_press")
+        auto=auto, cmd="gse_doc_1", ack="gse_doa_1", normally_open=False)
     ox_press = syauto.Valve(
-        auto=auto, cmd="gse_doc_2", ack="gse_doa_2", normally_open=False, name="ox_press")
+        auto=auto, cmd="gse_doc_2", ack="gse_doa_2", normally_open=False)
     ox_pre_press = syauto.Valve(
-        auto=auto, cmd="gse_doc_3", ack="gse_doa_3", normally_open=False, name="ox_pre_press")
+        auto=auto, cmd="gse_doc_3", ack="gse_doa_3", normally_open=False)
     
     # ISO valves
     fuel_press_ISO = syauto.Valve(
-        auto=auto, cmd="gse_doc_4", ack="gse_doa_4",  normally_open=False, name="fuel_press_ISO")
+        auto=auto, cmd="gse_doc_4", ack="gse_doa_4",  normally_open=False)
     ox_press_ISO = syauto.Valve(
-        auto=auto, cmd="gse_doc_5", ack="gse_doa_5", normally_open=False, name="ox_press_ISO")
+        auto=auto, cmd="gse_doc_5", ack="gse_doa_5", normally_open=False)
     
     # there are no vents in this autosequence, but this is an example of how to declare one
     nonexistent_vent = syauto.Valve(
-        auto=auto, cmd="gse_doc_18", ack="gse_doa_18", normally_open=True, name="nonexistent_vent")
+        auto=auto, cmd="gse_doc_18", ack="gse_doa_18", normally_open=True)
     
     # Look at the `syauto` library to learn more about the specifics.
     #       - `auto=auto` assigns the controller to the valve, so all valves are on the same 'network'
     #       - `cmd=gse_doc_X` tells the valve to write commands to `gse_doc_X`
     #       - `ack=gse_doa_X` tells the valve to read acknowledgements from `gse_doa_X`
     #       - `normally_open=True/False` sets the valve to be open/closed in the default state, respectively
-    #       - `name="name"` is purely an alias used for recognizing what vent you are dealing with (when needed)
 
 
     ###     THIS SECTION RUNS THE AUTOSEQUENCE AS FOLLOWS       ###
@@ -167,12 +166,12 @@ with client.control.acquire(name="Demo Autosequence",
 
     print("starting autosequence")
 
-    print(f"pressurizing FUEL_PT:{FUEL_PT} using {fuel_press.name}")   # useful for debugging to know what's happening
+    print(f"pressurizing FUEL_PT:{FUEL_PT} using fuel_press:{fuel_press.cmd_chan}")   # useful for debugging to know what's happening
 
     # this opens and closes fuel_press to pressurize the fuel tank to TARGET_1 pressure in 10 increments
     syauto.pressurize(auto=auto, valve_s=fuel_press, pressure_s=FUEL_PT, target=TARGET_1, inc=(TARGET_1 / 10))
 
-    print(f"pressurizing OX_PT:{OX_PT} using {ox_press.name}:{ox_press.cmd_chan} and {ox_pre_press.name}:{ox_pre_press.cmd_chan}")   
+    print(f"pressurizing OX_PT:{OX_PT} using ox_press:{ox_press.cmd_chan} and ox_pre_press:{ox_pre_press.cmd_chan}")   
     # The above statement is just useful for debugging to know what's happening
     # It's not strictly necessary and you only need to use it if you think its a good idea
 

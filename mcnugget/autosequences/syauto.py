@@ -10,13 +10,11 @@ class Valve:
             self,
             auto: Controller,
             cmd: str,
-            name: str = "",
-            ack: str = "",
+            ack: str,
             normally_open: bool = False,
             mawp: float = 0,
             wait_for_ack: bool = False
     ):
-        self.name = name
         self.cmd_chan = cmd
         self.ack = ack
         self.normally_open = normally_open
@@ -49,14 +47,12 @@ class DualTescomValve:
         auto: Controller,
         close_cmd_chan: str,
         open_cmd_chan: str,
-        name: str = "",
         normally_open: bool = False,
         mawp: float = 0,
         wait_for_ack: bool = False,
         open_cmd_ack: str = "",
         close_cmd_ack: str = "",
     ):
-        self.name = name
         self.normally_open = normally_open
         self.auto = auto
         self.wait_for_ack = wait_for_ack
@@ -139,9 +135,9 @@ def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s
         valve_s = [valve_s]
 
     else:
-        print("Pressurizing using these valves:")
+        print("Pressurizing these valves:")
         for v in valve_s:
-            print(str(v.name))
+            print(str(v.name) + ", ")
 
     if isinstance(pressure_s, str):
         print(f"Reading from one pressure channel: {pressure_s}")
