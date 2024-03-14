@@ -139,9 +139,9 @@ def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s
         valve_s = [valve_s]
 
     else:
-        print("Pressurizing these valves:")
+        print("Pressurizing using these valves:")
         for v in valve_s:
-            print(str(v.name) + ", ")
+            print(str(v.name))
 
     if isinstance(pressure_s, str):
         print(f"Reading from one pressure channel: {pressure_s}")
