@@ -295,28 +295,46 @@ with client.new_streamer(command_channels) as streamer:
                 elif not fuel_prevalve_energized:
                     FUEL_PREVALVE_LAST_OPEN = None
 
+                # if fuel_tpc_1_energized and FUEL_TPC_1_LAST_OPEN is None:
+                #     FUEL_TPC_1_LAST_OPEN = sy.TimeStamp.now()
+                # elif not fuel_tpc_1_energized:
+                #     FUEL_TPC_1_LAST_OPEN = None
+
+                # if fuel_tpc_2_energized and FUEL_TPC_2_LAST_OPEN is None:
+                #     FUEL_TPC_2_LAST_OPEN = sy.TimeStamp.now()
+                # elif not fuel_tpc_2_energized:
+                #     FUEL_TPC_2_LAST_OPEN = None
+
                 fuel_tank_delta = 0
                 trailer_pneumatics_delta = 0
                 press_tank_delta = 0
                 ox_tank_delta = 0
 
-                if fuel_prevalve_energized:
-                    fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
+                # fuel section of simulation
+
+                # # pre_press increases tank pressure if fuel_press_iso also open
+                # if fuel_pre_press_energized:
+                #     fuel_tank_delta += 3.0
+
+                # # fuel_prevalve allows fuel to flow out depending on tescoms
+                # if fuel_prevalve_energized:
+                #     print("fuel_prevalve_energized")
+                #     if fuel_tpc_1_energized:
+                #         fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_TPC_1_LAST_OPEN).seconds
+                #     if fuel_tpc_2_energized:
+                #         fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_TPC_2_LAST_OPEN).seconds
+
+                # if fuel_press_iso_energized and not fuel_vent_energized:
+                #     fuel_tank_delta = 0
+
+                # if not fuel_vent_energized:
+                #     fuel_tank_delta -= 4
 
                 if ox_pre_valve_energized:
                     ox_tank_delta -= 1.5
 
                 if ox_press_energized and not ox_low_vent_energized:
                     ox_tank_delta = 0
-
-                if fuel_press_iso_energized and not fuel_vent_energized:
-                    fuel_tank_delta = 0
-
-                if engine_pneumatics_iso_energized and not engine_pneumatics_vent_energized:
-                    trailer_pneumatics_delta = 0
-
-                if not fuel_vent_energized: #normally open .... 
-                    fuel_tank_delta -= 4
 
                 if ox_low_vent_energized:
                     ox_tank_delta -= 2.0
@@ -336,23 +354,9 @@ with client.new_streamer(command_channels) as streamer:
                         press_tank_delta += 3.5
                     else:
                         press_tank_delta += 2.5
-                
-                if fuel_pre_press_energized:
-                    fuel_tank_delta += 3.0
 
-                if fuel_tpc_1_energized and not fuel_tpc_2_energized:
-                    fuel_tank_delta += 0.1
-                
-                if fuel_tpc_2_energized and not fuel_tpc_1_energized:
-                    fuel_tank_delta += 0.1
-
-                if fuel_tpc_2_energized and fuel_tpc_1_energized:
-                    fuel_tank_delta += 1
-
-                if not fuel_tpc_1_energized and not fuel_tpc_2_energized:
-                    fuel_tank_delta -= .75
-                
-
+                if engine_pneumatics_iso_energized and not engine_pneumatics_vent_energized:
+                    trailer_pneumatics_delta = 0
 
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
@@ -469,6 +473,7 @@ with client.new_streamer(command_channels) as streamer:
                 if (i % 40) == 0:
                     print(f"Committing {i} samples")
                     ok = w.commit()
+                    print(ok)
 
             except Exception as e:
                 print(e)
