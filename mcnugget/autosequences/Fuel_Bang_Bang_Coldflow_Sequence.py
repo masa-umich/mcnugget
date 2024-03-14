@@ -181,14 +181,17 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
                 print(f"pressure below minimum of {MINIMUM} - opening both valves")
                 syauto.open_all(auto, [fuel_tpc_1, fuel_tpc_2])
                 print ("fuel_tpc_1 and fuel_tpc_2 opened")
+                return
             elif fuel_tpc_1_open:
                 print(f"pressure below minimum of {MINIMUM} - opening valve 2")
                 fuel_tpc_2.open()
                 print ("fuel_tpc_2 opened")
+                return
             elif fuel_tpc_2_open:
                 print(f"pressure below minimum of {MINIMUM} - opening valve 1")
                 fuel_tpc_1.open()
                 print ("fuel_tpc_1 opened")
+                return
             return
 
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished

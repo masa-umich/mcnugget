@@ -315,7 +315,7 @@ with client.new_streamer(command_channels) as streamer:
                 if engine_pneumatics_iso_energized and not engine_pneumatics_vent_energized:
                     trailer_pneumatics_delta = 0
 
-                if not fuel_vent_energized:
+                if not fuel_vent_energized: #normally open .... 
                     fuel_tank_delta -= 4
 
                 if ox_low_vent_energized:
