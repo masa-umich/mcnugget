@@ -122,7 +122,7 @@ def open_all(auto: Controller, valves: list[Valve]):
     auto.set(commands)
 
 
-def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
+def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
                target: float, max: float, inc: float, delay: float = 1):
     # This energizes the valve until the target pressure is reached.
     # valve_s can be either a single valve or a list.
@@ -131,13 +131,13 @@ def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s
     #     custom_auto = Controller
 
     if isinstance(valve_s, Valve):
-        print(f"Pressurizing {valve_s.name} to {target}")
+        print(f"Pressurizing {valve_s.cmd_chan} to {target}")
         valve_s = [valve_s]
 
     else:
         print("Pressurizing these valves:")
         for v in valve_s:
-            print(str(v.name) + ", ")
+            print(str(v.cmd_chan) + ", ")
 
     if isinstance(pressure_s, str):
         print(f"Reading from one pressure channel: {pressure_s}")
@@ -149,21 +149,23 @@ def pressurize(auto_: Controller, valve_s: Union[list[Valve], Valve], pressure_s
             print(p)
 
     # pressurizes the valve until the target pressure is reached
-    partial_target = get_median_value(auto_, pressure_s) + inc
+    median = statistics.median(auto[pressure] for pressure in pressure_s)
+    partial_target = median + inc
     while partial_target <= target:
-        if (get_median_value(auto_, pressure_s) > max):
+        # if median exceeds max, return
+        if (statistics.median(auto[pressure] for pressure in pressure_s) > max):
             return
         print(f"Pressurizing to {partial_target}")
 
         # Opens all valves since a single valve would already be converted to list of size 1
-        open_all(auto_, valve_s)
+        open_all(auto, valve_s)
 
-        auto_.wait_until(
+        auto.wait_until(
             lambda pressure: all(
-                auto_[pressure] >= partial_target for pressure in pressure_s), delay
+                auto[pressure] >= partial_target for pressure in pressure_s), delay
         )
 
-        close_all(auto_, valve_s)
+        close_all(auto, valve_s)
 
         time.sleep(delay)
         partial_target += inc
@@ -190,7 +192,3 @@ def compute_medians(auto_: Controller, channels: list[str], running_median_size:
         median_arrs.append(statistics.median(auto_[channel]))
 
     return median_arrs
-
-#returns a single median value
-def get_median_value(auto_: Controller, channels: list[str]):
-    return statistics.median(auto_[channel] for channel in channels)
