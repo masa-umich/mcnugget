@@ -111,18 +111,18 @@ TRICKLE_PURGE_POST_REG_PT = "gse_ai_15"  # Trickle purge post reg pressure
 TRICKLE_PURGE_PRE_2K_PT = "gse_ai_16"  # Trickle purge pre reg pressure
 AIR_DRIVE_2K_PT = "gse_ai_20"  # Air drive 2k pressure
 AIR_DRIVE_POST_REG_PT = "gse_ai_21"  # Air drive post reg pressure
+PRESS_TANK_PT_3 = "gse_ai_22"  # Press tank pressure
 PRESS_TANK_SUPPLY = "gse_ai_23"  # Press tank pressure
+PRESS_TANK_PT_2 = "gse_ai_24"  # Press tank pressure
 GAS_BOOSTER_OUTLET_PT = "gse_ai_25"  # Gas booster outlet pressure
+PRESS_TANK_PT_1 = "gse_ai_26"  # Press tank pressure
 PRESS_TANK_2K_BOTTLE_PRE_FILL_PT = "gse_ai_27"  # Press tank 2k bottle pre-fill pressure
 PNEUMATICS_BOTTLE_PT = "gse_ai_30"  # Pneumatics bottle pressure
 TRAILER_PNEMATICS_PT = "gse_ai_31"  # Trailer pneumatics pressure
 ENGINE_PNEUMATICS_PT = "gse_ai_33"  # Engine pneumatics pressure
 PURGE_2K_BOTTLE_PT = "gse_ai_34"  # Purge 2k bottle pressure
-PURGE_POST_REG_PT = "gse_ai_36"  # Purge post reg pressure
 FUEL_PT_3_PRESSURE = "gse_ai_35"  # Fuel tank 3 pressure
-PRESS_TANK_PT_1 = "gse_ai_26"  # Press tank pressure
-PRESS_TANK_PT_2 = "gse_ai_24"  # Press tank pressure
-PRESS_TANK_PT_3 = "gse_ai_22"  # Press tank pressure
+PURGE_POST_REG_PT = "gse_ai_36"  # Purge post reg pressure
 
 PRESS_TANK_TC_1 = "gse_ai_69"
 PRESS_TANK_TC_2 = "gse_ai_70"
@@ -247,6 +247,8 @@ press_tank_PT_2 = 0
 press_tank_PT_3 = 0
 
 FUEL_PREVALVE_LAST_OPEN = None
+FUEL_TPC_1_LAST_OPEN = None
+FUEL_TPC_2_LAST_OPEN = None
 
 with client.new_streamer(command_channels) as streamer:
     with client.new_writer(
@@ -295,37 +297,37 @@ with client.new_streamer(command_channels) as streamer:
                 elif not fuel_prevalve_energized:
                     FUEL_PREVALVE_LAST_OPEN = None
 
+                if fuel_tpc_1_energized and FUEL_TPC_1_LAST_OPEN is None:
+                    FUEL_TPC_1_LAST_OPEN = sy.TimeStamp.now()
+                elif not fuel_tpc_1_energized:
+                    FUEL_TPC_1_LAST_OPEN = None
+
+                if fuel_tpc_2_energized and FUEL_TPC_2_LAST_OPEN is None:
+                    FUEL_TPC_2_LAST_OPEN = sy.TimeStamp.now()
+                elif not fuel_tpc_2_energized:
+                    FUEL_TPC_2_LAST_OPEN = None
+
                 fuel_tank_delta = 0
                 trailer_pneumatics_delta = 0
                 press_tank_delta = 0
                 ox_tank_delta = 0
 
+                # This is where the actual phsyics simulating happens
                 if fuel_prevalve_energized:
-                    fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
+                    if fuel_tpc_1_energized:
+                        fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_TPC_1_LAST_OPEN).seconds
+                    if fuel_tpc_2_energized:
+                        fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_TPC_2_LAST_OPEN).seconds
 
-                if ox_pre_valve_energized:
-                    ox_tank_delta -= 1.5
+                # for TPC testing, none of this should matter (only for the press beforehand)
+                if fuel_press_iso_energized:
+                    fuel_tank_delta += 3
 
-                if ox_press_energized and not ox_low_vent_energized:
-                    ox_tank_delta = 0
-
-                if fuel_press_iso_energized and not fuel_vent_energized:
-                    fuel_tank_delta = 0
-
-                if engine_pneumatics_iso_energized and not engine_pneumatics_vent_energized:
-                    trailer_pneumatics_delta = 0
-
-                if not fuel_vent_energized: #normally open .... 
+                if not fuel_vent_energized: # normally open .... 
                     fuel_tank_delta -= 4
-
-                if ox_low_vent_energized:
-                    ox_tank_delta -= 2.0
-
-                if ox_high_flow_vent_energized:
-                    ox_tank_delta -= 5.0
-
-                if engine_pneumatics_vent_energized:
-                    trailer_pneumatics_delta -= 1.5
+                
+                if fuel_pre_press_energized and fuel_press_iso_energized:
+                    fuel_tank_delta += 3
 
                 if press_vent_energized:
                     press_tank_delta -= 4
@@ -336,10 +338,24 @@ with client.new_streamer(command_channels) as streamer:
                         press_tank_delta += 3.5
                     else:
                         press_tank_delta += 2.5
-                
-                if fuel_pre_press_energized:
-                    fuel_tank_delta += 3.0
 
+                if ox_pre_valve_energized:
+                    ox_tank_delta -= 1.5
+
+                if ox_press_energized and not ox_low_vent_energized:
+                    ox_tank_delta = 0
+
+                if ox_low_vent_energized:
+                    ox_tank_delta -= 2.0
+
+                if ox_high_flow_vent_energized:
+                    ox_tank_delta -= 5.0
+
+                if engine_pneumatics_vent_energized:
+                    trailer_pneumatics_delta -= 1.5
+
+                if engine_pneumatics_iso_energized and not engine_pneumatics_vent_energized:
+                    trailer_pneumatics_delta = 0
 
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
@@ -353,35 +369,16 @@ with client.new_streamer(command_channels) as streamer:
                 press_tank_PT_3 += press_tank_delta
 
                 # no negative pressures pls ;-;
-                if ox_tank_1_pressure <= 0:
-                    ox_tank_1_pressure = 0
-
-                if ox_tank_2_pressure <= 0:
-                    ox_tank_2_pressure = 0
-
-                if ox_tank_3_pressure <= 0:
-                    ox_tank_3_pressure = 0
-
-                if fuel_PT_1_pressure <= 0:
-                    fuel_PT_1_pressure = 0
-
-                if fuel_PT_2_pressure <= 0:
-                    fuel_PT_2_pressure = 0
-
-                if fuel_PT_3_pressure <= 0:
-                    fuel_PT_3_pressure = 0
-
-                if trailer_pneumatics_pressure <= 0:
-                    trailer_pneumatics_pressure = 0
-
-                if press_tank_PT_1 <= 0:
-                    press_tank_PT_1 = 0
-
-                if press_tank_PT_2 <= 0:
-                    press_tank_PT_2 = 0
-
-                if press_tank_PT_3 <= 0:
-                    press_tank_PT_3 = 0
+                ox_tank_1_pressure = max(0, ox_tank_1_pressure)
+                ox_tank_2_pressure = max(0, ox_tank_2_pressure)
+                ox_tank_3_pressure = max(0, ox_tank_3_pressure)
+                fuel_PT_1_pressure = max(0, fuel_PT_1_pressure)
+                fuel_PT_2_pressure = max(0, fuel_PT_2_pressure)
+                fuel_PT_3_pressure = max(0, fuel_PT_3_pressure)
+                trailer_pneumatics_pressure = max(0, trailer_pneumatics_pressure)
+                press_tank_PT_1 = max(0, press_tank_PT_1)
+                press_tank_PT_2 = max(0, press_tank_PT_2)
+                press_tank_PT_3 = max(0, press_tank_PT_3)
 
                 now = sy.TimeStamp.now()
 
