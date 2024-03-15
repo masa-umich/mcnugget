@@ -101,8 +101,10 @@ BOUND_1 = TARGET_1 - TPC_STEP
 TARGET_2 = BOUND_1 - TPC_STEP
 BOUND_2 = TARGET_2 - TPC_STEP
 
-MAXIMUM = TARGET_1 + 30
+MAXIMUM = 525
 MINIMUM = 15
+
+START_TPC = time.time()
 
 # this initializes a connection to the client with access to all the needed channels
 with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
@@ -117,7 +119,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
     
     ox_drain = syauto.Valve(auto=auto, cmd=OX_DRAIN_CMD, ack=OX_DRAIN_ACK, normally_open=False)
 
-    def run_tpc(auto_, start = time.time()):
+    def run_tpc(auto_):
         fuel_tank_pressure = get_medians(auto_)
         fuel_tpc_1_open = auto_[FUEL_TPC_1_ACK]
         fuel_tpc_2_open = auto_[FUEL_TPC_2_ACK]
@@ -152,7 +154,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         print(f"fuel tank pressure: {fuel_tank_pressure}")
         print(fuel_tpc_1_open, fuel_tpc_2_open)
 
-        if time.time() - start > 25:
+        if time.time() - START_TPC > 25:
             print("time is up")
             return True
 
@@ -201,6 +203,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         time.sleep(0.5)
 
         print("Initiating TPC")
+        START_TPC = time.time()
         auto.wait_until(run_tpc)
 
         print("Test complete. Safing System")
