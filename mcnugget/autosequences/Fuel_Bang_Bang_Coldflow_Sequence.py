@@ -119,7 +119,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
     def run_tpc(auto_):
         if auto_[FUEL_TANK_PT_1] or auto_[FUEL_TANK_PT_2] or auto_[FUEL_TANK_PT_3]:
-            fuel_tank_pressures = statistics.median(auto_[PT] for PT in [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
+            fuel_tank_pressure = statistics.median(auto_[PT] for PT in [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
         fuel_tpc_1_open = auto_[FUEL_TPC_1_ACK]
         fuel_tpc_2_open = auto_[FUEL_TPC_2_ACK]
 
@@ -199,10 +199,10 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
         print("Opening Fuel Prevalve")
         fuel_prevalve.open()
-        time.sleep(0.5)
+        time.sleep(1)
 
         print("Initiating TPC")
-        auto.wait_until([run_tpc,sy.TimeSpan(sy.TimeStamp.now()-start).seconds > TEST_DURATION])
+        auto.wait_until(run_tpc)
 
         print("Test complete. Safing System")
 
