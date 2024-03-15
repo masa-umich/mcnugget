@@ -151,7 +151,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         Otherwise, we leave the system alone.
         """
 
-        print(f"fuel tank pressure: {fuel_tank_pressure}")
+        print(f"fuel tank pressure: {fuel_tank_pressures}")
         print(fuel_tpc_1_open, fuel_tpc_2_open)
 
         if time.time() - START_TPC > 25:
@@ -187,8 +187,8 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
                 syauto.open_all(auto_, [fuel_tpc_1, fuel_tpc_2])
                 print("TPC 1: OPEN | TPC 2: OPEN")
 
-        # if the pressure drops below MINIMUM, the tanks are mostly empty and the test is finished
-        return fuel_tank_pressure <= MINIMUM
+        # if the pressure drops below 15, the tanks are mostly empty and the test is finished
+        return fuel_tank_pressures <= 15
 
     try:
         start = sy.TimeStamp.now()
