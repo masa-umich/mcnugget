@@ -200,7 +200,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
         print("Opening Fuel Prevalve")
         fuel_prevalve.open()
-        time.sleep(0.5)
+        time.sleep(1)
 
         print("Initiating TPC")
         START_TPC = time.time()
