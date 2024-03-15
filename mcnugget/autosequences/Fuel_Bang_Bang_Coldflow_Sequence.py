@@ -54,6 +54,8 @@ OX_LOW_FLOW_VENT_CMD = "gse_doc_16"
 OX_LOW_FLOW_VENT_ACK = "gse_doa_16"
 FUEL_PRE_PRESS_VALVE_CMD = "gse_doc_11"
 FUEL_PRE_PRESS_VALVE_ACK = "gse_doa_11"
+OX_DRAIN_CMD = "gse_doc_14"
+OX_DRAIN_ACK = "gse_doa_14"
 
 #PTs and sensor readings autosequence will control
 FUEL_TANK_PT_1 = "gse_ai_1"
@@ -91,7 +93,6 @@ MINIMUM = BOUND_2 - 20
 
 # this initializes a connection to the client with access to all the needed channels
 with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM, write_authorities=252) as auto:
-    # print(auto["gse_doa_9"])
     fuel_tpc_1 = syauto.Valve(auto=auto, cmd=FUEL_TPC_1_CMD, ack=FUEL_TPC_1_ACK, normally_open=False)
     fuel_tpc_2 = syauto.Valve(auto=auto, cmd=FUEL_TPC_2_CMD, ack=FUEL_TPC_2_ACK, normally_open=False)
     fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE_CMD, ack=FUEL_PREVALVE_ACK, normally_open=False)
@@ -99,9 +100,10 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
     fuel_vent = syauto.Valve(auto=auto, cmd=FUEL_VENT_CMD, ack=FUEL_VENT_ACK, normally_open=True)
     ox_low_flow_vent = syauto.Valve(auto=auto, cmd=OX_LOW_FLOW_VENT_CMD, ack=OX_LOW_FLOW_VENT_ACK, normally_open=True)
+    
+    ox_drain = syauto.Valve(auto=auto, cmd=OX_DRAIN_CMD, ack=OX_DRAIN_ACK, normally_open=False)
 
     def run_tpc():
-        fuel_tank_pressures = 2000  # arbitrary
         if auto[FUEL_TANK_PT_1] or auto[FUEL_TANK_PT_2] or auto[FUEL_TANK_PT_3]:
             fuel_tank_pressures = statistics.median(auto[PT] for PT in [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
         fuel_tpc_1_open = auto[FUEL_TPC_1_ACK]
@@ -173,7 +175,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
         print("Starting Fuel Bang Bang Coldflow Sequence. Setting initial system state.")
         # set initial system state
-        syauto.close_all(auto, [fuel_vent, ox_low_flow_vent, fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
+        syauto.close_all(auto, [fuel_vent, ox_low_flow_vent, fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press, ox_drain])
         print("All valves and vents closed. Beinning test")
 
         print("Opening Fuel Prevalve")
@@ -191,11 +193,12 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
 
-        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
+        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
         input("press any key to terminate the autosequence")
 
     except KeyboardInterrupt:
         print("Test interrupted. Safing System")
         # close all prevalves and open all vents
-        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
+        # ALSO OPENS OX_DRAIN
+        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
         input("press any key to terminate the autosequence")
