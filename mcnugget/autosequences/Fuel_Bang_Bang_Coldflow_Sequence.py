@@ -101,8 +101,8 @@ BOUND_1 = TARGET_1 - TPC_STEP
 TARGET_2 = BOUND_1 - TPC_STEP
 BOUND_2 = TARGET_2 - TPC_STEP
 
-MAXIMUM = TARGET_1 + 30
-MINIMUM = 15
+MAXIMUM = TARGET_1 + 20
+MINIMUM = BOUND_2 - 20
 
 # this initializes a connection to the client with access to all the needed channels
 with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
@@ -117,8 +117,9 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
     
     ox_drain = syauto.Valve(auto=auto, cmd=OX_DRAIN_CMD, ack=OX_DRAIN_ACK, normally_open=False)
 
-    def run_tpc(auto_, start = time.time()):
-        fuel_tank_pressure = get_medians(auto_)
+    def run_tpc(auto_):
+        if auto_[FUEL_TANK_PT_1] or auto_[FUEL_TANK_PT_2] or auto_[FUEL_TANK_PT_3]:
+            fuel_tank_pressures = statistics.median(auto_[PT] for PT in [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
         fuel_tpc_1_open = auto_[FUEL_TPC_1_ACK]
         fuel_tpc_2_open = auto_[FUEL_TPC_2_ACK]
 
@@ -149,7 +150,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         Otherwise, we leave the system alone.
         """
 
-        print(f"fuel tank pressure: {fuel_tank_pressure}")
+        print(f"fuel tank pressure: {fuel_tank_pressures}")
         print(fuel_tpc_1_open, fuel_tpc_2_open)
 
         if time.time() - start > 25:
@@ -185,8 +186,8 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
                 syauto.open_all(auto_, [fuel_tpc_1, fuel_tpc_2])
                 print("TPC 1: OPEN | TPC 2: OPEN")
 
-        # if the pressure drops below MINIMUM, the tanks are mostly empty and the test is finished
-        return fuel_tank_pressure <= MINIMUM
+        # if the pressure drops below 15, the tanks are mostly empty and the test is finished
+        return fuel_tank_pressures <= 15
 
     try:
         start = sy.TimeStamp.now()
@@ -201,7 +202,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         time.sleep(0.5)
 
         print("Initiating TPC")
-        auto.wait_until(run_tpc)
+        auto.wait_until([run_tpc,sy.TimeSpan(sy.TimeStamp.now()-start).seconds > TEST_DURATION])
 
         print("Test complete. Safing System")
 
