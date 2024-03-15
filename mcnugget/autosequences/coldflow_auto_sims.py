@@ -1,4 +1,5 @@
 import time
+import random
 import synnax as sy
 
 client = sy.Synnax(
@@ -145,7 +146,7 @@ PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2
 TCs = [PRESS_TANK_TC_1, PRESS_TANK_TC_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]
 
 # Parameters for testing
-INITIAL_FUEL_TANK_PRESSURE = 4000
+INITIAL_FUEL_TANK_PRESSURE = 450
 
 daq_time = client.channels.create(
     name=DAQ_TIME,
@@ -371,9 +372,9 @@ with client.new_streamer(command_channels) as streamer:
                 ox_tank_1_pressure += ox_tank_delta
                 ox_tank_2_pressure += ox_tank_delta
                 ox_tank_3_pressure += ox_tank_delta
-                fuel_PT_1_pressure += fuel_tank_delta
-                fuel_PT_2_pressure += fuel_tank_delta
-                fuel_PT_3_pressure += fuel_tank_delta
+                fuel_PT_1_pressure += fuel_tank_delta 
+                fuel_PT_2_pressure += fuel_tank_delta 
+                fuel_PT_3_pressure += fuel_tank_delta 
                 trailer_pneumatics_pressure += trailer_pneumatics_delta
                 press_tank_PT_1 += press_tank_delta
                 press_tank_PT_2 += press_tank_delta
@@ -424,9 +425,9 @@ with client.new_streamer(command_channels) as streamer:
                     # writes to all 30 PTs
                     OX_PRE_FILL_PT: ox_pre_fill_pressure,
                     OX_PRESS_DOME_PILOT_REG_PT: ox_dome_reg_pilot_pressure,
-                    FUEL_PT_1_PRESSURE: fuel_PT_1_pressure,
-                    FUEL_PT_2_PRESSURE: fuel_PT_2_pressure,
-                    FUEL_PT_3_PRESSURE: fuel_PT_3_pressure,
+                    FUEL_PT_1_PRESSURE: fuel_PT_1_pressure + random.uniform(-20, 20),
+                    FUEL_PT_2_PRESSURE: fuel_PT_2_pressure + random.uniform(-20, 20),
+                    FUEL_PT_3_PRESSURE: fuel_PT_3_pressure + random.uniform(-20, 20),
                     OX_TANK_1_PRESSURE: ox_tank_1_pressure,
                     OX_TANK_2_PRESSURE: ox_tank_2_pressure,
                     OX_TANK_3_PRESSURE: ox_tank_3_pressure,
@@ -452,6 +453,7 @@ with client.new_streamer(command_channels) as streamer:
                     PRESS_TANK_PT_2: press_tank_PT_2,
                     PRESS_TANK_PT_3: press_tank_PT_3,
                     PURGE_POST_REG_PT: purge_post_reg_pressure,
+                    # FUEL_PT_MEDIAN: 
 
                     # writes to all 4 TCs
                     PRESS_TANK_TC_1: 0,
