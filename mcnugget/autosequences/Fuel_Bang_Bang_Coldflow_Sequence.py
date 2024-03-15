@@ -168,6 +168,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
         if fuel_tank_pressures < 15:
             print("pressure below 15 - FINISHED")
+            print(fuel_tank_pressures)
             return
 
     try:
@@ -194,11 +195,9 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         )
 
         syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
-        input("press any key to terminate the autosequence")
 
     except KeyboardInterrupt:
         print("Test interrupted. Safing System")
         # close all prevalves and open all vents
         # ALSO OPENS OX_DRAIN
         syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
-        input("press any key to terminate the autosequence")
