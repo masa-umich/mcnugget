@@ -58,9 +58,9 @@ OX_DRAIN_CMD = "gse_doc_14"
 OX_DRAIN_ACK = "gse_doa_14"
 
 #PTs and sensor readings autosequence will control
-FUEL_TANK_PT_1 = "gse_ai_1"
-FUEL_TANK_PT_2 = "gse_ai_2"
-FUEL_TANK_PT_3 = "gse_ai_3"
+FUEL_TANK_PT_1 = "gse_ai_3"
+FUEL_TANK_PT_2 = "gse_ai_4"
+FUEL_TANK_PT_3 = "gse_ai_35"
 
 WRITE_TO = []
 READ_FROM = []
@@ -86,7 +86,7 @@ MINIMUM = BOUND_2 - 20
 
 # this initializes a connection to the client with access to all the needed channels
 with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
-    print(auto["gse_doa_25"])  # TODO: unable to do this for some reason
+    time.sleep(1)
     fuel_tpc_1 = syauto.Valve(auto=auto, cmd=FUEL_TPC_1_CMD, ack=FUEL_TPC_1_ACK, normally_open=False)
     fuel_tpc_2 = syauto.Valve(auto=auto, cmd=FUEL_TPC_2_CMD, ack=FUEL_TPC_2_ACK, normally_open=False)
     fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE_CMD, ack=FUEL_PREVALVE_ACK, normally_open=False)
@@ -130,6 +130,9 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         Otherwise, we leave the system alone.
         """
 
+        print(f"fuel tank pressure: {fuel_tank_pressures}")
+        print(fuel_tpc_1_open, fuel_tpc_2_open)
+
         # aborts if the pressure is above the accepted maximum
         if fuel_tank_pressures > MAXIMUM:
             # abort
@@ -138,21 +141,21 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
             print ("TPC 1: CLOSED | TPC 2: CLOSED")
             return
 
-        elif fuel_tank_pressures > TARGET_1:
+        elif fuel_tank_pressures >= TARGET_1:
             # both valves closed
             if fuel_tpc_1_open or fuel_tpc_2_open:
                 print(f"pressure above {TARGET_1}")
                 syauto.close_all(auto_, [fuel_tpc_1, fuel_tpc_2])
                 print ("TPC 1: CLOSED | TPC 2: CLOSED")
 
-        elif TARGET_2 < fuel_tank_pressures and fuel_tank_pressures < BOUND_1:
+        elif TARGET_2 <= fuel_tank_pressures and fuel_tank_pressures <= BOUND_1:
             # valve 1 open, valve 2 closed
             if not fuel_tpc_1_open or fuel_tpc_2_open:
                 print(f"pressure between {TARGET_2} and {BOUND_1}")
                 syauto.open_close_many_valves(auto_, [fuel_tpc_1], [fuel_tpc_2])
                 print("TPC 1: OPEN | TPC 2: CLOSED")
 
-        elif fuel_tank_pressures < BOUND_2:
+        elif fuel_tank_pressures <= BOUND_2:
             # both valves open
             if not fuel_tpc_1_open or not fuel_tpc_2_open:
                 print(f"pressure below {BOUND_2}")
@@ -160,10 +163,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
                 print("TPC 1: OPEN | TPC 2: OPEN")
 
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
-        if fuel_tank_pressures < 15:
-            print("pressure below 15 - FINISHED")
-            print(fuel_tank_pressures)
-            return
+        return fuel_tank_pressures <= 15
 
     try:
         start = sy.TimeStamp.now()
@@ -178,7 +178,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         time.sleep(1)
 
         print("Initiating TPC")
-        auto.wait_until(run_tpc(auto))
+        auto.wait_until(run_tpc)
 
         print("Test complete. Safing System")
 

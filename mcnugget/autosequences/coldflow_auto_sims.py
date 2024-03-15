@@ -77,6 +77,12 @@ FUEL_TPC_1_IN = "gse_doa_25"
 FUEL_TPC_2_OUT = "gse_doc_26"
 FUEL_TPC_2_IN = "gse_doa_26"
 
+vent_command_channels = [FUEL_VENT_OUT, PRESS_VENT_OUT, OX_LOW_VENT_OUT, 
+                         OX_HIGH_FLOW_VENT_OUT, ENGINE_PNEUMATICS_VENT_OUT]
+
+vent_acknowledgement_channels = [FUEL_VENT_IN, PRESS_VENT_IN, OX_LOW_VENT_IN, 
+                         OX_HIGH_FLOW_VENT_IN, ENGINE_PNEUMATICS_VENT_IN]
+
 command_channels = [FUEL_VENT_OUT, FUEL_PREVALVE_OUT, FUEL_FEEDLINE_PURGE_OUT,
                     OX_FILL_PURGE_OUT, FUEL_PRE_PRESS_OUT, OX_PRE_PRESS_OUT, OX_FEEDLINE_PURGE_OUT,
                     ENGINE_PNEUMATICS_ISO_OUT, ENGINE_PNEUMATICS_VENT_OUT,
@@ -196,9 +202,12 @@ rate = (sy.Rate.HZ * 50).period.seconds
 # Create DAQ_STATE dictionary
 DAQ_STATE = {}
 
-# Set values for all channels
+# starts with valves open and vents closed
 for cmd_chan in command_channels:
-    DAQ_STATE[cmd_chan] = 0  # de-energized
+    DAQ_STATE[cmd_chan] = 0  # open
+
+for cmd_chan in vent_command_channels:
+    DAQ_STATE[cmd_chan] = 1  # closed
 
 for pt in PTs:
     DAQ_STATE[pt] = 0  # start with no pressure
@@ -295,15 +304,15 @@ with client.new_streamer(command_channels) as streamer:
                 elif not fuel_prevalve_energized:
                     FUEL_PREVALVE_LAST_OPEN = None
 
-                # if fuel_tpc_1_energized and FUEL_TPC_1_LAST_OPEN is None:
-                #     FUEL_TPC_1_LAST_OPEN = sy.TimeStamp.now()
-                # elif not fuel_tpc_1_energized:
-                #     FUEL_TPC_1_LAST_OPEN = None
+                if fuel_tpc_1_energized and FUEL_TPC_1_LAST_OPEN is None:
+                    FUEL_TPC_1_LAST_OPEN = sy.TimeStamp.now()
+                elif not fuel_tpc_1_energized:
+                    FUEL_TPC_1_LAST_OPEN = None
 
-                # if fuel_tpc_2_energized and FUEL_TPC_2_LAST_OPEN is None:
-                #     FUEL_TPC_2_LAST_OPEN = sy.TimeStamp.now()
-                # elif not fuel_tpc_2_energized:
-                #     FUEL_TPC_2_LAST_OPEN = None
+                if fuel_tpc_2_energized and FUEL_TPC_2_LAST_OPEN is None:
+                    FUEL_TPC_2_LAST_OPEN = sy.TimeStamp.now()
+                elif not fuel_tpc_2_energized:
+                    FUEL_TPC_2_LAST_OPEN = None
 
                 fuel_tank_delta = 0
                 trailer_pneumatics_delta = 0
@@ -312,23 +321,24 @@ with client.new_streamer(command_channels) as streamer:
 
                 # fuel section of simulation
 
-                # # pre_press increases tank pressure if fuel_press_iso also open
-                # if fuel_pre_press_energized:
-                #     fuel_tank_delta += 3.0
+                # pre_press increases tank pressure if fuel_press_iso also open
+                if fuel_pre_press_energized:
+                    fuel_tank_delta += 3.0
 
-                # # fuel_prevalve allows fuel to flow out depending on tescoms
-                # if fuel_prevalve_energized:
-                #     print("fuel_prevalve_energized")
-                #     if fuel_tpc_1_energized:
-                #         fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_TPC_1_LAST_OPEN).seconds
-                #     if fuel_tpc_2_energized:
-                #         fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_TPC_2_LAST_OPEN).seconds
+                # tescoms
+                if fuel_tpc_1_energized:
+                    fuel_tank_delta += 1
+                if fuel_tpc_2_energized:
+                    fuel_tank_delta += 1.5
+                
+                if fuel_prevalve_energized:
+                    fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
 
                 # if fuel_press_iso_energized and not fuel_vent_energized:
                 #     fuel_tank_delta = 0
 
-                # if not fuel_vent_energized:
-                #     fuel_tank_delta -= 4
+                if not fuel_vent_energized:
+                    fuel_tank_delta -= 3
 
                 if ox_pre_valve_energized:
                     ox_tank_delta -= 1.5
@@ -370,35 +380,16 @@ with client.new_streamer(command_channels) as streamer:
                 press_tank_PT_3 += press_tank_delta
 
                 # no negative pressures pls ;-;
-                if ox_tank_1_pressure <= 0:
-                    ox_tank_1_pressure = 0
-
-                if ox_tank_2_pressure <= 0:
-                    ox_tank_2_pressure = 0
-
-                if ox_tank_3_pressure <= 0:
-                    ox_tank_3_pressure = 0
-
-                if fuel_PT_1_pressure <= 0:
-                    fuel_PT_1_pressure = 0
-
-                if fuel_PT_2_pressure <= 0:
-                    fuel_PT_2_pressure = 0
-
-                if fuel_PT_3_pressure <= 0:
-                    fuel_PT_3_pressure = 0
-
-                if trailer_pneumatics_pressure <= 0:
-                    trailer_pneumatics_pressure = 0
-
-                if press_tank_PT_1 <= 0:
-                    press_tank_PT_1 = 0
-
-                if press_tank_PT_2 <= 0:
-                    press_tank_PT_2 = 0
-
-                if press_tank_PT_3 <= 0:
-                    press_tank_PT_3 = 0
+                ox_tank_1_pressure = max(0, ox_tank_1_pressure)
+                ox_tank_2_pressure = max(0, ox_tank_2_pressure)
+                ox_tank_3_pressure = max(0, ox_tank_3_pressure)
+                fuel_PT_1_pressure = max(0, fuel_PT_1_pressure)
+                fuel_PT_2_pressure = max(0, fuel_PT_2_pressure)
+                fuel_PT_3_pressure = max(0, fuel_PT_3_pressure)
+                trailer_pneumatics_pressure = max(0, trailer_pneumatics_pressure)
+                press_tank_PT_1 = max(0, press_tank_PT_1)
+                press_tank_PT_2 = max(0, press_tank_PT_2)
+                press_tank_PT_3 = max(0, press_tank_PT_3)
 
                 now = sy.TimeStamp.now()
 
