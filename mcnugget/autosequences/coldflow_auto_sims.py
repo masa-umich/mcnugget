@@ -254,22 +254,17 @@ trickle_purge_post_reg_pressure = 0
 trickle_purge_pre_2k_pressure = 0
 air_drive_2k_pressure = 0
 air_drive_post_reg_pressure = 0
-press_tank_2k_pressure = INITIAL_2K_PRESSURE
+press_tank_2k_pressure = 0
 gas_booster_outlet_pressure = 0
-press_tank_PT_1 = INITIAL_PRESS_TANK_PRESSURE
+press_tank_PT_1 = 0
 press_tank_bottle_pre_fill_pressure = 0
 pneumatics_bottle_pt = 0
 engine_pneumatics_pressure = 0
 purge_2k_bottle_pressure = 0
 purge_post_reg_pressure = 0
 trailer_pneumatics_pressure = 0
-press_tank_PT_2 = INITIAL_PRESS_TANK_PRESSURE
-press_tank_PT_3 = INITIAL_PRESS_TANK_PRESSURE
-press_tank_tc_1 = INITIAL_PRESS_TANK_TEMPERATURE
-press_tank_tc_2 = INITIAL_PRESS_TANK_TEMPERATURE
-press_tank_tc_3 = INITIAL_PRESS_TANK_TEMPERATURE
-press_tank_tc_4 = INITIAL_PRESS_TANK_TEMPERATURE
-
+press_tank_PT_2 = 0
+press_tank_PT_3 = 0
 
 FUEL_PREVALVE_LAST_OPEN = None
 
@@ -334,7 +329,6 @@ with client.new_streamer(command_channels) as streamer:
                 trailer_pneumatics_delta = 0
                 press_tank_delta = 0
                 ox_tank_delta = 0
-                press_tank_temp_delta = -0.01
 
                 # fuel section of simulation
 
@@ -351,40 +345,36 @@ with client.new_streamer(command_channels) as streamer:
                 if fuel_prevalve_energized:
                     fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
 
-                if not fuel_vent_energized:
-                    fuel_tank_delta -= 3
-                    
                 # if fuel_press_iso_energized and not fuel_vent_energized:
                 #     fuel_tank_delta = 0
 
-                # if ox_pre_valve_energized:
-                #     ox_tank_delta -= 1.5
+                if not fuel_vent_energized:
+                    fuel_tank_delta -= 3
 
-                # if ox_press_energized and not ox_low_vent_energized:
-                #     ox_tank_delta = 0
+                if ox_pre_valve_energized:
+                    ox_tank_delta -= 1.5
 
-                # if ox_low_vent_energized:
-                #     ox_tank_delta -= 2.0
+                if ox_press_energized and not ox_low_vent_energized:
+                    ox_tank_delta = 0
 
-                # if ox_high_flow_vent_energized:
-                #     ox_tank_delta -= 5.0
+                if ox_low_vent_energized:
+                    ox_tank_delta -= 2.0
 
-                # if engine_pneumatics_vent_energized:
-                #     trailer_pneumatics_delta -= 1.5
+                if ox_high_flow_vent_energized:
+                    ox_tank_delta -= 5.0
+
+                if engine_pneumatics_vent_energized:
+                    trailer_pneumatics_delta -= 1.5
 
                 if press_vent_energized:
                     press_tank_delta -= 4
 
                 if press_fill_energized:
                     if (gas_booster_fill_energized and
-                            (air_drive_iso_1_energized and air_drive_iso_2_energized)):
+                            (air_drive_iso_1_energized or air_drive_iso_2_energized)):
                         press_tank_delta += 3.5
-                        press_tank_temp_delta += 3.5
-                        
-                    elif press_tank_2k_pressure > PRESS_TANK_PT_1:
-                        press_tank_2k_pressure -= 2.5
+                    else:
                         press_tank_delta += 2.5
-                        press_tank_temp_delta += 3.5
 
                 if engine_pneumatics_iso_energized and not engine_pneumatics_vent_energized:
                     trailer_pneumatics_delta = 0
@@ -399,10 +389,6 @@ with client.new_streamer(command_channels) as streamer:
                 press_tank_PT_1 += press_tank_delta
                 press_tank_PT_2 += press_tank_delta
                 press_tank_PT_3 += press_tank_delta
-                press_tank_tc_1 += press_tank_temp_delta
-                press_tank_tc_2 += press_tank_temp_delta
-                press_tank_tc_3 += press_tank_temp_delta
-                press_tank_tc_4 += press_tank_temp_delta
 
                 # no negative pressures pls ;-;
                 ox_tank_1_pressure = max(0, ox_tank_1_pressure)
@@ -415,10 +401,6 @@ with client.new_streamer(command_channels) as streamer:
                 press_tank_PT_1 = max(0, press_tank_PT_1)
                 press_tank_PT_2 = max(0, press_tank_PT_2)
                 press_tank_PT_3 = max(0, press_tank_PT_3)
-                press_tank_tc_1 = max(0, press_tank_tc_1)
-                press_tank_tc_2 = max(0, press_tank_tc_2)
-                press_tank_tc_3 = max(0, press_tank_tc_3)
-                press_tank_tc_4 = max(0, press_tank_tc_4)
 
                 now = sy.TimeStamp.now()
 
@@ -484,10 +466,10 @@ with client.new_streamer(command_channels) as streamer:
                     # FUEL_PT_MEDIAN: 
 
                     # writes to all 4 TCs
-                    PRESS_TANK_TC_1: press_tank_tc_1,
-                    PRESS_TANK_TC_2: press_tank_tc_2,
-                    PRESS_TANK_TC_3: press_tank_tc_3,
-                    PRESS_TANK_TC_4: press_tank_tc_4
+                    PRESS_TANK_TC_1: 0,
+                    PRESS_TANK_TC_2: 1,
+                    PRESS_TANK_TC_3: 2,
+                    PRESS_TANK_TC_4: 3
                 })
 
                 i += 1
