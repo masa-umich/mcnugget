@@ -188,7 +188,10 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
                 print("TPC 1: OPEN | TPC 2: OPEN")
 
         # if the pressure drops below 15, the tanks are mostly empty and the test is finished
-        return fuel_tank_pressure <= 15
+        if fuel_tank_pressure <= MINIMUM:
+            print(f"median pressure invalid - ABORTING")
+            syauto.close_all(auto_, [fuel_tpc_1, fuel_tpc_2])
+            return True
 
     try:
         start = sy.TimeStamp.now()
