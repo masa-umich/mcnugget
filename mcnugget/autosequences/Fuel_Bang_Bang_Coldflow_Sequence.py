@@ -42,10 +42,10 @@ client = sy.Synnax(
 # )
 
 #Valves autosequence will control
-FUEL_TPC_1_CMD = "gse_doc_25"
-FUEL_TPC_1_ACK = "gse_doa_25"
-FUEL_TPC_2_CMD = "gse_doc_26"
-FUEL_TPC_2_ACK = "gse_doa_26"
+FUEL_TPC_1_CMD = "gse_doc_28"
+FUEL_TPC_1_ACK = "gse_doa_28"
+FUEL_TPC_2_CMD = "gse_doc_29"
+FUEL_TPC_2_ACK = "gse_doa_29"
 FUEL_PREVALVE_CMD = "gse_doc_22"
 FUEL_PREVALVE_ACK = "gse_doa_22"
 FUEL_VENT_CMD = "gse_doc_15"
@@ -85,7 +85,7 @@ def get_medians(auto: Controller) -> sy.DataType.FLOAT32:
 WRITE_TO = []
 READ_FROM = []
 
-for i in range(1, 27):
+for i in range(1, 30):
     WRITE_TO.append(f"gse_doc_{i}")
     READ_FROM.append(f"gse_doa_{i}")
 

@@ -73,10 +73,10 @@ OX_DOME_REG_PILOT_ISO_OUT = "gse_doc_5"  # Ox dome reg pilot ISO
 # OX_MPV_OUT = "gse_doc_26"  # Ox MPV
 
 # TPC Valves
-FUEL_TPC_1_OUT = "gse_doc_25"
-FUEL_TPC_1_IN = "gse_doa_25"
-FUEL_TPC_2_OUT = "gse_doc_26"
-FUEL_TPC_2_IN = "gse_doa_26"
+FUEL_TPC_1_OUT = "gse_doc_28"
+FUEL_TPC_1_IN = "gse_doa_28"
+FUEL_TPC_2_OUT = "gse_doc_29"
+FUEL_TPC_2_IN = "gse_doa_29"
 
 vent_command_channels = [FUEL_VENT_OUT, PRESS_VENT_OUT, OX_LOW_VENT_OUT, 
                          OX_HIGH_FLOW_VENT_OUT, ENGINE_PNEUMATICS_VENT_OUT]
@@ -155,7 +155,7 @@ daq_time = client.channels.create(
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 28):
+for i in range(1, 30):
     idx = client.channels.create(
         name=f"gse_doc_{i}_cmd_time",
         data_type=sy.DataType.TIMESTAMP,
