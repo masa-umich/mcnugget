@@ -217,10 +217,10 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
 
-        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
+        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
 
     except KeyboardInterrupt:
         print("Test interrupted. Safing System")
         # close all prevalves and open all vents
         # ALSO OPENS OX_DRAIN
-        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve])
+        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
