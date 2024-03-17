@@ -6,13 +6,13 @@ import syauto
 
 # this connects to the synnax server for simulations
 # this connects to the synnax simulation server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
+#client = sy.Synnax(
+#    host="localhost",
+#    port=9090,
+#    username="synnax",
+#    password="seldon",
+#    secure=False
+#)
 
 # Connects to masa cluster
 client = sy.Synnax(
@@ -89,7 +89,7 @@ friendly_abort = False
 print("starting autosequence")
 
 with client.control.acquire(name="Press sequence",
-                             write=WRITE_TO, read=READ_FROM, write_authorities=250 ) as auto:
+                             write=WRITE_TO, read=READ_FROM, write_authorities=253 ) as auto:
 
     ###     THIS SECTION DECLARES THE VALVES WHICH WILL BE USED     ###
     #TODO: confirm that the specified channels are correct before running this autosequence
@@ -122,7 +122,6 @@ with client.control.acquire(name="Press sequence",
     ##      1.  Closes all valves and vents
     print("Aborting sequence: closing all vents and valves")
     syauto.close_all(auto,[ox_pre_valve,fuel_prevalve,ox_press_ISO,
-                      fuel_press_ISO,ox_dome_reg_pilot_iso,
-                      fuel_vent,press_vent,ox_low_flow_vent])
-    
+                      fuel_press_ISO,ox_dome_reg_pilot_iso])
+    syauto.open_all(auto, [fuel_vent, press_vent, ox_low_flow_vent])   
     print("All vents and valves closed")

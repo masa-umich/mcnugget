@@ -6,22 +6,22 @@ import syauto
 
 # this connects to the synnax server for simulations
 # this connects to the synnax simulation server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
+#client = sy.Synnax(
+#    host="localhost",
+#    port=9090,
+#    username="synnax",
+#    password="seldon",
+#    secure=False
+#)
 
 # Connects to masa cluster
-# client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
-#     username="synnax",
-#     password="seldon",
-#     secure=True
-# )
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 # valve names to channel names
 v1_in = "gse_doa_1"
@@ -133,7 +133,7 @@ with client.control.acquire(name="Press sequence",
 
     # TODO: change these to match the desired test specs
     DELAY_1 = 1
-    DELAY_2 = 3
+    DELAY_2 = 25
 
     syauto.close_all(auto=auto, valves=[fuel_press_ISO, ox_press_ISO, ox_dome_reg_pilot_iso, 
                                         ox_pre_valve, fuel_prevalve, 
