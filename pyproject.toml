@@ -20,7 +20,7 @@ openpyxl = "^3.1.2"
 jupyter = "^1.0.0"
 refprop-connector = "^0.3.7"
 requests = "^2.31.0"
-synnax = "^0.14.18"
+#synnax = "^0.14.18"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
