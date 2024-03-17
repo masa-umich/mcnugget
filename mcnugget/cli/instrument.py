@@ -202,7 +202,7 @@ def create_device_channels(ctx: Context) -> (dict, bool):
             name=f"gse_di_{i}",
             data_type=sy.DataType.FLOAT32,
             index=ctx.indexes["gse_di"].key,
-        ) for i in range(1, 25)
+        ) for i in range(1, 33)
     ]
     client.channels.create(analog_inputs, retrieve_if_name_exists=True)
     client.channels.create(digital_inputs, retrieve_if_name_exists=True)
@@ -211,7 +211,7 @@ def create_device_channels(ctx: Context) -> (dict, bool):
             name=f"gse_doc_{i}_time",
             data_type=sy.DataType.TIMESTAMP,
             is_index=True,
-        ) for i in range(1, 25)
+        ) for i in range(1, 33)
     ]
     digital_command_times = client.channels.create(digital_command_times, retrieve_if_name_exists=True)
     digital_commands = [
@@ -219,7 +219,7 @@ def create_device_channels(ctx: Context) -> (dict, bool):
             name=f"gse_doc_{i}",
             data_type=sy.DataType.UINT8,
             index=digital_command_times[i - 1].key,
-        ) for i in range(1, 25)
+        ) for i in range(1, 33)
     ]
     client.channels.create(digital_commands, retrieve_if_name_exists=True)
     digital_output_acks = [
@@ -227,7 +227,7 @@ def create_device_channels(ctx: Context) -> (dict, bool):
             name=f"gse_doa_{i}",
             data_type=sy.DataType.UINT8,
             index=ctx.indexes["gse_doa"].key,
-        ) for i in range(1, 25)
+        ) for i in range(1, 33)
     ]
     client.channels.create(digital_output_acks, retrieve_if_name_exists=True)
 
@@ -237,7 +237,7 @@ def create_device_channels(ctx: Context) -> (dict, bool):
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 VALVE_AI_PORT_OFFSET = 36
-VALID_VALVE_PORTS = range(1, 25)
+VALID_VALVE_PORTS = range(1, 33) # cringe
 
 
 def process_valve(ctx: Context, index: int, row: dict):
@@ -264,12 +264,12 @@ def process_valve(ctx: Context, index: int, row: dict):
     ack_channel = sy.Channel(
         name=f"gse_doa_{port}",
         data_type=sy.DataType.UINT8,
-        index=ctx.indexes["gse_ai"].key,
+        index=ctx.indexes["gse_doa"].key,
     )
     i_channel = sy.Channel(
         name=f"gse_ai_{port + VALVE_AI_PORT_OFFSET}",
         data_type=sy.DataType.FLOAT32,
-        index=ctx.indexes["gse_ai"].key,
+        index=ctx.indexes["gse_ai"].key
     )
     v_channel = sy.Channel(
         name=f"gse_di_{port}",

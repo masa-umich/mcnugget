@@ -24,28 +24,28 @@ import statistics
 PRESS_STEP_DELAY = (1 * sy.TimeSpan.SECOND).seconds  # Seconds
 
 #connecting to local simulation server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-#connecting to MASA Remote for testing
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
 
+#connecting to MASA Remote for testing
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
+
 #Valves autosequence will control
-FUEL_TPC_1_CMD = "gse_doc_28"
-FUEL_TPC_1_ACK = "gse_doa_28"
-FUEL_TPC_2_CMD = "gse_doc_29"
-FUEL_TPC_2_ACK = "gse_doa_29"
+FUEL_TPC_1_CMD = "gse_doc_25"
+FUEL_TPC_1_ACK = "gse_doa_25"
+FUEL_TPC_2_CMD = "gse_doc_26"
+FUEL_TPC_2_ACK = "gse_doa_26"
 FUEL_PREVALVE_CMD = "gse_doc_22"
 FUEL_PREVALVE_ACK = "gse_doa_22"
 FUEL_VENT_CMD = "gse_doc_15"
@@ -118,6 +118,12 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
     ox_low_flow_vent = syauto.Valve(auto=auto, cmd=OX_LOW_FLOW_VENT_CMD, ack=OX_LOW_FLOW_VENT_ACK, normally_open=True)
     
     ox_drain = syauto.Valve(auto=auto, cmd=OX_DRAIN_CMD, ack=OX_DRAIN_ACK, normally_open=False)
+
+    ox_press_iso = syauto.Valve(auto=auto, cmd="gse_doc_1", ack="gse_doa_1", normally_open=False)
+    ox_dome_iso = syauto.Valve(auto=auto, cmd="gse_doc_5", ack="gse_doa_5", normally_open=False)
+    ox_prevalve = syauto.Valve(auto=auto, cmd="gse_doc_21", ack="gse_doa_21", normally_open=False)
+
+    press_vent = syauto.Valve(auto=auto, cmd="gse_doc_18", ack="gse_doa_18", normally_open=True)
 
     def run_tpc(auto_):
         fuel_tank_pressure = get_medians(auto_)
@@ -198,15 +204,20 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
 
         print("Starting Fuel Bang Bang Coldflow Sequence. Setting initial system state.")
         # set initial system state
-        syauto.close_all(auto, [fuel_vent, ox_low_flow_vent, fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press, ox_drain])
+        # syauto.close_all(auto, [fuel_vent, ox_low_flow_vent, fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press, ox_drain])
+        syauto.close_all(auto, [fuel_vent, fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
         print("All valves and vents closed. Beinning test")
 
         print("Opening Fuel Prevalve")
-        fuel_prevalve.open()
+        # fuel_prevalve.open()
+        # syauto.open_all(auto, [fuel_prevalve, ox_prevalve])
+        syauto.open_all(auto, [fuel_prevalve])
         time.sleep(1)
 
         print("Initiating TPC")
         START_TPC = time.time()
+
+        # syauto.open_all(auto, [ox_press_iso, ox_dome_iso])
         auto.wait_until(run_tpc)
 
         print("Test complete. Safing System")
@@ -217,10 +228,12 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
 
-        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
+        # syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain, press_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press, ox_press_iso, ox_dome_iso, ox_prevalve])
+        syauto.open_close_many_valves(auto, [fuel_vent, press_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
 
     except KeyboardInterrupt:
         print("Test interrupted. Safing System")
         # close all prevalves and open all vents
         # ALSO OPENS OX_DRAIN
-        syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press])
+        # syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain, press_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press, ox_press_iso, ox_dome_iso, ox_prevalve])
+        syauto.open_close_many_valves(auto, [fuel_vent, press_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press] )
