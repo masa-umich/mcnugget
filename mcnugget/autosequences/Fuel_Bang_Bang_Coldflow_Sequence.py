@@ -24,22 +24,22 @@ import statistics
 PRESS_STEP_DELAY = (1 * sy.TimeSpan.SECOND).seconds  # Seconds
 
 #connecting to local simulation server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-#connecting to MASA Remote for testing
 client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
+    host="localhost",
+    port=9090,
     username="synnax",
     password="seldon",
-    secure=True
+    secure=False
 )
+
+#connecting to MASA Remote for testing
+# client = sy.Synnax(
+#     host="synnax.masa.engin.umich.edu",
+#     port=80,
+#     username="synnax",
+#     password="seldon",
+#     secure=True
+# )
 
 #Valves autosequence will control
 FUEL_TPC_1_CMD = "gse_doc_25"
@@ -199,6 +199,9 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         syauto.open_close_many_valves(auto, [ox_low_flow_vent, ox_drain, press_vent], [ox_press_iso, ox_dome_iso, ox_prevalve])
 
     except KeyboardInterrupt:
+        print("Test interrupted. Safing System")
+        # close all prevalves and open all vents
+        # ALSO OPENS OX_DRAIN
         # syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain, press_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press, ox_press_iso, ox_dome_iso, ox_prevalve])
         print("Test interrupted")
         print("safing Fuel system")
