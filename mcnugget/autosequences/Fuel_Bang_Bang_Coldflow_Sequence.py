@@ -13,7 +13,6 @@ Autosequence detailed description:
 - Monitor tank pressures from fuel PT1, PT2, PT3 via averaging / sensor voting
 
 Autosequence Steps:
-1. Close vents 
 """
 import time
 import synnax as sy
@@ -171,12 +170,11 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         print("All valves and vents closed. Beginning test")
 
         pressure = get_medians(auto)
-        if pressure < TARGET_2
-
-        print("Opening Prevalves")
-        syauto.open_all(auto, [fuel_prevalve, ox_prevalve])  # FUEL + OX
-        # syauto.open_all(auto, [fuel_prevalve])  # FUEL ONLY
-        # time.sleep(1)
+        if pressure < TARGET_2:
+            print("Opening Prevalves")
+            syauto.open_all(auto, [fuel_prevalve, ox_prevalve])  # FUEL + OX
+            # syauto.open_all(auto, [fuel_prevalve])  # FUEL ONLY
+            # time.sleep(1)
 
         print("Initiating TPC")
 
@@ -199,10 +197,7 @@ with client.control.acquire(name="bang_bang_tpc", write=WRITE_TO, read=READ_FROM
         syauto.open_close_many_valves(auto, [ox_low_flow_vent, ox_drain, press_vent], [ox_press_iso, ox_dome_iso, ox_prevalve])
 
     except KeyboardInterrupt:
-        print("Test interrupted. Safing System")
-        # close all prevalves and open all vents
-        # ALSO OPENS OX_DRAIN
-        # syauto.open_close_many_valves(auto, [ox_low_flow_vent, fuel_vent, ox_drain, press_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press, ox_press_iso, ox_dome_iso, ox_prevalve])
+
         print("Test interrupted")
         print("safing Fuel system")
         syauto.open_close_many_valves(auto, [fuel_vent], [fuel_tpc_1, fuel_tpc_2, fuel_prevalve, fuel_pre_press] )
