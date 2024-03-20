@@ -23,22 +23,22 @@ import statistics
 PRESS_STEP_DELAY = (1 * sy.TimeSpan.SECOND).seconds  # Seconds
 
 #connecting to local simulation server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-#connecting to MASA Remote for testing
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
+
+#connecting to MASA Remote for testing
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 #Valves autosequence will control
 FUEL_TPC_1_CMD = "gse_doc_25"
