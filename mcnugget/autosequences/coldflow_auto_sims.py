@@ -131,10 +131,10 @@ PRESS_TANK_PT_1 = "gse_ai_26"  # Press tank pressure
 PRESS_TANK_PT_2 = "gse_ai_24"  # Press tank pressure
 PRESS_TANK_PT_3 = "gse_ai_22"  # Press tank pressure
 
-PRESS_TANK_TC_1 = "gse_ai_69"
-PRESS_TANK_TC_2 = "gse_ai_70"
-PRESS_TANK_TC_3 = "gse_ai_71"
-PRESS_TANK_TC_4 = "gse_ai_72"
+# PRESS_TANK_TC_1 = "gse_ai_69"
+# PRESS_TANK_TC_2 = "gse_ai_70"
+# PRESS_TANK_TC_3 = "gse_ai_71"
+# PRESS_TANK_TC_4 = "gse_ai_72"
 
 PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2_PRESSURE, FUEL_PT_3_PRESSURE, OX_PRESS_PT,
        OX_TANK_1_PRESSURE, OX_TANK_2_PRESSURE, OX_TANK_3_PRESSURE, OX_FLOWMETER_INLET_PT, OX_FLOWMETER_THROAT_PT,
@@ -143,12 +143,13 @@ PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2
        GAS_BOOSTER_OUTLET_PT, PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3, PRESS_TANK_2K_BOTTLE_PRE_FILL_PT,
        PNEUMATICS_BOTTLE_PT, TRAILER_PNEMATICS_PT, ENGINE_PNEUMATICS_PT, PURGE_2K_BOTTLE_PT, PURGE_POST_REG_PT]
 
-TCs = [PRESS_TANK_TC_1, PRESS_TANK_TC_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]
+# TCs = [PRESS_TANK_TC_1, PRESS_TANK_TC_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]
 
 # Parameters for testing
 INITIAL_FUEL_TANK_PRESSURE = 0
+INITIAL_OX_TANK_PRESSURE = 0
 INITIAL_PRESS_TANK_PRESSURE = 0
-INITIAL_PRESS_TANK_TEMPERATURE = 50
+# INITIAL_PRESS_TANK_TEMPERATURE = 50
 INITIAL_2K_PRESSURE = 2000
 
 daq_time = client.channels.create(
@@ -190,13 +191,13 @@ for pt in PTs:
         retrieve_if_name_exists=True
     )
 
-for tc in TCs:
-    client.channels.create(
-        name=tc,
-        data_type=sy.DataType.FLOAT32,
-        index=daq_time.key,
-        retrieve_if_name_exists=True
-    )
+# for tc in TCs:
+#     client.channels.create(
+#         name=tc,
+#         data_type=sy.DataType.FLOAT32,
+#         index=daq_time.key,
+#         retrieve_if_name_exists=True
+#     )
 
 rate = (sy.Rate.HZ * 50).period.seconds
 
@@ -216,8 +217,8 @@ for cmd_chan in vent_command_channels:
 for pt in PTs:
     DAQ_STATE[pt] = 0  # start with no pressure
 
-for tc in TCs:
-    DAQ_STATE[tc] = 20  # start with ambient temperature
+# for tc in TCs:
+#     DAQ_STATE[tc] = 20  # start with ambient temperature
 
 # Set values for pressure sensors
 DAQ_STATE.update({
@@ -230,48 +231,59 @@ DAQ_STATE.update({
     OX_TANK_1_PRESSURE: 0,
     OX_TANK_2_PRESSURE: 0,
     OX_TANK_3_PRESSURE: 0,
-    PRESS_TANK_TC_1: INITIAL_PRESS_TANK_TEMPERATURE,
-    PRESS_TANK_TC_2: INITIAL_PRESS_TANK_TEMPERATURE,
-    PRESS_TANK_TC_3: INITIAL_PRESS_TANK_TEMPERATURE,
-    PRESS_TANK_TC_4: INITIAL_PRESS_TANK_TEMPERATURE,
+    # PRESS_TANK_TC_1: INITIAL_PRESS_TANK_TEMPERATURE,
+    # PRESS_TANK_TC_2: INITIAL_PRESS_TANK_TEMPERATURE,
+    # PRESS_TANK_TC_3: INITIAL_PRESS_TANK_TEMPERATURE,
+    # PRESS_TANK_TC_4: INITIAL_PRESS_TANK_TEMPERATURE,
 })
-fuel_PT_1_pressure = INITIAL_FUEL_TANK_PRESSURE
-fuel_PT_2_pressure = INITIAL_FUEL_TANK_PRESSURE
-fuel_PT_3_pressure = INITIAL_FUEL_TANK_PRESSURE
-ox_pre_fill_pressure = 0
-ox_dome_reg_pilot_pressure = 0
-ox_press_pressure = 0
-ox_tank_1_pressure = 0
-ox_tank_2_pressure = 0
-ox_tank_3_pressure = 0
-ox_flowmeter_inlet_pressure = 0
-ox_flowmeter_throat_pressure = 0
-ox_level_sensor = 0
+
+true_fuel_pressure = INITIAL_FUEL_TANK_PRESSURE
+fuel_PT_1_pressure = true_fuel_pressure
+fuel_PT_2_pressure = true_fuel_pressure
+fuel_PT_3_pressure = true_fuel_pressure
+
+true_ox_pressure = INITIAL_OX_TANK_PRESSURE
+ox_tank_1_pressure = true_ox_pressure
+ox_tank_2_pressure = true_ox_pressure
+ox_tank_3_pressure = true_ox_pressure
+
+true_press_pressure = INITIAL_PRESS_TANK_PRESSURE
+press_tank_PT_1 = true_press_pressure
+press_tank_PT_2 = true_press_pressure
+press_tank_PT_3 = true_press_pressure
+
+
 fuel_flowmeter_inlet_pressure = 0
 fuel_flowmeter_throat_pressure = 0
 fuel_level_sensor = 0
-trickle_purge_post_reg_pressure = 0
-trickle_purge_pre_2k_pressure = 0
+
+ox_pre_fill_pressure = 0
+ox_dome_reg_pilot_pressure = 0
+ox_press_pressure = 0
+ox_flowmeter_inlet_pressure = 0
+ox_flowmeter_throat_pressure = 0
+ox_level_sensor = 0
+
 air_drive_2k_pressure = 0
 air_drive_post_reg_pressure = 0
 press_tank_2k_pressure = 0
-gas_booster_outlet_pressure = 0
-press_tank_PT_1 = 0
 press_tank_bottle_pre_fill_pressure = 0
+
+trickle_purge_post_reg_pressure = 0
+trickle_purge_pre_2k_pressure = 0
+gas_booster_outlet_pressure = 0
 pneumatics_bottle_pt = 0
 engine_pneumatics_pressure = 0
 purge_2k_bottle_pressure = 0
 purge_post_reg_pressure = 0
 trailer_pneumatics_pressure = 0
-press_tank_PT_2 = 0
-press_tank_PT_3 = 0
 
 FUEL_PREVALVE_LAST_OPEN = None
 
 with client.new_streamer(command_channels) as streamer:
     with client.new_writer(
             sy.TimeStamp.now(),
-            channels=ack_channels+PTs+[DAQ_TIME]+TCs
+            channels=ack_channels+PTs+[DAQ_TIME]  # + TCs
     ) as w:
         i = 0
         while True:
@@ -285,45 +297,51 @@ with client.new_streamer(command_channels) as streamer:
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
-                # fuel_mpv_open = DAQ_STATE[FUEL_MPV_OUT] == 1
                 fuel_feedline_purge_energized = DAQ_STATE[FUEL_FEEDLINE_PURGE_OUT] == 1
-                ox_fill_purge_energized = DAQ_STATE[OX_FILL_PURGE_OUT] == 1
+                fuel_press_iso_energized = DAQ_STATE[FUEL_PRESS_ISO_OUT] == 1
                 fuel_pre_press_energized = DAQ_STATE[FUEL_PRE_PRESS_OUT] == 1
+                # fuel_mpv_open = DAQ_STATE[FUEL_MPV_OUT] == 1
+
+                ox_fill_purge_energized = DAQ_STATE[OX_FILL_PURGE_OUT] == 1
                 ox_pre_press_energized = DAQ_STATE[OX_PRE_PRESS_OUT] == 1
+                ox_press_energized = DAQ_STATE[OX_PRESS_OUT] == 1
+                ox_low_vent_energized = DAQ_STATE[OX_LOW_VENT_OUT] ==1
+                ox_fill_valve_energized = DAQ_STATE[OX_FILL_VALVE_OUT] == 1
+                ox_high_flow_vent_energized = DAQ_STATE[OX_HIGH_FLOW_VENT_OUT] == 1
+                ox_pre_valve_energized = DAQ_STATE[OX_PRE_VALVE_OUT] == 1
+                ox_pre_fill_energized = DAQ_STATE[OX_PRE_FILL_PT] == 1
+                ox_dome_reg_pilot_iso_energized = DAQ_STATE[OX_DOME_REG_PILOT_ISO_OUT] == 1
                 ox_feedline_purge_energized = DAQ_STATE[OX_FEEDLINE_PURGE_OUT] == 1
-                engine_pneumatics_iso_energized = DAQ_STATE[ENGINE_PNEUMATICS_ISO_OUT] == 1
-                engine_pneumatics_vent_energized = DAQ_STATE[ENGINE_PNEUMATICS_VENT_OUT] == 1
+                # ox_mpv_open = DAQ_STATE[OX_MPV_OUT] == 1
+
                 air_drive_iso_1_energized = DAQ_STATE[AIR_DRIVE_ISO_1_OUT] == 1
                 air_drive_iso_2_energized= DAQ_STATE[AIR_DRIVE_ISO_2_OUT] == 1
                 gas_booster_fill_energized = DAQ_STATE[GAS_BOOSTER_FILL_OUT] == 1
                 press_fill_energized = DAQ_STATE[PRESS_FILL_OUT] == 1
                 press_vent_energized= DAQ_STATE[PRESS_VENT_OUT] == 1
-                fuel_press_iso_energized = DAQ_STATE[FUEL_PRESS_ISO_OUT] == 1
-                ox_press_energized = DAQ_STATE[OX_PRESS_OUT] == 1
-                ox_low_vent_energized = DAQ_STATE[OX_LOW_VENT_OUT] ==1
-                ox_fill_valve_energized = DAQ_STATE[OX_FILL_VALVE_OUT] == 1
-                ox_high_flow_vent_energized = DAQ_STATE[OX_HIGH_FLOW_VENT_OUT] == 1
-                # ox_mpv_open = DAQ_STATE[OX_MPV_OUT] == 1
-                ox_pre_valve_energized = DAQ_STATE[OX_PRE_VALVE_OUT] == 1
-                ox_pre_fill_energized = DAQ_STATE[OX_PRE_FILL_PT] == 1
-                ox_dome_reg_pilot_iso_energized = DAQ_STATE[OX_DOME_REG_PILOT_ISO_OUT] == 1
-                fuel_tpc_1_energized = DAQ_STATE[FUEL_TPC_1_OUT] == 1
-                fuel_tpc_2_energized = DAQ_STATE[FUEL_TPC_2_OUT] == 1
+                
+                engine_pneumatics_iso_energized = DAQ_STATE[ENGINE_PNEUMATICS_ISO_OUT] == 1
+                engine_pneumatics_vent_energized = DAQ_STATE[ENGINE_PNEUMATICS_VENT_OUT] == 1
+
+                ### PRESS ###
+                if press_fill_energized:
+                    if press_tank_2k_pressure > true_press_pressure:
+                        true_press_pressure += 2.5
+                        press_tank_2k_pressure -= 2.5
+                    if gas_booster_fill_energized:
+                        if air_drive_iso_1_energized and air_drive_iso_2_energized:
+                            press_tank_2k_pressure += 1
+
+                ### FUEL ###
+            
+
+                ### OX ###
+
 
                 if fuel_prevalve_energized and FUEL_PREVALVE_LAST_OPEN is None:
                     FUEL_PREVALVE_LAST_OPEN = sy.TimeStamp.now()
                 elif not fuel_prevalve_energized:
                     FUEL_PREVALVE_LAST_OPEN = None
-
-                if fuel_tpc_1_energized and FUEL_TPC_1_LAST_OPEN is None:
-                    FUEL_TPC_1_LAST_OPEN = sy.TimeStamp.now()
-                elif not fuel_tpc_1_energized:
-                    FUEL_TPC_1_LAST_OPEN = None
-
-                if fuel_tpc_2_energized and FUEL_TPC_2_LAST_OPEN is None:
-                    FUEL_TPC_2_LAST_OPEN = sy.TimeStamp.now()
-                elif not fuel_tpc_2_energized:
-                    FUEL_TPC_2_LAST_OPEN = None
 
                 fuel_tank_delta = 0
                 trailer_pneumatics_delta = 0
@@ -335,12 +353,6 @@ with client.new_streamer(command_channels) as streamer:
                 # pre_press increases tank pressure if fuel_press_iso also open
                 if fuel_pre_press_energized:
                     fuel_tank_delta += 3.0
-
-                # tescoms
-                if fuel_tpc_1_energized:
-                    fuel_tank_delta += 1
-                if fuel_tpc_2_energized:
-                    fuel_tank_delta += 1.5
                 
                 if fuel_prevalve_energized:
                     fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
@@ -429,8 +441,6 @@ with client.new_streamer(command_channels) as streamer:
                     OX_HIGH_FLOW_VENT_IN: int(ox_high_flow_vent_energized),
                     OX_PRE_VALVE_IN: int(ox_pre_valve_energized),
                     OX_DOME_REG_PILOT_ISO_IN: int(ox_dome_reg_pilot_iso_energized),
-                    FUEL_TPC_1_IN: int(fuel_tpc_1_energized),
-                    FUEL_TPC_2_IN: int(fuel_tpc_2_energized),
 
                     # writes to all 30 PTs
                     OX_PRE_FILL_PT: ox_pre_fill_pressure,
@@ -466,10 +476,10 @@ with client.new_streamer(command_channels) as streamer:
                     # FUEL_PT_MEDIAN: 
 
                     # writes to all 4 TCs
-                    PRESS_TANK_TC_1: 0,
-                    PRESS_TANK_TC_2: 1,
-                    PRESS_TANK_TC_3: 2,
-                    PRESS_TANK_TC_4: 3
+                    # PRESS_TANK_TC_1: 0,
+                    # PRESS_TANK_TC_2: 1,
+                    # PRESS_TANK_TC_3: 2,
+                    # PRESS_TANK_TC_4: 3
                 })
 
                 i += 1
