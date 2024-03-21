@@ -59,12 +59,12 @@ client = sy.Synnax(
 # )
 
 # TODO check sop for these
-FUEL_PT_1 = ""
-FUEL_PT_2 = ""
-FUEL_PT_3 = ""
-OX_PT_1 = ""
-OX_PT_2 = ""
-OX_PT_3 = ""
+FUEL_PT_1 = "gse_ai_3"
+FUEL_PT_2 = "gse_ai_4"
+FUEL_PT_3 = "gse_ai_35"
+OX_PT_1 = "gse_ai_6"
+OX_PT_2 = "gse_ai_7"
+OX_PT_3 = "gse_ai_8"
 
 OX_FIRE = True
 FUEL_FIRE = True
@@ -81,26 +81,32 @@ FUEL_PRESSURE_MAX = 0
 OX_PRESSURE_MAX = 0
 
 # TODO check sop for these
-fuel_prevalve_cmd = ""
-fuel_prevalve_ack = ""
+fuel_prepress_cmd = "gse_doc_9"
+fuel_prepress_ack = "gse_doa_9"
 
-ox_prevalve_cmd = ""
-ox_prevalve_ack = ""
+ox_prepress_cmd = "gse_doc_10"
+ox_prepress_ack = "gse_doa_10"
 
-fuel_press_iso_cmd = ""
-fuel_press_iso_ack = ""
+fuel_prevalve_cmd = "gse_doc_22"
+fuel_prevalve_ack = "gse_doa_22"
 
-ox_press_iso_cmd = ""
-ox_press_iso_ack = ""
+ox_prevalve_cmd = "gse_doc_21"
+ox_prevalve_ack = "gse_doa_21"
 
-ox_dome_iso_cmd = ""
-ox_dome_iso_ack = ""
+fuel_press_iso_cmd = "gse_doc_2"
+fuel_press_iso_ack = "gse_doa_2"
 
-fuel_vent_cmd = ""
-fuel_vent_ack = ""
+ox_press_iso_cmd = "gse_doc_1"
+ox_press_iso_ack = "gse_doa_1"
 
-ox_low_flow_vent_cmd = ""
-ox_low_flow_vent_ack = ""
+ox_dome_iso_cmd = "gse_doc_5"
+ox_dome_iso_ack = "gse_doa_5"
+
+fuel_vent_cmd = "gse_doc_15"
+fuel_vent_ack = "gse_doa_15"
+
+ox_low_flow_vent_cmd = "gse_doc_16"
+ox_low_flow_vent_ack = "gse_doa_16"
 
 ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack]
 CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd]
@@ -153,13 +159,68 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
         averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
     return averages
 
+nominal_threshold = 10
+
+def custom_pressurize(auto_: Controller, valve_1: syauto.Valve, valve_2: syauto.Valve, pressures_1: list[str], pressures_2: list[str],target_1: float, target_2: float):
+    averages = get_averages(auto_, pressures_1 + pressures_2)
+
+    pressure_1 = statistics.median(averages[pressure] for pressure in pressures_1)
+    pressure_2 = statistics.median(averages[pressure] for pressure in pressures_2)
+    press_1 = False
+    press_2 = False
+
+
+    if pressure_1 < target_1 - nominal_threshold:
+        press_1 = True
+    if pressure_2 < target_2 - nominal_threshold:
+        press_2 = True
+
+    if not press_1 and not press_2:
+        return
+
+    if press_1:
+        valve_1.open()
+
+    if press_2:
+        valve_2.open()
+
+    time.sleep(0.1)
+
+    if pressure_1 >=target_1:
+        valve_1.close()
+        press_1 = False
+
+    if pressure_2 >=target_2:
+        valve_2.close()
+        press_2 = False
 
 with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
-    try:
+    try: #TODO CHECK SYSTEM STATE
+        
+        # TODO create valves
         fuel_prevalve = syauto.Valve(auto=auto, cmd=fuel_prevalve_cmd, ack=fuel_prevalve_ack, normally_open=False)
-        # TODO create other valves
+        ox_prevalve = syauto.Valve(auto=auto, cmd=ox_prevalve_cmd, ack=ox_prevalve_ack, normally_open=False)
+        fuel_press_iso = syauto.Valve(auto=auto, cmd = fuel_press_iso_cmd, ack = fuel_press_iso_ack, normally_open=False)
+        ox_press_iso = syauto.Valve(auto=auto, cmd = ox_press_iso_cmd, ack = ox_press_iso_ack, normally_open=False)
+        ox_dome_iso = syauto.Valve(auto=auto, cmd = ox_dome_iso_cmd, ack = ox_dome_iso_ack, normally_open=False)
+        fuel_vent = syauto.Valve(auto=auto, cmd = fuel_vent_cmd, ack = fuel_vent_ack, normally_open=True)
+        ox_low_flow_vent = syauto.Valve(auto=auto, cmd = ox_low_flow_vent_cmd, ack = ox_low_flow_vent_ack, normally_open=True)
+        fuel_prepress = syauto.Valve(auto=auto, cmd = fuel_prepress_cmd, ack = fuel_prepress_ack, normally_open=False)
+        ox_prepress = syauto.Valve(auto=auto, cmd = ox_prepress_cmd, ack = ox_prepress_ack, normally_open=False)
 
         # TODO write sequence
+        syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent])
+        time.sleep(1)
+
+        custom_pressurize(auto, fuel_prepress, ox_prepress, [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3], [OX_PT_1, OX_PT_2, OX_PT_3], FUEL_TARGET_PRESSURE, OX_TARGET_PRESSURE)
+        
+        input("Press enter to continue")
+       
+        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        time.sleep(25)
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        
+       
 
         # TODO safe system
 
