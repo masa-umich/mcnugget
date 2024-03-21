@@ -134,8 +134,12 @@ start = sy.TimeStamp.now()
 # PLEASE UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST
 FUEL_TANK_TARGET = 400
 OX_TANK_TARGET = 400
-MAX_FUEL_TANK_PRESSURE = 500
-MAX_OX_TANK_PRESSURE = 500
+UPPER_FUEL_TANK_PRESSURE = 420
+LOWER_FUEL_TANK_PRESSURE = 380
+MAX_FUEL_TANK_PRESSURE = 525
+UPPER_OX_TANK_PRESSURE = 420
+LOWER_OX_TANK_PRESSURE = 380
+MAX_OX_TANK_PRESSURE = 525
 
 with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
 
@@ -150,31 +154,39 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
 
     ###     DEFINES FUNCTIONS USED IN AUTOSEQUENCE         ###
 
-    def compute_medians(channels: list[str]):
-        # this function takes in a list of channel names and returns a list
-            # where each channel name is replaced by its reading, averaged over RUNNING_MEDIAN_SIZE readings
-        output = []
-        for channel in channels:
-            output.append(statistics.mean(auto[channel]))
+    def get_medians(auto: Controller, sensor_readings: list[str], running_median_size: int) -> sy.DataType.FLOAT32:
+        for sensor in sensor_readings:
+            if len(sensor) > running_median_size:
+                sensor.pop(0)
+        return statistics.median([statistics.mean(sensor) for sensor in sensor_readings])
 
-        return output
     '''
     This function continously checks if an abort condition is hit
     If an abort condition is hit, it will close all valves and give the user the option to open the vents
     '''
-    def pre_press_abort_check ():
+    def pre_press (auto):
         fuel_tank_pressure = compute_medians([FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
         ox_tank_pressure = compute_medians([OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3])
-        if (fuel_tank_pressure > MAX_FUEL_TANK_PRESSURE):
-            print("Fuel tank pressure is too high. Aborting.")
-            fuel_abort()
+        if(fuel_tank_pressure < LOWER_FUEL_TANK_PRESSURE):
+            fuel_pre_press.open()
         
-        if (ox_tank_pressure > MAX_OX_TANK_PRESSURE):
-            print("Ox tank pressure is too high. Aborting.")
-            ox_abort()
+        if(fuel_tank_pressure > UPPER_FUEL_TANK_PRESSURE):
+            fuel_pre_press.close()
+        
+        if(ox_tank_pressure < LOWER_OX_TANK_PRESSURE):
+            ox_pre_press.open()
+
+        if(ox_tank_pressure > UPPER_OX_TANK_PRESSURE):
+            ox_pre_press.close()
+        
+        if(fuel_tank_pressure>MAX_FUEL_TANK_PRESSURE):
+            fuel_abort(auto)
+
+        if(ox_tank_pressure>MAX_OX_TANK_PRESSURE):
+            ox_abort(auto)
 
     #aborts 
-    def ox_abort():
+    def ox_abort(auto):
         print("aborting ox tanks")
         syauto.close_all(auto, [ox_pre_press])
         input("Would you like to open ox low flow vent? y/n")
@@ -182,7 +194,7 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
             syauto.open_all(auto, [ox_low_flow_vent])
             print("ox_low_flow_vent safed")
 
-    def fuel_abort():
+    def fuel_abort(auto):
         print("aborting fuel tanks")
         syauto.close_all(auto, [fuel_pre_press])
         input("Would you like to open fuel vent? y/n")
@@ -195,12 +207,11 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         start= sy.TimeStamp.now()
         # starts by closing all valves and closing all vents
         print("Starting Pre Press Autosequence. Setting initial system state.")
-        syauto.close_all(auto, vents + valves)
+        syauto.open_close_many_valves(auto,[], vents + valves)
         time.sleep(1)
 
         print("starting pre press")
-        syauto.open_all(auto, [fuel_pre_press, ox_pre_press])
-        auto.wait_until(pre_press_abort_check)
+        auto.wait_until(pre_press)
 
         print("Pre press complete. Safing System")
         syauto.close_all(auto, [vents + valves])
@@ -222,6 +233,8 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         input("Do we want to open vents? y/n")
         if(input == "y"):
             syauto.open_all(auto=auto, valves=vents)
+        if(input == "n"):
+            syauto.close_all(auto=auto, valves=vents)
         print("Autosequence ended")
 
     time.sleep(60)
