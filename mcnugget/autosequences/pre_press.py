@@ -204,7 +204,7 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
 
     ###     DEFINES FUNCTIONS USED IN AUTOSEQUENCE         ###
 
-    def get_medians(auto: Controller, sensor_readings: list[str], running_median_size: int) -> sy.DataType.FLOAT32:
+    def compute_medians(auto: Controller, sensor_readings: list[str], running_median_size: int) -> sy.DataType.FLOAT32:
         for sensor in sensor_readings:
             if len(sensor) > running_median_size:
                 sensor.pop(0)
@@ -215,10 +215,15 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
     If an abort condition is hit, it will close all valves and give the user the option to open the vents
     '''
     def pre_press (auto):
+<<<<<<< HEAD:mcnugget/autosequences/pre_press.py
         averages = get_averages(auto, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3, OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3])
         fuel_tank_pressure = statistics.median(averages[channel] for channel in [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
         ox_tank_pressure = statistics.median(averages[channel] for channel in [OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3])
 
+=======
+        fuel_tank_pressure = compute_medians(auto, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3],20)
+        ox_tank_pressure = compute_medians(auto,[OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3],20)
+>>>>>>> fcd7f8e (Fixed typos ;-;):mcnugget/autosequences/pre_press_coldflow_autosequence.py
         if(fuel_tank_pressure < LOWER_FUEL_TANK_PRESSURE):
             fuel_pre_press.open()
         
