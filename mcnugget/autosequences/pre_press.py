@@ -79,7 +79,6 @@ import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 import statistics
-from collections import deque
 
 # this connects to the synnax simulation server
 client = sy.Synnax(
@@ -142,55 +141,6 @@ UPPER_OX_TANK_PRESSURE = 420
 LOWER_OX_TANK_PRESSURE = 380
 MAX_OX_TANK_PRESSURE = 525
 
-# This section implements a running average for the PT sensors to mitigate the effects of noise
-FUEL_PT_1_DEQUE = deque()
-FUEL_PT_2_DEQUE = deque()
-FUEL_PT_3_DEQUE = deque()
-OX_PT_1_DEQUE = deque()
-OX_PT_2_DEQUE = deque()
-OX_PT_3_DEQUE = deque()
-FUEL_PT_1_SUM = 0
-FUEL_PT_2_SUM = 0
-FUEL_PT_3_SUM = 0
-OX_PT_1_SUM = 0
-OX_PT_2_SUM = 0
-OX_PT_3_SUM = 0
-
-AVG_DICT = {
-    FUEL_TANK_PT_1: FUEL_PT_1_DEQUE,
-    FUEL_TANK_PT_2: FUEL_PT_2_DEQUE,
-    FUEL_TANK_PT_3: FUEL_PT_3_DEQUE,
-    OX_TANK_PT_1: OX_PT_1_DEQUE,
-    OX_TANK_PT_2: OX_PT_2_DEQUE,
-    OX_TANK_PT_3: OX_PT_3_DEQUE
-}
-
-SUM_DICT = {
-    FUEL_TANK_PT_1: FUEL_PT_1_SUM,
-    FUEL_TANK_PT_2: FUEL_PT_2_SUM,
-    FUEL_TANK_PT_3: FUEL_PT_3_SUM,
-    OX_PT_1_DEQUE: OX_PT_1_SUM,
-    OX_PT_2_DEQUE: OX_PT_2_SUM,
-    OX_PT_3_DEQUE: OX_PT_3_SUM
-}
-
-RUNNING_AVERAGE_LENGTH = 20
-# for 200Hz data, this correlates to an average over 0.1 seconds
-
-def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
-    # this function takes in a list of channels to read from, 
-    # and returns a dictionary with the average for each - {channel: average}
-    averages = {}
-    for channel in read_channels:
-        AVG_DICT[channel].append(auto[channel])  # adds the new data to the deque
-        SUM_DICT[channel] += auto[channel]  # updates running total
-        if len(AVG_DICT[channel]) > RUNNING_AVERAGE_LENGTH:
-            SUM_DICT[channel] -= AVG_DICT[channel].popleft()  # updates running total and removes elt
-        averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
-    return averages
-
-NOMINAL_THRESHOLD = 10
-
 with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
 
     ###     DECLARES THE VALVES WHICH WILL BE USED     ###
@@ -215,15 +165,8 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
     If an abort condition is hit, it will close all valves and give the user the option to open the vents
     '''
     def pre_press (auto):
-<<<<<<< HEAD:mcnugget/autosequences/pre_press.py
-        averages = get_averages(auto, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3, OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3])
-        fuel_tank_pressure = statistics.median(averages[channel] for channel in [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3])
-        ox_tank_pressure = statistics.median(averages[channel] for channel in [OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3])
-
-=======
         fuel_tank_pressure = compute_medians(auto, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3],20)
         ox_tank_pressure = compute_medians(auto,[OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3],20)
->>>>>>> fcd7f8e (Fixed typos ;-;):mcnugget/autosequences/pre_press_coldflow_autosequence.py
         if(fuel_tank_pressure < LOWER_FUEL_TANK_PRESSURE):
             fuel_pre_press.open()
         
@@ -236,13 +179,13 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         if(ox_tank_pressure > UPPER_OX_TANK_PRESSURE):
             ox_pre_press.close()
         
-        if(fuel_tank_pressure > MAX_FUEL_TANK_PRESSURE):
+        if(fuel_tank_pressure>MAX_FUEL_TANK_PRESSURE):
             fuel_abort(auto)
 
-        if(ox_tank_pressure > MAX_OX_TANK_PRESSURE):
+        if(ox_tank_pressure>MAX_OX_TANK_PRESSURE):
             ox_abort(auto)
 
-    # aborts 
+    #aborts 
     def ox_abort(auto):
         print("aborting ox tanks")
         syauto.close_all(auto, [ox_pre_press])
@@ -287,7 +230,7 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
     except KeyboardInterrupt: 
         print("Test interrupted. Safeing System")
         syauto.close_all(auto, vents + valves)
-        input("Would you like to open vents? y/n")
+        input("Do we want to open vents? y/n")
         if(input == "y"):
             syauto.open_all(auto=auto, valves=vents)
         if(input == "n"):
