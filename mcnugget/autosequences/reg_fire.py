@@ -38,6 +38,7 @@ import time
 from synnax.control.controller import Controller
 import synnax as sy
 import statistics
+from collections import deque
 
 # this connects to the synnax simulation server
 client = sy.Synnax(
@@ -104,6 +105,54 @@ ox_low_flow_vent_ack = ""
 ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack]
 CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd]
 PTS = [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3, OX_PT_1, OX_PT_2, OX_PT_3]
+
+# This section implements a running average for the PT sensors to mitigate the effects of noise
+FUEL_PT_1_DEQUE = deque()
+FUEL_PT_2_DEQUE = deque()
+FUEL_PT_3_DEQUE = deque()
+OX_PT_1_DEQUE = deque()
+OX_PT_2_DEQUE = deque()
+OX_PT_3_DEQUE = deque()
+FUEL_PT_1_SUM = 0
+FUEL_PT_2_SUM = 0
+FUEL_PT_3_SUM = 0
+OX_PT_1_SUM = 0
+OX_PT_2_SUM = 0
+OX_PT_3_SUM = 0
+
+AVG_DICT = {
+    FUEL_PT_1: FUEL_PT_1_DEQUE,
+    FUEL_PT_2: FUEL_PT_2_DEQUE,
+    FUEL_PT_3: FUEL_PT_3_DEQUE,
+    OX_PT_1: OX_PT_1_DEQUE,
+    OX_PT_2: OX_PT_2_DEQUE,
+    OX_PT_3: OX_PT_3_DEQUE
+}
+
+SUM_DICT = {
+    FUEL_PT_1: FUEL_PT_1_SUM,
+    FUEL_PT_2: FUEL_PT_2_SUM,
+    FUEL_PT_3: FUEL_PT_3_SUM,
+    OX_PT_1: OX_PT_1_SUM,
+    OX_PT_2: OX_PT_2_SUM,
+    OX_PT_3: OX_PT_3_SUM
+}
+
+RUNNING_AVERAGE_LENGTH = 20
+# for 200Hz data, this correlates to an average over 0.1 seconds
+
+def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
+    # this function takes in a list of channels to read from, 
+    # and returns a dictionary with the average for each - {channel: average}
+    averages = {}
+    for channel in read_channels:
+        AVG_DICT[channel].append(auto[channel])  # adds the new data to the deque
+        SUM_DICT[channel] += auto[channel]  # updates running total
+        if len(AVG_DICT[channel]) > RUNNING_AVERAGE_LENGTH:
+            SUM_DICT[channel] -= AVG_DICT[channel].popleft()  # updates running total and removes elt
+        averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
+    return averages
+
 
 with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
     try:
