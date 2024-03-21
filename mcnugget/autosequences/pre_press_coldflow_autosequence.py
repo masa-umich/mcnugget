@@ -137,9 +137,6 @@ OX_TANK_TARGET = 400
 MAX_FUEL_TANK_PRESSURE = 500
 MAX_OX_TANK_PRESSURE = 500
 
-
-
-print("Starting autosequence")
 with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
 
     ###     DECLARES THE VALVES WHICH WILL BE USED     ###
@@ -176,27 +173,6 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
             print("Ox tank pressure is too high. Aborting.")
             ox_abort()
 
-    ###     RUNS ACTUAL AUTOSEQUENCE         ###
-    try:
-        # starts by closing all valves and closing all vents
-        print("Starting Pre Press Autosequence. Setting initial system state.")
-        syauto.close_all(auto=auto, valves=(vents + valves))
-        time.sleep(1)
-
-        print("starting pre press")
-        syauto.open_all(auto, valves=(fuel_pre_press, ox_pre_press))
-        auto.wait_until(pre_press_abort_check)
-
-        print("Pre press complete. Safing System")
-        syauto.close_all(auto=auto, valves=(vents + valves))
-        print("Valves and vents are now closed. Autosequence complete.")
-
-        #Creating a range inside autosequences
-        rng = client.ranges.create(
-            name=f"{start.__str__()[11:16]} Pre Press Coldflow Sim",
-            time_range=sy.TimeRange(start, sy.TimeStamp.now()),
-        )
-
     #aborts 
     def ox_abort():
         print("aborting ox tanks")
@@ -213,15 +189,34 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         if(input == "y"):
             syauto.open_all(auto, [fuel_vent])
             print("fuel_vent safed")
+            
+    ###     RUNS ACTUAL AUTOSEQUENCE         ###
+    try:
+        start= sy.TimeStamp.now()
+        # starts by closing all valves and closing all vents
+        print("Starting Pre Press Autosequence. Setting initial system state.")
+        syauto.close_all(auto, vents + valves)
+        time.sleep(1)
 
-    '''
-    ctrl+c interrupt
-    close all vents and valves
-    gives user 
-    '''
-    except KeyboardInterrupt:
-        
-        # Handle Ctrl+C interruption
+        print("starting pre press")
+        syauto.open_all(auto, [fuel_pre_press, ox_pre_press])
+        auto.wait_until(pre_press_abort_check)
+
+        print("Pre press complete. Safing System")
+        syauto.close_all(auto, [vents + valves])
+        print("Valves and vents are now closed. Autosequence complete.")
+
+        #Creating a range inside autosequences
+        rng = client.ranges.create(
+            name=f"{start.__str__()[11:16]} Pre Press Coldflow Sim",
+            time_range=sy.TimeRange(start, sy.TimeStamp.now()),
+        )
+
+    
+    #ctrl+c interrupt
+    #close all vents and valves
+    #gives user opetion to open vents
+    except KeyboardInterrupt: 
         print("Test interrupted. Safeing System")
         syauto.close_all(auto, vents + valves)
         input("Do we want to open vents? y/n")
