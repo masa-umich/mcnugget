@@ -58,7 +58,6 @@ client = sy.Synnax(
 #     secure=True
 # )
 
-# TODO check sop for these
 FUEL_PT_1 = "gse_ai_3"
 FUEL_PT_2 = "gse_ai_4"
 FUEL_PT_3 = "gse_ai_35"
@@ -206,5 +205,5 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
 
     except KeyboardInterrupt as e:
-        # TODO abort case 
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         print("Manual abort, safing system")
