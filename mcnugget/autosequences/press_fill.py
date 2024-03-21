@@ -361,7 +361,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
             # this is the only way for the function to return 
             # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
-            if abs(partial_target - press_supply) < 20:
+            if abs(partial_target - press_supply) < 30:
                 print("PRESS_TANKS pressure is sufficiently close to 2K supply")
                 print("Leaving press_fill open")
                 press_fill.open()
@@ -467,6 +467,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         press_phase_1()
 
         print("Pressurization phase 1 complete")
+        time.sleep(5) # add in to give operators some time to breathe
         #press_fill.close(), not needed since we are theoretically equalized
         input("Press any key to continue")
 
