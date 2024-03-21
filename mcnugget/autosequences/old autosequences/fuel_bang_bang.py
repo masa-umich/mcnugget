@@ -72,6 +72,8 @@ FUEL_TANK_PT_3_VALS = []
 RUNNING_MEDIAN_SIZE = 20
 
 def get_medians(auto: Controller) -> sy.DataType.FLOAT32:
+    # TODO: please note that this get_medians function is unnecessarily O(n) instead of O(1) but this autosequence is no longer a priority and it has not been changed.
+    # for a better implementation (especially over long time periods), use a deque and running total to implement O(1) running mean
     FUEL_TANK_PT_1_VALS.append(auto[FUEL_TANK_PT_1])
     FUEL_TANK_PT_2_VALS.append(auto[FUEL_TANK_PT_2])
     FUEL_TANK_PT_3_VALS.append(auto[FUEL_TANK_PT_3])

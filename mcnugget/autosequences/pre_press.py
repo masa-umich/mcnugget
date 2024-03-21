@@ -79,6 +79,7 @@ import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 import statistics
+from collections import deque
 
 # this connects to the synnax simulation server
 client = sy.Synnax(
