@@ -159,40 +159,62 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
         averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
     return averages
 
-nominal_threshold = 10
+NOMINAL_THRESHOLD = 10
 
-def custom_pressurize(auto_: Controller, valve_1: syauto.Valve, valve_2: syauto.Valve, pressures_1: list[str], pressures_2: list[str],target_1: float, target_2: float):
-    averages = get_averages(auto_, pressures_1 + pressures_2)
+# def custom_pressurize(auto_: Controller, valve_1: syauto.Valve, valve_2: syauto.Valve, pressures_1: list[str], pressures_2: list[str],target_1: float, target_2: float):
+#     averages = get_averages(auto_, pressures_1 + pressures_2)
 
-    pressure_1 = statistics.median(averages[pressure] for pressure in pressures_1)
-    pressure_2 = statistics.median(averages[pressure] for pressure in pressures_2)
-    press_1 = False
-    press_2 = False
+#     pressure_1 = statistics.median(averages[pressure] for pressure in pressures_1)
+#     pressure_2 = statistics.median(averages[pressure] for pressure in pressures_2)
+#     press_1 = False
+#     press_2 = False
 
 
-    if pressure_1 < target_1 - nominal_threshold:
-        press_1 = True
-    if pressure_2 < target_2 - nominal_threshold:
-        press_2 = True
+#     if pressure_1 < target_1 - NOMINAL_THRESHOLD:
+#         press_1 = True
+#     if pressure_2 < target_2 - NOMINAL_THRESHOLD:
+#         press_2 = True
 
-    if not press_1 and not press_2:
-        return
+#     if not press_1 and not press_2:
+#         return
 
-    if press_1:
-        valve_1.open()
+#     if press_1:
+#         valve_1.open()
 
-    if press_2:
-        valve_2.open()
+#     if press_2:
+#         valve_2.open()
 
-    time.sleep(0.1)
+#     time.sleep(0.1)
 
-    if pressure_1 >=target_1:
-        valve_1.close()
-        press_1 = False
+#     if pressure_1 >=target_1:
+#         valve_1.close()
+#         press_1 = False
 
-    if pressure_2 >=target_2:
-        valve_2.close()
-        press_2 = False
+#     if pressure_2 >=target_2:
+#         valve_2.close()
+#         press_2 = False
+
+def fuel_ox_pressurized(auto: Controller) -> bool:
+    averages = get_averages(auto, PTS)
+    fuel_average = statistics.median(averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3])
+    ox_average = statistics.median(averages[OX_PT_1], averages[OX_PT_2], averages[OX_PT_3])
+
+    if fuel_average >= FUEL_TARGET_PRESSURE:
+        fuel_prepress.close()
+
+    if fuel_average < FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD:
+        fuel_prepress.open()
+
+    if ox_average >= OX_TARGET_PRESSURE:
+        ox_prepress.close()
+
+    if ox_average < OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
+        ox_prepress.open()    
+
+    if fuel_average > FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD and ox_average > OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
+        fuel_prepress.close()
+        ox_prepress.close()
+        return True
 
 with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
     try: #TODO CHECK SYSTEM STATE
@@ -212,7 +234,9 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent])
         time.sleep(1)
 
-        custom_pressurize(auto, fuel_prepress, ox_prepress, [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3], [OX_PT_1, OX_PT_2, OX_PT_3], FUEL_TARGET_PRESSURE, OX_TARGET_PRESSURE)
+        auto.wait_until(fuel_ox_pressurized)
+
+        # custom_pressurize(auto, fuel_prepress, ox_prepress, [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3], [OX_PT_1, OX_PT_2, OX_PT_3], FUEL_TARGET_PRESSURE, OX_TARGET_PRESSURE)
         
         input("Press enter to continue")
        
