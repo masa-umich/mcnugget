@@ -80,7 +80,6 @@ OX_PRESSURE_INCREMENT = 0
 FUEL_PRESSURE_MAX = 0
 OX_PRESSURE_MAX = 0
 
-# TODO check sop for these
 fuel_prepress_cmd = "gse_doc_9"
 fuel_prepress_ack = "gse_doa_9"
 
@@ -161,39 +160,6 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
 
 NOMINAL_THRESHOLD = 10
 
-# def custom_pressurize(auto_: Controller, valve_1: syauto.Valve, valve_2: syauto.Valve, pressures_1: list[str], pressures_2: list[str],target_1: float, target_2: float):
-#     averages = get_averages(auto_, pressures_1 + pressures_2)
-
-#     pressure_1 = statistics.median(averages[pressure] for pressure in pressures_1)
-#     pressure_2 = statistics.median(averages[pressure] for pressure in pressures_2)
-#     press_1 = False
-#     press_2 = False
-
-
-#     if pressure_1 < target_1 - NOMINAL_THRESHOLD:
-#         press_1 = True
-#     if pressure_2 < target_2 - NOMINAL_THRESHOLD:
-#         press_2 = True
-
-#     if not press_1 and not press_2:
-#         return
-
-#     if press_1:
-#         valve_1.open()
-
-#     if press_2:
-#         valve_2.open()
-
-#     time.sleep(0.1)
-
-#     if pressure_1 >=target_1:
-#         valve_1.close()
-#         press_1 = False
-
-#     if pressure_2 >=target_2:
-#         valve_2.close()
-#         press_2 = False
-
 def fuel_ox_pressurized(auto: Controller) -> bool:
     averages = get_averages(auto, PTS)
     fuel_average = statistics.median(averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3])
@@ -217,9 +183,7 @@ def fuel_ox_pressurized(auto: Controller) -> bool:
         return True
 
 with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
-    try: #TODO CHECK SYSTEM STATE
-        
-        # TODO create valves
+    try:
         fuel_prevalve = syauto.Valve(auto=auto, cmd=fuel_prevalve_cmd, ack=fuel_prevalve_ack, normally_open=False)
         ox_prevalve = syauto.Valve(auto=auto, cmd=ox_prevalve_cmd, ack=ox_prevalve_ack, normally_open=False)
         fuel_press_iso = syauto.Valve(auto=auto, cmd = fuel_press_iso_cmd, ack = fuel_press_iso_ack, normally_open=False)
@@ -230,23 +194,16 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         fuel_prepress = syauto.Valve(auto=auto, cmd = fuel_prepress_cmd, ack = fuel_prepress_ack, normally_open=False)
         ox_prepress = syauto.Valve(auto=auto, cmd = ox_prepress_cmd, ack = ox_prepress_ack, normally_open=False)
 
-        # TODO write sequence
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent])
         time.sleep(1)
 
         auto.wait_until(fuel_ox_pressurized)
-
-        # custom_pressurize(auto, fuel_prepress, ox_prepress, [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3], [OX_PT_1, OX_PT_2, OX_PT_3], FUEL_TARGET_PRESSURE, OX_TARGET_PRESSURE)
         
         input("Press enter to continue")
        
         syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         time.sleep(25)
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
-        
-       
-
-        # TODO safe system
 
     except KeyboardInterrupt as e:
         # TODO abort case 
