@@ -9,14 +9,18 @@ This autosequence pressurizes the PRESS_TANKS using regular 2K and Gooster
     - De-energize all normally_closed
 
 2. 2k Bottle Equalization
-    - Open and close press_fill to raise psi in increments
+    - Open and close press_fill to raise Press Tank Pressure at a constant rate of 65 psi/minute
+        - done by opening press fill until Press Tank PT increases 65 psi from start pressure
+        - next iteration targets target_pressure + 65 psi
+        - The wait time between each press cycle (open/close) is 1 minute, measured from the start of the press_fill being opened 
     - Stop when 2K bottle and Press Tanks are within 10 psi of each other
     - Leave press_fill open
     - WAIT for confirmation
 
 3. Pressurization with Gas Booster
     - Open gooster_fill
-    - Open and close air_drive_iso_1 and air_drive_iso_2 to raise psi in increments
+    - Open air_drive_iso_1
+    - Open and close air_drive_iso_2 to raise psi at a 65 psi/min rate
     - Stop when Press Tanks reach TARGET_1 psi
     - Close air_drive_iso_1 and air_drive_iso_2
     - Close gooster_fill
@@ -42,7 +46,10 @@ We will use the runsafe_press_tank_fill(TARGET) function as our lambda, which wi
     - whether the median PT is above the target temperature -> RETURN
 
 This will allow us to safely pressurize in increments. The custom pressurize function will also
-    require a manual confirm if any of the TCs read a temperature above 120 farenheight.
+    require a manual confirm if any of the TCs read a temperature above 60 C.
+
+An interrupt command (ctrl + C) will cause all Valves and Vents to CLOSE. Must hit REDS to depressurize system
+All aborts also currently (3/21/24) just close all valves.
 
 ---
 ### VALVES LIST ###
@@ -226,12 +233,12 @@ start = sy.TimeStamp.now()
 # PLEASE UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST
 
 MAX_PRESS_TANK_PRESSURE = 4500  # psi
-MAX_PRESS_TANK_TEMP = 140  # celsius
-ALMOST_MAX_PRESS_TANK_TEMP = 120  # celsius
+MAX_PRESS_TANK_TEMP = 60  # celsius. ichiro edit since stuff should be in C, not cringe F. Thermocouple output is in C right?
+ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 
-PRESS_TARGET = 4000  # psi
-PRESS_INC = 5  # psi
-PRESS_DELAY = 3  # seconds
+PRESS_TARGET = 3700  # psi
+PRESS_INC = 65  # psi/min # ichiro edit
+PRESS_DELAY = 60  # seconds # ichiro edit
 
 PRESS_TANK_PT_1 = A22
 PRESS_TANK_PT_2 = A24
@@ -354,7 +361,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
             # this is the only way for the function to return 
             # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
-            if abs(partial_target - press_supply) < 10:
+            if abs(partial_target - press_supply) < 20:
                 print("PRESS_TANKS pressure is sufficiently close to 2K supply")
                 print("Leaving press_fill open")
                 press_fill.open()
@@ -376,19 +383,28 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             except statistics.StatisticsError as e:
                 print("no data for TC checks; skipping this iteration")
 
-
+            # Measure time press_fill is open so that we keep a constant 60 psi/minute press rate
+            # ex: as pressures get closer to equalizing, press fill is held open for longer, and the PRESS_DELAY actually needs to start decreasing
+            #     therefore we want to subtract the time it took to press 
             # opens press_fill until partial_target is reached or abort occurs
+            press_start_time = sy.TimeStamp.now()  # ichiro edit
+
             press_fill.open()
             auto.wait_until(lambda c: runsafe_press_tank_fill(partial_target=partial_target))
             press_fill.close()
 
-            time.sleep(PRESS_DELAY)
+            press_end_time = sy.TimeStamp.now() # ichiro edit
+            time_to_press = press_end_time - press_start_time # ichiro edit
+
+            # sleeps for 60 seconds minus the time it took to press
+            time.sleep(PRESS_DELAY - time_to_press.seconds) # ichiro edit
+            
 
     def press_phase_2():
         # this function completes steps 2-4 see section 3 of overview
         # starts at partial_target = current pressure + increment
         partial_target = statistics.median(compute_medians([PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3]))
-        partial_target += PRESS_INC
+        # partial_target += PRESS_INC   # pretty sure this would cause us to increase target by 2x press_inc before opening air_drive_iso_2
         while True:
             partial_target += PRESS_INC
 
@@ -416,13 +432,22 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             except statistics.StatisticsError as e:
                 print("no data for TC checks; skipping this iteration")
 
+            # Measure time press_fill is open so that we keep a constant 60 psi/minute press rate
+            # ex: as pressures get closer to equalizing, press fill is held open for longer, and the PRESS_DELAY actually needs to start decreasing
+            #     therefore we want to subtract the time it took to press 
+            # opens press_fill until partial_target is reached or abort occurs
+            press_start_time = sy.TimeStamp.now()  # ichiro edit
 
             # opens air_drive_iso valves until partial_target is reached or abort occurs
-            syauto.open_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
+            syauto.open_all(auto=auto, valves=[air_drive_ISO_2])
             auto.wait_until(lambda c: runsafe_press_tank_fill(partial_target=partial_target))
-            syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
+            syauto.close_all(auto=auto, valves=[air_drive_ISO_2])
 
-            time.sleep(PRESS_DELAY)
+            press_end_time = sy.TimeStamp.now()  # ichiro edit
+
+            time_to_press = press_end_time - press_start_time # ichiro edit
+
+            time.sleep(PRESS_DELAY - time_to_press.seconds) # ichiro edit
 
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
@@ -442,17 +467,17 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         press_phase_1()
 
         print("Pressurization phase 1 complete")
-        press_fill.close()
+        #press_fill.close(), not needed since we are theoretically equalized
         input("Press any key to continue")
 
         print("PHASE 2: Pressurization with Gas Booster")
 
-        print("opening gas_booster_fill")
+        print("opening gas_booster_fill and air_drive_ISO_1")
         gas_booster_fill.open()
-
+        air_drive_ISO_1.open()
         press_phase_2()
 
-        print("closing gas_booster_fill")
+        print("closing gas_booster_fill and air_drive_ISO_1")
         gas_booster_fill.close()
 
         print("Pressurization phase 2 complete")
@@ -460,7 +485,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
         print("Test complete. Safing System")
         syauto.close_all(auto=auto, valves=(all_vents + all_valves))
-        print("Valves closed and vents open")
+        print("Valves and Vents closed ")
 
         #Creating a range inside autosequences
         rng = client.ranges.create(
@@ -471,7 +496,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
     except KeyboardInterrupt as e:
         # Handle Ctrl+C interruption
         if str(e) == "Interrupted by user.":
-            print("Test interrupted. Safeing System")
+            print("Test interrupted. Safing System")
             syauto.close_all(auto=auto, valves=(all_vents + all_valves))
 
     time.sleep(60)
