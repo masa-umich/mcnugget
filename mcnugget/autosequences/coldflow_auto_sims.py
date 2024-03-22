@@ -262,20 +262,20 @@ with client.new_streamer(command_channels) as streamer:
 
                 fuel_tank_delta = -0.005
                 trailer_pneumatics_delta = 0
-                press_tank_delta = -0.005
-                ox_tank_delta = -0.008
+                press_tank_delta = -0.01
+                ox_tank_delta = -0.016
 
                 ### PRESS ###
                 if press_fill_energized:
                     if supply_2k > true_press_pressure:
                         diff = (supply_2k / INITIAL_2K_PRESSURE) * 2.5 + 0.1
                         press_tank_delta += diff
-                        supply_2k -= diff
+                        supply_2k -= diff / 8
                     if gas_booster_fill_energized:
                         if air_drive_iso_1_energized and air_drive_iso_2_energized:
                             diff = (supply_2k / INITIAL_2K_PRESSURE) * 2.5 + 1
                             press_tank_delta += diff
-                            supply_2k -= diff
+                            supply_2k -= diff / 8
 
                 if not press_vent_energized:
                     press_tank_delta -= 4
@@ -287,13 +287,15 @@ with client.new_streamer(command_channels) as streamer:
                     FUEL_PREVALVE_LAST_OPEN = None
             
                 if fuel_pre_press_energized:
+                    press_tank_delta -= 1.5
                     fuel_tank_delta += 3.0
 
                 if fuel_press_iso_energized:
+                    press_tank_delta -= 1.5
                     fuel_tank_delta += 1.5
                 
                 if fuel_prevalve_energized:
-                    fuel_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
+                    fuel_tank_delta -= 0.3 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
 
                 if not fuel_vent_energized:
                     fuel_tank_delta -= 3
@@ -306,13 +308,15 @@ with client.new_streamer(command_channels) as streamer:
                     OX_PREVALVE_LAST_OPEN = None
 
                 if ox_pre_press_energized:
+                    press_tank_delta -= 1.5
                     ox_tank_delta += 3
 
                 if ox_press_energized:
+                    press_tank_delta -= 1.5
                     ox_tank_delta += 1.5
 
                 if ox_pre_valve_energized:
-                    ox_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
+                    ox_tank_delta -= 0.3 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
 
                 if not ox_low_vent_energized:
                     ox_tank_delta -= 2.0

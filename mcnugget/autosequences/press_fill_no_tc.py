@@ -319,7 +319,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
             # sleeps for 60 seconds minus the time it took to press
             print(f"sleeping for {max(PRESS_DELAY - time_pressed, 0)} seconds")
-            time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
+            time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
             
 
     def press_phase_2():
@@ -358,7 +358,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
             # sleeps for 60 seconds minus the time it took to press
             print(f"sleeping for {max(PRESS_DELAY - time_pressed, 0)} seconds")
-            time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
+            time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
 
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###

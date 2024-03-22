@@ -161,8 +161,8 @@ NOMINAL_THRESHOLD = 10
 
 def fuel_ox_pressurized(auto: Controller) -> bool:
     averages = get_averages(auto, PTS)
-    fuel_average = statistics.median(averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3])
-    ox_average = statistics.median(averages[OX_PT_1], averages[OX_PT_2], averages[OX_PT_3])
+    fuel_average = statistics.median([averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3]])
+    ox_average = statistics.median([averages[OX_PT_1], averages[OX_PT_2], averages[OX_PT_3]])
 
     if fuel_average >= FUEL_TARGET_PRESSURE:
         fuel_prepress.close()
@@ -197,9 +197,10 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent])
         time.sleep(1)
 
-        auto.wait_until(fuel_ox_pressurized)
+        # print("repressurizing fuel and ox")
+        # auto.wait_until(fuel_ox_pressurized)
         
-        input("Press enter to continue")
+        # input("Press enter to continue")
        
         syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         time.sleep(25)
