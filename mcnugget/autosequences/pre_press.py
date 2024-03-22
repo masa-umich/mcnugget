@@ -111,9 +111,9 @@ OX_LOW_FLOW_VENT_CMD = "gse_doc_16"
 FUEL_TANK_PT_1 = "gse_ai_3"
 FUEL_TANK_PT_2 = "gse_ai_4"
 FUEL_TANK_PT_3 = "gse_ai_35"
-OX_TANK_PT_1 = "gse_ai_1"
-OX_TANK_PT_2 = "gse_ai_2"
-OX_TANK_PT_3 = "gse_ai_34"
+OX_TANK_PT_1 = "gse_ai_6"
+OX_TANK_PT_2 = "gse_ai_7"
+OX_TANK_PT_3 = "gse_ai_8"
 
 PTS = [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3, OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3]
 
@@ -134,6 +134,7 @@ start = sy.TimeStamp.now()
 
 # TODO:
 # PLEASE UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST
+#Pressures are in psi
 FUEL_TANK_TARGET = 400
 OX_TANK_TARGET = 400
 UPPER_FUEL_TANK_PRESSURE = 420
@@ -282,8 +283,6 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         input("Do we want to open vents? y/n")
         if(input == "y"):
             syauto.open_all(auto=auto, valves=vents)
-        # if(input == "n"):
-        #     syauto.close_all(auto=auto, valves=vents)
         print("Autosequence ended")
 
     time.sleep(60)

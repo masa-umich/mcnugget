@@ -117,7 +117,6 @@ def open_all(auto: Controller, valves: list[Valve]):
             commands[valve.cmd_chan] = 0
         else:
             commands[valve.cmd_chan] = 1
-
     auto.set(commands)
 
 
