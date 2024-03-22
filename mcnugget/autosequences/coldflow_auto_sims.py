@@ -89,15 +89,14 @@ command_channels = [FUEL_VENT_OUT, FUEL_PREVALVE_OUT, FUEL_FEEDLINE_PURGE_OUT,
                     ENGINE_PNEUMATICS_ISO_OUT, ENGINE_PNEUMATICS_VENT_OUT,
                     AIR_DRIVE_ISO_1_OUT, AIR_DRIVE_ISO_2_OUT, GAS_BOOSTER_FILL_OUT, PRESS_FILL_OUT,
                     PRESS_VENT_OUT, FUEL_PRESS_ISO_OUT, OX_PRESS_OUT, OX_LOW_VENT_OUT, OX_FILL_VALVE_OUT,
-                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT, OX_DOME_REG_PILOT_ISO_OUT,
-                    FUEL_TPC_1_OUT, FUEL_TPC_2_OUT]
+                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT, OX_DOME_REG_PILOT_ISO_OUT]
 
 ack_channels = [FUEL_VENT_IN, FUEL_PREVALVE_IN, FUEL_FEEDLINE_PURGE_IN,
                 OX_FILL_PURGE_IN, FUEL_PRE_PRESS_IN, OX_PRE_PRESS_IN, OX_FEEDLINE_PURGE_IN,
                 ENGINE_PNEUMATICS_ISO_IN, ENGINE_PNEUMATICS_VENT_IN,
                 AIR_DRIVE_ISO_1_IN, AIR_DRIVE_ISO_2_IN, GAS_BOOSTER_FILL_IN, PRESS_FILL_IN,
                 PRESS_VENT_IN, FUEL_PRESS_ISO_IN, OX_PRESS_IN, OX_LOW_VENT_IN, OX_FILL_VALVE_IN,
-                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN, OX_DOME_REG_PILOT_ISO_IN, FUEL_TPC_1_IN, FUEL_TPC_2_IN]
+                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN, OX_DOME_REG_PILOT_ISO_IN]
 
 # Pressure sensors
 OX_PRE_FILL_PT = "gse_ai_1"  # Ox pre-fill pressure
@@ -281,9 +280,12 @@ trailer_pneumatics_pressure = 0
 FUEL_PREVALVE_LAST_OPEN = None
 
 with client.new_streamer(command_channels) as streamer:
+    READ_CHANNELS = command_channels
+    WRITE_CHANNELS = ack_channels + PTs + [DAQ_TIME]  # + TCs
+    print(f"writing to {len(WRITE_CHANNELS)} channels")
     with client.new_writer(
             sy.TimeStamp.now(),
-            channels=ack_channels+PTs+[DAQ_TIME]  # + TCs
+            channels = WRITE_CHANNELS
     ) as w:
         i = 0
         while True:
@@ -419,7 +421,7 @@ with client.new_streamer(command_channels) as streamer:
                 ok = w.write({
                     DAQ_TIME: now,
 
-                    # writes to all 23 valves
+                    # writes to 21 valves
                     FUEL_VENT_IN: int(fuel_vent_energized),
                     FUEL_PREVALVE_IN: int(fuel_prevalve_energized),
                     FUEL_FEEDLINE_PURGE_IN: int(fuel_feedline_purge_energized),
