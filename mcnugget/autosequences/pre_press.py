@@ -100,12 +100,12 @@ client = sy.Synnax(
 
 # change names and numbers to match the actual channels
 # valve names to channel names
-FUEL_PRE_PRESS_ACK = "gse_doa_11"
-FUEL_PRE_PRESS_CMD = "gse_doc_11"
+FUEL_PRE_PRESS_ACK = "gse_doa_9"
+FUEL_PRE_PRESS_CMD = "gse_doc_9"
 FUEL_VENT_ACK = "gse_doa_15"
 FUEL_VENT_CMD = "gse_doc_15"
-OX_PRE_PRESS_ACK = "gse_doa_12"
-OX_PRE_PRESS_CMD = "gse_doc_12"
+OX_PRE_PRESS_ACK = "gse_doa_10"
+OX_PRE_PRESS_CMD = "gse_doc_10"
 OX_LOW_FLOW_VENT_ACK = "gse_doa_16"
 OX_LOW_FLOW_VENT_CMD = "gse_doc_16"
 FUEL_TANK_PT_1 = "gse_ai_3"

@@ -216,34 +216,10 @@ press_tank_PT_1 = true_press_pressure + random.uniform(-20, 20)
 press_tank_PT_2 = true_press_pressure + random.uniform(-20, 20)
 press_tank_PT_3 = true_press_pressure + random.uniform(-20, 20)
 
-
-# fuel_flowmeter_inlet_pressure = 0
-# fuel_flowmeter_throat_pressure = 0
-# fuel_level_sensor = 0
-
-# ox_pre_fill_pressure = 0
-# ox_dome_reg_pilot_pressure = 0
-# ox_press_pressure = 0
-# ox_flowmeter_inlet_pressure = 0
-# ox_flowmeter_throat_pressure = 0
-# ox_level_sensor = 0
-
 supply_2k = INITIAL_2K_PRESSURE
-# air_drive_2k_pressure = 0
-# air_drive_post_reg_pressure = 0
-# press_tank_2k_pressure = 0
-# press_tank_bottle_pre_fill_pressure = 0
-
-# trickle_purge_post_reg_pressure = 0
-# trickle_purge_pre_2k_pressure = 0
-# gas_booster_outlet_pressure = 0
-# pneumatics_bottle_pt = 0
-# engine_pneumatics_pressure = 0
-# purge_2k_bottle_pressure = 0
-# purge_post_reg_pressure = 0
-# trailer_pneumatics_pressure = 0
 
 FUEL_PREVALVE_LAST_OPEN = None
+OX_PREVALVE_LAST_OPEN = None
 
 with client.new_streamer(command_channels) as streamer:
     READ_CHANNELS = command_channels
@@ -265,7 +241,6 @@ with client.new_streamer(command_channels) as streamer:
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
-                fuel_feedline_purge_energized = DAQ_STATE[FUEL_FEEDLINE_PURGE_OUT] == 1
                 fuel_press_iso_energized = DAQ_STATE[FUEL_PRESS_ISO_OUT] == 1
                 fuel_pre_press_energized = DAQ_STATE[FUEL_PRE_PRESS_OUT] == 1
 
@@ -283,7 +258,7 @@ with client.new_streamer(command_channels) as streamer:
                 gas_booster_fill_energized = DAQ_STATE[GAS_BOOSTER_FILL_OUT] == 1
 
                 press_fill_energized = DAQ_STATE[PRESS_FILL_OUT] == 1
-                press_vent_energized= DAQ_STATE[PRESS_VENT_OUT] == 1
+                press_vent_energized = DAQ_STATE[PRESS_VENT_OUT] == 1
 
                 fuel_tank_delta = 0
                 trailer_pneumatics_delta = 0
@@ -293,14 +268,14 @@ with client.new_streamer(command_channels) as streamer:
                 ### PRESS ###
                 if press_fill_energized:
                     if supply_2k > true_press_pressure:
-                        true_press_pressure += 2.5
+                        press_tank_delta += 2.5
                         supply_2k -= 1
                     if gas_booster_fill_energized:
                         if air_drive_iso_1_energized and air_drive_iso_2_energized:
                             supply_2k -= 1
-                            true_press_pressure += 1.5
+                            press_tank_delta += 1.5
 
-                if press_vent_energized:
+                if not press_vent_energized:
                     press_tank_delta -= 4
 
                 ### FUEL ###
@@ -335,7 +310,7 @@ with client.new_streamer(command_channels) as streamer:
                     ox_tank_delta += 1.5
 
                 if ox_pre_valve_energized:
-                    ox_tank_delta += 0.1 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
+                    ox_tank_delta -= 0.1 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
 
                 if not ox_low_vent_energized:
                     ox_tank_delta -= 2.0
@@ -343,26 +318,15 @@ with client.new_streamer(command_channels) as streamer:
                 if not ox_high_flow_vent_energized:
                     ox_tank_delta -= 5.0
 
-                ox_tank_1_pressure += ox_tank_delta
-                ox_tank_2_pressure += ox_tank_delta
-                ox_tank_3_pressure += ox_tank_delta
-                fuel_PT_1_pressure += fuel_tank_delta 
-                fuel_PT_2_pressure += fuel_tank_delta 
-                fuel_PT_3_pressure += fuel_tank_delta 
-                press_tank_PT_1 += press_tank_delta
-                press_tank_PT_2 += press_tank_delta
-                press_tank_PT_3 += press_tank_delta
+                true_ox_pressure += ox_tank_delta
+                true_fuel_pressure += fuel_tank_delta
+                true_press_pressure += press_tank_delta
 
                 # no negative pressures pls ;-;
-                ox_tank_1_pressure = max(0, ox_tank_1_pressure)
-                ox_tank_2_pressure = max(0, ox_tank_2_pressure)
-                ox_tank_3_pressure = max(0, ox_tank_3_pressure)
-                fuel_PT_1_pressure = max(0, fuel_PT_1_pressure)
-                fuel_PT_2_pressure = max(0, fuel_PT_2_pressure)
-                fuel_PT_3_pressure = max(0, fuel_PT_3_pressure)
-                press_tank_PT_1 = max(0, press_tank_PT_1)
-                press_tank_PT_2 = max(0, press_tank_PT_2)
-                press_tank_PT_3 = max(0, press_tank_PT_3)
+                true_ox_pressure = max(0, true_ox_pressure)
+                true_fuel_pressure = max(0, true_fuel_pressure)
+                true_press_pressure = max(0, true_press_pressure)
+                supply_2k = max(0, supply_2k)
 
                 now = sy.TimeStamp.now()
 
@@ -372,7 +336,7 @@ with client.new_streamer(command_channels) as streamer:
                     # writes to 21 valves
                     FUEL_VENT_IN: int(fuel_vent_energized),
                     FUEL_PREVALVE_IN: int(fuel_prevalve_energized),
-                    FUEL_FEEDLINE_PURGE_IN: int(fuel_feedline_purge_energized),
+                    FUEL_FEEDLINE_PURGE_IN: 0,
                     OX_FILL_PURGE_IN: 0,
                     FUEL_PRE_PRESS_IN: int(fuel_pre_press_energized),
                     OX_PRE_PRESS_IN: int(ox_pre_press_energized),
@@ -390,7 +354,7 @@ with client.new_streamer(command_channels) as streamer:
                     OX_FILL_VALVE_IN: int(ox_fill_valve_energized),
                     OX_HIGH_FLOW_VENT_IN: int(ox_high_flow_vent_energized),
                     OX_PRE_VALVE_IN: int(ox_pre_valve_energized),
-                    OX_DOME_ISO_IN: ox_dome_iso_energized,
+                    OX_DOME_ISO_IN: int(ox_dome_iso_energized),
 
                     # writes to all 30 PTs
                     FUEL_PT_1_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
