@@ -226,9 +226,11 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         
         if(fuel_average>MAX_FUEL_TANK_PRESSURE):
             fuel_abort(auto_)
+            return
 
         if(ox_average>MAX_OX_TANK_PRESSURE):
             ox_abort(auto_)
+            return
 
     #aborts 
     def ox_abort(auto_:Controller):
