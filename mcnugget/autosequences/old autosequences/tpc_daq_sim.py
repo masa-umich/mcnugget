@@ -95,10 +95,8 @@ MPV_LAST_OPEN = None
 scuba_pressure = 0
 l_stand_pressure = 0
 
-with client.new_streamer([TPC_1_OPEN_CMD, TPC_2_OPEN_CMD, TPC_1_CLOSE_CMD, TPC_2_CLOSE_CMD, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]) as streamer:
-    with client.new_writer(
-            sy.TimeStamp.now(),
-            channels=[
+
+WRITE_TO = [
                 DAQ_TIME,
                 TPC_1_OPEN_ACK,
                 TPC_2_OPEN_ACK,
@@ -110,6 +108,11 @@ with client.new_streamer([TPC_1_OPEN_CMD, TPC_2_OPEN_CMD, TPC_1_CLOSE_CMD, TPC_2
                 L_STAND_PT,
                 SCUBA_PT,
             ]
+READ_FROM = [TPC_1_OPEN_CMD, TPC_2_OPEN_CMD, TPC_1_CLOSE_CMD, TPC_2_CLOSE_CMD, MPV_CMD, PRESS_ISO_CMD, VENT_CMD, ]
+with client.new_streamer(READ_FROM) as streamer:
+    with client.new_writer(
+            sy.TimeStamp.now(),
+            channels=
     ) as w:
         i = 0
         while True:

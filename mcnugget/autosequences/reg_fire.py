@@ -24,7 +24,7 @@ This autosequence opens the OX REG and FUEL REG to release high-pressure gas
 
 4. Close Valves
     - Close all the valves opened in step 3
-    - Open FUEL_VENT and OX_LOW_FLOW_VENT
+    - Open FUEL_VENT and OX_LOW_FLOW_VENT and PRESS_VENT
 
 X. Abort
     - The only conditions which will trigger an abort:
@@ -192,6 +192,7 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         ox_low_flow_vent = syauto.Valve(auto=auto, cmd = ox_low_flow_vent_cmd, ack = ox_low_flow_vent_ack, normally_open=True)
         fuel_prepress = syauto.Valve(auto=auto, cmd = fuel_prepress_cmd, ack = fuel_prepress_ack, normally_open=False)
         ox_prepress = syauto.Valve(auto=auto, cmd = ox_prepress_cmd, ack = ox_prepress_ack, normally_open=False)
+        #TODO: add press vent and close it at the end
 
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent])
         time.sleep(1)
@@ -202,6 +203,7 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
        
         syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         time.sleep(25)
+        # add auto-abort for max pressure (525, etc)
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
 
     except KeyboardInterrupt as e:

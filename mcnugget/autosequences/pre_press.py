@@ -52,8 +52,6 @@ This will allow us to safely pressurize in increments. The custom pressurize fun
 For this test, the only valves we will need to control are:
 
     ---VALVES---
-    Fuel Pre Valve
-    Ox Pre Valve
     Fuel Pre Press
     Ox Pre Press
 
@@ -140,6 +138,7 @@ MAX_FUEL_TANK_PRESSURE = 525
 UPPER_OX_TANK_PRESSURE = 420
 LOWER_OX_TANK_PRESSURE = 380
 MAX_OX_TANK_PRESSURE = 525
+# TODO: target + bound instead of upper/lower
 
 with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
 
@@ -193,6 +192,7 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         if(input == "y"):
             syauto.open_all(auto, [ox_low_flow_vent])
             print("ox_low_flow_vent safed")
+        input("Press any key to continue pressing or ctrl+c to abort")
 
     def fuel_abort(auto):
         print("aborting fuel tanks")
@@ -201,6 +201,7 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         if(input == "y"):
             syauto.open_all(auto, [fuel_vent])
             print("fuel_vent safed")
+        input("Press any key to continue pressing or ctrl+c to abort")
             
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
@@ -213,9 +214,9 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         print("starting pre press")
         auto.wait_until(pre_press)
 
-        print("Pre press complete. Safing System")
-        syauto.close_all(auto, [vents + valves])
-        print("Valves and vents are now closed. Autosequence complete.")
+        # print("Pre press complete. Safing System")
+        # syauto.close_all(auto, [vents + valves])
+        # print("Valves and vents are now closed. Autosequence complete.")
 
         #Creating a range inside autosequences
         rng = client.ranges.create(
@@ -233,8 +234,8 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         input("Do we want to open vents? y/n")
         if(input == "y"):
             syauto.open_all(auto=auto, valves=vents)
-        if(input == "n"):
-            syauto.close_all(auto=auto, valves=vents)
+        # if(input == "n"):
+        #     syauto.close_all(auto=auto, valves=vents)
         print("Autosequence ended")
 
     time.sleep(60)
