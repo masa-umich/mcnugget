@@ -12,17 +12,11 @@ client = sy.Synnax(
 
 DAQ_TIME = "daq_time"
 
-# port 6 is open
-# port 14 is open
-# port 24 is open
-
 # valves for fuel system
 FUEL_VENT_IN = "gse_doa_15"  # Fuel vent input,
 FUEL_VENT_OUT = "gse_doc_15"  # Fuel vent output
 FUEL_PREVALVE_IN = "gse_doa_22"  # Fuel pre-valve input
 FUEL_PREVALVE_OUT = "gse_doc_22"  # Fuel pre-valve output
-# FUEL_MPV_IN = "gse_doa_25"  # Fuel MPV input (ghost channel for now)
-# FUEL_MPV_OUT = "gse_doc_25"  # Fuel MPV output
 
 # valves for purge system
 FUEL_FEEDLINE_PURGE_IN = "gse_doa_7"  # Fuel feedline purge
@@ -69,14 +63,9 @@ OX_PRE_VALVE_IN = "gse_doa_21"  # Ox pre-valve
 OX_PRE_VALVE_OUT = "gse_doc_21"  # Ox pre-valve
 OX_DOME_REG_PILOT_ISO_IN = "gse_doa_5"  # Ox dome reg pilot ISO
 OX_DOME_REG_PILOT_ISO_OUT = "gse_doc_5"  # Ox dome reg pilot ISO
-# OX_MPV_IN = "gse_doa_26"  # Ox MPV
-# OX_MPV_OUT = "gse_doc_26"  # Ox MPV
+OX_DRAIN_IN = "gse_doa_14"
+OX_DRAIN_OUT = "gse_doc_14"
 
-# TPC Valves
-FUEL_TPC_1_OUT = "gse_doc_25"
-FUEL_TPC_1_IN = "gse_doa_25"
-FUEL_TPC_2_OUT = "gse_doc_26"
-FUEL_TPC_2_IN = "gse_doa_26"
 
 vent_command_channels = [FUEL_VENT_OUT, PRESS_VENT_OUT, OX_LOW_VENT_OUT, 
                          OX_HIGH_FLOW_VENT_OUT, ENGINE_PNEUMATICS_VENT_OUT]
@@ -130,11 +119,6 @@ PRESS_TANK_PT_1 = "gse_ai_26"  # Press tank pressure
 PRESS_TANK_PT_2 = "gse_ai_24"  # Press tank pressure
 PRESS_TANK_PT_3 = "gse_ai_22"  # Press tank pressure
 
-# PRESS_TANK_TC_1 = "gse_ai_69"
-# PRESS_TANK_TC_2 = "gse_ai_70"
-# PRESS_TANK_TC_3 = "gse_ai_71"
-# PRESS_TANK_TC_4 = "gse_ai_72"
-
 PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2_PRESSURE, FUEL_PT_3_PRESSURE, OX_PRESS_PT,
        OX_TANK_1_PRESSURE, OX_TANK_2_PRESSURE, OX_TANK_3_PRESSURE, OX_FLOWMETER_INLET_PT, OX_FLOWMETER_THROAT_PT,
        OX_LEVEL_SENSOR, FUEL_FLOWMETER_INLET_PT, FUEL_FLOWMETER_THROAT_PT, FUEL_LEVEL_SENSOR, TRICKLE_PURGE_POST_REG_PT,
@@ -142,13 +126,10 @@ PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2
        GAS_BOOSTER_OUTLET_PT, PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3, PRESS_TANK_2K_BOTTLE_PRE_FILL_PT,
        PNEUMATICS_BOTTLE_PT, TRAILER_PNEMATICS_PT, ENGINE_PNEUMATICS_PT, PURGE_2K_BOTTLE_PT, PURGE_POST_REG_PT]
 
-# TCs = [PRESS_TANK_TC_1, PRESS_TANK_TC_2, PRESS_TANK_TC_3, PRESS_TANK_TC_4]
-
 # Parameters for testing
 INITIAL_FUEL_TANK_PRESSURE = 0
 INITIAL_OX_TANK_PRESSURE = 0
 INITIAL_PRESS_TANK_PRESSURE = 0
-# INITIAL_PRESS_TANK_TEMPERATURE = 50
 INITIAL_2K_PRESSURE = 2000
 
 daq_time = client.channels.create(
@@ -190,36 +171,24 @@ for pt in PTs:
         retrieve_if_name_exists=True
     )
 
-# for tc in TCs:
-#     client.channels.create(
-#         name=tc,
-#         data_type=sy.DataType.FLOAT32,
-#         index=daq_time.key,
-#         retrieve_if_name_exists=True
-#     )
-
 rate = (sy.Rate.HZ * 50).period.seconds
-
-# Assuming `command_channels` is already defined
-# Rest of the code remains the same as before...
 
 # Create DAQ_STATE dictionary
 DAQ_STATE = {}
 
-# starts with valves open and vents closed
+# starts with valves open
 for cmd_chan in command_channels:
     DAQ_STATE[cmd_chan] = 0  # open
 
+# starts with vents closed
 for cmd_chan in vent_command_channels:
     DAQ_STATE[cmd_chan] = 1  # closed
 
+# starts with PTs at 0
 for pt in PTs:
-    DAQ_STATE[pt] = 0  # start with no pressure
+    DAQ_STATE[pt] = 0
 
-# for tc in TCs:
-#     DAQ_STATE[tc] = 20  # start with ambient temperature
-
-# Set values for pressure sensors
+# updates pressure sensors
 DAQ_STATE.update({
     FUEL_PT_1_PRESSURE: INITIAL_FUEL_TANK_PRESSURE,
     FUEL_PT_2_PRESSURE: INITIAL_FUEL_TANK_PRESSURE,
@@ -229,53 +198,49 @@ DAQ_STATE.update({
     PRESS_TANK_PT_3: INITIAL_PRESS_TANK_PRESSURE,
     OX_TANK_1_PRESSURE: 0,
     OX_TANK_2_PRESSURE: 0,
-    OX_TANK_3_PRESSURE: 0,
-    # PRESS_TANK_TC_1: INITIAL_PRESS_TANK_TEMPERATURE,
-    # PRESS_TANK_TC_2: INITIAL_PRESS_TANK_TEMPERATURE,
-    # PRESS_TANK_TC_3: INITIAL_PRESS_TANK_TEMPERATURE,
-    # PRESS_TANK_TC_4: INITIAL_PRESS_TANK_TEMPERATURE,
+    OX_TANK_3_PRESSURE: 0
 })
 
 true_fuel_pressure = INITIAL_FUEL_TANK_PRESSURE
-fuel_PT_1_pressure = true_fuel_pressure
-fuel_PT_2_pressure = true_fuel_pressure
-fuel_PT_3_pressure = true_fuel_pressure
+fuel_PT_1_pressure = true_fuel_pressure + random.uniform(-20, 20)
+fuel_PT_2_pressure = true_fuel_pressure + random.uniform(-20, 20)
+fuel_PT_3_pressure = true_fuel_pressure + random.uniform(-20, 20)
 
 true_ox_pressure = INITIAL_OX_TANK_PRESSURE
-ox_tank_1_pressure = true_ox_pressure
-ox_tank_2_pressure = true_ox_pressure
-ox_tank_3_pressure = true_ox_pressure
+ox_tank_1_pressure = true_ox_pressure + random.uniform(-20, 20)
+ox_tank_2_pressure = true_ox_pressure + random.uniform(-20, 20)
+ox_tank_3_pressure = true_ox_pressure + random.uniform(-20, 20)
 
 true_press_pressure = INITIAL_PRESS_TANK_PRESSURE
-press_tank_PT_1 = true_press_pressure
-press_tank_PT_2 = true_press_pressure
-press_tank_PT_3 = true_press_pressure
+press_tank_PT_1 = true_press_pressure + random.uniform(-20, 20)
+press_tank_PT_2 = true_press_pressure + random.uniform(-20, 20)
+press_tank_PT_3 = true_press_pressure + random.uniform(-20, 20)
 
 
-fuel_flowmeter_inlet_pressure = 0
-fuel_flowmeter_throat_pressure = 0
-fuel_level_sensor = 0
+# fuel_flowmeter_inlet_pressure = 0
+# fuel_flowmeter_throat_pressure = 0
+# fuel_level_sensor = 0
 
-ox_pre_fill_pressure = 0
-ox_dome_reg_pilot_pressure = 0
-ox_press_pressure = 0
-ox_flowmeter_inlet_pressure = 0
-ox_flowmeter_throat_pressure = 0
-ox_level_sensor = 0
+# ox_pre_fill_pressure = 0
+# ox_dome_reg_pilot_pressure = 0
+# ox_press_pressure = 0
+# ox_flowmeter_inlet_pressure = 0
+# ox_flowmeter_throat_pressure = 0
+# ox_level_sensor = 0
 
-air_drive_2k_pressure = 0
-air_drive_post_reg_pressure = 0
-press_tank_2k_pressure = 0
-press_tank_bottle_pre_fill_pressure = 0
+# air_drive_2k_pressure = 0
+# air_drive_post_reg_pressure = 0
+# press_tank_2k_pressure = 0
+# press_tank_bottle_pre_fill_pressure = 0
 
-trickle_purge_post_reg_pressure = 0
-trickle_purge_pre_2k_pressure = 0
-gas_booster_outlet_pressure = 0
-pneumatics_bottle_pt = 0
-engine_pneumatics_pressure = 0
-purge_2k_bottle_pressure = 0
-purge_post_reg_pressure = 0
-trailer_pneumatics_pressure = 0
+# trickle_purge_post_reg_pressure = 0
+# trickle_purge_pre_2k_pressure = 0
+# gas_booster_outlet_pressure = 0
+# pneumatics_bottle_pt = 0
+# engine_pneumatics_pressure = 0
+# purge_2k_bottle_pressure = 0
+# purge_post_reg_pressure = 0
+# trailer_pneumatics_pressure = 0
 
 FUEL_PREVALVE_LAST_OPEN = None
 
@@ -399,7 +364,6 @@ with client.new_streamer(command_channels) as streamer:
                 fuel_PT_1_pressure += fuel_tank_delta 
                 fuel_PT_2_pressure += fuel_tank_delta 
                 fuel_PT_3_pressure += fuel_tank_delta 
-                trailer_pneumatics_pressure += trailer_pneumatics_delta
                 press_tank_PT_1 += press_tank_delta
                 press_tank_PT_2 += press_tank_delta
                 press_tank_PT_3 += press_tank_delta
@@ -411,7 +375,6 @@ with client.new_streamer(command_channels) as streamer:
                 fuel_PT_1_pressure = max(0, fuel_PT_1_pressure)
                 fuel_PT_2_pressure = max(0, fuel_PT_2_pressure)
                 fuel_PT_3_pressure = max(0, fuel_PT_3_pressure)
-                trailer_pneumatics_pressure = max(0, trailer_pneumatics_pressure)
                 press_tank_PT_1 = max(0, press_tank_PT_1)
                 press_tank_PT_2 = max(0, press_tank_PT_2)
                 press_tank_PT_3 = max(0, press_tank_PT_3)
@@ -445,43 +408,36 @@ with client.new_streamer(command_channels) as streamer:
                     OX_DOME_REG_PILOT_ISO_IN: int(ox_dome_reg_pilot_iso_energized),
 
                     # writes to all 30 PTs
-                    OX_PRE_FILL_PT: ox_pre_fill_pressure,
-                    OX_PRESS_DOME_PILOT_REG_PT: ox_dome_reg_pilot_pressure,
-                    FUEL_PT_1_PRESSURE: fuel_PT_1_pressure + random.uniform(-20, 20),
-                    FUEL_PT_2_PRESSURE: fuel_PT_2_pressure + random.uniform(-20, 20),
-                    FUEL_PT_3_PRESSURE: fuel_PT_3_pressure + random.uniform(-20, 20),
-                    OX_TANK_1_PRESSURE: ox_tank_1_pressure + random.uniform(-20,20),
-                    OX_TANK_2_PRESSURE: ox_tank_2_pressure + random.uniform(-20,20),
-                    OX_TANK_3_PRESSURE: ox_tank_3_pressure + random.uniform(-20,20),
-                    OX_PRESS_PT: ox_press_pressure,
-                    OX_FLOWMETER_INLET_PT: ox_flowmeter_inlet_pressure,
-                    OX_FLOWMETER_THROAT_PT: ox_flowmeter_throat_pressure,
-                    OX_LEVEL_SENSOR: ox_level_sensor,
-                    FUEL_FLOWMETER_INLET_PT: fuel_flowmeter_inlet_pressure,
-                    FUEL_FLOWMETER_THROAT_PT: fuel_flowmeter_throat_pressure,
-                    FUEL_LEVEL_SENSOR: fuel_level_sensor,
-                    TRICKLE_PURGE_POST_REG_PT: trickle_purge_post_reg_pressure,
-                    TRICKLE_PURGE_PRE_2K_PT: trickle_purge_pre_2k_pressure,
-                    AIR_DRIVE_2K_PT: air_drive_2k_pressure,
-                    AIR_DRIVE_POST_REG_PT: air_drive_post_reg_pressure,
-                    PRESS_TANK_SUPPLY: press_tank_2k_pressure,
-                    GAS_BOOSTER_OUTLET_PT: gas_booster_outlet_pressure,
-                    PRESS_TANK_PT_1: press_tank_PT_1,
-                    PRESS_TANK_2K_BOTTLE_PRE_FILL_PT: press_tank_bottle_pre_fill_pressure,
-                    PNEUMATICS_BOTTLE_PT: pneumatics_bottle_pt,
-                    TRAILER_PNEMATICS_PT: trailer_pneumatics_pressure,
-                    ENGINE_PNEUMATICS_PT: engine_pneumatics_pressure,
-                    PURGE_2K_BOTTLE_PT: purge_2k_bottle_pressure,
-                    PRESS_TANK_PT_2: press_tank_PT_2,
-                    PRESS_TANK_PT_3: press_tank_PT_3,
-                    PURGE_POST_REG_PT: purge_post_reg_pressure,
-                    # FUEL_PT_MEDIAN: 
-
-                    # writes to all 4 TCs
-                    # PRESS_TANK_TC_1: 0,
-                    # PRESS_TANK_TC_2: 1,
-                    # PRESS_TANK_TC_3: 2,
-                    # PRESS_TANK_TC_4: 3
+                    FUEL_PT_1_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
+                    FUEL_PT_2_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
+                    FUEL_PT_3_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
+                    OX_TANK_1_PRESSURE: true_ox_pressure + random.uniform(-20,20),
+                    OX_TANK_2_PRESSURE: true_ox_pressure + random.uniform(-20,20),
+                    OX_TANK_3_PRESSURE: true_ox_pressure + random.uniform(-20,20),
+                    PRESS_TANK_PT_1: true_press_pressure + random.uniform(-20, 20),
+                    PRESS_TANK_PT_2: true_press_pressure + random.uniform(-20, 20),
+                    PRESS_TANK_PT_3: true_press_pressure + random.uniform(-20, 20),
+                    OX_PRE_FILL_PT: 0,
+                    OX_PRESS_DOME_PILOT_REG_PT: 0,
+                    OX_PRESS_PT: 0,
+                    OX_FLOWMETER_INLET_PT: 0,
+                    OX_FLOWMETER_THROAT_PT: 0,
+                    OX_LEVEL_SENSOR: 0,
+                    FUEL_FLOWMETER_INLET_PT: 0,
+                    FUEL_FLOWMETER_THROAT_PT: 0,
+                    FUEL_LEVEL_SENSOR: 0,
+                    TRICKLE_PURGE_POST_REG_PT: 0,
+                    TRICKLE_PURGE_PRE_2K_PT: 0,
+                    AIR_DRIVE_2K_PT: 0,
+                    AIR_DRIVE_POST_REG_PT: 0,
+                    PRESS_TANK_SUPPLY: 0,
+                    GAS_BOOSTER_OUTLET_PT: 0,
+                    PRESS_TANK_2K_BOTTLE_PRE_FILL_PT: 0,
+                    PNEUMATICS_BOTTLE_PT: 0,
+                    TRAILER_PNEMATICS_PT: 0,
+                    ENGINE_PNEUMATICS_PT: 0,
+                    PURGE_2K_BOTTLE_PT: 0,
+                    PURGE_POST_REG_PT: 0,
                 })
 
                 i += 1
