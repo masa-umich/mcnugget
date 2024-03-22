@@ -77,6 +77,8 @@ import synnax as sy
 from synnax.control.controller import Controller
 import syauto
 import statistics
+from collections import deque
+
 
 # this connects to the synnax simulation server
 client = sy.Synnax(
@@ -113,6 +115,8 @@ OX_TANK_PT_1 = "gse_ai_1"
 OX_TANK_PT_2 = "gse_ai_2"
 OX_TANK_PT_3 = "gse_ai_34"
 
+PTS = [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3, OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3]
+
 # List of channels we're going to read from and write to
 # CHANGE THESE TO LOOPS
 WRITE_TO = []
@@ -140,63 +144,105 @@ LOWER_OX_TANK_PRESSURE = 380
 MAX_OX_TANK_PRESSURE = 525
 # TODO: target + bound instead of upper/lower
 
+RUNNING_AVERAGE_LENGTH = 20
+
+
+# This section implements a running average for the PT sensors to mitigate the effects of noise
+FUEL_PT_1_DEQUE = deque()
+FUEL_PT_2_DEQUE = deque()
+FUEL_PT_3_DEQUE = deque()
+OX_PT_1_DEQUE = deque()
+OX_PT_2_DEQUE = deque()
+OX_PT_3_DEQUE = deque()
+FUEL_PT_1_SUM = 0
+FUEL_PT_2_SUM = 0
+FUEL_PT_3_SUM = 0
+OX_PT_1_SUM = 0
+OX_PT_2_SUM = 0
+OX_PT_3_SUM = 0
+
+AVG_DICT = {
+    FUEL_TANK_PT_1: FUEL_PT_1_DEQUE,
+    FUEL_TANK_PT_2: FUEL_PT_2_DEQUE,
+    FUEL_TANK_PT_3: FUEL_PT_3_DEQUE,
+    OX_TANK_PT_1: OX_PT_1_DEQUE,
+    OX_TANK_PT_2: OX_PT_2_DEQUE,
+    OX_TANK_PT_3: OX_PT_3_DEQUE
+}
+
+SUM_DICT = {
+    FUEL_TANK_PT_1: FUEL_PT_1_SUM,
+    FUEL_TANK_PT_2: FUEL_PT_2_SUM,
+    FUEL_TANK_PT_3: FUEL_PT_3_SUM,
+    OX_TANK_PT_1: OX_PT_1_SUM,
+    OX_TANK_PT_2: OX_PT_2_SUM,
+    OX_TANK_PT_3: OX_PT_3_SUM
+}
+
 with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
 
     ###     DECLARES THE VALVES WHICH WILL BE USED     ###
 
-    fuel_pre_press = syauto.Valve(auto, FUEL_PRE_PRESS_CMD, FUEL_PRE_PRESS_ACK)
-    fuel_vent = syauto.Valve(auto, FUEL_VENT_CMD, FUEL_VENT_ACK)
-    ox_pre_press = syauto.Valve(auto, OX_PRE_PRESS_CMD, OX_PRE_PRESS_ACK)
-    ox_low_flow_vent = syauto.Valve(auto, OX_LOW_FLOW_VENT_CMD, OX_LOW_FLOW_VENT_ACK)
+    fuel_pre_press = syauto.Valve(auto, FUEL_PRE_PRESS_CMD, FUEL_PRE_PRESS_ACK,normally_open=False)
+    fuel_vent = syauto.Valve(auto, FUEL_VENT_CMD, FUEL_VENT_ACK,normally_open=True)
+    ox_pre_press = syauto.Valve(auto, OX_PRE_PRESS_CMD, OX_PRE_PRESS_ACK,normally_open=False)
+    ox_low_flow_vent = syauto.Valve(auto, OX_LOW_FLOW_VENT_CMD, OX_LOW_FLOW_VENT_ACK,normally_open=True)
     valves = [fuel_pre_press, ox_pre_press]
     vents = [fuel_vent, ox_low_flow_vent]
 
     ###     DEFINES FUNCTIONS USED IN AUTOSEQUENCE         ###
 
-    def compute_medians(auto: Controller, sensor_readings: list[str], running_median_size: int) -> sy.DataType.FLOAT32:
-        for sensor in sensor_readings:
-            if len(sensor) > running_median_size:
-                sensor.pop(0)
-        return statistics.median([statistics.mean(sensor) for sensor in sensor_readings])
+    def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
+    # this function takes in a list of channels to read from, 
+    # and returns a dictionary with the average for each - {channel: average}
+        averages = {}
+        for channel in read_channels:
+            AVG_DICT[channel].append(auto[channel])  # adds the new data to the deque
+            SUM_DICT[channel] += auto[channel]  # updates running total
+            if len(AVG_DICT[channel]) > RUNNING_AVERAGE_LENGTH:
+                SUM_DICT[channel] -= AVG_DICT[channel].popleft()  # updates running total and removes elt
+            averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
+        return averages
 
     '''
     This function continously checks if an abort condition is hit
     If an abort condition is hit, it will close all valves and give the user the option to open the vents
     '''
-    def pre_press (auto):
-        fuel_tank_pressure = compute_medians(auto, [FUEL_TANK_PT_1, FUEL_TANK_PT_2, FUEL_TANK_PT_3],20)
-        ox_tank_pressure = compute_medians(auto,[OX_TANK_PT_1, OX_TANK_PT_2, OX_TANK_PT_3],20)
-        if(fuel_tank_pressure < LOWER_FUEL_TANK_PRESSURE):
+    def pre_press (auto_:Controller):
+        averages = get_averages(auto_, PTS)
+        fuel_average = statistics.median([averages[FUEL_TANK_PT_1], averages[FUEL_TANK_PT_2], averages[FUEL_TANK_PT_3]])
+        ox_average = statistics.median([averages[OX_TANK_PT_1], averages[OX_TANK_PT_2], averages[OX_TANK_PT_3]])
+        if(fuel_average < LOWER_FUEL_TANK_PRESSURE):
             fuel_pre_press.open()
         
-        if(fuel_tank_pressure > UPPER_FUEL_TANK_PRESSURE):
+        if(fuel_average > UPPER_FUEL_TANK_PRESSURE):
             fuel_pre_press.close()
         
-        if(ox_tank_pressure < LOWER_OX_TANK_PRESSURE):
+        if(ox_average < LOWER_OX_TANK_PRESSURE):
             ox_pre_press.open()
 
-        if(ox_tank_pressure > UPPER_OX_TANK_PRESSURE):
+        if(ox_average > UPPER_OX_TANK_PRESSURE):
             ox_pre_press.close()
         
-        if(fuel_tank_pressure>MAX_FUEL_TANK_PRESSURE):
-            fuel_abort(auto)
+        if(fuel_average>MAX_FUEL_TANK_PRESSURE):
+            fuel_abort(auto_)
 
-        if(ox_tank_pressure>MAX_OX_TANK_PRESSURE):
-            ox_abort(auto)
+        if(ox_average>MAX_OX_TANK_PRESSURE):
+            ox_abort(auto_)
 
     #aborts 
-    def ox_abort(auto):
+    def ox_abort(auto_:Controller):
         print("aborting ox tanks")
-        syauto.close_all(auto, [ox_pre_press])
+        syauto.close_all(auto_, [ox_pre_press])
         input("Would you like to open ox low flow vent? y/n")
         if(input == "y"):
-            syauto.open_all(auto, [ox_low_flow_vent])
+            syauto.open_all(auto_, [ox_low_flow_vent])
             print("ox_low_flow_vent safed")
         input("Press any key to continue pressing or ctrl+c to abort")
 
-    def fuel_abort(auto):
+    def fuel_abort(auto_:Controller):
         print("aborting fuel tanks")
-        syauto.close_all(auto, [fuel_pre_press])
+        syauto.close_all(auto_, [fuel_pre_press])
         input("Would you like to open fuel vent? y/n")
         if(input == "y"):
             syauto.open_all(auto, [fuel_vent])

@@ -365,13 +365,13 @@ with client.new_streamer(command_channels) as streamer:
                 if not fuel_vent_energized:
                     fuel_tank_delta -= 3
 
-                if ox_pre_valve_energized:
-                    ox_tank_delta -= 1.5
+                # if ox_pre_valve_energized:
+                #     ox_tank_delta -= 1.5
 
-                if ox_press_energized and not ox_low_vent_energized:
-                    ox_tank_delta = 0
+                if ox_pre_press_energized:
+                    ox_tank_delta += 3
 
-                if ox_low_vent_energized:
+                if not ox_low_vent_energized:
                     ox_tank_delta -= 2.0
 
                 if ox_high_flow_vent_energized:
@@ -450,9 +450,9 @@ with client.new_streamer(command_channels) as streamer:
                     FUEL_PT_1_PRESSURE: fuel_PT_1_pressure + random.uniform(-20, 20),
                     FUEL_PT_2_PRESSURE: fuel_PT_2_pressure + random.uniform(-20, 20),
                     FUEL_PT_3_PRESSURE: fuel_PT_3_pressure + random.uniform(-20, 20),
-                    OX_TANK_1_PRESSURE: ox_tank_1_pressure,
-                    OX_TANK_2_PRESSURE: ox_tank_2_pressure,
-                    OX_TANK_3_PRESSURE: ox_tank_3_pressure,
+                    OX_TANK_1_PRESSURE: ox_tank_1_pressure + random.uniform(-20,20),
+                    OX_TANK_2_PRESSURE: ox_tank_2_pressure + random.uniform(-20,20),
+                    OX_TANK_3_PRESSURE: ox_tank_3_pressure + random.uniform(-20,20),
                     OX_PRESS_PT: ox_press_pressure,
                     OX_FLOWMETER_INLET_PT: ox_flowmeter_inlet_pressure,
                     OX_FLOWMETER_THROAT_PT: ox_flowmeter_throat_pressure,
