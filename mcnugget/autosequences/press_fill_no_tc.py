@@ -179,7 +179,7 @@ PRESS_TANK_PT_3 = A26
 PRESS_TANK_SUPPLY = A23
 
 # this variable defines how many samples should be averaged for PT or TC data
-RUNNING_MEDIAN_SIZE = 100  # samples - at 200Hz this means every 1/2 second
+RUNNING_MEDIAN_SIZE = 50  # samples - at 200Hz this means every 1/2 second
 
 # This section implements a running average for the PT sensors to mitigate the effects of noise
 PRESS_TANK_PT_1_DEQUE = deque()
@@ -319,7 +319,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
             # sleeps for 60 seconds minus the time it took to press
             print(f"sleeping for {max(PRESS_DELAY - time_pressed, 0)} seconds")
-            time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
+            time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
             
 
     def press_phase_2():
@@ -358,7 +358,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
             # sleeps for 60 seconds minus the time it took to press
             print(f"sleeping for {max(PRESS_DELAY - time_pressed, 0)} seconds")
-            time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
+            time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
 
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
