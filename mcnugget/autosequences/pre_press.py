@@ -130,7 +130,7 @@ for i in range(1, 17):
     READ_FROM.append(f"gse_tc_{i}")
 
 start = sy.TimeStamp.now()
-
+NOTIFIED = False
 
 # TODO:
 # PLEASE UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST

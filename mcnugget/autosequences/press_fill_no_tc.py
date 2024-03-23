@@ -167,7 +167,7 @@ MAX_PRESS_TANK_PRESSURE = 4500  # psi
 MAX_PRESS_TANK_TEMP = 60  # celsius. ichiro edit since stuff should be in C, not cringe F. Thermocouple output is in C right?
 ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 
-PRESS_TARGET = 3900  # psi
+PRESS_TARGET = 2500  # psi
 PRESS_INC = 65  # psi/min # ichiro edit
 PRESS_DELAY = 60  # seconds # ichiro edit
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
@@ -222,7 +222,7 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
     return averages
 
 print("Starting autosequence")
-with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM) as auto:
+with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180) as auto:
 
     ###     DECLARES THE VALVES WHICH WILL BE USED     ###
 
@@ -277,10 +277,11 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             input("Press any key to continue pressurizing, or ctrl-c to execute abort sequence")
 
         if statistics.median([pt1, pt2, pt3]) >= partial_target:
-            print(f"press tanks have reached {partial_target}")
             return True
         
-        if PHASE_1 and abs(statistics.median([pt1, pt2, pt3]) - get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]) < 80:
+        press_diff = statistics.median([pt1, pt2, pt3]) - get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
+        if PHASE_1 and (abs(press_diff) < 80 or press_diff > 0):
+            print("press tanks and 2k supply have been equalized")
             return True
         
         if PHASE_1 and (time.time() - press_start_time_) > 60:
@@ -292,7 +293,8 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         PHASE_1 = True
         # this function uses the runsafe_press_tank_fill() function to equalize pressure between 2K supply and press tanks
         # it returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
-        partial_target = 0
+        p_avgs = get_averages(auto, [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3])
+        partial_target = statistics.median([p_avgs[PRESS_TANK_PT_1], p_avgs[PRESS_TANK_PT_2], p_avgs[PRESS_TANK_PT_3]])
         while True:
             press_supply = get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
             p_avgs = get_averages(auto, [PRESS_TANK_PT_1, PRESS_TANK_PT_2, PRESS_TANK_PT_3])
@@ -301,24 +303,22 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
             # this is the only way for the function to return 
             # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
-            print()
-            print(f"press tanks: {press_tanks}")
-            print(f"2k supply: {press_supply}")
-            if abs(press_tanks - press_supply) < 80:
+            print(f"press tanks: {round(press_tanks, 2)}, 2k supply: {round(press_supply, 2)}")
+            if (abs(press_tanks - press_supply) < 80 or press_tanks > press_supply):
                 return
 
             # Open press_fill until partial_target is reached and ensure we do not exceed maximum rate
             press_start_time = time.time()  # ichiro edit
 
             press_fill.open()
-            print(f"pressurizing to {partial_target}")
+            print(f"pressurizing to {round(partial_target, 2)}")
             auto.wait_until(lambda c: runsafe_press_tank_fill(partial_target=partial_target, press_start_time_=press_start_time))
             press_fill.close()
 
             time_pressed = time.time() - press_start_time  # ichiro + evan edit
 
             # sleeps for 60 seconds minus the time it took to press
-            print(f"sleeping for {max(PRESS_DELAY - time_pressed, 0)} seconds")
+            print(f"sleeping for {round(max(PRESS_DELAY - time_pressed, 0), 1)} seconds")
             time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
             
 
@@ -337,7 +337,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             # this is the only way for the function to return 
             # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
             if partial_target >= PRESS_TARGET:
-                print(f"PRESS_TANKS pressure has reached {PRESS_TARGET}")
+                print(f"PRESS_TANKS pressure has within 65 psi of {PRESS_TARGET}")
                 syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
                 print("Both air_drive_iso valves are closed")
                 return
@@ -369,27 +369,22 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         time.sleep(1)
 
         print("PHASE 1: 2K Bottle Equalization")
-        print(
-            f"pressurizing PRESS_TANKS using press_fill until approximately equal with 2K supply")
+        print(f"pressurizing PRESS_TANKS using press_fill until approximately equal with 2K supply")
         press_phase_1()
+        print("PHASE 1 complete")
 
-        print("Pressurization phase 1 complete")
+        time.sleep(1)
         print("Leaving press_fill open")
         press_fill.open()
-        input("Press any key to continue")
+
+        input("Press any key to continue to PHASE 2")
 
         print("PHASE 2: Pressurization with Gas Booster")
-
         print("opening gas_booster_fill and air_drive_ISO_1")
         gas_booster_fill.open()
         air_drive_ISO_1.open()
         press_phase_2()
-
-        print("closing gas_booster_fill and air_drive_ISO_1")
-        gas_booster_fill.close()
-
-        print("Pressurization phase 2 complete")
-        input("Press any key to continue")
+        print("PHASE 2 complete")
 
         print("Test complete. Safing System")
         syauto.close_all(auto=auto, valves=(all_vents + all_valves))
@@ -403,12 +398,14 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
     except KeyboardInterrupt as e:
         # Handle Ctrl+C interruption
-        if str(e) == "Interrupted by user.":
-            print("Test interrupted. Safing System")
-            syauto.close_all(auto=auto, valves=(all_vents + all_valves))
-        input("Would you like to open press vent? y/n")
-        if(input == "y"):
+        print("Manual abort, safing system")
+        print("Closing all valves and vents")
+        syauto.close_all(auto=auto, valves=(all_vents + all_valves))
+
+        response = input("Input 'y' to open press vent: ")
+        if(response == "y"):
             press_vent.open()
             print("press vent safed")
 
+    print("ctrl-c to terminating autosequence")
     time.sleep(60)

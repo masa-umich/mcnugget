@@ -260,10 +260,10 @@ with client.new_streamer(command_channels) as streamer:
                 press_fill_energized = DAQ_STATE[PRESS_FILL_OUT] == 1
                 press_vent_energized = DAQ_STATE[PRESS_VENT_OUT] == 1
 
-                fuel_tank_delta = -0.005
+                fuel_tank_delta = -0.02
                 trailer_pneumatics_delta = 0
                 press_tank_delta = -0.01
-                ox_tank_delta = -0.016
+                ox_tank_delta = -0.025
 
                 ### PRESS ###
                 if press_fill_energized:
