@@ -9,7 +9,7 @@ This autosequence pressurizes the PRESS_TANKS using regular 2K and Gooster
     - De-energize all normally_closed
 
 2. 2k Bottle Equalization
-    - Open and close press_fill to raise Press Tank Pressure at a constant rate of 65 psi/minute
+    - Open and close press_fill to raise psi at a 65 psi/min rate
         - done by opening press fill until Press Tank PT increases 65 psi from start pressure
         - next iteration targets target_pressure + 65 psi
         - The wait time between each press cycle (open/close) is 1 minute, measured from the start of the press_fill being opened 
@@ -21,7 +21,7 @@ This autosequence pressurizes the PRESS_TANKS using regular 2K and Gooster
     - Open gooster_fill
     - Open air_drive_iso_1
     - Open and close air_drive_iso_2 to raise psi at a 65 psi/min rate
-    - Stop when Press Tanks reach TARGET_1 psi
+    - Stop when Press Tanks reach PRESS_TARGET psi
     - Close air_drive_iso_1 and air_drive_iso_2
     - Close gooster_fill
     - Close press_fill
@@ -167,7 +167,7 @@ MAX_PRESS_TANK_PRESSURE = 4500  # psi
 MAX_PRESS_TANK_TEMP = 60  # celsius. ichiro edit since stuff should be in C, not cringe F. Thermocouple output is in C right?
 ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 
-PRESS_TARGET = 2500  # psi
+PRESS_TARGET = 3900  # psi
 PRESS_INC = 65  # psi/min # ichiro edit
 PRESS_DELAY = 60  # seconds # ichiro edit
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second

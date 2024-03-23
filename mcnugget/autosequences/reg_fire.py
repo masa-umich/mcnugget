@@ -65,19 +65,21 @@ OX_PT_1 = "gse_ai_6"
 OX_PT_2 = "gse_ai_7"
 OX_PT_3 = "gse_ai_8"
 
-OX_FIRE = True
-FUEL_FIRE = True
-# change these to trigger a fuel-only or ox-only fire
+# OX_FIRE = True
+# FUEL_FIRE = True
+# # change these to trigger a fuel-only or ox-only fire
 
 #TODO fill these in
-FUEL_TARGET_PRESSURE = 0
-OX_TARGET_PRESSURE = 0
+FUEL_TARGET_PRESSURE = 453
+OX_TARGET_PRESSURE = 397
 
-FUEL_PRESSURE_INCREMENT = 0
-OX_PRESSURE_INCREMENT = 0
+# FUEL_PRESSURE_INCREMENT = 0
+# OX_PRESSURE_INCREMENT = 0
 
-FUEL_PRESSURE_MAX = 0
-OX_PRESSURE_MAX = 0
+FUEL_PRESSURE_MAX = 525
+OX_PRESSURE_MAX = 525
+
+FIRE_DURATION = 25
 
 fuel_prepress_cmd = "gse_doc_9"
 fuel_prepress_ack = "gse_doa_9"
@@ -176,6 +178,16 @@ def fuel_ox_pressurized(auto: Controller) -> bool:
     if ox_average < OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
         ox_prepress.open()    
 
+    if fuel_average > FUEL_PRESSURE_MAX:
+        fuel_prepress.close()
+        print("ABORTING FUEL due to high pressure")
+        return True
+
+    if ox_average > OX_PRESSURE_MAX:
+        ox_prepress.close()
+        print("ABORTING OX due to high pressure")
+        return True
+
     if fuel_average > FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD and ox_average > OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
         fuel_prepress.close()
         ox_prepress.close()
@@ -203,8 +215,7 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         # input("Press enter to continue")
        
         syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
-        time.sleep(25)
-        # add auto-abort for max pressure (525, etc)
+        time.sleep(FIRE_DURATION)
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
 
     except KeyboardInterrupt as e:
