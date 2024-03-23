@@ -41,22 +41,22 @@ import statistics
 from collections import deque
 
 # this connects to the synnax simulation server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-# Connects to masa cluster
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
+
+# Connects to masa cluster
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 FUEL_PT_1 = "gse_ai_3"
 FUEL_PT_2 = "gse_ai_4"
@@ -107,6 +107,9 @@ fuel_vent_ack = "gse_doa_15"
 
 ox_low_flow_vent_cmd = "gse_doc_16"
 ox_low_flow_vent_ack = "gse_doa_16"
+
+press_vent_cmd = "gse_doc_18"
+press_vent_ack = "gse_doa_18"
 
 ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack]
 CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd]
@@ -204,9 +207,9 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         ox_low_flow_vent = syauto.Valve(auto=auto, cmd = ox_low_flow_vent_cmd, ack = ox_low_flow_vent_ack, normally_open=True)
         fuel_prepress = syauto.Valve(auto=auto, cmd = fuel_prepress_cmd, ack = fuel_prepress_ack, normally_open=False)
         ox_prepress = syauto.Valve(auto=auto, cmd = ox_prepress_cmd, ack = ox_prepress_ack, normally_open=False)
-        #TODO: add press vent and close it at the end
+        press_vent = syauto.Valve(auto=auto, cmd = press_vent_cmd, ack = press_vent_ack, normally_open=True)
 
-        syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent])
+        syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent])
         time.sleep(1)
 
         # print("repressurizing fuel and ox")
@@ -215,9 +218,11 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         # input("Press enter to continue")
        
         syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        print("start wait")
         time.sleep(FIRE_DURATION)
-        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        print("end wait")
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
 
     except KeyboardInterrupt as e:
-        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         print("Manual abort, safing system")
