@@ -37,8 +37,8 @@ ENGINE_PNEUMATICS_VENT_IN = "gse_doa_13"  # Engine pneumatics vent
 ENGINE_PNEUMATICS_VENT_OUT = "gse_doc_13"  # Engine pneumatics vent
 
 # valves for press system
-AIR_DRIVE_ISO_1_IN = "gse_doa_3"  # Air drive ISO 1
-AIR_DRIVE_ISO_1_OUT = "gse_doc_3"  # Air drive ISO 1
+AIR_DRIVE_ISO_1_IN = "gse_doa_5"  # Air drive ISO 1
+AIR_DRIVE_ISO_1_OUT = "gse_doc_5"  # Air drive ISO 1
 AIR_DRIVE_ISO_2_IN = "gse_doa_4"  # Air drive ISO 2
 AIR_DRIVE_ISO_2_OUT = "gse_doc_4"  # Air drive ISO 2
 GAS_BOOSTER_FILL_IN = "gse_doa_20"  # Gas booster fill
@@ -61,8 +61,8 @@ OX_HIGH_FLOW_VENT_IN = "gse_doa_17"  # Ox high vent
 OX_HIGH_FLOW_VENT_OUT = "gse_doc_17"  # Ox high vent
 OX_PRE_VALVE_IN = "gse_doa_21"  # Ox pre-valve
 OX_PRE_VALVE_OUT = "gse_doc_21"  # Ox pre-valve
-OX_DOME_ISO_IN = "gse_doa_5"  # Ox dome reg pilot ISO
-OX_DOME_ISO_OUT = "gse_doc_5"  # Ox dome reg pilot ISO
+OX_DOME_ISO_IN = "gse_doa_3"  # Ox dome reg pilot ISO
+OX_DOME_ISO_OUT = "gse_doc_3"  # Ox dome reg pilot ISO
 OX_DRAIN_IN = "gse_doa_14"
 OX_DRAIN_OUT = "gse_doc_14"
 
