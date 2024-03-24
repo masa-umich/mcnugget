@@ -99,8 +99,8 @@ fuel_press_iso_ack = "gse_doa_2"
 ox_press_iso_cmd = "gse_doc_1"
 ox_press_iso_ack = "gse_doa_1"
 
-ox_dome_iso_cmd = "gse_doc_5"
-ox_dome_iso_ack = "gse_doa_5"
+ox_dome_iso_cmd = "gse_doc_3"
+ox_dome_iso_ack = "gse_doa_3"
 
 fuel_vent_cmd = "gse_doc_15"
 fuel_vent_ack = "gse_doa_15"
@@ -111,8 +111,8 @@ ox_low_flow_vent_ack = "gse_doa_16"
 press_vent_cmd = "gse_doc_18"
 press_vent_ack = "gse_doa_18"
 
-ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack]
-CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd]
+ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack, press_vent_ack, fuel_prepress_ack, fuel_prepress_ack]
+CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd, press_vent_cmd, fuel_prepress_cmd, ox_prepress_cmd]
 PTS = [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3, OX_PT_1, OX_PT_2, OX_PT_3]
 
 # This section implements a running average for the PT sensors to mitigate the effects of noise
@@ -148,7 +148,11 @@ SUM_DICT = {
 }
 
 RUNNING_AVERAGE_LENGTH = 5
+<<<<<<< HEAD
 # for 50Hz data, this correlates to an average over 0.1 seconds
+=======
+# for 200Hz data, this correlates to an average over 0.1 seconds
+>>>>>>> 92891cbe091ad5580f9e08a09b275943a40a54df
 
 def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
     # this function takes in a list of channels to read from, 
@@ -223,6 +227,6 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         print("end wait")
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
 
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         print("Manual abort, safing system")
