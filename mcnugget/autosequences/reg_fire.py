@@ -111,8 +111,8 @@ ox_low_flow_vent_ack = "gse_doa_16"
 press_vent_cmd = "gse_doc_18"
 press_vent_ack = "gse_doa_18"
 
-ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack]
-CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd]
+ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack, press_vent_ack, fuel_prepress_ack, fuel_prepress_ack]
+CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd, press_vent_cmd, fuel_prepress_cmd, ox_prepress_cmd]
 PTS = [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3, OX_PT_1, OX_PT_2, OX_PT_3]
 
 # This section implements a running average for the PT sensors to mitigate the effects of noise
