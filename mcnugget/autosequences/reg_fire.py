@@ -217,7 +217,7 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         
         # input("Press enter to continue")
        
-        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
+        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         print("start wait")
         time.sleep(FIRE_DURATION)
         print("end wait")
