@@ -264,10 +264,13 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
         start = sy.TimeStamp.now()
+        time.sleep(1)
         # starts by closing all valves and closing all vents
         print("Starting Pre Press Autosequence. Setting initial system state.")
         syauto.open_close_many_valves(auto, [], vents + valves)
-        time.sleep(1)
+        time.sleep(2)
+
+        print(auto[FUEL_PRE_PRESS_ACK])
 
         print("starting pre press")
         auto.wait_until(pre_press)
