@@ -217,12 +217,12 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         
         # input("Press enter to continue")
        
-        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
         print("start wait")
         time.sleep(FIRE_DURATION)
         print("end wait")
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
 
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         print("Manual abort, safing system")
