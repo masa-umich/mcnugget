@@ -99,8 +99,8 @@ fuel_press_iso_ack = "gse_doa_2"
 ox_press_iso_cmd = "gse_doc_1"
 ox_press_iso_ack = "gse_doa_1"
 
-ox_dome_iso_cmd = "gse_doc_5"
-ox_dome_iso_ack = "gse_doa_5"
+ox_dome_iso_cmd = "gse_doc_3"
+ox_dome_iso_ack = "gse_doa_3"
 
 fuel_vent_cmd = "gse_doc_15"
 fuel_vent_ack = "gse_doa_15"
