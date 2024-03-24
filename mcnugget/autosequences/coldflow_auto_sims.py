@@ -10,6 +10,7 @@ client = sy.Synnax(
     secure=False
 )
 
+# testing if leon can git push
 DAQ_TIME = "daq_time"
 
 # valves for fuel system
