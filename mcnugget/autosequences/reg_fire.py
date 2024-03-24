@@ -147,8 +147,8 @@ SUM_DICT = {
     OX_PT_3: OX_PT_3_SUM
 }
 
-RUNNING_AVERAGE_LENGTH = 20
-# for 200Hz data, this correlates to an average over 0.1 seconds
+RUNNING_AVERAGE_LENGTH = 5
+# for 50Hz data, this correlates to an average over 0.1 seconds
 
 def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
     # this function takes in a list of channels to read from, 
