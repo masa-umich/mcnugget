@@ -79,7 +79,6 @@ import syauto
 import statistics
 from collections import deque
 
-
 # this connects to the synnax simulation server
 # client = sy.Synnax(
 #     host="localhost",
@@ -134,7 +133,7 @@ NOTIFIED = False
 
 # TODO:
 # PLEASE UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST
-#Pressures are in psi
+# Pressures are in psi
 FUEL_TANK_TARGET = 453
 OX_TANK_TARGET = 397
 UPPER_FUEL_TANK_PRESSURE = 463
@@ -181,22 +180,23 @@ SUM_DICT = {
     OX_TANK_PT_3: OX_PT_3_SUM
 }
 
-with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_TO, read=READ_FROM, write_authorities=200) as auto:
-
+with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_TO, read=READ_FROM,
+                            write_authorities=200) as auto:
     ###     DECLARES THE VALVES WHICH WILL BE USED     ###
 
-    fuel_pre_press = syauto.Valve(auto, FUEL_PRE_PRESS_CMD, FUEL_PRE_PRESS_ACK,normally_open=False)
-    fuel_vent = syauto.Valve(auto, FUEL_VENT_CMD, FUEL_VENT_ACK,normally_open=True)
-    ox_pre_press = syauto.Valve(auto, OX_PRE_PRESS_CMD, OX_PRE_PRESS_ACK,normally_open=False)
-    ox_low_flow_vent = syauto.Valve(auto, OX_LOW_FLOW_VENT_CMD, OX_LOW_FLOW_VENT_ACK,normally_open=True)
+    fuel_pre_press = syauto.Valve(auto, FUEL_PRE_PRESS_CMD, FUEL_PRE_PRESS_ACK, normally_open=False)
+    fuel_vent = syauto.Valve(auto, FUEL_VENT_CMD, FUEL_VENT_ACK, normally_open=True)
+    ox_pre_press = syauto.Valve(auto, OX_PRE_PRESS_CMD, OX_PRE_PRESS_ACK, normally_open=False)
+    ox_low_flow_vent = syauto.Valve(auto, OX_LOW_FLOW_VENT_CMD, OX_LOW_FLOW_VENT_ACK, normally_open=True)
     valves = [fuel_pre_press, ox_pre_press]
     vents = [fuel_vent, ox_low_flow_vent]
+
 
     ###     DEFINES FUNCTIONS USED IN AUTOSEQUENCE         ###
 
     def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
-    # this function takes in a list of channels to read from, 
-    # and returns a dictionary with the average for each - {channel: average}
+        # this function takes in a list of channels to read from,
+        # and returns a dictionary with the average for each - {channel: average}
         averages = {}
         for channel in read_channels:
             AVG_DICT[channel].append(auto[channel])  # adds the new data to the deque
@@ -206,59 +206,65 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
             averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
         return averages
 
+
     '''
     This function continously checks if an abort condition is hit
     If an abort condition is hit, it will close all valves and give the user the option to open the vents
     '''
-    def pre_press (auto_:Controller):
+
+
+    def pre_press(auto_: Controller):
         averages = get_averages(auto_, PTS)
         fuel_average = statistics.median([averages[FUEL_TANK_PT_1], averages[FUEL_TANK_PT_2], averages[FUEL_TANK_PT_3]])
         ox_average = statistics.median([averages[OX_TANK_PT_1], averages[OX_TANK_PT_2], averages[OX_TANK_PT_3]])
-        if(fuel_average < LOWER_FUEL_TANK_PRESSURE):
+        if (fuel_average < LOWER_FUEL_TANK_PRESSURE and not auto_[FUEL_PRE_PRESS_ACK]):
             fuel_pre_press.open()
-        
-        if(fuel_average > UPPER_FUEL_TANK_PRESSURE):
+
+        if (fuel_average > UPPER_FUEL_TANK_PRESSURE and not auto_[FUEL_PRE_PRESS_ACK]):
             fuel_pre_press.close()
-        
-        if(ox_average < LOWER_OX_TANK_PRESSURE):
+
+        if (ox_average < LOWER_OX_TANK_PRESSURE and not auto_[OX_PRE_PRESS_ACK]):
             ox_pre_press.open()
 
-        if(ox_average > UPPER_OX_TANK_PRESSURE):
+        if (ox_average > UPPER_OX_TANK_PRESSURE and not auto_[OX_PRE_PRESS_ACK]):
             ox_pre_press.close()
-        
-        if(fuel_average>MAX_FUEL_TANK_PRESSURE):
+
+        if (fuel_average > MAX_FUEL_TANK_PRESSURE):
             fuel_abort(auto_)
             return
 
-        if(ox_average>MAX_OX_TANK_PRESSURE):
+        if (ox_average > MAX_OX_TANK_PRESSURE):
             ox_abort(auto_)
             return
 
-    #aborts 
-    def ox_abort(auto_:Controller):
+
+    # aborts
+    def ox_abort(auto_: Controller):
         print("aborting ox tanks")
         syauto.close_all(auto_, [ox_pre_press])
         input("Would you like to open ox low flow vent? y/n")
-        if(input == "y"):
+        if (input == "y"):
             syauto.open_all(auto_, [ox_low_flow_vent])
             print("ox_low_flow_vent safed")
         input("Press any key to continue pressing or ctrl+c to abort")
 
-    def fuel_abort(auto_:Controller):
+
+    def fuel_abort(auto_: Controller):
         print("aborting fuel tanks")
         syauto.close_all(auto_, [fuel_pre_press])
         input("Would you like to open fuel vent? y/n")
-        if(input == "y"):
+        if (input == "y"):
             syauto.open_all(auto, [fuel_vent])
             print("fuel_vent safed")
         input("Press any key to continue pressing or ctrl+c to abort")
-            
+
+
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
-        start= sy.TimeStamp.now()
+        start = sy.TimeStamp.now()
         # starts by closing all valves and closing all vents
         print("Starting Pre Press Autosequence. Setting initial system state.")
-        syauto.open_close_many_valves(auto,[], vents + valves)
+        syauto.open_close_many_valves(auto, [], vents + valves)
         time.sleep(1)
 
         print("starting pre press")
@@ -268,21 +274,21 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         # syauto.close_all(auto, [vents + valves])
         # print("Valves and vents are now closed. Autosequence complete.")
 
-        #Creating a range inside autosequences
+        # Creating a range inside autosequences
         rng = client.ranges.create(
             name=f"{start.__str__()[11:16]} Pre Press Coldflow Sim",
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
 
-    
-    #ctrl+c interrupt
-    #close all vents and valves
-    #gives user opetion to open vents
-    except KeyboardInterrupt: 
+
+    # ctrl+c interrupt
+    # close all vents and valves
+    # gives user opetion to open vents
+    except KeyboardInterrupt:
         print("Test interrupted. Safeing System")
         syauto.close_all(auto, vents + valves)
         input("Do we want to open vents? y/n")
-        if(input == "y"):
+        if (input == "y"):
             syauto.open_all(auto=auto, valves=vents)
         print("Autosequence ended")
 
