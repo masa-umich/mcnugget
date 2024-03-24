@@ -217,16 +217,18 @@ with client.control.acquire(name="Pre press coldflow autosequence", write=WRITE_
         averages = get_averages(auto_, PTS)
         fuel_average = statistics.median([averages[FUEL_TANK_PT_1], averages[FUEL_TANK_PT_2], averages[FUEL_TANK_PT_3]])
         ox_average = statistics.median([averages[OX_TANK_PT_1], averages[OX_TANK_PT_2], averages[OX_TANK_PT_3]])
-        if (fuel_average < LOWER_FUEL_TANK_PRESSURE and not auto_[FUEL_PRE_PRESS_ACK]):
+        fuel_pre_press_open = auto_[FUEL_PRE_PRESS_ACK]
+        if (fuel_average < LOWER_FUEL_TANK_PRESSURE and not fuel_pre_press_open):
             fuel_pre_press.open()
 
-        if (fuel_average > UPPER_FUEL_TANK_PRESSURE and not auto_[FUEL_PRE_PRESS_ACK]):
+        if (fuel_average > UPPER_FUEL_TANK_PRESSURE and fuel_pre_press_open):
             fuel_pre_press.close()
 
-        if (ox_average < LOWER_OX_TANK_PRESSURE and not auto_[OX_PRE_PRESS_ACK]):
+        ox_pre_press_open = auto_[OX_PRE_PRESS_ACK]
+        if (ox_average < LOWER_OX_TANK_PRESSURE and not ox_pre_press_open):
             ox_pre_press.open()
 
-        if (ox_average > UPPER_OX_TANK_PRESSURE and not auto_[OX_PRE_PRESS_ACK]):
+        if (ox_average > UPPER_OX_TANK_PRESSURE and ox_pre_press_open):
             ox_pre_press.close()
 
         if (fuel_average > MAX_FUEL_TANK_PRESSURE):
