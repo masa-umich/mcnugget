@@ -41,22 +41,22 @@ import statistics
 from collections import deque
 
 # this connects to the synnax simulation server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# Connects to masa cluster
 client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
+    host="localhost",
+    port=9090,
     username="synnax",
     password="seldon",
-    secure=True
+    secure=False
 )
+
+# Connects to masa cluster
+# client = sy.Synnax(
+#     host="synnax.masa.engin.umich.edu",
+#     port=80,
+#     username="synnax",
+#     password="seldon",
+#     secure=True
+# )
 
 FUEL_PT_1 = "gse_ai_3"
 FUEL_PT_2 = "gse_ai_4"
@@ -148,11 +148,7 @@ SUM_DICT = {
 }
 
 RUNNING_AVERAGE_LENGTH = 5
-<<<<<<< HEAD
-# for 50Hz data, this correlates to an average over 0.1 seconds
-=======
 # for 200Hz data, this correlates to an average over 0.1 seconds
->>>>>>> 92891cbe091ad5580f9e08a09b275943a40a54df
 
 def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
     # this function takes in a list of channels to read from, 
@@ -172,36 +168,40 @@ def fuel_ox_pressurized(auto: Controller) -> bool:
     averages = get_averages(auto, PTS)
     fuel_average = statistics.median([averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3]])
     ox_average = statistics.median([averages[OX_PT_1], averages[OX_PT_2], averages[OX_PT_3]])
+    fuel_pre_press_open = auto[fuel_prepress_ack]
+    ox_pre_press_open = auto[ox_prepress_ack]
 
-    if fuel_average >= FUEL_TARGET_PRESSURE:
+    if fuel_pre_press_open and fuel_average >= FUEL_TARGET_PRESSURE:
         fuel_prepress.close()
 
-    if fuel_average < FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD:
+    if not fuel_pre_press_open and fuel_average < FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD:
         fuel_prepress.open()
 
-    if ox_average >= OX_TARGET_PRESSURE:
+    
+    if ox_pre_press_open and ox_average >= OX_TARGET_PRESSURE:
         ox_prepress.close()
 
-    if ox_average < OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
+    if not ox_pre_press_open and ox_average < OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
         ox_prepress.open()    
 
-    if fuel_average > FUEL_PRESSURE_MAX:
+    if fuel_pre_press_open and fuel_average > FUEL_PRESSURE_MAX:
         fuel_prepress.close()
         print("ABORTING FUEL due to high pressure")
         return True
 
-    if ox_average > OX_PRESSURE_MAX:
+    if ox_pre_press_open and ox_average > OX_PRESSURE_MAX:
         ox_prepress.close()
         print("ABORTING OX due to high pressure")
         return True
 
-    if fuel_average > FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD and ox_average > OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
+    if fuel_pre_press_open and fuel_average > FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD and ox_average > OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
         fuel_prepress.close()
         ox_prepress.close()
         return True
 
 with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
     try:
+        time.sleep(5)
         fuel_prevalve = syauto.Valve(auto=auto, cmd=fuel_prevalve_cmd, ack=fuel_prevalve_ack, normally_open=False)
         ox_prevalve = syauto.Valve(auto=auto, cmd=ox_prevalve_cmd, ack=ox_prevalve_ack, normally_open=False)
         fuel_press_iso = syauto.Valve(auto=auto, cmd = fuel_press_iso_cmd, ack = fuel_press_iso_ack, normally_open=False)
@@ -216,10 +216,10 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent])
         time.sleep(1)
 
-        # print("repressurizing fuel and ox")
-        # auto.wait_until(fuel_ox_pressurized)
+        print("repressurizing fuel and ox")
+        auto.wait_until(fuel_ox_pressurized)
         
-        # input("Press enter to continue")
+        input("Press enter to continue")
        
         syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
         print("start wait")
