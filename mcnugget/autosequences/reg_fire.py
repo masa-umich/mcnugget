@@ -111,7 +111,7 @@ ox_low_flow_vent_ack = "gse_doa_16"
 press_vent_cmd = "gse_doc_18"
 press_vent_ack = "gse_doa_18"
 
-ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack, press_vent_ack, fuel_prepress_ack, fuel_prepress_ack]
+ACKS = [fuel_prevalve_ack, ox_prevalve_ack, fuel_press_iso_ack, ox_press_iso_ack, ox_dome_iso_ack, fuel_vent_ack, ox_low_flow_vent_ack, press_vent_ack, fuel_prepress_ack, ox_prepress_ack]
 CMDS = [fuel_prevalve_cmd, ox_prevalve_cmd, fuel_press_iso_cmd, ox_press_iso_cmd, ox_dome_iso_cmd, fuel_vent_cmd, ox_low_flow_vent_cmd, press_vent_cmd, fuel_prepress_cmd, ox_prepress_cmd]
 PTS = [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3, OX_PT_1, OX_PT_2, OX_PT_3]
 
@@ -169,7 +169,7 @@ def fuel_ox_pressurized(auto: Controller) -> bool:
     fuel_average = statistics.median([averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3]])
     ox_average = statistics.median([averages[OX_PT_1], averages[OX_PT_2], averages[OX_PT_3]])
     fuel_pre_press_open = auto[fuel_prepress_ack]
-    ox_pre_press_open = auto[ox_prepress_ack]
+    # ox_pre_press_open = auto[ox_prepress_ack]
 
     if fuel_pre_press_open and fuel_average >= FUEL_TARGET_PRESSURE:
         fuel_prepress.close()
@@ -178,21 +178,21 @@ def fuel_ox_pressurized(auto: Controller) -> bool:
         fuel_prepress.open()
 
     
-    if ox_pre_press_open and ox_average >= OX_TARGET_PRESSURE:
-        ox_prepress.close()
+    # if ox_pre_press_open and ox_average >= OX_TARGET_PRESSURE:
+    #     ox_prepress.close()
 
-    if not ox_pre_press_open and ox_average < OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
-        ox_prepress.open()    
+    # if not ox_pre_press_open and ox_average < OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
+    #     ox_prepress.open()    
 
     if fuel_pre_press_open and fuel_average > FUEL_PRESSURE_MAX:
         fuel_prepress.close()
         print("ABORTING FUEL due to high pressure")
         return True
 
-    if ox_pre_press_open and ox_average > OX_PRESSURE_MAX:
-        ox_prepress.close()
-        print("ABORTING OX due to high pressure")
-        return True
+    # if ox_pre_press_open and ox_average > OX_PRESSURE_MAX:
+    #     ox_prepress.close()
+    #     print("ABORTING OX due to high pressure")
+    #     return True
 
     if fuel_pre_press_open and fuel_average > FUEL_TARGET_PRESSURE - NOMINAL_THRESHOLD and ox_average > OX_TARGET_PRESSURE - NOMINAL_THRESHOLD:
         fuel_prepress.close()
@@ -201,7 +201,7 @@ def fuel_ox_pressurized(auto: Controller) -> bool:
 
 with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
     try:
-        time.sleep(5)
+        time.sleep(1)
         fuel_prevalve = syauto.Valve(auto=auto, cmd=fuel_prevalve_cmd, ack=fuel_prevalve_ack, normally_open=False)
         ox_prevalve = syauto.Valve(auto=auto, cmd=ox_prevalve_cmd, ack=ox_prevalve_ack, normally_open=False)
         fuel_press_iso = syauto.Valve(auto=auto, cmd = fuel_press_iso_cmd, ack = fuel_press_iso_ack, normally_open=False)
@@ -214,7 +214,7 @@ with client.control.acquire("Reg Fire", ACKS + PTS, CMDS, 200) as auto:
         press_vent = syauto.Valve(auto=auto, cmd = press_vent_cmd, ack = press_vent_ack, normally_open=True)
 
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent])
-        time.sleep(1)
+        time.sleep(3)
 
         print("repressurizing fuel and ox")
         auto.wait_until(fuel_ox_pressurized)
