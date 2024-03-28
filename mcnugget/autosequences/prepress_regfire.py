@@ -87,9 +87,9 @@ client = sy.Synnax(
 #     secure=True
 # )
 
-REG_FUEL_FIRE = False
+REG_FUEL_FIRE = True
 
-REG_OX_FIRE = False
+REG_OX_FIRE = True
 
 PRE_PRESS = False
 
@@ -131,9 +131,14 @@ CMDS = [FUEL_PREVALVE_CMD, OX_PREVALVE_CMD, FUEL_PRESS_ISO_CMD, OX_PRESS_ISO_CMD
 # List of channels we're going to read from and write to
 WRITE_TO = []
 READ_FROM = []
-WRITE_TO.append(cmd_chan for cmd_chan in CMDS)
-READ_FROM.append(ack_chan for ack_chan in ACKS)
-READ_FROM.append(PT_chan for PT_chan in PTS)
+for cmd_chan in CMDS:
+    WRITE_TO.append(cmd_chan)
+for ack_chan in ACKS:
+    READ_FROM.append(ack_chan)
+for PT_chan in PTS:
+    READ_FROM.append(PT_chan)
+print(WRITE_TO)
+print(READ_FROM)
 
 # TODO: update these before running the autosequence
 
@@ -154,6 +159,7 @@ MAX_OX_PRESSURE = 525
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
 
+FIRE_DURATION = 25
 
 # This section implements a running average for the PT sensors to mitigate the effects of noise
 FUEL_PT_1_DEQUE = deque()
@@ -203,9 +209,6 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
     return averages
 
 
-FIRE_DURATION = 25
-
-
 with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as auto:
     fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE_CMD, ack=FUEL_PREVALVE_ACK, normally_open=False)
     ox_prevalve = syauto.Valve(auto=auto, cmd=OX_PREVALVE_CMD, ack=OX_PREVALVE_ACK, normally_open=False)
@@ -250,26 +253,33 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         fuel_average = statistics.median([averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3]])
         fuel_pre_press_open = auto[FUEL_PRE_PRESS_ACK]
 
+        print("fuel open, ox open:")
+        print(fuel_pre_press_open)
+        print(ox_pre_press_open)
+        print(fuel_average)
+        print(ox_average)
+        print()
+
         if REG_FUEL_FIRE:
-            if fuel_pre_press_open and fuel_average >= UPPER_FUEL_PRESSURE:
+            if fuel_pre_press_open and (fuel_average >= UPPER_FUEL_PRESSURE):
                 fuel_prepress.close()
 
-            if not fuel_pre_press_open and fuel_average < LOWER_FUEL_PRESSURE:
+            if (not fuel_pre_press_open) and (fuel_average < LOWER_FUEL_PRESSURE):
                 fuel_prepress.open()
 
-            if fuel_pre_press_open and fuel_average > MAX_FUEL_PRESSURE:
+            if fuel_pre_press_open and (fuel_average > MAX_FUEL_PRESSURE):
                 fuel_prepress.close()
                 print("ABORTING FUEL due to high pressure")
                 if REG_OX_FIRE:
-                    if ox_pre_press_open and ox_average > MAX_OX_PRESSURE:
+                    if ox_pre_press_open and (ox_average > MAX_OX_PRESSURE):
                         print("ABORTING OX due to high pressure")
                 return True
 
         if REG_OX_FIRE:
-            if ox_pre_press_open and ox_average >= UPPER_OX_PRESSURE:
+            if ox_pre_press_open and (ox_average >= UPPER_OX_PRESSURE):
                 ox_prepress.close()
 
-            if not ox_pre_press_open and ox_average < LOWER_OX_PRESSURE:
+            if (not ox_pre_press_open) and (ox_average < LOWER_OX_PRESSURE):
                 ox_prepress.open()    
 
             if ox_pre_press_open and ox_average > MAX_OX_PRESSURE:
@@ -322,9 +332,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         # auto.wait_until(over_pressurize)
 
         print("commencing fire")
-        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+        time.sleep(2)
+        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso])
         time.sleep(FIRE_DURATION)
-        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso])
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
         print("terminating fire")
 
 
@@ -339,11 +351,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     except KeyboardInterrupt:
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_prepress, ox_prepress])
-        answer = input("Valves are closed. Input `fire` to commence reg_fire portion of autosequence or anything else to skip")
+        answer = input("Valves are closed. Input `fire` to commence reg_fire portion of autosequence or anything else to skip ")
         if answer == "fire":
             reg_fire()   
 
-        ans = input("Aborting - would you like to open vents? y/n")
+        ans = input("Aborting - would you like to open vents? y/n ")
         if ans == "y":
             syauto.open_all(auto, [fuel_vent, ox_low_flow_vent, press_vent])
 
