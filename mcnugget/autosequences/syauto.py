@@ -107,6 +107,7 @@ def close_all(auto: Controller, valves: list[Valve]):
             commands[valve.cmd_chan] = 1
         else:
             commands[valve.cmd_chan] = 0
+    print(commands)
     auto.set(commands)
 
 
