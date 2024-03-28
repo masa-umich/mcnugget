@@ -486,6 +486,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
+        input("running the wrong autosequence dawg, this shit aint ready")
         print("beginning other testing")
         # print(auto[PRESS_TANK_SUPPLY])
         print("finished other testing")

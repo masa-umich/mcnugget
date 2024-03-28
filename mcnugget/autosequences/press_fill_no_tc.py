@@ -230,7 +230,7 @@ def press_phase_1():
 
         # sleeps for 60 seconds minus the time it took to press
         print(f"sleeping for {round(max(PRESS_DELAY - time_pressed, 0), 1)} seconds")
-        time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
+        time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
         
 
 def press_phase_2():
@@ -269,7 +269,7 @@ def press_phase_2():
 
         # sleeps for 60 seconds minus the time it took to press
         print(f"sleeping for {max(PRESS_DELAY - time_pressed, 0)} seconds")
-        time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
+        time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
 
 with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180) as auto:
     ###     DECLARES THE VALVES WHICH WILL BE USED     ###
@@ -326,6 +326,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
     except KeyboardInterrupt as e:
         # Handle Ctrl+C interruption
+            # if str(e) == "Interrupted by user.":  # needed for windows systems?
         print("Manual abort, safing system")
         print("Closing all valves and vents")
         syauto.close_all(auto=auto, valves=(all_vents + all_valves))
@@ -333,7 +334,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         response = input("Input 'y' to open press vent: ")
         if(response == "y"):
             press_vent.open()
-            print("press vent safed")
+            print("press vent opened")
 
     print("ctrl-c to terminating autosequence")
     time.sleep(60)
