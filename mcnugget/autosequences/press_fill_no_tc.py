@@ -33,22 +33,22 @@ import statistics
 from collections import deque
 
 # this connects to the synnax simulation server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-# Connects to masa cluster
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
+
+# Connects to masa cluster
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 PRESS_PT_1 = "gse_ai_26"
 PRESS_PT_2 = "gse_ai_24"
@@ -73,22 +73,22 @@ CMDS = [AIR_DRIVE_ISO_1_CMD, AIR_DRIVE_ISO_2_CMD, GAS_BOOSTER_FILL_CMD, PRESS_FI
 ACKS = [AIR_DRIVE_ISO_1_ACK, AIR_DRIVE_ISO_2_ACK, GAS_BOOSTER_FILL_ACK, PRESS_FILL_ACK, PRESS_VENT_ACK]
 PTS = [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY]
 
-# WRITE_TO = []
-# READ_FROM = []
-# for cmd in CMDS:
-#     WRITE_TO.append(cmd)
-# for ack in ACKS:
-#     READ_FROM.append(ack)
-# for pt in PTS:
-#     READ_FROM.append(pt)
-
 WRITE_TO = []
 READ_FROM = []
-for i in range(1, 25):
-    WRITE_TO.append(f"gse_doc_{i}")
-    READ_FROM.append(f"gse_doa_{i}")
-for i in range(1, 37):
-    READ_FROM.append(f"gse_ai_{i}")
+for cmd in CMDS:
+    WRITE_TO.append(cmd)
+for ack in ACKS:
+    READ_FROM.append(ack)
+for pt in PTS:
+    READ_FROM.append(pt)
+
+# WRITE_TO = []
+# READ_FROM = []
+# for i in range(1, 25):
+#     WRITE_TO.append(f"gse_doc_{i}")
+#     READ_FROM.append(f"gse_doa_{i}")
+# for i in range(1, 37):
+#     READ_FROM.append(f"gse_ai_{i}")
 
 
 start = sy.TimeStamp.now()
