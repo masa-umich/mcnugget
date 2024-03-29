@@ -142,19 +142,19 @@ print(READ_FROM)
 
 # TODO: update these before running the autosequence
 
-TARGET_FUEL_PRESSURE = 453
-UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 20
+TARGET_FUEL_PRESSURE = 500  # Fuel Reg Set Pressure
+UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 10
 LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 10
 # UPPER_FINAL_FUEL_PRESSURE = 490  # FUEL TEST PRESSURE
 # LOWER_FINAL_FUEL_PRESSURE = UPPER_FINAL_FUEL_PRESSURE - 20
-MAX_FUEL_PRESSURE = 525
+MAX_FUEL_PRESSURE = 575
 
-TARGET_OX_PRESSURE = 397
-UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 20
+TARGET_OX_PRESSURE = 490  # Ox Reg Set Pressure
+UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 10
 LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 10
 # UPPER_FINAL_OX_PRESSURE = 450  # OX REG SET PRESSURE
 # LOWER_FINAL_OX_PRESSURE = UPPER_FINAL_OX_PRESSURE - 20
-MAX_OX_PRESSURE = 525
+MAX_OX_PRESSURE = 575
 
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
@@ -336,7 +336,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         time.sleep(2)
         syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso])
         time.sleep(FIRE_DURATION)
-        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
         print("terminating fire")
 
 
@@ -352,8 +352,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     except KeyboardInterrupt:
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_prepress, ox_prepress])
         answer = input("Valves are closed. Input `fire` to commence reg_fire portion of autosequence or anything else to skip ")
-        if answer == "fire":
-            reg_fire()   
+        if answer == "fire" or answer == "Fire" or answer == "FIRE":
+            reg_fire()
 
         ans = input("Aborting - would you like to open vents? y/n ")
         if ans == "y":

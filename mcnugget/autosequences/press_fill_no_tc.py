@@ -99,13 +99,14 @@ start = sy.TimeStamp.now()
 PHASE_1 = False
 press_start_time = time.time()
 
-MAX_PRESS_TANK_PRESSURE = 4500  # psi
+MAX_PRESS_TANK_PRESSURE = 4400  # psi
 MAX_PRESS_TANK_TEMP = 60  # celsius. ichiro edit since stuff should be in C, not cringe F. Thermocouple output is in C right?
 ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 
 PRESS_TARGET = 3900  # psi
-PRESS_INC = 65  # psi/min # ichiro edit
-PRESS_DELAY = 60  # seconds # ichiro edit
+PRESS_INC_1 = 65  # psi/min
+PRESS_INC_2 = 100  # psi/min
+PRESS_DELAY = 60  # seconds
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 
 # this variable defines how many samples should be averaged for PT or TC data
@@ -202,6 +203,7 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_):
 
 def press_phase_1():
     PHASE_1 = True
+    count = 0
     # this function uses the runsafe_press_tank_fill() function to equalize pressure between 2K supply and press tanks
     # it returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
     p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
@@ -210,7 +212,10 @@ def press_phase_1():
         press_supply = get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
         p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
         press_tanks = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
-        partial_target += PRESS_INC
+        if count < 4:
+            partial_target += PRESS_INC_1
+        else:
+            partial_target += PRESS_INC_2
 
         # this is the only way for the function to return 
         # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
@@ -230,7 +235,8 @@ def press_phase_1():
 
         # sleeps for 60 seconds minus the time it took to press
         print(f"sleeping for {round(max(PRESS_DELAY - time_pressed, 0), 1)} seconds")
-        time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
+        time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
+        count += 1
         
 
 def press_phase_2():
@@ -243,7 +249,7 @@ def press_phase_2():
 
     while True:
         print(f"pressurizing to {partial_target}")
-        partial_target += PRESS_INC
+        partial_target += PRESS_INC_2
 
         # this is the only way for the function to return 
         # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
@@ -269,7 +275,7 @@ def press_phase_2():
 
         # sleeps for 60 seconds minus the time it took to press
         print(f"sleeping for {max(PRESS_DELAY - time_pressed, 0)} seconds")
-        time.sleep(max(PRESS_DELAY - time_pressed, 0) / 60) # ichiro edit + evan added max to make sure we don't sleep negative
+        time.sleep(max(PRESS_DELAY - time_pressed, 0)) # ichiro edit + evan added max to make sure we don't sleep negative
 
 with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180) as auto:
     ###     DECLARES THE VALVES WHICH WILL BE USED     ###
