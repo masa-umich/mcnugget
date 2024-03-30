@@ -103,7 +103,7 @@ MAX_PRESS_TANK_PRESSURE = 4400  # psi
 MAX_PRESS_TANK_TEMP = 60  # celsius. ichiro edit since stuff should be in C, not cringe F. Thermocouple output is in C right?
 ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 
-PRESS_TARGET = 3900  # psi
+PRESS_TARGET = 3700  # psi
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
 PRESS_DELAY = 60  # seconds
