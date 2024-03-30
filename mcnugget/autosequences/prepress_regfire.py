@@ -70,22 +70,22 @@ import statistics
 from collections import deque
 
 # this connects to the synnax simulation server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-# Connects to masa cluster
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
+
+# Connects to masa cluster
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 REG_FUEL_FIRE = True
 
@@ -343,13 +343,14 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     # this block runs the overall sequence
     try:
             start = sy.TimeStamp.now()
+            syauto.close_all(auto, [fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso, fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
             time.sleep(1)
 
             print("pressurizing fuel and ox")
             auto.wait_until(pressurized)
             # the above statement will only finish if an abort is triggered
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as e:
         syauto.close_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_prepress, ox_prepress])
         answer = input("Valves are closed. Input `fire` to commence reg_fire portion of autosequence or anything else to skip ")
         if answer == "fire" or answer == "Fire" or answer == "FIRE":
