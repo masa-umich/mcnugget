@@ -82,15 +82,6 @@ for ack in ACKS:
 for pt in PTS:
     READ_FROM.append(pt)
 
-# WRITE_TO = []
-# READ_FROM = []
-# for i in range(1, 25):
-#     WRITE_TO.append(f"gse_doc_{i}")
-#     READ_FROM.append(f"gse_doa_{i}")
-# for i in range(1, 37):
-#     READ_FROM.append(f"gse_ai_{i}")
-
-
 start = sy.TimeStamp.now()
 
 
