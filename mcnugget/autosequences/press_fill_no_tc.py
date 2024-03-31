@@ -169,7 +169,8 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_):
 
     if pts_above_max >= 2:
         print("ABORTING due to 2+ PTs EXCEEDING MAX_PRESS_TANK_PRESSURE")
-        syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, press_vent])
+        # syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, press_vent])
+        syauto.open_close_many_valves(auto=auto, valves_to_open=[press_vent], valves_to_close=[air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill])
         input("Press any key to continue pressurizing, or ctrl-c to execute abort sequence")
 
     if pts_below_min >= 2:
@@ -192,7 +193,7 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_):
         else:
             return True
 
-    if PHASE_2 and statistics.median([pt1, pt2, pt3]) >= 3750:
+    if statistics.median([pt1, pt2, pt3]) >= 3750:
         print("press tanks have reached 3750 psi, closing air drive ISO 2")
         syauto.close_all(auto=auto, valves=[air_drive_ISO_2])
         print ("Air drive ISO 2 closed, waiting for pressure to reach 3650 psi")
@@ -201,7 +202,6 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_):
 
 def press_phase_1():
     PHASE_1 = True
-    PHASE_2 = False
     count = 0
     # this function uses the runsafe_press_tank_fill() function to equalize pressure between 2K supply and press tanks
     # it returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
@@ -258,11 +258,11 @@ def press_phase_2():
 
         # this is the only way for the function to return 
         # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
-        if partial_target >= PRESS_TARGET:
-            print(f"PRESS_TANKS pressure has within 65 psi of {PRESS_TARGET}")
-            syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
-            print("Both air_drive_iso valves are closed")
-            return
+        # if partial_target >= PRESS_TARGET:
+        #     print(f"PRESS_TANKS pressure has within 65 psi of {PRESS_TARGET}")
+        #     syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
+        #     print("Both air_drive_iso valves are closed")
+        #     return
 
         # Measure time press_fill is open so that we keep a constant 60 psi/minute press rate
         # ex: as pressures get closer to equalizing, press fill is held open for longer, and the PRESS_DELAY actually needs to start decreasing
