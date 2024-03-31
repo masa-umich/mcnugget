@@ -208,6 +208,8 @@ def press_phase_1():
     p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     partial_target = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
     while True:
+        current_pressure = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
+
         press_supply = get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
         p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
         press_tanks = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
@@ -226,7 +228,7 @@ def press_phase_1():
         press_start_time = time.time()  # ichiro edit
 
         press_fill.open()
-        print(f"pressurizing to {round(partial_target, 2)}")
+        print(f"pressurizing from {round(current_pressure, 2)} to {round(partial_target, 2)}")
         auto.wait_until(lambda c: runsafe_press_tank_fill(partial_target=partial_target, press_start_time_=press_start_time))
         press_fill.close()
 
@@ -248,8 +250,11 @@ def press_phase_2():
     air_drive_ISO_1.open()
 
     while True:
-        print(f"current pressure: {statistics.median(avgs)}, pressurizing to {partial_target}")
+        avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
+        current_press = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
+
         partial_target += PRESS_INC_2
+        print(f"current pressure: {round(current_press,2)}, pressurizing to {round(partial_target,2)}")
 
         # this is the only way for the function to return 
         # if for some reason PRESS_TANK_SUPPLY and PRESS_TANKS do not converge, you will enter a loop
