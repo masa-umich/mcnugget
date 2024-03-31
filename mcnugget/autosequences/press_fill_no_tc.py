@@ -33,22 +33,22 @@ import statistics
 from collections import deque
 
 # this connects to the synnax simulation server
-client = sy.Synnax(
-    host="localhost",
-    port=9090,
-    username="synnax",
-    password="seldon",
-    secure=False
-)
-
-# Connects to masa cluster
 # client = sy.Synnax(
-#     host="synnax.masa.engin.umich.edu",
-#     port=80,
+#     host="localhost",
+#     port=9090,
 #     username="synnax",
 #     password="seldon",
-#     secure=True
+#     secure=False
 # )
+
+# Connects to masa cluster
+client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+)
 
 PRESS_PT_1 = "gse_ai_26"
 PRESS_PT_2 = "gse_ai_24"
@@ -98,7 +98,7 @@ ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 PRESS_TARGET = 3750  # psi
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
-PRESS_DELAY = 60/60  # seconds
+PRESS_DELAY = 60  # seconds
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 
 # this variable defines how many samples should be averaged for PT or TC data
