@@ -248,7 +248,7 @@ def press_phase_2():
     air_drive_ISO_1.open()
 
     while True:
-        print(f"current pressure: {avgs}, pressurizing to {partial_target}")
+        print(f"current pressure: {statistics.median(avgs)}, pressurizing to {partial_target}")
         partial_target += PRESS_INC_2
 
         # this is the only way for the function to return 
