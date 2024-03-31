@@ -95,7 +95,7 @@ MAX_PRESS_TANK_PRESSURE = 4400  # psi
 MAX_PRESS_TANK_TEMP = 60  # celsius. ichiro edit since stuff should be in C, not cringe F. Thermocouple output is in C right?
 ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 
-PRESS_TARGET = 3700  # psi
+PRESS_TARGET = 3750  # psi
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
 PRESS_DELAY = 60/60  # seconds
@@ -197,7 +197,7 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_):
         syauto.close_all(auto=auto, valves=[air_drive_ISO_2])
         print ("Air drive ISO 2 closed, waiting for pressure to reach 3650 psi")
         auto.wait_until(lambda c: statistics.median([pt1, pt2, pt3]) <= 3650)
-        return True
+        syauto.open_all(auto=auto, valves=[air_drive_ISO_2])
 
 def press_phase_1():
     PHASE_1 = True
