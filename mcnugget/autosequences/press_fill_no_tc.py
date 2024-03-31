@@ -33,22 +33,22 @@ import statistics
 from collections import deque
 
 # this connects to the synnax simulation server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# Connects to masa cluster
 client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
+    host="localhost",
+    port=9090,
     username="synnax",
     password="seldon",
-    secure=True
+    secure=False
 )
+
+# Connects to masa cluster
+# client = sy.Synnax(
+#     host="synnax.masa.engin.umich.edu",
+#     port=80,
+#     username="synnax",
+#     password="seldon",
+#     secure=True
+# )
 
 PRESS_PT_1 = "gse_ai_26"
 PRESS_PT_2 = "gse_ai_24"
@@ -88,6 +88,7 @@ start = sy.TimeStamp.now()
 # TODO: UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST
 
 PHASE_1 = False
+PHASE_2= False
 press_start_time = time.time()
 
 MAX_PRESS_TANK_PRESSURE = 4400  # psi
@@ -97,7 +98,7 @@ ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 PRESS_TARGET = 3700  # psi
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
-PRESS_DELAY = 60  # seconds
+PRESS_DELAY = 60/60  # seconds
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 
 # this variable defines how many samples should be averaged for PT or TC data
@@ -191,9 +192,16 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_):
         else:
             return True
 
+    if PHASE_2 and statistics.median([pt1, pt2, pt3]) >= 3750:
+        print("press tanks have reached 3750 psi, closing air drive ISO 2")
+        syauto.close_all(auto=auto, valves=[air_drive_ISO_2])
+        print ("Air drive ISO 2 closed, waiting for pressure to reach 3650 psi")
+        auto.wait_until(lambda c: statistics.median([pt1, pt2, pt3]) <= 3650)
+        return True
 
 def press_phase_1():
     PHASE_1 = True
+    PHASE_2 = False
     count = 0
     # this function uses the runsafe_press_tank_fill() function to equalize pressure between 2K supply and press tanks
     # it returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
@@ -232,6 +240,7 @@ def press_phase_1():
 
 def press_phase_2():
     PHASE_1 = False
+    PHASE_2 = True
     # this function completes steps 2-4 see section 3 of overview
     avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     partial_target = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
@@ -239,7 +248,7 @@ def press_phase_2():
     air_drive_ISO_1.open()
 
     while True:
-        print(f"pressurizing to {partial_target}")
+        print(f"current pressure: {avgs}, pressurizing to {partial_target}")
         partial_target += PRESS_INC_2
 
         # this is the only way for the function to return 
@@ -249,7 +258,6 @@ def press_phase_2():
             syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2])
             print("Both air_drive_iso valves are closed")
             return
-
 
         # Measure time press_fill is open so that we keep a constant 60 psi/minute press rate
         # ex: as pressures get closer to equalizing, press fill is held open for longer, and the PRESS_DELAY actually needs to start decreasing
