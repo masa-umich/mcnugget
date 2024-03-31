@@ -70,22 +70,22 @@ import statistics
 from collections import deque
 
 # this connects to the synnax simulation server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# Connects to masa cluster
 client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
+    host="localhost",
+    port=9090,
     username="synnax",
     password="seldon",
-    secure=True
+    secure=False
 )
+
+# Connects to masa cluster
+# client = sy.Synnax(
+#     host="synnax.masa.engin.umich.edu",
+#     port=80,
+#     username="synnax",
+#     password="seldon",
+#     secure=True
+# )
 
 REG_FUEL_FIRE = True
 
@@ -330,15 +330,17 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     def reg_fire():
         # auto.wait_until(over_pressurize)
-
-        print("commencing fire")
-        syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
-        time.sleep(2)
-        syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso])
-        time.sleep(FIRE_DURATION)
-        syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
-        print("terminating fire")
-
+        try: 
+            print("commencing fire")
+            syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+            time.sleep(2)
+            syauto.open_all(auto, [fuel_prevalve, ox_prevalve, fuel_press_iso])
+            time.sleep(FIRE_DURATION)
+            syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
+            print("terminating fire")
+        except KeyboardInterrupt:
+            print("Firing sequence aborted, closing all valves and opening all vents")
+            syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_prevalve, ox_prevalve, fuel_press_iso, ox_press_iso])
 
     # this block runs the overall sequence
     try:
