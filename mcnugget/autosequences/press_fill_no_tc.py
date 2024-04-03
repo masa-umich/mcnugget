@@ -334,10 +334,12 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
     
     press_vent = syauto.Valve(auto=auto, cmd=PRESS_VENT_CMD,
                               ack=PRESS_VENT_ACK, normally_open=True)
+    fuel_mpv = syauto.Valve(auto=auto, cmd=FUEL_MPV, ack=FUEL_MPV_ACK, normally_open=False)
+    ox_mpv = syauto.Valve(auto=auto, cmd=OX_MPV_CMD, ack=OX_MPV_ACK, normally_open=False)
+    igniter = syauto.Valve(auto=auto, cmd=IGNITER_CMD, ack=IGNITER_ACK, normally_open=False)
 
     all_vents = [press_vent]
     all_valves = [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill]
-
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:

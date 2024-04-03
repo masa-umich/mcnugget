@@ -69,23 +69,50 @@ import synnax as sy
 import statistics
 from collections import deque
 
-# this connects to the synnax simulation server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# Connects to masa cluster
-client = sy.Synnax(
+#Prompts for user input as to whether we want to run a simulation or run an actual test
+#If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
+mode = input("Enter 'coldflow' for coldflow testing on actual hardware, 'hotfire' if you are testing in the desert, or 'sim' to run a simulation: ")
+if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
+    print("Testing mode")
+    # this connects to the synnax testing server
+    client = sy.Synnax(
     host="synnax.masa.engin.umich.edu",
     port=80,
     username="synnax",
     password="seldon",
     secure=True
-)
+    )
+    PRESS_DELAY = 60  # seconds
+
+#If prompted to run a hotfire test, we will connect to the MASA remote server and have a delay of 100 seconds
+elif mode == "hotfire" or mode == "Hotfire" or mode == "HOTFIRE":
+    print("Hotfire mode")
+    # this connects to the synnax testing server
+    client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+    )
+    PRESS_DELAY = 100 #TODO: Update this value to the actual value
+
+#If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
+elif mode == "sim" or mode == "Sim" or mode == "SIM":
+    print("Simulation mode")
+    # this connects to the synnax simulation server
+    client = sy.Synnax(
+        host="localhost",
+        port=9090,
+        username="synnax",
+        password="seldon",
+        secure=False
+    )
+    PRESS_DELAY = 1  # seconds
+
+else:
+    print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
+    exit()
 
 REG_FUEL_FIRE = True
 
