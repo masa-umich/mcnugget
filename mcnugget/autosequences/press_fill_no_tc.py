@@ -33,7 +33,7 @@ import statistics
 from collections import deque
 
 #Prompts for user input as to whether we want to run a simulation or run an actual test
-#If prompted to run an actual test, we will connect to the MASA remote server and have a delay of 60 seconds
+#If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
 mode = input("Enter 'coldflow' for coldflow testing on actual hardware, 'hotfire' if you are testing in the desert, or 'sim' to run a simulation: ")
 if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
     print("Testing mode")
@@ -47,6 +47,19 @@ if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
     )
     PRESS_DELAY = 60  # seconds
 
+#If prompted to run a hotfire test, we will connect to the MASA remote server and have a delay of 100 seconds
+elif mode == "hotfire" or mode == "Hotfire" or mode == "HOTFIRE":
+    print("Hotfire mode")
+    # this connects to the synnax testing server
+    client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+    )
+    PRESS_DELAY = 100 #TODO: Update this value to the actual value
+
 #If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
 elif mode == "sim" or mode == "Sim" or mode == "SIM":
     print("Simulation mode")
@@ -59,18 +72,6 @@ elif mode == "sim" or mode == "Sim" or mode == "SIM":
         secure=False
     )
     PRESS_DELAY = 1  # seconds
-
-elif mode == "hotfire" or mode == "Hotfire" or mode == "HOTFIRE":
-    print("Hotfire mode")
-    # this connects to the synnax testing server
-    client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
-    username="synnax",
-    password="seldon",
-    secure=True
-    )
-    PRESS_DELAY = 100
 
 else:
     print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
@@ -94,11 +95,17 @@ PRESS_FILL_CMD = "gse_doc_23"
 PRESS_FILL_ACK = "gse_doa_23"
 PRESS_VENT_CMD = "gse_doc_18"
 PRESS_VENT_ACK = "gse_doa_18"
+OX_MPV_CMD = "gse_doc_25" #TODO: Update these based on instrumentation sheet
+OX_MPV_ACK = "gse_doa_25"
+FUEL_MPV = "gse_doc_26"
+FUEL_MPV_ACK = "gse_doa_26"
+IGNITER_CMD = "gse_doc_27"
+IGNITER_ACK = "gse_doa_27"
 
 
 # List of channels we're going to read from and write to
-CMDS = [AIR_DRIVE_ISO_1_CMD, AIR_DRIVE_ISO_2_CMD, GAS_BOOSTER_FILL_CMD, PRESS_FILL_CMD, PRESS_VENT_CMD]
-ACKS = [AIR_DRIVE_ISO_1_ACK, AIR_DRIVE_ISO_2_ACK, GAS_BOOSTER_FILL_ACK, PRESS_FILL_ACK, PRESS_VENT_ACK]
+CMDS = [AIR_DRIVE_ISO_1_CMD, AIR_DRIVE_ISO_2_CMD, GAS_BOOSTER_FILL_CMD, PRESS_FILL_CMD, PRESS_VENT_CMD, OX_MPV_CMD, FUEL_MPV, IGNITER_CMD]
+ACKS = [AIR_DRIVE_ISO_1_ACK, AIR_DRIVE_ISO_2_ACK, GAS_BOOSTER_FILL_ACK, PRESS_FILL_ACK, PRESS_VENT_ACK, OX_MPV_ACK, FUEL_MPV_ACK, IGNITER_ACK]
 PTS = [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY]
 
 WRITE_TO = []
