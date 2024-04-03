@@ -32,30 +32,46 @@ import syauto
 import statistics
 from collections import deque
 
-# this connects to the synnax simulation server
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# Connects to masa cluster
-client = sy.Synnax(
+#Prompts for user input as to whether we want to run a simulation or run an actual test
+#If prompted to run an actual test, we will connect to the MASA remote server and have a delay of 60 seconds
+mode = input("Enter 'testing' for actual testing, or 'sim' to run a simulation: ")
+if(mode == "testing" or "Testing" or "TESTING"):
+    print("Testing mode")
+    # this connects to the synnax testing server
+    client = sy.Synnax(
     host="synnax.masa.engin.umich.edu",
     port=80,
     username="synnax",
     password="seldon",
     secure=True
-)
+    )
+    PRESS_DELAY = 60  # seconds
 
+#If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
+elif mode == "sim" or mode == "Sim" or mode == "SIM":
+    print("Simulation mode")
+    # this connects to the synnax simulation server
+    client = sy.Synnax(
+        host="localhost",
+        port=9090,
+        username="synnax",
+        password="seldon",
+        secure=False
+    )
+    PRESS_DELAY = 1  # seconds
+
+else:
+    print("Invalid input. Check for typos bestie:) We'll close the program in the meantime")
+    exit()
+
+#PT channels we'll read from in this sequence
 PRESS_PT_1 = "gse_ai_26"
 PRESS_PT_2 = "gse_ai_24"
 PRESS_PT_3 = "gse_ai_22"
 
 PRESS_TANK_SUPPLY = "gse_ai_23"
 
+#Valve channels we'll write to and read from in this sequence
 AIR_DRIVE_ISO_1_CMD = "gse_doc_5"
 AIR_DRIVE_ISO_1_ACK = "gse_doa_5"
 AIR_DRIVE_ISO_2_CMD = "gse_doc_4"
@@ -98,7 +114,6 @@ ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 PRESS_TARGET = 3750  # psi
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
-PRESS_DELAY = 60  # seconds
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 
 # this variable defines how many samples should be averaged for PT or TC data
