@@ -12,7 +12,8 @@ import yaml
 import csv
 
 def f_to_kelvin(temp): return (temp-32)*(5/9)+273.15
-def scfm_to_mdot(scfm): return (scfm*const.GN2_RHO_STP/60)*consts.LBM_TO_KG
+def scfm_to_mdot(scfm): return ((scfm/60)*consts.GN2_RHO_IMP)*consts.LBM_TO_KG
+def mdot_to_scfm(mdot): return ((mdot/consts.LBM_TO_KG)/consts.GN2_RHO_IMP)*60
 os.environ['RPPREFIX'] = r'/home/jasonyc/masa/REFPROP-cmake/build'
 cea = CEA_Obj(oxName="LOX", fuelName="RP1")
 
@@ -20,7 +21,7 @@ cea = CEA_Obj(oxName="LOX", fuelName="RP1")
 def get_reg_outlet(inlet_p: float, mdot: float) -> float:
     """
     Return the outlet pressure of the dome regulator given a mass flow and inlet pressure.
-    These explicit functions are data interpolations from our regulator manufacturer, Premier,
+    These explicit functions are data interpolations from our regulator manufacturer Premier,
     which gave several inlet pressure curves (ksi) as a function of SCFM and outlet [psig].
     Args:
         inlet_p: Inlet pressure [Pa]
@@ -32,9 +33,26 @@ def get_reg_outlet(inlet_p: float, mdot: float) -> float:
     The coefficient b has a range of [750, 1310] (exponential relation with inlet pressure)
     Example: 35*tan(-x/750)+475 is for the 1 ksi inlet pressure
     Example: 25*tan(-x/830)+475 is for the 1.5 ksi inlet pressure
+    Note: Given 4.5 ksi and room temp, max choked mdot of a 1" ID pipe is ~36 kg/s, and 
+    500 psi + 1" ID is ~4 kg/s (7200 SCFM). Thus, we will lose control of the dome regulator
+    far before pipe choking becomes an issue, i.e. 850 SCFM (0.467 kg/s) is the upper limit.
     """
+    scfm_val = mdot_to_scfm(mdot)
+    assert(scfm_val < 850 and scfm_val > 0)
     coeff_a = 0
     raise NotImplementedError
+    # As the reg increases its flow area, the demand for mass flow to bring the exit pressure
+    # increases at a faster rate than it can increase the flow area. So eventually the 
+    # pressure ratio keeps increasing (even as mdot increases) until it reaches the critical
+    # pressure ratio, at which it chokes and we have achieved the max mdot of the system.
+    # This is where we switch to a choked flow model of the system until the COPV pressure
+    # is basically the ullage pressure, after which we can switch to a blowdown model.
+    # Additionally, the reason we can just plug in our dome reg curve into the system of
+    # equations is because the "tendancy" to go towards the set pressure of ~500 psi is built
+    # into the curve itself; initially the ullage is at 500 psi anyway, and as we only lower
+    # ullage pressure marginally (e.g. to 490 psi), we get very low SCFM needed to try 
+    # getting back to 500 psi, even though the actual downstream pressure is lower than set.
+    # Google "swagelok" and "pressure droop" and "lockup" to learn more about reg curves.
 
 
 class GasState:
