@@ -205,8 +205,8 @@ RUNNING_AVERAGE_LENGTH = 5  # samples
 FIRE_DURATION = 25
 
 #Delays
-FUEL_MPV_DELAY = 5  # seconds #TODO: Update these values based on testing requirements
-OX_MPV_DELAY = 5  # seconds
+FUEL_MPV_DELAY = 0  # seconds #TODO: Update these values based on testing requirements
+OX_MPV_DELAY = 0  # seconds
 IGNITER_DELAY = 2  # seconds
 
 # This section implements a running average for the PT sensors to mitigate the effects of noise
