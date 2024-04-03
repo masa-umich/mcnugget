@@ -122,6 +122,7 @@ start = sy.TimeStamp.now()
 
 # TODO: UPDATE/CONFIRM ALL VARIABLES BEFORE RUNNING TEST
 
+#These determine if we are in the first press or second press (gooster)
 PHASE_1 = False
 PHASE_2= False
 press_start_time = time.time()
@@ -134,6 +135,11 @@ PRESS_TARGET = 3750  # psi
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
+
+#Delays
+FUEL_MPV_DELAY = 5  # seconds #TODO: Update these values based on testing requirements
+OX_MPV_DELAY = 5  # seconds
+IGNITER_DELAY = 6  # seconds
 
 # this variable defines how many samples should be averaged for PT or TC data
 RUNNING_MEDIAN_SIZE = 50  # samples - at 200Hz this means every 1/2 second
