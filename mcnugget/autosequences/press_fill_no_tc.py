@@ -95,17 +95,11 @@ PRESS_FILL_CMD = "gse_doc_23"
 PRESS_FILL_ACK = "gse_doa_23"
 PRESS_VENT_CMD = "gse_doc_18"
 PRESS_VENT_ACK = "gse_doa_18"
-OX_MPV_CMD = "gse_doc_25" #TODO: Update these based on instrumentation sheet
-OX_MPV_ACK = "gse_doa_25"
-FUEL_MPV = "gse_doc_26"
-FUEL_MPV_ACK = "gse_doa_26"
-IGNITER_CMD = "gse_doc_27"
-IGNITER_ACK = "gse_doa_27"
 
 
 # List of channels we're going to read from and write to
-CMDS = [AIR_DRIVE_ISO_1_CMD, AIR_DRIVE_ISO_2_CMD, GAS_BOOSTER_FILL_CMD, PRESS_FILL_CMD, PRESS_VENT_CMD, OX_MPV_CMD, FUEL_MPV, IGNITER_CMD]
-ACKS = [AIR_DRIVE_ISO_1_ACK, AIR_DRIVE_ISO_2_ACK, GAS_BOOSTER_FILL_ACK, PRESS_FILL_ACK, PRESS_VENT_ACK, OX_MPV_ACK, FUEL_MPV_ACK, IGNITER_ACK]
+CMDS = [AIR_DRIVE_ISO_1_CMD, AIR_DRIVE_ISO_2_CMD, GAS_BOOSTER_FILL_CMD, PRESS_FILL_CMD, PRESS_VENT_CMD]
+ACKS = [AIR_DRIVE_ISO_1_ACK, AIR_DRIVE_ISO_2_ACK, GAS_BOOSTER_FILL_ACK, PRESS_FILL_ACK, PRESS_VENT_ACK]
 PTS = [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY]
 
 WRITE_TO = []
@@ -334,9 +328,6 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
     
     press_vent = syauto.Valve(auto=auto, cmd=PRESS_VENT_CMD,
                               ack=PRESS_VENT_ACK, normally_open=True)
-    fuel_mpv = syauto.Valve(auto=auto, cmd=FUEL_MPV, ack=FUEL_MPV_ACK, normally_open=False)
-    ox_mpv = syauto.Valve(auto=auto, cmd=OX_MPV_CMD, ack=OX_MPV_ACK, normally_open=False)
-    igniter = syauto.Valve(auto=auto, cmd=IGNITER_CMD, ack=IGNITER_ACK, normally_open=False)
 
     all_vents = [press_vent]
     all_valves = [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill]
