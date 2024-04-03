@@ -34,8 +34,8 @@ from collections import deque
 
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run an actual test, we will connect to the MASA remote server and have a delay of 60 seconds
-mode = input("Enter 'testing' for actual testing, or 'sim' to run a simulation: ")
-if(mode == "testing" or "Testing" or "TESTING"):
+mode = input("Enter 'coldflow' for coldflow testing on actual hardware, 'hotfire' if you are testing in the desert, or 'sim' to run a simulation: ")
+if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
     print("Testing mode")
     # this connects to the synnax testing server
     client = sy.Synnax(
@@ -60,8 +60,20 @@ elif mode == "sim" or mode == "Sim" or mode == "SIM":
     )
     PRESS_DELAY = 1  # seconds
 
+elif mode == "hotfire" or mode == "Hotfire" or mode == "HOTFIRE":
+    print("Hotfire mode")
+    # this connects to the synnax testing server
+    client = sy.Synnax(
+    host="synnax.masa.engin.umich.edu",
+    port=80,
+    username="synnax",
+    password="seldon",
+    secure=True
+    )
+    PRESS_DELAY = 100
+
 else:
-    print("Invalid input. Check for typos bestie:) We'll close the program in the meantime")
+    print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
     exit()
 
 #PT channels we'll read from in this sequence
