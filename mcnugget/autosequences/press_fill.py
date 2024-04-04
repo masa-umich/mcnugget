@@ -190,6 +190,12 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
         averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
     return averages
 
+def check_for_repress() -> bool:
+    print("checking for repress")
+    readings = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
+    if statistics.median(readings[pt] for pt in [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3]) <= REPRESS_TARGET:
+        return True
+
 def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=False):
     # this function returns True if
         # the partial_target has been reached
@@ -240,10 +246,6 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
     # stops if target pressure is reached and repressurizes at REPRESS_TARGET if needed
     if statistics.median([pt1, pt2, pt3]) >= PRESS_TARGET:
 
-        def check_for_repress(auto_: Controller) -> bool:
-            readings = get_averages(auto_, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
-            if statistics.median(readings[pt] for pt in [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3]) <= REPRESS_TARGET:
-                return True
             
         print(f"press tanks have reached {PRESS_TARGET} psi, closing air drive ISO 2")
         syauto.close_all(auto=auto, valves=[air_drive_ISO_2])
