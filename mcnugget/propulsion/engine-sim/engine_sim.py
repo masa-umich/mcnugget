@@ -3,19 +3,18 @@
 # For a techincal walkthrough, see ./engine_sim_explained.md
 
 import matplotlib.pyplot as plt
-import os, numpy as np
+import numpy as np
 from scipy.optimize import fsolve
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
-from rocketcea.cea_obj import CEA_Obj
+import os, yaml, csv
 import constants as consts
-import yaml
-import csv
+from tca_helpers import tca_system_eqns
+
 
 def f_to_kelvin(temp): return (temp-32)*(5/9)+273.15
 def scfm_to_mdot(scfm): return ((scfm/60)*consts.GN2_RHO_IMP)*consts.LBM_TO_KG
 def mdot_to_scfm(mdot): return ((mdot/consts.LBM_TO_KG)/consts.GN2_RHO_IMP)*60
 os.environ['RPPREFIX'] = r'/home/jasonyc/masa/REFPROP-cmake/build'
-cea = CEA_Obj(oxName="LOX", fuelName="RP1")
 
 
 def get_reg_outlet(inlet_p: float, mdot: float) -> float:
@@ -79,13 +78,17 @@ class COPV(GasState):
         self.T = T_0
         self.V = V_0*consts.L_TO_M3
         # Calculate initial internal energy (J/kg) and density (kg/m^3)
-        self.E = self.RP.REFPROPdll(gas,"PT","E",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
+        self.e = self.RP.REFPROPdll(gas,"PT","E",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
         self.rho = self.RP.REFPROPdll(gas,"PT","D",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
         self.n = self.rho*V_0  # Mass of gas, conserved [kg]
         self.s = self.RP.REFPROPdll(gas,"PT","S",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
     
     def update_state(self, dV: float, new_V_ullage: float):
         pass
+    
+    def get_h(self) -> float:
+        # Get the specific enthalpy of the COPV gas
+        return self.RP.REFPROPdll(gas,"PT","H",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
     
     def get_state_string(self) -> str:
         return ("[GAS STATE] P: {0:.2f} psi | T: {1:.2f} K | ".format(self.P/consts.PSI_TO_PA, self.T) +
@@ -121,6 +124,7 @@ class PropTank:
         # CdA: total downstream feed system CdA [m^2]
         # collapse_K: collapse factor, ratio of ideal ullage gas inflow mass flow to real
         # gas_state: Ullage object describing ullage gas
+        
         self.rho_prop = rho_prop
         self.V_total = V_total*consts.L_TO_M3
         self.V_prop = V_prop_0*consts.L_TO_M3
@@ -151,6 +155,56 @@ class Engine:
         self.P_a = P_a                                  # [Pa]
 
 
+class DataTracker():
+    def __init__(self):
+        self._mdot_liq_o = list()
+        self._mdot_liq_f = list()
+        self._c_star = list()
+        self._F_t = list()
+        self._P_c = list()
+        
+    def update_engine_data(self, mdot_o, mdot_f, c_star, F_t, P_c):
+        self._mdot_liq_o.append(mdot_o)
+        self._mdot_liq_f.append(mdot_f)
+        self._c_star.append(c_star)
+        self._F_t.append(F_t)
+        self._P_c.append(P_c)
+        
+    def print_data(self):
+        print(self._c_star)
+        print(self._F_t)
+        print([x/consts.PSI_TO_PA for x in self._P_c])
+        
+
+
+def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracker: DataTracker):
+    """
+    Return the liquid volumetric flow rate for fuel and ox, and store simulation data to 
+    a DataTracker for storage and plotting.
+    """
+    init_guess = tuple((8, 4, 1500, 12500, 2.1e6))
+    const_params = tuple((lox_tank.CdA, lox_tank.rho_prop, lox_tank.gas_state.P, fuel_tank.CdA, 
+                       fuel_tank.rho_prop, fuel_tank.gas_state.P, engine.P_c_ideal, 
+                       engine.A_t, engine.C_F, engine.C_star_eff))
+    results = fsolve(tca_system_eqns, init_guess, args=const_params)
+    tracker.update_engine_data(*results)
+    # Returns liquid mdot_o and mdot_f
+    return results[0], results[1]
+    
+    
+def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, copv: COPV,
+               tracker: DataTracker, liquid_mdots: tuple, controlled: bool):
+    """
+    Return the new ullage state variables (namely E, p, T) to perform a lox_tank and fuel_tank
+    update. Also return gas mass flow rates to update COPV state. This function will solve 
+    a different system of equations based on if the dome regulator is choked. 
+    """
+    # First, the LOX tank parameters
+    mdot_liq_o, mdot_liq_f = liquid_mdots
+    const_params = tuple((lox_tank, copv.get_h(), mdot_liq_o/consts.LOX_RHO))
+    
+
+
 if __name__ == "__main__":
     # Load input parameters from YAML file
     with open("input.yaml", "r") as file:
@@ -160,5 +214,12 @@ if __name__ == "__main__":
     lox_tank = PropTank(*([consts.LOX_RHO] + list(params["lox_tank"].values())))
     fuel_tank = PropTank(*([consts.RP1_RHO] + list(params["fuel_tank"].values())))
     engine = Engine(*list(params["engine"].values()))
+    tracker = DataTracker()
+    
+    # First, solve engine system using current ullage pressure
+    liquid_mdots = solve_engine(lox_tank, fuel_tank, engine, tracker)
+    tracker.print_data()
+    # Next, solve feed system
+    controlled_regime = True
     
     

@@ -170,7 +170,7 @@ def system_equations(params: tuple, *constants: tuple):
     eqn1 = cda_o**2 * (2*rho_o*(P_o - P_c)) - mdot_o**2  # Squaring the CdA equation to avoid sqrt()
     eqn2 = cda_f**2 * (2*rho_f*(P_f - P_c)) - mdot_f**2  # Squaring the CdA equation to avoid sqrt()
     eqn3 = (get_cea_c_star(mdot_o/mdot_f, pc_ideal) * C_star_eff) - c_star
-    eqn4 = F_t/(A_t*C_F) - P_c
+    eqn4 = F_t/(A_t*C_F) - P_
     eqn5 = (mdot_o+mdot_f) * c_star * C_F - F_t
     return (eqn1, eqn2, eqn3, eqn4, eqn5)
     

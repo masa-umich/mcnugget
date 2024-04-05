@@ -14,3 +14,4 @@ GN2_RHO_IMP = GN2_RHO_STD*KGM3_TO_LBCF  # [lbm/ft^3]
 # Known values
 RP1_RHO = 790   # Typically 810 to 1020 [kg/m^3]
 LOX_RHO = 1140  # At boiling point [kg/m^3]
+GN2_R = 296.80  # Specific gas constant [J/kg K]
