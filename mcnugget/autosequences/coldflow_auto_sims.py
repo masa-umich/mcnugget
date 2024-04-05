@@ -131,7 +131,7 @@ PTs = [OX_PRE_FILL_PT, OX_PRESS_DOME_PILOT_REG_PT, FUEL_PT_1_PRESSURE, FUEL_PT_2
 INITIAL_FUEL_TANK_PRESSURE = 0
 INITIAL_OX_TANK_PRESSURE = 0
 INITIAL_PRESS_TANK_PRESSURE = 0
-INITIAL_2K_PRESSURE = 400
+INITIAL_2K_PRESSURE = 2000
 
 daq_time = client.channels.create(
     name=DAQ_TIME,
@@ -263,7 +263,7 @@ with client.new_streamer(command_channels) as streamer:
 
                 fuel_tank_delta = -0.02
                 trailer_pneumatics_delta = 0
-                press_tank_delta = -0.01
+                press_tank_delta = -0.1
                 ox_tank_delta = -0.025
 
                 ### PRESS ###

@@ -53,7 +53,7 @@ MAX_PRESS_TANK_TEMP = 60  # celsius
 ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
 
 PRESS_TARGET = 3750  # psi
-REPRESS_TARGET = 3650 #psi
+REPRESS_TARGET = 3500 #psi
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
@@ -196,6 +196,47 @@ def check_for_repress() -> bool:
     if statistics.median(readings[pt] for pt in [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3]) <= REPRESS_TARGET:
         return True
 
+def repress(auto: Controller) -> bool:
+    # this computes PT and TC values with a running average, see compute_medians
+    readings = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY])
+
+    [pt1, pt2, pt3] = [ readings[PRESS_PT_1], 
+                        readings[PRESS_PT_2], 
+                        readings[PRESS_PT_3] ]
+
+    pts_below_min = 0
+    pts_above_max = 0
+    for pt in [pt1, pt2, pt3]:
+        if pt < -100:
+            pts_below_min += 1
+        if pt > MAX_PRESS_TANK_PRESSURE:
+            pts_above_max += 1
+
+    # air_drive_open = auto[AIR_DRIVE_ISO_1_ACK]
+
+    if pts_above_max >= 2:
+        print("ABORTING due to 2+ PTs EXCEEDING MAX_PRESS_TANK_PRESSURE")
+        syauto.open_close_many_valves(auto=auto, valves_to_open=[press_vent], valves_to_close=[air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill])
+        input("Press any key to continue pressurizing, or ctrl-c to execute abort sequence")
+
+    if pts_below_min >= 2:
+        print("ABORTING due to 2+ PTs BELOW -100 psi")
+        syauto.close_all(auto=auto, valves=[air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, press_vent])
+        input("Press any key to continue pressurizing, or ctrl-c to execute abort sequence")  
+
+    if statistics.median([pt1, pt2, pt3]) < REPRESS_TARGET:
+        print(f"pressure has dropped below {REPRESS_TARGET}, repressurizing")
+        return True
+
+    # if statistics.median([pt1, pt2, pt3]) >= PRESS_TARGET and air_drive_open:
+    #     print("repressurized; closing air_drive_ISO_1")
+    #     air_drive_ISO_1.close()
+
+    # if statistics.median([pt1, pt2, pt3]) < REPRESS_TARGET and not air_drive_open:
+    #     print("opening air_drive_ISO_1 to repressurize")
+    #     air_drive_ISO_1.open()
+
+
 def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=False):
     # this function returns True if
         # the partial_target has been reached
@@ -245,26 +286,23 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
 
     # stops if target pressure is reached and repressurizes at REPRESS_TARGET if needed
     if statistics.median([pt1, pt2, pt3]) >= PRESS_TARGET:
-
-            
         print(f"press tanks have reached {PRESS_TARGET} psi, closing air drive ISO 2")
         syauto.close_all(auto=auto, valves=[air_drive_ISO_2])
         print (f"Air drive ISO 2 closed, will repressurize at {REPRESS_TARGET}")
-        auto.wait_until(check_for_repress)
-        syauto.open_all(auto=auto, valves=[air_drive_ISO_2])
+        return True
 
 def press_phase_1():
-    # this function uses the runsafe_press_tank_fill() function to equalize pressure between 2K supply and press tanks
+    # this function returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
     times_ran = 0
-    # it returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
     p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
-    partial_target = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
+    partial_target = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])  # start at current pressure
     while True:
         current_pressure = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
 
         press_supply = get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
         p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
         press_tanks = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
+
         if times_ran < 4:
             partial_target += PRESS_INC_1
         else:
@@ -293,7 +331,6 @@ def press_phase_1():
         
 
 def press_phase_2():
-    # this function completes steps 2-4 see section 3 of overview
     PRESS_FILL_EQUALIZED = True
     avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     partial_target = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
@@ -305,7 +342,7 @@ def press_phase_2():
         avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
         current_press = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
 
-        partial_target += PRESS_INC_2
+        partial_target = min(partial_target + PRESS_INC_2, PRESS_TARGET)
         print(f"current pressure: {round(current_press, 2)}, pressurizing to {round(partial_target, 2)}")
 
         press_start_time = time.time()
@@ -320,6 +357,10 @@ def press_phase_2():
         # sleeps for 60 seconds minus the time it took to press
         print(f"sleeping for {round(max(PRESS_FACTOR * (PRESS_DELAY - time_pressed), 0), 2)} seconds")
         time.sleep(max(PRESS_FACTOR * (PRESS_DELAY - time_pressed), 0))
+
+        if partial_target == PRESS_TARGET:
+            print("Target pressure reached. Terminating phase 2.")
+            break
 
 with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180) as auto:
     air_drive_ISO_1 = syauto.Valve(
@@ -359,7 +400,10 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         print("opening gas_booster_fill and air_drive_ISO_1")
         gas_booster_fill.open()
         air_drive_ISO_1.open()
-        press_phase_2()
+
+        while True:
+            press_phase_2()
+            auto.wait_until(repress)
 
 
     except KeyboardInterrupt as e:
@@ -369,15 +413,15 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         print("Closing all valves and vents")
         syauto.close_all(auto=auto, valves=(all_vents + all_valves))
 
-        response = input("Input 'y' to open press vent: ")
-        if(response == "y"):
+        response = input("Would you like to open Press Vent? y/n ")
+        if(response == "y" or response == "Y"):
             press_vent.open()
             print("press vent opened")
 
         print("Creating range for data processing")
         #Creating a range inside autosequences
         rng = client.ranges.create(
-            name=f"{start.__str__()[11:16]} Press Fill",
+            name=f"{start} Press Fill",
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
 
