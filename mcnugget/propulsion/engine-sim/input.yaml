@@ -22,3 +22,4 @@ engine:
   c_star_eff: 0.85        # [None]
   P_c_ideal: 309.5        # [psia]
   P_ambient: 100000       # [Pa]
+dt: 0.03

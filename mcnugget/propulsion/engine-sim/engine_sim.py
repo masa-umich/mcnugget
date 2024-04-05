@@ -6,52 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import fsolve
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
-import os, yaml, csv
+import os, yaml, csv, warnings
 import constants as consts
-from tca_helpers import tca_system_eqns
+from system_helpers import tca_system_eqns, feed_system_eqns
 
-
-def f_to_kelvin(temp): return (temp-32)*(5/9)+273.15
-def scfm_to_mdot(scfm): return ((scfm/60)*consts.GN2_RHO_IMP)*consts.LBM_TO_KG
-def mdot_to_scfm(mdot): return ((mdot/consts.LBM_TO_KG)/consts.GN2_RHO_IMP)*60
 os.environ['RPPREFIX'] = r'/home/jasonyc/masa/REFPROP-cmake/build'
-
-
-def get_reg_outlet(inlet_p: float, mdot: float) -> float:
-    """
-    Return the outlet pressure of the dome regulator given a mass flow and inlet pressure.
-    These explicit functions are data interpolations from our regulator manufacturer Premier,
-    which gave several inlet pressure curves (ksi) as a function of SCFM and outlet [psig].
-    Args:
-        inlet_p: Inlet pressure [Pa]
-        mdot: Mass flow requirement [kg/s]
-    Returns:
-        float: Outlet pressure [Pa]
-    General form of our function: a*tan(-x/b)+475
-    The coefficient a has a range of [5,35] (linear relation with inlet pressure)
-    The coefficient b has a range of [750, 1310] (exponential relation with inlet pressure)
-    Example: 35*tan(-x/750)+475 is for the 1 ksi inlet pressure
-    Example: 25*tan(-x/830)+475 is for the 1.5 ksi inlet pressure
-    Note: Given 4.5 ksi and room temp, max choked mdot of a 1" ID pipe is ~36 kg/s, and 
-    500 psi + 1" ID is ~4 kg/s (7200 SCFM). Thus, we will lose control of the dome regulator
-    far before pipe choking becomes an issue, i.e. 850 SCFM (0.467 kg/s) is the upper limit.
-    """
-    scfm_val = mdot_to_scfm(mdot)
-    assert(scfm_val < 850 and scfm_val > 0)
-    coeff_a = 0
-    raise NotImplementedError
-    # As the reg increases its flow area, the demand for mass flow to bring the exit pressure
-    # increases at a faster rate than it can increase the flow area. So eventually the 
-    # pressure ratio keeps increasing (even as mdot increases) until it reaches the critical
-    # pressure ratio, at which it chokes and we have achieved the max mdot of the system.
-    # This is where we switch to a choked flow model of the system until the COPV pressure
-    # is basically the ullage pressure, after which we can switch to a blowdown model.
-    # Additionally, the reason we can just plug in our dome reg curve into the system of
-    # equations is because the "tendancy" to go towards the set pressure of ~500 psi is built
-    # into the curve itself; initially the ullage is at 500 psi anyway, and as we only lower
-    # ullage pressure marginally (e.g. to 490 psi), we get very low SCFM needed to try 
-    # getting back to 500 psi, even though the actual downstream pressure is lower than set.
-    # Google "swagelok" and "pressure droop" and "lockup" to learn more about reg curves.
 
 
 class GasState:
@@ -78,17 +37,13 @@ class COPV(GasState):
         self.T = T_0
         self.V = V_0*consts.L_TO_M3
         # Calculate initial internal energy (J/kg) and density (kg/m^3)
-        self.e = self.RP.REFPROPdll(gas,"PT","E",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
+        self.h = self.RP.REFPROPdll(gas,"PT","H",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
         self.rho = self.RP.REFPROPdll(gas,"PT","D",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
         self.n = self.rho*V_0  # Mass of gas, conserved [kg]
         self.s = self.RP.REFPROPdll(gas,"PT","S",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
     
-    def update_state(self, dV: float, new_V_ullage: float):
-        pass
-    
-    def get_h(self) -> float:
-        # Get the specific enthalpy of the COPV gas
-        return self.RP.REFPROPdll(gas,"PT","H",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
+    # def update_state(self, dV: float, new_V_ullage: float):
+    #     pass
     
     def get_state_string(self) -> str:
         return ("[GAS STATE] P: {0:.2f} psi | T: {1:.2f} K | ".format(self.P/consts.PSI_TO_PA, self.T) +
@@ -101,15 +56,17 @@ class Ullage(GasState):
         self.T = T_0
         self.gas = gas
         # Calculate initial internal energy (J/kg) and density (kg/m^3)
-        self.E = self.RP.REFPROPdll(gas,"PT","E",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
+        self.e = self.RP.REFPROPdll(gas,"PT","e",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
         self.rho = self.RP.REFPROPdll(gas,"PT","D",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
+        self.cv = self.RP.REFPROPdll(gas,"PT","Cv",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
+        self.Z = self.RP.REFPROPdll(gas,"PT","Z",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
         self.n = self.rho*V_0  # Mass of gas, conserved [kg]
         
-    def update_state(self, dV: float, new_V_ullage: float):
-        self.E = self.E - self.P*dV  # dE = Q-W, work done = p*dV for small dV 
-        self.rho = self.n/new_V_ullage
-        self.P = self.RP.REFPROPdll(self.gas,"ED","P",self.MASS_BASE_SI,0,0,self.E,self.rho,[1.0]).Output[0]
-        self.T = self.RP.REFPROPdll(self.gas,"ED","T",self.MASS_BASE_SI,0,0,self.E,self.rho,[1.0]).Output[0]
+    # def update_state(self, dV: float, new_V_ullage: float):
+    #     self.E = self.E - self.P*dV  # dE = Q-W, work done = p*dV for small dV 
+    #     self.rho = self.n/new_V_ullage
+    #     self.P = self.RP.REFPROPdll(self.gas,"ED","P",self.MASS_BASE_SI,0,0,self.E,self.rho,[1.0]).Output[0]
+    #     self.T = self.RP.REFPROPdll(self.gas,"ED","T",self.MASS_BASE_SI,0,0,self.E,self.rho,[1.0]).Output[0]
  
  
 class PropTank:
@@ -133,6 +90,12 @@ class PropTank:
         self.CdA = CdA
         self.collapse_K = collapse_K
         self.gas_state = Ullage(P_ullage_0*consts.PSI_TO_PA, T_ullage_0, self.V_ullage)
+        
+    def get_update_params(self):
+        # Returns needed values of the previous ullage state to solve feed system. 
+        # (e, p, m, cv, T, Z)
+        return (self.gas_state.e, self.gas_state.P, self.gas_state.n, self.gas_state.cv,
+                self.gas_state.T, self.gas_state.Z, self.V_ullage)
 
 
 class Engine:
@@ -171,6 +134,7 @@ class DataTracker():
         self._P_c.append(P_c)
         
     def print_data(self):
+        print("Printing engine data:")
         print(self._c_star)
         print(self._F_t)
         print([x/consts.PSI_TO_PA for x in self._P_c])
@@ -183,6 +147,7 @@ def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracke
     a DataTracker for storage and plotting.
     """
     init_guess = tuple((8, 4, 1500, 12500, 2.1e6))
+    # TODO: Update the init_guess with something more reasonable from the previous state
     const_params = tuple((lox_tank.CdA, lox_tank.rho_prop, lox_tank.gas_state.P, fuel_tank.CdA, 
                        fuel_tank.rho_prop, fuel_tank.gas_state.P, engine.P_c_ideal, 
                        engine.A_t, engine.C_F, engine.C_star_eff))
@@ -192,8 +157,8 @@ def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracke
     return results[0], results[1]
     
     
-def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, copv: COPV,
-               tracker: DataTracker, liquid_mdots: tuple, controlled: bool):
+def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV,
+               tracker: DataTracker, liquid_mdots: tuple, dt: float, controlled: bool):
     """
     Return the new ullage state variables (namely E, p, T) to perform a lox_tank and fuel_tank
     update. Also return gas mass flow rates to update COPV state. This function will solve 
@@ -201,11 +166,21 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, copv: CO
     """
     # First, the LOX tank parameters
     mdot_liq_o, mdot_liq_f = liquid_mdots
-    const_params = tuple((lox_tank, copv.get_h(), mdot_liq_o/consts.LOX_RHO))
-    
+    init_guess = tuple((80e3, 300, 3e6, 0.3, 0.02))
+    const_params = tuple((*lox_tank.get_update_params(), copv.P, copv.h, 
+                          mdot_liq_o/consts.LOX_RHO, dt))
+    # Unknowns in order are: [E, T, p, m, mdot]
+    results = fsolve(feed_system_eqns, init_guess, args=const_params)
+    print("Initial values:")
+    print(f"E: {lox_tank.gas_state.e*lox_tank.gas_state.n/1000:.2f} kJ | T: {lox_tank.gas_state.T:.2f} K",
+          f"| p: {lox_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {lox_tank.gas_state.n:.2f} kg")
+    print("Next values:")
+    print(f"E: {results[0]/1000:.2f} kJ | T: {results[1]:.2f} K | p: {results[2]/consts.PSI_TO_PA:.2f} psi ",
+          f"| m: {results[3]:.2f} kg | mdot: {results[4]:.2f} kg/s")
 
 
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
     # Load input parameters from YAML file
     with open("input.yaml", "r") as file:
         params = yaml.safe_load(file)
@@ -221,5 +196,6 @@ if __name__ == "__main__":
     tracker.print_data()
     # Next, solve feed system
     controlled_regime = True
-    
+    dt = float(params["dt"])
+    solve_feed(lox_tank, fuel_tank, copv, tracker, liquid_mdots, dt, controlled_regime)
     
