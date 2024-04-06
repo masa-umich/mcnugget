@@ -416,7 +416,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         # time.sleep(1)
 
         print("Setting starting state")
-        start = sy.TimeStamp()
+        start = sy.TimeStamp.now()
         syauto.close_all(auto, [ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent, ox_prepress, fuel_prepress, fuel_press_iso])
         time.sleep(2)
 
