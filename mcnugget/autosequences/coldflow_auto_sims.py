@@ -18,6 +18,8 @@ FUEL_VENT_IN = "gse_doa_15"  # Fuel vent input,
 FUEL_VENT_OUT = "gse_doc_15"  # Fuel vent output
 FUEL_PREVALVE_IN = "gse_doa_22"  # Fuel pre-valve input
 FUEL_PREVALVE_OUT = "gse_doc_22"  # Fuel pre-valve output
+FUEL_MPV_IN = "gse_doa_24"  
+FUEL_MPV_OUT = "gse_doc_24"  
 
 # valves for purge system
 FUEL_FEEDLINE_PURGE_IN = "gse_doa_7"  # Fuel feedline purge
@@ -66,6 +68,11 @@ OX_DOME_ISO_IN = "gse_doa_3"  # Ox dome reg pilot ISO
 OX_DOME_ISO_OUT = "gse_doc_3"  # Ox dome reg pilot ISO
 OX_DRAIN_IN = "gse_doa_14"
 OX_DRAIN_OUT = "gse_doc_14"
+OX_MPV_IN = "gse_doa_6"
+OX_MPV_OUT = "gse_doc_6"  
+
+IGNITOR_IN = "gse_doa_25"
+IGNITOR_OUT = "gse_doa_25"
 
 
 vent_command_channels = [FUEL_VENT_OUT, PRESS_VENT_OUT, OX_LOW_VENT_OUT, 
@@ -79,14 +86,14 @@ command_channels = [FUEL_VENT_OUT, FUEL_PREVALVE_OUT, FUEL_FEEDLINE_PURGE_OUT,
                     ENGINE_PNEUMATICS_ISO_OUT, ENGINE_PNEUMATICS_VENT_OUT,
                     AIR_DRIVE_ISO_1_OUT, AIR_DRIVE_ISO_2_OUT, GAS_BOOSTER_FILL_OUT, PRESS_FILL_OUT,
                     PRESS_VENT_OUT, FUEL_PRESS_ISO_OUT, OX_PRESS_OUT, OX_LOW_VENT_OUT, OX_FILL_VALVE_OUT,
-                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT, OX_DOME_ISO_OUT]
+                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT, OX_DOME_ISO_OUT, OX_MPV_OUT, FUEL_MPV_OUT, IGNITOR_OUT]
 
 ack_channels = [FUEL_VENT_IN, FUEL_PREVALVE_IN, FUEL_FEEDLINE_PURGE_IN,
                 OX_FILL_PURGE_IN, FUEL_PRE_PRESS_IN, OX_PRE_PRESS_IN, OX_FEEDLINE_PURGE_IN,
                 ENGINE_PNEUMATICS_ISO_IN, ENGINE_PNEUMATICS_VENT_IN,
                 AIR_DRIVE_ISO_1_IN, AIR_DRIVE_ISO_2_IN, GAS_BOOSTER_FILL_IN, PRESS_FILL_IN,
                 PRESS_VENT_IN, FUEL_PRESS_ISO_IN, OX_PRESS_IN, OX_LOW_VENT_IN, OX_FILL_VALVE_IN,
-                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN, OX_DOME_ISO_IN]
+                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN, OX_DOME_ISO_IN, OX_MPV_IN, FUEL_MPV_IN, IGNITOR_IN]
 
 # Pressure sensors
 OX_PRE_FILL_PT = "gse_ai_1"  # Ox pre-fill pressure
@@ -189,6 +196,8 @@ for cmd_chan in vent_command_channels:
 for pt in PTs:
     DAQ_STATE[pt] = 0
 
+DAQ_STATE[IGNITOR_OUT] = 0
+
 # updates pressure sensors
 DAQ_STATE.update({
     FUEL_PT_1_PRESSURE: INITIAL_FUEL_TANK_PRESSURE,
@@ -221,12 +230,14 @@ supply_2k = INITIAL_2K_PRESSURE
 
 FUEL_PREVALVE_LAST_OPEN = None
 OX_PREVALVE_LAST_OPEN = None
+FUEL_MPV_LAST_OPEN = None
+OX_MPV_LAST_OPEN = None
 
-with client.new_streamer(command_channels) as streamer:
+with client.open_streamer(command_channels) as streamer:
     READ_CHANNELS = command_channels
     WRITE_CHANNELS = ack_channels + PTs + [DAQ_TIME]  # + TCs
     print(f"writing to {len(WRITE_CHANNELS)} channels")
-    with client.new_writer(
+    with client.open_writer(
             sy.TimeStamp.now(),
             channels = WRITE_CHANNELS
     ) as w:
@@ -244,6 +255,7 @@ with client.new_streamer(command_channels) as streamer:
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
                 fuel_press_iso_energized = DAQ_STATE[FUEL_PRESS_ISO_OUT] == 1
                 fuel_pre_press_energized = DAQ_STATE[FUEL_PRE_PRESS_OUT] == 1
+                fuel_mpv_energized = DAQ_STATE[FUEL_MPV_OUT] == 1
 
                 ox_pre_press_energized = DAQ_STATE[OX_PRE_PRESS_OUT] == 1
                 ox_press_energized = DAQ_STATE[OX_PRESS_OUT] == 1
@@ -253,6 +265,7 @@ with client.new_streamer(command_channels) as streamer:
                 ox_pre_valve_energized = DAQ_STATE[OX_PRE_VALVE_OUT] == 1
                 ox_pre_fill_energized = DAQ_STATE[OX_PRE_FILL_PT] == 1
                 ox_dome_iso_energized = DAQ_STATE[OX_DOME_ISO_OUT] == 1
+                ox_mpv_energized = DAQ_STATE[OX_MPV_OUT] == 1
 
                 air_drive_iso_1_energized = DAQ_STATE[AIR_DRIVE_ISO_1_OUT] == 1
                 air_drive_iso_2_energized= DAQ_STATE[AIR_DRIVE_ISO_2_OUT] == 1
@@ -261,10 +274,12 @@ with client.new_streamer(command_channels) as streamer:
                 press_fill_energized = DAQ_STATE[PRESS_FILL_OUT] == 1
                 press_vent_energized = DAQ_STATE[PRESS_VENT_OUT] == 1
 
-                fuel_tank_delta = -0.02
-                trailer_pneumatics_delta = 0
+                ignitor_energized = DAQ_STATE[IGNITOR_OUT] == 1
+
+                fuel_tank_delta = -0.05
+                trailer_pneumatics_delta = -0.005
                 press_tank_delta = -0.1
-                ox_tank_delta = -0.025
+                ox_tank_delta = -0.07
 
                 ### PRESS ###
                 if press_fill_energized:
@@ -286,6 +301,11 @@ with client.new_streamer(command_channels) as streamer:
                     FUEL_PREVALVE_LAST_OPEN = sy.TimeStamp.now()
                 elif not fuel_prevalve_energized:
                     FUEL_PREVALVE_LAST_OPEN = None
+
+                if fuel_mpv_energized and FUEL_MPV_LAST_OPEN is None:
+                    FUEL_MPV_LAST_ENERGIZED = sy.TimeStamp.now()
+                elif not fuel_mpv_energized:
+                    FUEL_MPV_LAST_ENERGIZED = None
             
                 if fuel_pre_press_energized:
                     press_tank_delta -= 1.5
@@ -295,8 +315,9 @@ with client.new_streamer(command_channels) as streamer:
                     press_tank_delta -= 1.5
                     fuel_tank_delta += 1.5
                 
-                if fuel_prevalve_energized:
-                    fuel_tank_delta -= 0.3 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_PREVALVE_LAST_OPEN).seconds
+                if fuel_prevalve_energized and fuel_mpv_energized:
+                    # print("shooting out fuel")
+                    fuel_tank_delta -= 0.05 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_MPV_LAST_ENERGIZED).seconds
 
                 if not fuel_vent_energized:
                     fuel_tank_delta -= 3
@@ -308,6 +329,11 @@ with client.new_streamer(command_channels) as streamer:
                 elif not ox_pre_valve_energized:
                     OX_PREVALVE_LAST_OPEN = None
 
+                if ox_mpv_energized and OX_MPV_LAST_OPEN is None:
+                    OX_MPV_LAST_ENERGIZED = sy.TimeStamp.now()
+                elif not ox_mpv_energized:
+                    OX_MPV_LAST_ENERGIZED = None
+
                 if ox_pre_press_energized:
                     press_tank_delta -= 1.5
                     ox_tank_delta += 3
@@ -316,8 +342,12 @@ with client.new_streamer(command_channels) as streamer:
                     press_tank_delta -= 1.5
                     ox_tank_delta += 1.5
 
-                if ox_pre_valve_energized:
-                    ox_tank_delta -= 0.3 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
+                if ox_pre_valve_energized and ox_mpv_energized:
+                    # print("shooting out oxygen")
+                    ox_tank_delta -= 0.05 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
+                
+                # if ox_mpv_energized:
+                #     ox_tank_delta -= 0.3 * sy.TimeSpan(sy.TimeStamp.now() - OX_MPV_LAST_ENERGIZED).seconds
 
                 if not ox_low_vent_energized:
                     ox_tank_delta -= 2.0
@@ -362,6 +392,9 @@ with client.new_streamer(command_channels) as streamer:
                     OX_HIGH_FLOW_VENT_IN: int(ox_high_flow_vent_energized),
                     OX_PRE_VALVE_IN: int(ox_pre_valve_energized),
                     OX_DOME_ISO_IN: int(ox_dome_iso_energized),
+                    FUEL_MPV_IN: int(fuel_mpv_energized),
+                    OX_MPV_IN: int(ox_mpv_energized),
+                    IGNITOR_IN: int(ignitor_energized),
 
                     # writes to all 30 PTs
                     FUEL_PT_1_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),

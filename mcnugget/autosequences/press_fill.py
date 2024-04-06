@@ -48,30 +48,24 @@ import syauto
 import statistics
 from collections import deque
 
-MAX_PRESS_TANK_PRESSURE = 4400  # psi
-MAX_PRESS_TANK_TEMP = 60  # celsius
-ALMOST_MAX_PRESS_TANK_TEMP = 50  # celsius
-
 PRESS_TARGET = 3750  # psi
-REPRESS_TARGET = 3500 #psi
+REPRESS_TARGET = 3650 #psi
+MAX_PRESS_TANK_PRESSURE = 4400  # psi
+
+# press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 PRESS_INC_1 = 65  # psi/min
 PRESS_INC_2 = 100  # psi/min
-# press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
+
+COLDFLOW_PRESS_DELAY = 60
+HOTFIRE_PRESS_DELAY = 100
+SIM_PRESS_DELAY = COLDFLOW_PRESS_DELAY
 
 # this variable defines how many samples should be averaged for PT or TC data
 RUNNING_MEDIAN_SIZE = 50  # samples - at 200Hz this means every 1/2 second
+PRESS_FACTOR = 1  # this is used to speed up sims
 
-# TODO: Change Delays as Necessary 
-COLDFLOW_PRESS_DELAY = 60
-
-HOTFIRE_PRESS_DELAY = 100
-
-SIM_PRESS_DELAY = COLDFLOW_PRESS_DELAY
-
-PRESS_FACTOR = 1
-
-#Prompts for user input as to whether we want to run a simulation or run an actual test
-#If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
+# Prompts for user input as to whether we want to run a simulation or run an actual test
+# If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
 mode = input("Enter 'coldflow' for coldflow testing on actual hardware, 'hotfire' if you are testing in the desert, or 'sim' to run a simulation: ")
 if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
     print("Testing mode")
@@ -85,7 +79,7 @@ if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
     )
     PRESS_DELAY = COLDFLOW_PRESS_DELAY
 
-#If prompted to run a hotfire test, we will connect to the MASA remote server and have a delay of 100 seconds
+# If prompted to run a hotfire test, we will connect to the MASA remote server and have a delay of 100 seconds
 elif mode == "hotfire" or mode == "Hotfire" or mode == "HOTFIRE":
     print("Hotfire mode")
     # this connects to the synnax testing server
@@ -98,8 +92,8 @@ elif mode == "hotfire" or mode == "Hotfire" or mode == "HOTFIRE":
     )
     PRESS_DELAY = HOTFIRE_PRESS_DELAY
 
-#If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
-elif mode == "sim" or mode == "Sim" or mode == "SIM":
+# If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
+elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
     print("Simulation mode")
     # this connects to a local synnax simulation server
     client = sy.Synnax(
@@ -190,12 +184,6 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
         averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
     return averages
 
-def check_for_repress() -> bool:
-    print("checking for repress")
-    readings = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
-    if statistics.median(readings[pt] for pt in [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3]) <= REPRESS_TARGET:
-        return True
-
 def repress(auto: Controller) -> bool:
     # this computes PT and TC values with a running average, see compute_medians
     readings = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY])
@@ -212,7 +200,7 @@ def repress(auto: Controller) -> bool:
         if pt > MAX_PRESS_TANK_PRESSURE:
             pts_above_max += 1
 
-    # air_drive_open = auto[AIR_DRIVE_ISO_1_ACK]
+    # this function literally just does nothing (barring an abort) until pressure drops below REPRESS_TARGET
 
     if pts_above_max >= 2:
         print("ABORTING due to 2+ PTs EXCEEDING MAX_PRESS_TANK_PRESSURE")
@@ -227,14 +215,6 @@ def repress(auto: Controller) -> bool:
     if statistics.median([pt1, pt2, pt3]) < REPRESS_TARGET:
         print(f"pressure has dropped below {REPRESS_TARGET}, repressurizing")
         return True
-
-    # if statistics.median([pt1, pt2, pt3]) >= PRESS_TARGET and air_drive_open:
-    #     print("repressurized; closing air_drive_ISO_1")
-    #     air_drive_ISO_1.close()
-
-    # if statistics.median([pt1, pt2, pt3]) < REPRESS_TARGET and not air_drive_open:
-    #     print("opening air_drive_ISO_1 to repressurize")
-    #     air_drive_ISO_1.open()
 
 
 def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=False):
@@ -279,7 +259,7 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
         return True
     
     if (time.time() - press_start_time_) > PRESS_DELAY:
-        answer = input(f"unable to pressurize to target in {PRESS_DELAY} seconds, input n to stop")
+        answer = input(f"unable to pressurize to target in {PRESS_DELAY} seconds, input n to stop or anything else to continue")
         if answer == "n":
             return True
         press_start_time_ = time.time()
@@ -287,12 +267,12 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
     # stops if target pressure is reached and repressurizes at REPRESS_TARGET if needed
     if statistics.median([pt1, pt2, pt3]) >= PRESS_TARGET:
         print(f"press tanks have reached {PRESS_TARGET} psi, closing air drive ISO 2")
-        syauto.close_all(auto=auto, valves=[air_drive_ISO_2])
+        air_drive_ISO_2.close()
         print (f"Air drive ISO 2 closed, will repressurize at {REPRESS_TARGET}")
         return True
 
 def press_phase_1():
-    # this function returns when the PRESS_TANKs pressure is within 10psi of the 2K bottle supply
+    # this function returns when the PRESS_TANKs pressure is within 80psi of the 2K bottle supply
     times_ran = 0
     p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     partial_target = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])  # start at current pressure
@@ -421,9 +401,9 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         print("Creating range for data processing")
         #Creating a range inside autosequences
         rng = client.ranges.create(
-            name=f"{start} Press Fill",
+            name=f"Press Fill",
             time_range=sy.TimeRange(start, sy.TimeStamp.now()),
         )
 
-    print("ctrl-c to terminating autosequence")
+    print("ctrl-c to terminate autosequence")
     time.sleep(60)
