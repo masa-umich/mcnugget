@@ -355,8 +355,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print()
 
             print("energizing the igniter")
-            syauto.open_all(auto, [igniter])  # energizes the igniter
-            for i in range(0, IGNITER_DELAY - ISO_DELAY):
+            igniter.open()
+            time.sleep(1)
+            igniter.close()
+            for i in range(0, IGNITER_DELAY - ISO_DELAY - 1):
                 print(f"Ignition in {IGNITER_DELAY - ISO_DELAY - i + ISO_DELAY}")
                 time.sleep(1)
             
@@ -366,28 +368,29 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print(f"Ignition in {ISO_DELAY - i}")
                 time.sleep(1)
             
-            print("Opening Fuel ISO + MPV")
-            syauto.open_all(auto, [fuel_press_iso, fuel_mpv])
+            print("Opening Ox ISO + Fuel MPV")
+            syauto.open_all(auto, [fuel_press_iso, ox_mpv])
 
-            print(f"Opening Ox MPV in {MPV_DELAY}")
+            print(f"Opening Fuel MPV in {MPV_DELAY}")
             time.sleep(MPV_DELAY)
-            syauto.open_all(auto, [ox_mpv])
+            syauto.open_all(auto, [fuel_mpv])
 
             # print(f"Ox MPV in {MPV_DELAY}")
             # time.sleep(MPV_DELAY)
 
             time.sleep(FIRE_DURATION)  # boom
 
+            print("terminating fire")
             syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
             time.sleep(0.5)
             syauto.open_close_many_valves(auto, [fuel_feedline_purge, ox_feedline_purge], [fuel_prevalve, ox_prevalve])
-            print("terminating fire")
+            print("reg_fire complete")
         except KeyboardInterrupt:
             print("Firing sequence aborted, closing all valves and opening all vents")
             syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
             time.sleep(0.5)
             syauto.open_close_many_valves(auto, [fuel_feedline_purge, ox_feedline_purge], [fuel_prevalve, ox_prevalve])
-            print("terminating fire")
+            print("terminating abort")
 
     # this block runs the overall sequence
     try:
@@ -425,7 +428,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         # the above statement will only finish if an abort is triggered
 
     except KeyboardInterrupt as e:
-        syauto.close_all(auto, [ fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_prepress, ox_prepress])
+        syauto.close_all(auto, [fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_prepress, ox_prepress])
         answer = input("Valves are closed. Input `fire` to commence reg_fire portion of autosequence or anything else to skip ")
         if answer == "fire" or answer == "Fire" or answer == "FIRE":
             reg_fire()
