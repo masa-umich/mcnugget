@@ -271,8 +271,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     fuel_vent = syauto.Valve(auto=auto, cmd = FUEL_VENT_CMD, ack = FUEL_VENT_ACK, normally_open=True)
     ox_low_flow_vent = syauto.Valve(auto=auto, cmd = OX_LOW_FLOW_VENT_CMD, ack = OX_LOW_FLOW_VENT_ACK, normally_open=True)
     press_vent = syauto.Valve(auto=auto, cmd = PRESS_VENT_CMD, ack = PRESS_VENT_ACK, normally_open=True)
-    fuel_mpv = syauto.Valve(auto=auto, cmd = FUEL_MPV, ack = FUEL_MPV_ACK, normally_open=False)
-    ox_mpv = syauto.Valve(auto=auto, cmd = OX_MPV_CMD, ack = OX_MPV_ACK, normally_open=False)
+    fuel_mpv = syauto.Valve(auto=auto, cmd = FUEL_MPV, ack = FUEL_MPV_ACK, normally_open=True)
+    ox_mpv = syauto.Valve(auto=auto, cmd = OX_MPV_CMD, ack = OX_MPV_ACK, normally_open=True)
     igniter = syauto.Valve(auto=auto, cmd = IGNITER_CMD, ack = IGNITER_ACK, normally_open=False)
 
     # # For determining if each valve is open 
@@ -391,17 +391,21 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     # this block runs the overall sequence
     try:
-        time.sleep(1)
-        fuel_prevalve_open = auto[FUEL_PREVALVE_ACK]
-        ox_prevalve_open = auto[OX_PREVALVE_ACK]
+        time.sleep(2)
 
-        open_prevalve = ""
-        if not fuel_prevalve_open or not ox_prevalve_open:
-            open_prevalve = input("fuel prevalve or ox prevalve not open, would oyu like to open them? y/n ")
+        # fuel_prevalve_open = auto[FUEL_PREVALVE_ACK]
+        # ox_prevalve_open = auto[OX_PREVALVE_ACK]
 
-        if(open_prevalve == "y"):
-            syauto.open_all(auto, [fuel_prevalve, ox_prevalve])
-            print("fuel and ox prevalves opened")
+        # open_prevalve = ""
+        # if not fuel_prevalve_open or not ox_prevalve_open:
+        #     open_prevalve = input("fuel prevalve or ox prevalve not open, would oyu like to open them? y/n ")
+
+        # if(open_prevalve == "y"):
+        #     syauto.open_all(auto, [fuel_prevalve, ox_prevalve])
+        #     print("fuel and ox prevalves opened")
+            
+        time.sleep(2)
+        syauto.open_all(auto, [fuel_prevalve, ox_prevalve])
 
         # 
         # syauto.close_all(auto, [ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent, ox_prepress, fuel_prepress])
