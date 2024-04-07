@@ -27,18 +27,15 @@ def tca_system_eqns(params: tuple, *const_params: tuple):
 def feed_system_eqns(params: tuple, *const_params: tuple):
     E, T, p, m, mdot = params
     e_prev, p_prev, m_prev, cv, T_prev, Z_prev, V_prev = const_params[0:7]
-    p_copv, h_copv, vdot_liq, dt, reg_cda = const_params[7:]
+    p_copv, h_copv, vdot_liq, dt = const_params[7:]
     new_V = V_prev + vdot_liq*dt
     cp = cv + consts.GN2_R
-    gamma = cp/cv
     # Energy conservation equation: note that E is extensive internal energy
     eqn1 = e_prev*m_prev + (mdot)*dt*h_copv - p_prev*vdot_liq*dt - E
-    eqn2 = ((E + p*new_V)/cv) - T
-    eqn3 = get_reg_outlet(p_copv, mdot, reg_cda, gamma, T_prev) - p
+    eqn2 = ((E + p*new_V)/(cp*m)) - T
+    eqn3 = get_reg_outlet(p_copv, mdot) - p
     eqn4 = (p*new_V)/(Z_prev*consts.GN2_R*T) - m
-    eqn5 = m_prev + (mdot)*dt - m
-    # eqn6 = (E - e_prev*m_prev) + p_prev*vdot_liq*dt - T_prev*(cp*np.log(T/T_prev) - 
-        # consts.GN2_R*np.log(p/p_prev))
+    eqn5 = (m - m_prev)/dt - mdot
     return (eqn1, eqn2, eqn3, eqn4, eqn5)
 
 
@@ -47,7 +44,7 @@ def get_cea_c_star(of_ratio: float, pc_ideal: float):
     return consts.FT_TO_M*cea.get_Cstar(Pc=(pc_ideal/consts.PSI_TO_PA), MR=of_ratio)
 
 
-def get_reg_outlet(inlet_p: float, mdot: float, reg_cda, gamma, T_prev) -> float:
+def get_reg_outlet(inlet_p: float, mdot: float) -> float:
     """
     Return the outlet pressure of the dome regulator given a mass flow and inlet pressure.
     These explicit functions are data interpolations from our regulator manufacturer Premier,

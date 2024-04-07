@@ -167,26 +167,26 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV,
     mdot_liq_o, mdot_liq_f = liquid_mdots
     init_guess = tuple((90e3, 250, 3.4e6, 0.4, 5e-3))
     const_params = tuple((*lox_tank.get_update_params(), copv.P, copv.h, 
-                          mdot_liq_o/consts.LOX_RHO, dt, reg_cda))
+                          mdot_liq_o/consts.LOX_RHO, dt))
     # Unknowns in order are: [E, T, p, m, mdot]
     results = fsolve(feed_system_eqns, init_guess, args=const_params)
     print("Initial LOX values:")
     print(f"E: {lox_tank.gas_state.e*lox_tank.gas_state.n/1000:.2f} kJ | T: {lox_tank.gas_state.T:.2f} K",
-          f"| p: {lox_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {lox_tank.gas_state.n:.2f} kg")
+          f"| p: {lox_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {lox_tank.gas_state.n:.3f} kg")
     print("Next LOX values:")
     print(f"E: {results[0]/1000:.2f} kJ | T: {results[1]:.2f} K | p: {results[2]/consts.PSI_TO_PA:.2f} psi ",
-          f"| m: {results[3]:.2f} kg | mdot: {(results[4]):.2f} kg/s")
+          f"| m: {results[3]:.3f} kg | mdot: {(results[4]):.3f} kg/s")
     # Next, the fuel tank
     init_guess = tuple((90e3, 250, 3.4e6, 0.4, 5e-3))
     const_params = tuple((*fuel_tank.get_update_params(), copv.P, copv.h, 
-                          mdot_liq_f/consts.RP1_RHO, dt, reg_cda))
+                          mdot_liq_f/consts.RP1_RHO, dt))
     results = fsolve(feed_system_eqns, init_guess, args=const_params)
     print("Initial fuel values:")
     print(f"E: {fuel_tank.gas_state.e*fuel_tank.gas_state.n/1000:.2f} kJ | T: {fuel_tank.gas_state.T:.2f} K",
-          f"| p: {fuel_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {fuel_tank.gas_state.n:.2f} kg")
+          f"| p: {fuel_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {fuel_tank.gas_state.n:.3f} kg")
     print("Next fuel values:")
     print(f"E: {results[0]/1000:.2f} kJ | T: {results[1]:.2f} K | p: {results[2]/consts.PSI_TO_PA:.2f} psi ",
-          f"| m: {results[3]:.2f} kg | mdot: {(results[4]):.2f} kg/s")
+          f"| m: {results[3]:.3f} kg | mdot: {(results[4]):.3f} kg/s")
     
 
 
