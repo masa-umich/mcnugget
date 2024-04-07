@@ -26,15 +26,17 @@ def tca_system_eqns(params: tuple, *const_params: tuple):
 
 def feed_system_eqns(params: tuple, *const_params: tuple):
     E, T, p, m, mdot = params
-    e_prev, p_prev, m_prev, cv, T_prev, Z_prev, V_prev, p_copv, h_copv, vdot_liq, dt = const_params
+    e_prev, p_prev, m_prev, cv, T_prev, Z_prev, V_prev = const_params[0:7]
+    p_copv, h_copv, vdot_liq, dt, reg_cda = const_params[7:]
     new_V = V_prev + vdot_liq*dt
     cp = cv + consts.GN2_R
+    gamma = cp/cv
     # Energy conservation equation: note that E is extensive internal energy
-    eqn1 = e_prev*m_prev + mdot*dt*h_copv - p_prev*vdot_liq*dt - E
+    eqn1 = e_prev*m_prev + (mdot)*dt*h_copv - p_prev*vdot_liq*dt - E
     eqn2 = ((E + p*new_V)/cv) - T
-    eqn3 = get_reg_outlet(p_copv, mdot) - p
+    eqn3 = get_reg_outlet(p_copv, mdot, reg_cda, gamma, T_prev) - p
     eqn4 = (p*new_V)/(Z_prev*consts.GN2_R*T) - m
-    eqn5 = m_prev + mdot*dt - m
+    eqn5 = m_prev + (mdot)*dt - m
     # eqn6 = (E - e_prev*m_prev) + p_prev*vdot_liq*dt - T_prev*(cp*np.log(T/T_prev) - 
         # consts.GN2_R*np.log(p/p_prev))
     return (eqn1, eqn2, eqn3, eqn4, eqn5)
@@ -45,7 +47,7 @@ def get_cea_c_star(of_ratio: float, pc_ideal: float):
     return consts.FT_TO_M*cea.get_Cstar(Pc=(pc_ideal/consts.PSI_TO_PA), MR=of_ratio)
 
 
-def get_reg_outlet(inlet_p: float, mdot: float) -> float:
+def get_reg_outlet(inlet_p: float, mdot: float, reg_cda, gamma, T_prev) -> float:
     """
     Return the outlet pressure of the dome regulator given a mass flow and inlet pressure.
     These explicit functions are data interpolations from our regulator manufacturer Premier,
@@ -80,10 +82,16 @@ def get_reg_outlet(inlet_p: float, mdot: float) -> float:
     
     scfm_val = mdot_to_scfm(mdot)
     inlet_ksi = (inlet_p/consts.PSI_TO_PA)/1000
-    # assert(scfm_val < 850 and scfm_val > 0 and inlet_ksi > 1)
     
     if (scfm_val < 50):
         return ((200/(scfm_val+6))+470)*consts.PSI_TO_PA
+    
+    """
+    if (scfm_val > 850):
+        scfm_val = mdot_to_scfm(inlet_p*reg_cda*np.sqrt(gamma/(consts.GN2_R*T_prev)) * (
+            2/(gamma+1)) ** ((gamma+1)/(2*gamma-2)))
+        print(scfm_val)
+    """
     
     # We want a linear mapping from input range [1,4.5] to output range [35,5]
     # \frac{\left(o_{max}-o_{min}\right)}{i_{max}-i_{min}}\cdot\left(x-i_{min}\right)+o_{min}

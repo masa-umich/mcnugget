@@ -8,7 +8,7 @@ from scipy.optimize import fsolve
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
 import os, yaml, csv, warnings
 import constants as consts
-from system_helpers import tca_system_eqns, feed_system_eqns
+from system_helpers import *
 
 os.environ['RPPREFIX'] = r'/home/jasonyc/masa/REFPROP-cmake/build'
 
@@ -140,7 +140,6 @@ class DataTracker():
         print([x/consts.PSI_TO_PA for x in self._P_c])
         
 
-
 def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracker: DataTracker):
     """
     Return the liquid volumetric flow rate for fuel and ox, and store simulation data to 
@@ -158,7 +157,7 @@ def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracke
     
     
 def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV,
-               tracker: DataTracker, liquid_mdots: tuple, dt: float, controlled: bool):
+               tracker: DataTracker, liquid_mdots: tuple, dt: float, reg_cda: float):
     """
     Return the new ullage state variables (namely E, p, T) to perform a lox_tank and fuel_tank
     update. Also return gas mass flow rates to update COPV state. This function will solve 
@@ -166,17 +165,29 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV,
     """
     # First, the LOX tank parameters
     mdot_liq_o, mdot_liq_f = liquid_mdots
-    init_guess = tuple((80e3, 300, 3e6, 0.3, 0.02))
+    init_guess = tuple((90e3, 250, 3.4e6, 0.4, 5e-3))
     const_params = tuple((*lox_tank.get_update_params(), copv.P, copv.h, 
-                          mdot_liq_o/consts.LOX_RHO, dt))
+                          mdot_liq_o/consts.LOX_RHO, dt, reg_cda))
     # Unknowns in order are: [E, T, p, m, mdot]
     results = fsolve(feed_system_eqns, init_guess, args=const_params)
-    print("Initial values:")
+    print("Initial LOX values:")
     print(f"E: {lox_tank.gas_state.e*lox_tank.gas_state.n/1000:.2f} kJ | T: {lox_tank.gas_state.T:.2f} K",
           f"| p: {lox_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {lox_tank.gas_state.n:.2f} kg")
-    print("Next values:")
+    print("Next LOX values:")
     print(f"E: {results[0]/1000:.2f} kJ | T: {results[1]:.2f} K | p: {results[2]/consts.PSI_TO_PA:.2f} psi ",
-          f"| m: {results[3]:.2f} kg | mdot: {results[4]:.2f} kg/s")
+          f"| m: {results[3]:.2f} kg | mdot: {(results[4]):.2f} kg/s")
+    # Next, the fuel tank
+    init_guess = tuple((90e3, 250, 3.4e6, 0.4, 5e-3))
+    const_params = tuple((*fuel_tank.get_update_params(), copv.P, copv.h, 
+                          mdot_liq_f/consts.RP1_RHO, dt, reg_cda))
+    results = fsolve(feed_system_eqns, init_guess, args=const_params)
+    print("Initial fuel values:")
+    print(f"E: {fuel_tank.gas_state.e*fuel_tank.gas_state.n/1000:.2f} kJ | T: {fuel_tank.gas_state.T:.2f} K",
+          f"| p: {fuel_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {fuel_tank.gas_state.n:.2f} kg")
+    print("Next fuel values:")
+    print(f"E: {results[0]/1000:.2f} kJ | T: {results[1]:.2f} K | p: {results[2]/consts.PSI_TO_PA:.2f} psi ",
+          f"| m: {results[3]:.2f} kg | mdot: {(results[4]):.2f} kg/s")
+    
 
 
 if __name__ == "__main__":
@@ -197,5 +208,6 @@ if __name__ == "__main__":
     # Next, solve feed system
     controlled_regime = True
     dt = float(params["dt"])
-    solve_feed(lox_tank, fuel_tank, copv, tracker, liquid_mdots, dt, controlled_regime)
+    reg_cda = float(params["dt"])
+    solve_feed(lox_tank, fuel_tank, copv, tracker, liquid_mdots, dt, reg_cda)
     
