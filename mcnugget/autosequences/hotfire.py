@@ -344,6 +344,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         opened_fuel_mpv = False
         opened_ox_mpv = False
         try: 
+            time.sleep(1)
             print("commencing fire sequence")
             print("10")
             time.sleep(1)
