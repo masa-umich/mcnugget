@@ -42,8 +42,8 @@ class COPV(GasState):
         self.n = self.rho*V_0  # Mass of gas, conserved [kg]
         self.s = self.RP.REFPROPdll(gas,"PT","S",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
     
-    # def update_state(self, dV: float, new_V_ullage: float):
-    #     pass
+    def update_state(self, dV: float, new_V_ullage: float):
+        pass
     
     def get_state_string(self) -> str:
         return ("[GAS STATE] P: {0:.2f} psi | T: {1:.2f} K | ".format(self.P/consts.PSI_TO_PA, self.T) +
@@ -62,13 +62,17 @@ class Ullage(GasState):
         self.Z = self.RP.REFPROPdll(gas,"PT","Z",self.MASS_BASE_SI,0,0,self.P,self.T,[1.0]).Output[0]
         self.n = self.rho*V_0  # Mass of gas, conserved [kg]
         
-    # def update_state(self, dV: float, new_V_ullage: float):
-    #     self.E = self.E - self.P*dV  # dE = Q-W, work done = p*dV for small dV 
-    #     self.rho = self.n/new_V_ullage
-    #     self.P = self.RP.REFPROPdll(self.gas,"ED","P",self.MASS_BASE_SI,0,0,self.E,self.rho,[1.0]).Output[0]
-    #     self.T = self.RP.REFPROPdll(self.gas,"ED","T",self.MASS_BASE_SI,0,0,self.E,self.rho,[1.0]).Output[0]
+    def update(self, P_new: float, n_new: float, V_ullage_new: float):
+        self.P = P_new
+        self.n = n_new
+        self.rho = self.n/V_ullage_new
+        
+        self.T = self.RP.REFPROPdll(self.gas,"PD","T",self.MASS_BASE_SI,0,0,self.P,self.rho,[1.0]).Output[0]
+        self.e = self.RP.REFPROPdll(self.gas,"PD","e",self.MASS_BASE_SI,0,0,self.P,self.rho,[1.0]).Output[0]
+        self.cv = self.RP.REFPROPdll(self.gas,"PD","Cv",self.MASS_BASE_SI,0,0,self.P,self.rho,[1.0]).Output[0]
+        self.Z = self.RP.REFPROPdll(self.gas,"PD","Z",self.MASS_BASE_SI,0,0,self.P,self.rho,[1.0]).Output[0]
  
- 
+
 class PropTank:
     # Models a single propellant tank
     def __init__(self, rho_prop: float, V_total: float, V_prop_0: float, P_ullage_0: float, 
@@ -80,8 +84,7 @@ class PropTank:
         # T_ullage_0: initial ullage temperature [K]
         # CdA: total downstream feed system CdA [m^2]
         # collapse_K: collapse factor, ratio of ideal ullage gas inflow mass flow to real
-        # gas_state: Ullage object describing ullage gas
-        
+        # ullage: Ullage object describing ullage gas
         self.rho_prop = rho_prop
         self.V_total = V_total*consts.L_TO_M3
         self.V_prop = V_prop_0*consts.L_TO_M3
@@ -89,13 +92,22 @@ class PropTank:
         self.ullage_frac = self.V_ullage/self.V_total
         self.CdA = CdA
         self.collapse_K = collapse_K
-        self.gas_state = Ullage(P_ullage_0*consts.PSI_TO_PA, T_ullage_0, self.V_ullage)
+        self.ullage = Ullage(P_ullage_0*consts.PSI_TO_PA, T_ullage_0, self.V_ullage)
         
     def get_update_params(self):
-        # Returns needed values of the previous ullage state to solve feed system. 
-        # (e, p, m, cv, T, Z)
-        return (self.gas_state.e, self.gas_state.P, self.gas_state.n, self.gas_state.cv,
-                self.gas_state.T, self.gas_state.Z, self.V_ullage)
+        # Returns needed values of the previous ullage state to solve feed system.
+        return (self.ullage.e, self.ullage.P, self.ullage.n, self.ullage.cv,
+                self.ullage.T, self.ullage.Z, self.V_ullage)
+        
+    def update_state(self, results: list):
+        # [E, T, p, m, mdot, dV_liquid]
+        assert(len(results) == 6)
+        self.V_prop -= results[-1]
+        self.V_ullage += results[-1]
+        self.ullage_frac = self.V_ullage/self.V_total
+        self.ullage.update(results[2], results[3], self.V_ullage)
+        # print(f"REFPROP [{self.ullage.e:.2f}] kJ/kg v.s. calculated [{results[0]/results[3]:.2f}] kJ/kg")
+        # print(f"REFPROP [{self.ullage.T:.2f}] K v.s. calculated [{results[1]:.2f}] K")
 
 
 class Engine:
@@ -108,7 +120,6 @@ class Engine:
         # C_star_eff: C* efficiency (injector efficiency)
         # P_c_ideal: Ideal chamber pressure
         # P_a: Ambient pressure (assumed constant)
-        
         self.A_t = np.pi*((D_t/2)*(consts.IN_TO_M))**2  # [m^2]
         self.C_F = C_F                                  # [NONE]
         self.C_star = C_star                            # [m/s]
@@ -147,8 +158,8 @@ def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracke
     """
     init_guess = tuple((8, 4, 1500, 12500, 2.1e6))
     # TODO: Update the init_guess with something more reasonable from the previous state
-    const_params = tuple((lox_tank.CdA, lox_tank.rho_prop, lox_tank.gas_state.P, fuel_tank.CdA, 
-                       fuel_tank.rho_prop, fuel_tank.gas_state.P, engine.P_c_ideal, 
+    const_params = tuple((lox_tank.CdA, lox_tank.rho_prop, lox_tank.ullage.P, fuel_tank.CdA, 
+                       fuel_tank.rho_prop, fuel_tank.ullage.P, engine.P_c_ideal, 
                        engine.A_t, engine.C_F, engine.C_star_eff))
     results = fsolve(tca_system_eqns, init_guess, args=const_params)
     tracker.update_engine_data(*results)
@@ -156,8 +167,8 @@ def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracke
     return results[0], results[1]
     
     
-def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV,
-               tracker: DataTracker, liquid_mdots: tuple, dt: float, reg_cda: float):
+def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, liquid_mdots: tuple, 
+               dt: float, reg_cda: float):
     """
     Return the new ullage state variables (namely E, p, T) to perform a lox_tank and fuel_tank
     update. Also return gas mass flow rates to update COPV state. This function will solve 
@@ -165,28 +176,41 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV,
     """
     # First, the LOX tank parameters
     mdot_liq_o, mdot_liq_f = liquid_mdots
-    init_guess = tuple((90e3, 250, 3.4e6, 0.4, 5e-3))
+    init_guess = tuple((90e3, 250, 3.4e6, 0.4, 0.1))
     const_params = tuple((*lox_tank.get_update_params(), copv.P, copv.h, 
                           mdot_liq_o/consts.LOX_RHO, dt))
     # Unknowns in order are: [E, T, p, m, mdot]
-    results = fsolve(feed_system_eqns, init_guess, args=const_params)
+    ox_results = fsolve(feed_system_eqns, init_guess, args=const_params)
     print("Initial LOX values:")
-    print(f"E: {lox_tank.gas_state.e*lox_tank.gas_state.n/1000:.2f} kJ | T: {lox_tank.gas_state.T:.2f} K",
-          f"| p: {lox_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {lox_tank.gas_state.n:.3f} kg")
+    print(f"E: {lox_tank.ullage.e*lox_tank.ullage.n/1000:.2f} kJ | T: {lox_tank.ullage.T:.2f} K",
+          f"| p: {lox_tank.ullage.P/consts.PSI_TO_PA:.2f} psi | m: {lox_tank.ullage.n:.3f} kg")
     print("Next LOX values:")
-    print(f"E: {results[0]/1000:.2f} kJ | T: {results[1]:.2f} K | p: {results[2]/consts.PSI_TO_PA:.2f} psi ",
-          f"| m: {results[3]:.3f} kg | mdot: {(results[4]):.3f} kg/s")
+    print(f"E: {ox_results[0]/1000:.2f} kJ | T: {ox_results[1]:.2f} K | p: {ox_results[2]/consts.PSI_TO_PA:.2f} psi ",
+          f"| m: {ox_results[3]:.3f} kg | mdot: {(ox_results[4]):.3f} kg/s")
     # Next, the fuel tank
-    init_guess = tuple((90e3, 250, 3.4e6, 0.4, 5e-3))
+    init_guess = tuple((90e3, 250, 3.4e6, 0.4, 0.1))
     const_params = tuple((*fuel_tank.get_update_params(), copv.P, copv.h, 
                           mdot_liq_f/consts.RP1_RHO, dt))
-    results = fsolve(feed_system_eqns, init_guess, args=const_params)
+    fuel_results = fsolve(feed_system_eqns, init_guess, args=const_params)
     print("Initial fuel values:")
-    print(f"E: {fuel_tank.gas_state.e*fuel_tank.gas_state.n/1000:.2f} kJ | T: {fuel_tank.gas_state.T:.2f} K",
-          f"| p: {fuel_tank.gas_state.P/consts.PSI_TO_PA:.2f} psi | m: {fuel_tank.gas_state.n:.3f} kg")
+    print(f"E: {fuel_tank.ullage.e*fuel_tank.ullage.n/1000:.2f} kJ | T: {fuel_tank.ullage.T:.2f} K",
+          f"| p: {fuel_tank.ullage.P/consts.PSI_TO_PA:.2f} psi | m: {fuel_tank.ullage.n:.3f} kg")
     print("Next fuel values:")
-    print(f"E: {results[0]/1000:.2f} kJ | T: {results[1]:.2f} K | p: {results[2]/consts.PSI_TO_PA:.2f} psi ",
-          f"| m: {results[3]:.3f} kg | mdot: {(results[4]):.3f} kg/s")
+    print(f"E: {fuel_results[0]/1000:.2f} kJ | T: {fuel_results[1]:.2f} K | p: {fuel_results[2]/consts.PSI_TO_PA:.2f} psi ",
+          f"| m: {fuel_results[3]:.3f} kg | mdot: {(fuel_results[4]):.3f} kg/s")
+    return ox_results, fuel_results
+
+
+def update_states(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, feed_results: tuple, 
+                  liquid_mdots: tuple, dt: float, tracker: DataTracker):
+    # Update both ullage and COPV states with the feed system solution from the previous timestep
+    ox_results, fuel_results = feed_results
+    ox_results = list(ox_results) + [liquid_mdots[0]/consts.LOX_RHO*dt]
+    fuel_results = list(fuel_results) + [liquid_mdots[1]/consts.RP1_RHO*dt]
+    # [E, T, p, m, mdot, dV_liquid]
+    lox_tank.update_state(ox_results)
+    fuel_tank.update_state(fuel_results)
+    # Now, update the COPV state
     
 
 
@@ -209,5 +233,6 @@ if __name__ == "__main__":
     controlled_regime = True
     dt = float(params["dt"])
     reg_cda = float(params["dt"])
-    solve_feed(lox_tank, fuel_tank, copv, tracker, liquid_mdots, dt, reg_cda)
+    feed_results = solve_feed(lox_tank, fuel_tank, copv, liquid_mdots, dt, reg_cda)
+    update_states(lox_tank, fuel_tank, copv, feed_results, liquid_mdots, dt, tracker)
     
