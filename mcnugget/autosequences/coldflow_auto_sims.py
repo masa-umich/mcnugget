@@ -188,6 +188,11 @@ DAQ_STATE = {}
 for cmd_chan in command_channels:
     DAQ_STATE[cmd_chan] = 0  # open
 
+DAQ_STATE[OX_PRE_VALVE_OUT] = 0
+DAQ_STATE[FUEL_PREVALVE_OUT] = 0
+DAQ_STATE[OX_MPV_OUT] = 1
+DAQ_STATE[FUEL_MPV_OUT] = 1
+
 # starts with vents closed
 for cmd_chan in vent_command_channels:
     DAQ_STATE[cmd_chan] = 1  # closed
@@ -316,8 +321,7 @@ with client.open_streamer(command_channels) as streamer:
                     fuel_tank_delta += 1.5
                 
                 if fuel_prevalve_energized and fuel_mpv_energized:
-                    # print("shooting out fuel")
-                    fuel_tank_delta -= 0.05 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_MPV_LAST_ENERGIZED).seconds
+                    fuel_tank_delta -= 0.5 * sy.TimeSpan(sy.TimeStamp.now() - FUEL_MPV_LAST_ENERGIZED).seconds
 
                 if not fuel_vent_energized:
                     fuel_tank_delta -= 3
@@ -342,9 +346,10 @@ with client.open_streamer(command_channels) as streamer:
                     press_tank_delta -= 1.5
                     ox_tank_delta += 1.5
 
+                print(f"prevalve mpv : {ox_pre_valve_energized} {ox_mpv_energized}")
                 if ox_pre_valve_energized and ox_mpv_energized:
                     # print("shooting out oxygen")
-                    ox_tank_delta -= 0.05 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
+                    ox_tank_delta -= 0.5 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
                 
                 # if ox_mpv_energized:
                 #     ox_tank_delta -= 0.3 * sy.TimeSpan(sy.TimeStamp.now() - OX_MPV_LAST_ENERGIZED).seconds
@@ -366,6 +371,8 @@ with client.open_streamer(command_channels) as streamer:
                 supply_2k = max(0, supply_2k)
 
                 now = sy.TimeStamp.now()
+
+                # print(f"ox tank delta: {ox_tank_delta}")
 
                 ok = w.write({
                     DAQ_TIME: now,

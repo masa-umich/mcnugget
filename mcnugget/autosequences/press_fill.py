@@ -47,6 +47,7 @@ from synnax.control.controller import Controller
 import syauto
 import statistics
 from collections import deque
+from datetime import datetime, timedelta
 
 PRESS_TARGET = 3750  # psi
 REPRESS_TARGET = 3650 #psi
@@ -66,8 +67,10 @@ PRESS_FACTOR = 1  # this is used to speed up sims
 
 # Prompts for user input as to whether we want to run a simulation or run an actual test
 # If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
+real_test = False
 mode = input("Enter 'coldflow' for coldflow testing on actual hardware, 'hotfire' if you are testing in the desert, or 'sim' to run a simulation: ")
-if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
+if(mode == "real" or mode == "Real" or mode == "REAL"):
+    real_test = True
     print("Testing mode")
     # this connects to the synnax testing server
     client = sy.Synnax(
@@ -79,21 +82,9 @@ if(mode == "coldflow" or mode == "Coldflow" or mode == "COLDFLOW"):
     )
     PRESS_DELAY = COLDFLOW_PRESS_DELAY
 
-# If prompted to run a hotfire test, we will connect to the MASA remote server and have a delay of 100 seconds
-elif mode == "hotfire" or mode == "Hotfire" or mode == "HOTFIRE":
-    print("Hotfire mode")
-    # this connects to the synnax testing server
-    client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
-    username="synnax",
-    password="seldon",
-    secure=True
-    )
-    PRESS_DELAY = HOTFIRE_PRESS_DELAY
-
 # If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
 elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
+    real_test = False
     print("Simulation mode")
     # this connects to a local synnax simulation server
     client = sy.Synnax(
@@ -271,7 +262,7 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
         print (f"Air drive ISO 2 closed, will repressurize at {REPRESS_TARGET}")
         return True
 
-def press_phase_1():
+def phase_1():
     # this function returns when the PRESS_TANKs pressure is within 80psi of the 2K bottle supply
     times_ran = 0
     p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
@@ -310,7 +301,7 @@ def press_phase_1():
         times_ran += 1
         
 
-def press_phase_2():
+def phase_2():
     PRESS_FILL_EQUALIZED = True
     avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     partial_target = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
@@ -339,7 +330,7 @@ def press_phase_2():
         time.sleep(max(PRESS_FACTOR * (PRESS_DELAY - time_pressed), 0))
 
         if partial_target == PRESS_TARGET:
-            print("Target pressure reached. Terminating phase 2.")
+            print("Target pressure reached. Starting phase 3")
             break
 
 with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180) as auto:
@@ -367,7 +358,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
         print("PHASE 1: 2K Bottle Equalization")
         print(f"pressurizing PRESS_TANKS using press_fill until approximately equal with 2K supply")
-        press_phase_1()
+        phase_1()
         print("PHASE 1 complete")
 
         time.sleep(1)
@@ -382,13 +373,10 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         air_drive_ISO_1.open()
 
         while True:
-            press_phase_2()
+            phase_2()
             auto.wait_until(repress)
 
-
     except KeyboardInterrupt as e:
-        # Handle Ctrl+C interruption
-            # if str(e) == "Interrupted by user.":  # needed for windows systems?
         print("Manual abort, safing system")
         print("Closing all valves and vents")
         syauto.close_all(auto=auto, valves=(all_vents + all_valves))
@@ -398,12 +386,12 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             press_vent.open()
             print("press vent opened")
 
-        print("Creating range for data processing")
-        #Creating a range inside autosequences
-        rng = client.ranges.create(
-            name=f"Press Fill",
-            time_range=sy.TimeRange(start, sy.TimeStamp.now()),
-        )
+        if real_test:
+            rng = client.ranges.create(
+                name=f"{start.__str__()[11:16]} Press Fill",
+                time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
+            )
+            print(f"created range for test: {rng.name}")
 
     print("ctrl-c to terminate autosequence")
     time.sleep(60)
