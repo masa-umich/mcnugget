@@ -103,7 +103,7 @@ else:
 
 USING_FUEL = True
 
-USING_OX = True
+USING_OX = False
 
 # PRE_PRESS = False
 
@@ -189,7 +189,7 @@ RUNNING_AVERAGE_LENGTH = 5  # samples
 FIRE_DURATION = 25
 
 # TODO: Update these values based on testing requirements
-MPV_DELAY = 2
+MPV_DELAY = 0
 IGNITER_DELAY = 6  # seconds
 ISO_DELAY = 2  # seconds
 
@@ -362,36 +362,47 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             #     print(f"{ISO_DELAY - i}")
             #     time.sleep(1)
 
-            print("2 Opening Ox Dome Iso and Ox Press Iso")
-            syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+            # print("2 Opening Ox Dome Iso and Ox Press Iso")
+            # syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+            print("2")
             time.sleep(1)
             print("1")
             time.sleep(1)
             
             print("0 Opening Fuel ISO + Ox MPV")
-            syauto.open_all(auto, [fuel_press_iso, ox_mpv])
+            # syauto.open_all(auto, [fuel_press_iso, ox_mpv])
+            syauto.open_all(auto, [ox_mpv])
 
             print(f"Opening Fuel MPV in {MPV_DELAY}")
             time.sleep(MPV_DELAY)
             print("Opening Fuel MPV")
             syauto.open_all(auto, [fuel_mpv])
 
-            # print(f"Ox MPV in {MPV_DELAY}")
-            # time.sleep(MPV_DELAY)
-
             time.sleep(FIRE_DURATION)  # boom
 
             print("terminating fire")
-            syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
+            # syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
+            syauto.open_all(auto, [fuel_vent, ox_low_flow_vent, press_vent])
             time.sleep(0.5)
             syauto.open_close_many_valves(auto, [fuel_feedline_purge, ox_feedline_purge], [fuel_prevalve, ox_prevalve])
+            time.sleep(5)
+            # syauto.close_all(auto, [ox_dome_iso, ox_feedline_purge, fuel_feedline_purge])
+            syauto.close_all(auto, [ox_feedline_purge, fuel_feedline_purge])
             print("reg_fire complete")
+            time.sleep(10)
+            exit()
         except KeyboardInterrupt:
             print("Firing sequence aborted, closing all valves and opening all vents")
-            syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
+            # syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
+            syauto.open_all(auto,[fuel_vent, ox_low_flow_vent, press_vent])
             time.sleep(0.5)
             syauto.open_close_many_valves(auto, [fuel_feedline_purge, ox_feedline_purge], [fuel_prevalve, ox_prevalve])
+            time.sleep(5)
+            # syauto.close_all(auto, [ox_dome_iso, ox_feedline_purge, fuel_feedline_purge])
+            syauto.close_all(auto, [ox_feedline_purge, fuel_feedline_purge])
             print("terminating abort")
+            time.sleep(10)
+            exit()
 
     # this block runs the overall sequence
     try:
@@ -415,9 +426,9 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         if answer == "fire" or answer == "Fire" or answer == "FIRE":
             reg_fire()
 
-        ans = input("Aborting - would you like to open vents? y/n ")
+        ans = input("Aborting - would you like to open vents and close prevalves? y/n ")
         if ans == "y":
-            syauto.open_all(auto, [fuel_vent, ox_low_flow_vent, press_vent, fuel_prevalve, ox_prevalve])
+            syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_prevalve, ox_prevalve])
 
         # this creates a range in synnax so we can view the data
         rng = client.ranges.create(
