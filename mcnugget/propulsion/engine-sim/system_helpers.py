@@ -1,7 +1,6 @@
 # Includes helpers to solve the system of equations for both engine and feed 
 
 import numpy as np
-from scipy.optimize import fsolve
 from rocketcea.cea_obj import CEA_Obj
 import constants as consts
 

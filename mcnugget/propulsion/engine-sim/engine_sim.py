@@ -4,11 +4,12 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, least_squares
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
 import os, yaml, csv, warnings
 import constants as consts
 from system_helpers import *
+from DataTracker import *
 
 os.environ['RPPREFIX'] = r'/home/jasonyc/masa/REFPROP-cmake/build'
 
@@ -112,8 +113,6 @@ class PropTank:
         self.V_ullage += results[-1]
         self.ullage_frac = self.V_ullage/self.V_total
         self.ullage.update(results[2], results[3], self.V_ullage)
-        # print(f"REFPROP [{self.ullage.e:.2f}] kJ/kg v.s. calculated [{results[0]/results[3]:.2f}] kJ/kg")
-        # print(f"REFPROP [{self.ullage.T:.2f}] K v.s. calculated [{results[1]:.2f}] K")
 
 
 class Engine:
@@ -135,105 +134,25 @@ class Engine:
         self.P_a = P_a                                  # [Pa]
 
 
-class DataTracker():
-    def __init__(self):
-        self._time = list()
-        # Engine parameters
-        self._mdot_liq_o = list()
-        self._mdot_liq_f = list()
-        self._c_star = list()
-        self._F_t = list()
-        self._P_c = list()
-        self._of_ratio = list()
-        # Feed system parameters
-        self._copv_P = list()
-        self._ox_P = list()
-        self._ox_T = list()
-        self._ox_liq_v = list()
-        self._fuel_P = list()
-        self._fuel_T = list()
-        self._fuel_liq_v = list()
-        
-    def update_engine_data(self, mdot_o, mdot_f, c_star, F_t, P_c):
-        self._mdot_liq_o.append(mdot_o)
-        self._mdot_liq_f.append(mdot_f)
-        self._c_star.append(c_star)
-        self._F_t.append(F_t/1000)
-        self._P_c.append(P_c/consts.PSI_TO_PA)
-        self._of_ratio.append(mdot_o/mdot_f)
-        
-    def update_feed_data(self, copv_P: float, ox_params, fuel_params):
-        self._copv_P.append(copv_P/consts.PSI_TO_PA/1000)
-        # [ullage_P, ullage_T, prop_V] = params
-        self._ox_P.append(ox_params[0]/consts.PSI_TO_PA)
-        self._ox_T.append(ox_params[1])
-        self._ox_liq_v.append(ox_params[2]/consts.L_TO_M3)
-        self._fuel_P.append(fuel_params[0]/consts.PSI_TO_PA)
-        self._fuel_T.append(fuel_params[1])
-        self._fuel_liq_v.append(fuel_params[2]/consts.L_TO_M3)
-        
-    def add_timestep(self, time: float):
-        self._time.append(time)
-        
-    def plot_data(self):
-        # Plot thrust with chamber pressure 
-        fig1, axs1 = plt.subplots(3)
-        fig1.suptitle("Engine Performance")
-        axs1[0].plot(self._time, self._F_t)
-        axs1[1].plot(self._time, self._P_c)
-        axs1[2].plot(self._time, self._of_ratio)
-        axs1.flat[0].set(ylabel = "Thrust [kN]")
-        axs1.flat[1].set(ylabel = "P_chamber [psia]")
-        axs1.flat[2].set(ylabel = "O/F Ratio")
-        plt.xlabel("Time [s]")
-        
-        fig2, axs2 = plt.subplots(3)
-        fig2.suptitle("Ox Tank Parameters")
-        axs2[0].plot(self._time, self._ox_P)
-        axs2[1].plot(self._time, self._ox_T)
-        axs2[2].plot(self._time, self._ox_liq_v)
-        axs2.flat[0].set(ylabel = "P_ullage [psia]")
-        axs2.flat[1].set(ylabel = "T_ullage [K]")
-        axs2.flat[2].set(ylabel = "Propellant [L]")
-        plt.xlabel("Time [s]")
-        
-        fig3, axs3 = plt.subplots(3)
-        fig3.suptitle("Fuel Tank Parameters")
-        axs3[0].plot(self._time, self._fuel_P)
-        axs3[1].plot(self._time, self._fuel_T)
-        axs3[2].plot(self._time, self._fuel_liq_v)
-        axs3.flat[0].set(ylabel = "P_ullage [psia]")
-        axs3.flat[1].set(ylabel = "T_ullage [K]")
-        axs3.flat[2].set(ylabel = "Propellant [L]")
-        plt.xlabel("Time [s]")
-        
-        fig4, axs4 = plt.subplots()
-        fig4.suptitle("COPV Parameters")
-        axs4.plot(self._time, self._copv_P)
-        axs4.set_xlabel("Time [s]")
-        axs4.set_ylabel("P_COPV [ksi]")
-        
-        plt.show()
- 
-
 def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracker: DataTracker):
     """
     Return the liquid volumetric flow rate for fuel and ox, and store simulation data to 
     a DataTracker for storage and plotting.
     """
+    # Unknowns in order are: [mdot_liq_ox, mdot_liq_fuel, C_star, F_t, P_c]
     init_guess = tuple((8, 4, 1500, 12500, 2.1e6))
     # TODO: Update the init_guess with something more reasonable from the previous state
     const_params = tuple((lox_tank.CdA, lox_tank.rho_prop, lox_tank.ullage.P, fuel_tank.CdA, 
                        fuel_tank.rho_prop, fuel_tank.ullage.P, engine.P_c_ideal, 
                        engine.A_t, engine.C_F, engine.C_star_eff))
     results = fsolve(tca_system_eqns, init_guess, args=const_params)
-    tracker.update_engine_data(*results)
+    tracker.update_engine_data(*results, engine.C_F)
     # Returns liquid mdot_o and mdot_f
     return results[0], results[1]
     
     
-def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, liquid_mdots: tuple, 
-               dt: float, reg_cda: float):
+def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, tracker: DataTracker,
+               liquid_mdots: tuple, dt: float, step: int, reg_cda: float):
     """
     Return the new ullage state variables (namely E, p, T) to perform a lox_tank and fuel_tank
     update. Also return gas mass flow rates to update COPV state. This function will solve 
@@ -245,14 +164,16 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, liquid_mdots
     const_params = tuple((*lox_tank.get_update_params(), copv.P, copv.h, 
                           mdot_liq_o/consts.LOX_RHO, dt))
     # Unknowns in order are: [E, T, p, m, mdot]
-    ox_results = fsolve(feed_system_eqns, init_guess, args=const_params)
+    limit = 1e20
+    soln_bounds = ((0, 0, 0, 0, 0), (limit, 4e3, limit, limit, limit))
+    ox_results = least_squares(feed_system_eqns, init_guess, args=const_params, bounds=soln_bounds).x
     # Next, the fuel tank
     init_guess = tuple((30e3, 250, 3.4e6, 0.2, 0.1))
     const_params = tuple((*fuel_tank.get_update_params(), copv.P, copv.h, 
                           mdot_liq_f/consts.RP1_RHO, dt))
-    fuel_results = fsolve(feed_system_eqns, init_guess, args=const_params)
-    print(f"<LOX> [E: {ox_results[0]/1000:.0f} kJ, T: {ox_results[1]:.0f} K, p: " +
-          f"{ox_results[2]/consts.PSI_TO_PA:.2f} psi, " +
+    fuel_results = least_squares(feed_system_eqns, init_guess, args=const_params, bounds=soln_bounds).x
+    print(f"[Time: {dt*step:.2f} s] <LOX> [E: {ox_results[0]/1000:.0f} kJ, T: {ox_results[1]:.0f} " +
+          f"K, p: {ox_results[2]/consts.PSI_TO_PA:.2f} psi, " +
           f"m: {ox_results[3]:.3f} kg, mdot: {(ox_results[4]):.3f} kg/s]" +
           f" <FUEL> [E: {fuel_results[0]/1000:.0f} kJ, T: {fuel_results[1]:.0f} K, p: " +
           f"{fuel_results[2]/consts.PSI_TO_PA:.2f} psi, " +
@@ -260,8 +181,8 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, liquid_mdots
     return ox_results, fuel_results
 
 
-def update_states(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, feed_results: tuple, 
-                  liquid_mdots: tuple, dt: float, tracker: DataTracker):
+def update_states(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, tracker: DataTracker, 
+                  feed_results: tuple, liquid_mdots: tuple, dt: float):
     # Update both ullage and COPV states with the feed system solution from the previous timestep
     ox_results, fuel_results = feed_results
     ox_results = list(ox_results) + [liquid_mdots[0]/consts.LOX_RHO*dt]
@@ -272,9 +193,9 @@ def update_states(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, feed_resu
     # Now, update the COPV state
     copv_gas_mass_delta = -1 * (ox_results[4]*dt + fuel_results[4]*dt)
     copv.update_state(copv_gas_mass_delta)
-    # Prepare data for export to the DataTracker
-    lox_info = [lox_tank.ullage.P, lox_tank.ullage.T, lox_tank.V_prop]
-    fuel_info = [fuel_tank.ullage.P, fuel_tank.ullage.T, fuel_tank.V_prop]
+    # Prepare data for export to the DataTracker: [P_ullage, T_ullage, V_prop, mdot_ullage]
+    lox_info = [lox_tank.ullage.P, lox_tank.ullage.T, lox_tank.V_prop, ox_results[4]]
+    fuel_info = [fuel_tank.ullage.P, fuel_tank.ullage.T, fuel_tank.V_prop, fuel_results[4]]
     tracker.update_feed_data(copv.P, lox_info, fuel_info)
 
 
@@ -298,9 +219,14 @@ if __name__ == "__main__":
         # Next, solve feed system
         controlled_regime = True
         reg_cda = float(params["reg_cda"])
-        feed_results = solve_feed(lox_tank, fuel_tank, copv, liquid_mdots, dt, reg_cda)
-        update_states(lox_tank, fuel_tank, copv, feed_results, liquid_mdots, dt, tracker)
-        tracker.add_timestep(step*dt)
+        feed_results = solve_feed(lox_tank, fuel_tank, copv, tracker, liquid_mdots, dt, step, reg_cda)
+        update_states(lox_tank, fuel_tank, copv, tracker, feed_results, liquid_mdots, dt)
+        tracker.update_counters(dt, step)
+        if (tracker._fuel_liq_v[-1] < 0.1 or tracker._ox_liq_v[-1] < 0.1):
+            print("Simulation terminated early: propellant depleted")
+            break
         
     # Plot the data recorded in tracker
     tracker.plot_data()
+    print(tracker.get_end_string())
+    plt.show()
