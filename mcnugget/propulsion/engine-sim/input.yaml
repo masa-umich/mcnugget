@@ -22,5 +22,6 @@ engine:
   c_star_eff: 0.85        # [None]
   P_c_ideal: 309.5        # [psia]
   P_ambient: 100000       # [Pa]
-dt: 0.1
+dt: 0.01                  # [s]
+runtime: 1.75             # [s]
 reg_cda: 4.6649e-5        # [m^2]
