@@ -68,7 +68,7 @@ PRESS_FACTOR = 1  # this is used to speed up sims
 # Prompts for user input as to whether we want to run a simulation or run an actual test
 # If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
 real_test = False
-mode = input("Enter 'coldflow' for coldflow testing on actual hardware, 'hotfire' if you are testing in the desert, or 'sim' to run a simulation: ")
+mode = input("Enter 'real' testing on actual hardware, or 'sim' to run a simulation: ")
 if(mode == "real" or mode == "Real" or mode == "REAL"):
     real_test = True
     print("Testing mode")
@@ -330,7 +330,7 @@ def phase_2():
         time.sleep(max(PRESS_FACTOR * (PRESS_DELAY - time_pressed), 0))
 
         if partial_target == PRESS_TARGET:
-            print("Target pressure reached. Starting phase 3")
+            print(f"Target pressure reached. Repressurizing at {REPRESS_TARGET}")
             break
 
 with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180) as auto:
@@ -389,7 +389,7 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         if real_test:
             rng = client.ranges.create(
                 name=f"{start.__str__()[11:16]} Press Fill",
-                time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
+                time_range=sy.TimeRange(start, datetime.now() + 5),
             )
             print(f"created range for test: {rng.name}")
 
