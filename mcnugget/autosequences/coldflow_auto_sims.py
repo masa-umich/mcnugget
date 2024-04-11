@@ -72,7 +72,7 @@ OX_MPV_IN = "gse_doa_6"
 OX_MPV_OUT = "gse_doc_6"  
 
 IGNITOR_IN = "gse_doa_25"
-IGNITOR_OUT = "gse_doa_25"
+IGNITOR_OUT = "gse_doc_25"
 
 
 vent_command_channels = [FUEL_VENT_OUT, PRESS_VENT_OUT, OX_LOW_VENT_OUT, 
@@ -141,17 +141,21 @@ INITIAL_PRESS_TANK_PRESSURE = 0
 INITIAL_2K_PRESSURE = 2000
 
 daq_time = client.channels.create(
-    name=DAQ_TIME,
-    data_type=sy.DataType.TIMESTAMP,
-    is_index=True,
+    sy.Channel( #testing if I needed to add sy.Channel
+        name=DAQ_TIME,
+        data_type=sy.DataType.TIMESTAMP,
+        is_index=True
+    ),
     retrieve_if_name_exists=True
 )
 
-for i in range(1, 30):
+for i in range(1, 30): 
     idx = client.channels.create(
-        name=f"gse_doc_{i}_cmd_time",
-        data_type=sy.DataType.TIMESTAMP,
-        is_index=True,
+        sy.Channel(
+            name=f"gse_doc_{i}_cmd_time",
+            data_type=sy.DataType.TIMESTAMP,
+            is_index=True, 
+        ),
         retrieve_if_name_exists=True
     )
     # creates valve channels
@@ -160,22 +164,24 @@ for i in range(1, 30):
             sy.Channel(
                 name=f"gse_doc_{i}",
                 data_type=sy.DataType.UINT8,
-                index=idx.key
+                index=idx.key 
             ),
             sy.Channel(
                 name=f"gse_doa_{i}",
                 data_type=sy.DataType.UINT8,
                 index=daq_time.key
-            ),
+            )
         ],
         retrieve_if_name_exists=True,
     )
 
 for pt in PTs:
-    client.channels.create(
-        name=pt,
-        data_type=sy.DataType.FLOAT32,
-        index=daq_time.key,
+    client.channels.create( 
+        sy.Channel( #testing if I needed to add sy.Channel
+            name=pt,
+            data_type=sy.DataType.FLOAT32,
+            index=daq_time.key
+        ),
         retrieve_if_name_exists=True
     )
 
@@ -243,8 +249,8 @@ with client.open_streamer(command_channels) as streamer:
     WRITE_CHANNELS = ack_channels + PTs + [DAQ_TIME]  # + TCs
     print(f"writing to {len(WRITE_CHANNELS)} channels")
     with client.open_writer(
-            sy.TimeStamp.now(),
-            channels = WRITE_CHANNELS
+        sy.TimeStamp.now(),
+        channels = WRITE_CHANNELS
     ) as w:
         i = 0
         while True:
@@ -252,9 +258,9 @@ with client.open_streamer(command_channels) as streamer:
                 time.sleep(rate)
                 if streamer.received:
                     while streamer.received:
-                        f = streamer.read()
-                        for k in f.columns:
-                            DAQ_STATE[k] = f[k][0]
+                        f = streamer.read() 
+                        for k in f.channels: # reads from rows? Need to take a deeper look into this
+                           DAQ_STATE[k] = f.get(k)
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
@@ -281,12 +287,14 @@ with client.open_streamer(command_channels) as streamer:
 
                 ignitor_energized = DAQ_STATE[IGNITOR_OUT] == 1
 
+
                 fuel_tank_delta = -0.05
                 trailer_pneumatics_delta = -0.005
                 press_tank_delta = -0.1
                 ox_tank_delta = -0.07
 
                 ### PRESS ###
+                #print(press_fill_energized)
                 if press_fill_energized:
                     if supply_2k > true_press_pressure:
                         diff = (supply_2k / INITIAL_2K_PRESSURE) * 2.5 + 0.1
@@ -346,7 +354,7 @@ with client.open_streamer(command_channels) as streamer:
                     press_tank_delta -= 1.5
                     ox_tank_delta += 1.5
 
-                print(f"prevalve mpv : {ox_pre_valve_energized} {ox_mpv_energized}")
+                #print(f"prevalve mpv : {ox_pre_valve_energized} {ox_mpv_energized}")
                 if ox_pre_valve_energized and ox_mpv_energized:
                     # print("shooting out oxygen")
                     ox_tank_delta -= 0.5 * sy.TimeSpan(sy.TimeStamp.now() - OX_PREVALVE_LAST_OPEN).seconds
@@ -363,6 +371,7 @@ with client.open_streamer(command_channels) as streamer:
                 true_ox_pressure += ox_tank_delta
                 true_fuel_pressure += fuel_tank_delta
                 true_press_pressure += press_tank_delta
+                
 
                 # no negative pressures pls ;-;
                 true_ox_pressure = max(0, true_ox_pressure)
