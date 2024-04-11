@@ -1,0 +1,27 @@
+copv:
+  init_press: 4500        # [psia]
+  init_temp: 300          # [K]
+  total_vol: 50           # [L]
+lox_tank:
+  total_vol: 101.72       # [L]
+  init_prop_vol: 92.47    # [L]
+  init_ullage_press: 500  # [psia]
+  init_ullage_temp: 320   # [K]
+  mpl_cda: 0.00016        # [m^2]
+  collapse_factor: 2.0    # [None]
+fuel_tank:
+  total_vol: 63.22        # [L]
+  init_prop_vol: 60.21    # [L]
+  init_ullage_press: 500  # [psia]
+  init_ullage_temp: 320   # [K]
+  mpl_cda: 0.00008779     # [m^2]
+engine:
+  throat_diam: 2.925      # [in]
+  thrust_coeff: 1.351     # [None]
+  c_star: 1519.4          # [m/s]
+  c_star_eff: 0.85        # [None]
+  P_c_ideal: 309.5        # [psia]
+  P_ambient: 100000       # [Pa]
+dt: 0.02                  # [s]
+runtime: 20               # [s]
+save_csv: True
