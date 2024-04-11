@@ -65,7 +65,7 @@ else:
 CMD_Channels = []
 ACK_Channels = []
 
-with client.control.acquire("Pre Press + Reg Fire", ACK_Channels, CMD_Channels, 200) as auto:
+with client.control.acquire(name= "Recovery bay sequence", write= CMD_Channels, read= ACK_Channels, write_authorities= 200) as auto:
     #Handling keyboard interrupts on windows 
     signal.signal(signal.SIGINT, signal_handler) 
 
