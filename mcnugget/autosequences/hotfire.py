@@ -391,16 +391,22 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("terminating fire")
             print("opening vents and closing ISOs")
             syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
+            if opened_fuel_mpv:
+                print("opening fuel feedline purge")
+                fuel_feedline_purge.open()
+            if opened_ox_mpv:
+                print("opening ox feedline purge")
+                ox_feedline_purge.open()
             time.sleep(0.5)
             if opened_fuel_mpv:
                 print("opening fuel feedline purge and closing fuel prevalve")
-                syauto.open_close_many_valves(auto, [fuel_feedline_purge], [fuel_prevalve])
+                fuel_prevalve.close()
             if opened_ox_mpv:
                 print("opening ox feedline purge and closing ox prevalve")
-                syauto.open_close_many_valves(auto, [ox_feedline_purge], [ox_prevalve])
+                ox_prevalve.close()
             time.sleep(5)
-            print("closing dome ISO and purges")
-            syauto.close_all(auto, [ox_dome_iso, ox_feedline_purge, fuel_feedline_purge])
+            print("closing dome ISO")
+            syauto.close_all(auto, [ox_dome_iso])
             print("\nfiring sequence has been completed nominally")
         except KeyboardInterrupt:
             print("\nFiring sequence aborted, closing all valves and opening all vents")
