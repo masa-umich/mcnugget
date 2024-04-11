@@ -288,12 +288,12 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         valves_to_potentially_open = []
         if abort_fuel:
             print("ABORTING FUEL")
-            valves_to_close += []
-            valves_to_potentially_open += []
+            valves_to_close += [fuel_prepress]
+            valves_to_potentially_open += [fuel_vent]
         if abort_ox:
             print("ABORTING OX")
-            valves_to_close += []
-            valves_to_potentially_open += []
+            valves_to_close += [ox_prepress]
+            valves_to_potentially_open += [ox_low_flow_vent]
         syauto.close_all(auto, valves_to_close)
         ans = input("would you like to open vents? y/n ")
         if ans == "y" or ans == "Y" or ans == "yes":
