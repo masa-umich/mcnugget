@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import constants as consts
 from system_helpers import mdot_to_scfm
+import csv
 
 
 class DataTracker():
@@ -123,4 +124,16 @@ class DataTracker():
         axs5.flat[1].set(ylabel = "Isp [s]")
         axs5.flat[0].grid()
         axs5.flat[1].grid()
+        axs5.flat[0].ticklabel_format(useOffset=False)
+        axs5.flat[1].ticklabel_format(useOffset=False)
         plt.xlabel("Time [s]")
+
+    def export_thrust_curve(self, filename: str = "thrust_curve.csv"):
+        with open(filename, "w") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Time (s)", "Thrust (kN)"])
+            data = [self._time, self._F_t]
+            data = np.asarray(data).transpose()
+            for row in range(len(self._time)):
+                writer.writerow(data[row,:])
+        print(f"Thrust curve successfully exported to {filename}.")

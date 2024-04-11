@@ -26,15 +26,15 @@ def tca_system_eqns(params: tuple, *const_params: tuple):
 def feed_system_eqns(params: tuple, *const_params: tuple):
     E, T, p, m, mdot = params
     e_prev, p_prev, m_prev, cv, T_prev, Z_prev, V_prev = const_params[0:7]
-    p_copv, h_copv, vdot_liq, dt = const_params[7:]
+    p_copv, h_copv, vdot_liq, dt, collapse_K = const_params[7:]
     new_V = V_prev + vdot_liq*dt
     cp = cv + consts.GN2_R
     # Energy conservation equation: note that E is extensive internal energy
-    eqn1 = e_prev*m_prev + (mdot)*dt*h_copv - p_prev*vdot_liq*dt - E
+    eqn1 = e_prev*m_prev + (mdot/collapse_K)*dt*h_copv - p_prev*vdot_liq*dt - E
     eqn2 = ((E + p*new_V)/(cp*m)) - T
-    eqn3 = get_reg_outlet(p_copv, mdot) - p
+    eqn3 = get_reg_outlet(p_copv, mdot/collapse_K) - p
     eqn4 = (p*new_V)/(Z_prev*consts.GN2_R*T) - m
-    eqn5 = (m - m_prev)/dt - mdot
+    eqn5 = (m - m_prev)/dt - (mdot/collapse_K)
     return (eqn1, eqn2, eqn3, eqn4, eqn5)
 
 

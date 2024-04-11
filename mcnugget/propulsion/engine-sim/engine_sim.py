@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import fsolve, least_squares
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
-import os, yaml, csv, warnings
+import os, yaml, warnings
 import constants as consts
 from system_helpers import *
 from DataTracker import *
@@ -152,7 +152,7 @@ def solve_engine(lox_tank: PropTank, fuel_tank: PropTank, engine: Engine, tracke
     
     
 def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, tracker: DataTracker,
-               liquid_mdots: tuple, dt: float, step: int, reg_cda: float):
+               liquid_mdots: tuple, dt: float, step: int):
     """
     Return the new ullage state variables (namely E, p, T) to perform a lox_tank and fuel_tank
     update. Also return gas mass flow rates to update COPV state. This function will solve 
@@ -162,7 +162,7 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, tracker: Dat
     mdot_liq_o, mdot_liq_f = liquid_mdots
     init_guess = tuple((90e3, 250, 3.4e6, 0.4, 0.1))
     const_params = tuple((*lox_tank.get_update_params(), copv.P, copv.h, 
-                          mdot_liq_o/consts.LOX_RHO, dt))
+                          mdot_liq_o/consts.LOX_RHO, dt, lox_tank.collapse_K))
     # Unknowns in order are: [E, T, p, m, mdot]
     limit = 1e20
     soln_bounds = ((0, 0, 0, 0, 0), (limit, 4e3, limit, limit, limit))
@@ -170,14 +170,14 @@ def solve_feed(lox_tank: PropTank, fuel_tank: PropTank, copv: COPV, tracker: Dat
     # Next, the fuel tank
     init_guess = tuple((30e3, 250, 3.4e6, 0.2, 0.1))
     const_params = tuple((*fuel_tank.get_update_params(), copv.P, copv.h, 
-                          mdot_liq_f/consts.RP1_RHO, dt))
+                          mdot_liq_f/consts.RP1_RHO, dt, fuel_tank.collapse_K))
     fuel_results = least_squares(feed_system_eqns, init_guess, args=const_params, bounds=soln_bounds).x
     print(f"[Time: {dt*step:.2f} s] <LOX> [E: {ox_results[0]/1000:.0f} kJ, T: {ox_results[1]:.0f} " +
           f"K, p: {ox_results[2]/consts.PSI_TO_PA:.2f} psi, " +
-          f"m: {ox_results[3]:.3f} kg, mdot: {(ox_results[4]):.3f} kg/s]" +
+          f"mdot: {(ox_results[4]):.3f} kg/s]" +
           f" <FUEL> [E: {fuel_results[0]/1000:.0f} kJ, T: {fuel_results[1]:.0f} K, p: " +
           f"{fuel_results[2]/consts.PSI_TO_PA:.2f} psi, " +
-          f"m: {fuel_results[3]:.3f} kg, mdot: {(fuel_results[4]):.3f} kg/s]")
+          f"mdot: {(fuel_results[4]):.3f} kg/s]")
     return ox_results, fuel_results
 
 
@@ -218,8 +218,7 @@ if __name__ == "__main__":
         liquid_mdots = solve_engine(lox_tank, fuel_tank, engine, tracker)
         # Next, solve feed system
         controlled_regime = True
-        reg_cda = float(params["reg_cda"])
-        feed_results = solve_feed(lox_tank, fuel_tank, copv, tracker, liquid_mdots, dt, step, reg_cda)
+        feed_results = solve_feed(lox_tank, fuel_tank, copv, tracker, liquid_mdots, dt, step)
         update_states(lox_tank, fuel_tank, copv, tracker, feed_results, liquid_mdots, dt)
         tracker.update_counters(dt, step)
         if (tracker._fuel_liq_v[-1] < 0.1 or tracker._ox_liq_v[-1] < 0.1):
@@ -229,4 +228,6 @@ if __name__ == "__main__":
     # Plot the data recorded in tracker
     tracker.plot_data()
     print(tracker.get_end_string())
+    if (bool(params["save_csv"])):
+        tracker.export_thrust_curve()
     plt.show()
