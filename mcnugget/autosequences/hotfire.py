@@ -190,7 +190,7 @@ MAX_OX_PRESSURE = 575
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
 
-FIRE_DURATION = 25
+FIRE_DURATION = 20
 
 # TODO: Update these values based on testing requirements
 MPV_DELAY = 0.288
