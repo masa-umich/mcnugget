@@ -62,8 +62,8 @@ else:
     print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
     exit()
 
-CMD_Channels = []
-ACK_Channels = []
+CMD_Channels = [VALVE_1_CMD, VALVE_2_CMD]
+ACK_Channels = [VALVE_1_ACK, VALVE_2_ACK]
 
 with client.control.acquire(name= "Recovery bay sequence", write= CMD_Channels, read= ACK_Channels, write_authorities= 200) as auto:
     #Handling keyboard interrupts on windows 
@@ -73,13 +73,16 @@ with client.control.acquire(name= "Recovery bay sequence", write= CMD_Channels, 
     valve_1 = syauto.Valve(auto=auto, cmd=VALVE_1_CMD, ack=VALVE_1_ACK, normally_open=False)
     valve_2 = syauto.Valve(auto=auto, cmd=VALVE_2_CMD, ack=VALVE_2_ACK, normally_open=False)
 
-    try: 
-        start = datetime.now()
+    def recovery_sequence(auto_:Controller):
+
+        #Defining abstractions for valve states here
+        valve_1_open = auto_[VALVE_1_ACK]
+        valve_2_open = auto_[VALVE_2_ACK]
         print("Starting autosequence setting initial system state")
-        if valve_1.is_open():
+        if not valve_1_open:
             valve_1.close()
 
-        if valve_2.is_open():
+        if not valve_2_open:
             valve_2.close()
 
         print("Energizing valve 1 for 2 seconds")
@@ -92,6 +95,12 @@ with client.control.acquire(name= "Recovery bay sequence", write= CMD_Channels, 
         time.sleep(5)
         print("Denergizing valve 2")
         valve_2.close()
+        return True
+
+    try: 
+        start = datetime.now()
+        auto.wait_until(recovery_sequence)
+        end = datetime.now()
         print("Autosequence complete :)")
     
     except KeyboardInterrupt:
