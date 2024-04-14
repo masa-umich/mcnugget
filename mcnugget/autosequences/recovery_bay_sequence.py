@@ -78,6 +78,8 @@ with client.control.acquire(name= "Recovery bay sequence", write= CMD_Channels, 
         #Defining abstractions for valve states here
         valve_1_open = auto_[VALVE_1_ACK]
         valve_2_open = auto_[VALVE_2_ACK]
+        print(valve_1_open)
+        print(valve_2_open)
         print("Starting autosequence setting initial system state")
         if not valve_1_open:
             valve_1.close()
