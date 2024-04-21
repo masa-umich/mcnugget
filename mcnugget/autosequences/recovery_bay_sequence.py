@@ -27,8 +27,8 @@ VALVE_2_CMD = "gse_doc_2"
 
 #Function to handle keyboard ctrl+C interrupts (for windows)
 def signal_handler(sig, frame):
-    print('Test interrupted')
-    sys.exit(0)
+    print("Autosequence interrupted, energizing valve 2 and denergizing valve 1")
+    syauto.open_close_many_valves(auto, [valve_2], [valve_1])
 
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run a coldflow test, we will connect to the MASA remote server
