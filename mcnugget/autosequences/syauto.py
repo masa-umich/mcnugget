@@ -120,55 +120,55 @@ def open_all(auto: Controller, valves: list[Valve]):
     auto.set(commands)
 
 
-def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
-               target: float, max: float, inc: float, delay: float = 1):
-    # This energizes the valve until the target pressure is reached.
-    # valve_s can be either a single valve or a list.
+# def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
+#                target: float, max: float, inc: float, delay: float = 1):
+#     # This energizes the valve until the target pressure is reached.
+#     # valve_s can be either a single valve or a list.
 
-    # if custom_auto is None:
-    #     custom_auto = Controller
+#     # if custom_auto is None:
+#     #     custom_auto = Controller
 
-    if isinstance(valve_s, Valve):
-        print(f"Pressurizing {valve_s.cmd_chan} to {target}")
-        valve_s = [valve_s]
+#     if isinstance(valve_s, Valve):
+#         print(f"Pressurizing {valve_s.cmd_chan} to {target}")
+#         valve_s = [valve_s]
 
-    else:
-        print("Pressurizing these valves:")
-        for v in valve_s:
-            print(str(v.cmd_chan) + ", ")
+#     else:
+#         print("Pressurizing these valves:")
+#         for v in valve_s:
+#             print(str(v.cmd_chan) + ", ")
 
-    if isinstance(pressure_s, str):
-        print(f"Reading from one pressure channel: {pressure_s}")
-        pressure_s = [pressure_s]
+#     if isinstance(pressure_s, str):
+#         print(f"Reading from one pressure channel: {pressure_s}")
+#         pressure_s = [pressure_s]
 
-    else:
-        print("Reading from these pressure channels:")
-        for p in pressure_s:
-            print(p)
+#     else:
+#         print("Reading from these pressure channels:")
+#         for p in pressure_s:
+#             print(p)
 
-    # pressurizes the valve until the target pressure is reached
-    median = statistics.median(auto[pressure] for pressure in pressure_s)
-    partial_target = median + inc
-    while partial_target <= target:
-        # if median exceeds max, return
-        if (statistics.median(auto[pressure] for pressure in pressure_s) > max):
-            return
-        print(f"Pressurizing to {partial_target}")
+#     # pressurizes the valve until the target pressure is reached
+#     median = statistics.median(auto[pressure] for pressure in pressure_s)
+#     partial_target = median + inc
+#     while partial_target <= target:
+#         # if median exceeds max, return
+#         if (statistics.median(auto[pressure] for pressure in pressure_s) > max):
+#             return
+#         print(f"Pressurizing to {partial_target}")
 
-        # Opens all valves since a single valve would already be converted to list of size 1
-        open_all(auto, valve_s)
+#         # Opens all valves since a single valve would already be converted to list of size 1
+#         open_all(auto, valve_s)
 
-        auto.wait_until(
-            lambda pressure: all(
-                auto[pressure] >= partial_target for pressure in pressure_s), delay
-        )
+#         auto.wait_until(
+#             lambda pressure: all(
+#                 auto[pressure] >= partial_target for pressure in pressure_s), delay
+#         )
 
-        close_all(auto, valve_s)
+#         close_all(auto, valve_s)
 
-        time.sleep(delay)
-        partial_target += inc
+#         time.sleep(delay)
+#         partial_target += inc
 
-    print(f"Valve(s) have reached {target}")
+#     print(f"Valve(s) have reached {target}")
 
 
 def purge(valves: list[Valve], duration: float = 1):
