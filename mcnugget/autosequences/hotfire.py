@@ -390,7 +390,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
             print("Terminating fire")
             print("Opening vents and closing ISOs")
-            syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
+            syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent],[fuel_press_iso, ox_press_iso])
             if opened_fuel_mpv:
                 print("Opening fuel feedline purge")
                 fuel_feedline_purge.open()
