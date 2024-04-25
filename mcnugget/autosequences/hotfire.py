@@ -403,7 +403,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             if opened_ox_mpv:
                 print("Opening ox feedline purge")
                 ox_feedline_purge.open()
-            time.sleep(0.5)
+            # time.sleep(0.5)
             if opened_fuel_mpv:
                 print("Opening fuel feedline purge and closing fuel prevalve")
                 fuel_prevalve.close()
