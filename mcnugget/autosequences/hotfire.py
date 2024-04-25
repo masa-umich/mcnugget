@@ -177,12 +177,12 @@ for PT_chan in PTS:
 
 # TODO: update these before running the autosequence
 
-TARGET_FUEL_PRESSURE = 500  # Fuel Reg Set Pressure
+TARGET_FUEL_PRESSURE = 450  # Fuel Reg Set Pressure
 UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 10
 LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 10
 MAX_FUEL_PRESSURE = 575
 
-TARGET_OX_PRESSURE = 490  # Ox Reg Set Pressure
+TARGET_OX_PRESSURE = 450  # Ox Reg Set Pressure
 UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 10
 LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 10
 MAX_OX_PRESSURE = 575
@@ -193,12 +193,18 @@ RUNNING_AVERAGE_LENGTH = 5  # samples
 FIRE_DURATION = 20
 
 # TODO: Update these values based on testing requirements
-MPV_DELAY = 0.288
+MPV_DELAY = 0.311
+# OX_MPV takes 0.357 s to reach chamber
+# FUEL_MPV takes 0.246 s to reach chamber
+# This delay puts OX in the chamber 0.200 seconds before fuel
+
+
+# OUTDATED as of 4/25 but kept for reference
 # OX_MPV takes 0.332 s to reach chamber
 # FUEL_MPV takes 0.224 s to reach chamber
 # This delay puts OX in the chamber 0.200 seconds before fuel
 
-IGNITER_DELAY = 6  # seconds
+# IGNITER_DELAY = 6  # seconds
 ISO_DELAY = 2  # seconds
 
 
