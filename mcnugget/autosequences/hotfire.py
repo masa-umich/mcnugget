@@ -344,8 +344,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         opened_fuel_mpv = False
         opened_ox_mpv = False
         try: 
+            print("commencing fire sequence - firing in: ")
             time.sleep(1)
-            print("commencing fire sequence")
             print("10")
             time.sleep(1)
             print("9")
@@ -373,11 +373,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("1")
             time.sleep(1)
             
-            print("0 Opening Fuel ISO + Ox MPV")
+            print("0 Opening Fuel ISO and Ox MPV")
             syauto.open_all(auto, [fuel_press_iso, ox_mpv])
             opened_ox_mpv = True
 
-            print(f"Opening Fuel MPV in {MPV_DELAY}")
+            # print(f"Opening Fuel MPV in {MPV_DELAY}")
             time.sleep(MPV_DELAY)
             print("Opening Fuel MPV")
             syauto.open_all(auto, [fuel_mpv])
@@ -388,40 +388,40 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print(f"{FIRE_DURATION - i}")
                 time.sleep(1)
 
-            print("terminating fire")
-            print("opening vents and closing ISOs")
+            print("Terminating fire")
+            print("Opening vents and closing ISOs")
             syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
             if opened_fuel_mpv:
-                print("opening fuel feedline purge")
+                print("Opening fuel feedline purge")
                 fuel_feedline_purge.open()
             if opened_ox_mpv:
-                print("opening ox feedline purge")
+                print("Opening ox feedline purge")
                 ox_feedline_purge.open()
             time.sleep(0.5)
             if opened_fuel_mpv:
-                print("opening fuel feedline purge and closing fuel prevalve")
+                print("Opening fuel feedline purge and closing fuel prevalve")
                 fuel_prevalve.close()
             if opened_ox_mpv:
-                print("opening ox feedline purge and closing ox prevalve")
+                print("Opening ox feedline purge and closing ox prevalve")
                 ox_prevalve.close()
             time.sleep(5)
-            print("closing dome ISO")
+            print("Closing dome ISO")
             syauto.close_all(auto, [ox_dome_iso])
-            print("\nfiring sequence has been completed nominally")
+            print("\nFiring sequence has been completed nominally")
         except KeyboardInterrupt:
             print("\nFiring sequence aborted, closing all valves and opening all vents")
             syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
             time.sleep(0.5)
             if opened_fuel_mpv:
-                print("opening fuel feedline purge and closing fuel prevalve")
+                print("Opening fuel feedline purge and closing fuel prevalve")
                 syauto.open_close_many_valves(auto, [fuel_feedline_purge], [fuel_prevalve])
             if opened_ox_mpv:
-                print("opening ox feedline purge and closing ox prevalve")
+                print("Opening ox feedline purge and closing ox prevalve")
                 syauto.open_close_many_valves(auto, [ox_feedline_purge], [ox_prevalve])
             time.sleep(5)  #TODO: increase this
-            print("closing dome ISO and purges")
+            print("Closing dome ISO and purges")
             syauto.close_all(auto, [ox_dome_iso, ox_feedline_purge, fuel_feedline_purge])
-            print("terminating abort")
+            print("Terminating abort")
         time.sleep(10)
         # this creates a range in synnax so we can view the data
         if real_test:
@@ -429,7 +429,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
                 time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
             )
-            print(f"created range for test: {rng.name}")
+            print(f"Created range for test: {rng.name}")
         exit()
 
     # this block runs the overall sequence
@@ -438,15 +438,19 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
         input("Press enter to confirm you have opened prevalves ")
 
+        ans = input("Type 'start' to commence autosequence. ")
+        if not (ans == 'start' or ans == 'Start' or ans == 'START'):
+            exit()
+
         print("Setting starting state")
         syauto.close_all(auto, [ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent, ox_prepress, fuel_prepress, fuel_press_iso])
 
-        print("pressurizing fuel and ox in 5 seconds")
+        print("Pressurizing fuel and ox in 5 seconds")
         for i in range(5):
             print(f"{5 - i}")
             time.sleep(1)
 
-        print("pressurizing fuel and ox")
+        print("Pressurizing fuel and ox")
         auto.wait_until(pressurize)
         # the above statement will only finish if an abort is triggered
 
@@ -456,7 +460,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         if answer == "fire" or answer == "Fire" or answer == "FIRE":
             reg_fire()
 
-        ans = input("Aborting without firing sequence - would you like to open vents and close prevalves? y/n ")
+        ans = input("Firing sequence skipped - would you like to open vents and close prevalves? y/n ")
         if ans == "y":
             syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_prevalve, ox_prevalve])
 
@@ -466,4 +470,4 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
                 time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
             )
-            print(f"created range for test: {rng.name}")
+            print(f"Created range for test: {rng.name}")
