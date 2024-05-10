@@ -451,7 +451,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         print("Setting starting state")
         syauto.close_all(auto, [ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent, ox_prepress, fuel_prepress, fuel_press_iso])
 
-        print("Pressurizing fuel and ox in 5 seconds")
+        print("Pressurizing fuel and ox in 6 seconds")
+        time.sleep(1)
         for i in range(5):
             print(f"{5 - i}")
             time.sleep(1)
