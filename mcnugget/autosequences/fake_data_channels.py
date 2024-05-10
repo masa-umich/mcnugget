@@ -48,6 +48,7 @@ import syauto
 import statistics
 from collections import deque
 from datetime import datetime, timedelta
+import numpy as np
 
 PRESS_TARGET = 3750  # psi
 REPRESS_TARGET = 3650 #psi
@@ -138,61 +139,43 @@ for pt in PTS:
 for pt_avg in PT_AVGS:
     WRITE_TO.append(pt_avg)
 
-DAQ_TIME = "daq_time"
+rate = (sy.Rate.HZ * 50).period.seconds
+start = sy.TimeStamp.now()
+print(f"start time: {start}")
+press_start_time = time.time()
 
-WRITE_TO.append(DAQ_TIME)
-
-daq_time = client.channels.create(
+fake_channel_time = client.channels.create(
     sy.Channel( #testing if I needed to add sy.Channel
-        name=DAQ_TIME,
+        name=f"fake_channel_time",
         data_type=sy.DataType.TIMESTAMP,
         is_index=True
     ),
     retrieve_if_name_exists=True
 )
 
-fake_channel_1_time = client.channels.create(
-    sy.Channel(
-        name=f"gse_ai_98_time",
-        data_type=sy.DataType.TIMESTAMP,
-        is_index=True,
-    )
-)
-fake_channel_2_time = client.channels.create(
-    sy.Channel(
-        name=f"gse_ai_99_time",
-        data_type=sy.DataType.TIMESTAMP,
-        is_index=True,
-    )
-)
-fake_channel_3_time = client.channels.create(
-    sy.Channel(
-        name=f"gse_ai_100_time",
-        data_type=sy.DataType.TIMESTAMP,
-        is_index=True,
-    )
-)
-
 fake_channel_1 = client.channels.create(
     sy.Channel(
         name=f"gse_ai_98",
         data_type=sy.DataType.FLOAT32,
-        index=fake_channel_1_time.key,
-    )
+        index=fake_channel_time.key,
+    ),
+    retrieve_if_name_exists= True
 )
 fake_channel_2 = client.channels.create(
     sy.Channel(
         name=f"gse_ai_99",
         data_type=sy.DataType.FLOAT32,
-        index=fake_channel_2_time.key,
-    )
+        index=fake_channel_time.key,
+    ),
+    retrieve_if_name_exists= True
 )
 fake_channel_3 = client.channels.create(
     sy.Channel(
         name=f"gse_ai_100",
         data_type=sy.DataType.FLOAT32,
-        index=fake_channel_3_time.key,
-    )
+        index=fake_channel_time.key,
+    ),
+    retrieve_if_name_exists= True
 )
 
 # for i in range(98,101):
@@ -216,8 +199,6 @@ fake_channel_3 = client.channels.create(
 #     )
 
 
-start = sy.TimeStamp.now()
-press_start_time = time.time()
 
 # Running average implementation
 PRESS_PT_1_DEQUE = deque()
@@ -263,35 +244,45 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
 
 def get_pt_avg(auto: Controller, pt: list) -> float:
     averages = get_averages(auto, PTS)
-    print(averages)
-    print(daq_time.name)
-    print(fake_channel_1.name)
-    print(fake_channel_2.name)
-    print(fake_channel_3.name)
     with client.open_writer(
         sy.TimeStamp.now(),
-        channels = PT_AVGS) as writer:
+        [fake_channel_time.key, fake_channel_1.key, fake_channel_2.key, fake_channel_3.key]
+        ) as writer:
+        now = sy.TimeStamp.now()
+        PRESS_PT_1_DATA = averages[PRESS_PT_1]
+        PRESS_PT_2_DATA = averages[PRESS_PT_2]
+        PRESS_PT_3_DATA = averages[PRESS_PT_3]
         writer.write(
             {
-                fake_channel_1.name: averages[PRESS_PT_1],
-                fake_channel_2.name: averages[PRESS_PT_2],
-                fake_channel_3.name: averages[PRESS_PT_3]
+                fake_channel_time.key: now,
+                fake_channel_1.key: PRESS_PT_1_DATA, 
+                fake_channel_2.key: PRESS_PT_2_DATA,
+                fake_channel_3.key: PRESS_PT_3_DATA
             }
         )
+        time.sleep(rate)
         writer.commit()
     # commands = {
-    #     daq_time.name: sy.TimeStamp.now(),
     #     fake_channel_1.name: averages[PRESS_PT_1],
     #     fake_channel_2.name: averages[PRESS_PT_2],
     #     fake_channel_3.name: averages[PRESS_PT_3]
     # }
-    # print(commands)
+
     # auto.set(commands)
+    print("Running Averages: ")
+    print(f"fake channel 1: {averages[PRESS_PT_1]}")
+    print(f"fake channel 2: {averages[PRESS_PT_2]}")
+    print(f"fake channel 3: {averages[PRESS_PT_3]}")
+    
+    print("Index Times:")
+    print(f"fake channel time: {now}")
+    
+
+    #print(commands)
     
 def repress(auto: Controller) -> bool:
     # this computes PT and TC values with a running average, see compute_medians
     readings = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY])
-
     [pt1, pt2, pt3] = [ readings[PRESS_PT_1], 
                         readings[PRESS_PT_2], 
                         readings[PRESS_PT_3] ]
@@ -329,7 +320,7 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
 
     # this computes PT and TC values with a running average, see compute_medians
     readings = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY])
-
+    
     [pt1, pt2, pt3] = [ readings[PRESS_PT_1], 
                         readings[PRESS_PT_2], 
                         readings[PRESS_PT_3] ]
@@ -386,6 +377,7 @@ def phase_1():
 
         press_supply = get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
         p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
+        get_pt_avg(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
         press_tanks = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
 
         if times_ran < 4:
@@ -418,6 +410,7 @@ def phase_1():
 def phase_2():
     PRESS_FILL_EQUALIZED = True
     avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
+    get_pt_avg(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     partial_target = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
 
     print("leaving air_drive_iso_1 open")
@@ -425,6 +418,7 @@ def phase_2():
 
     while True:
         avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
+        get_pt_avg(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
         current_press = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
 
         partial_target = min(partial_target + PRESS_INC_2, PRESS_TARGET)
