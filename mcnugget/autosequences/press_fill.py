@@ -74,11 +74,11 @@ if(mode == "real" or mode == "Real" or mode == "REAL"):
     print("Testing mode")
     # this connects to the synnax testing server
     client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
-    username="synnax",
-    password="seldon",
-    secure=True
+        host="synnax.masa.engin.umich.edu",
+        port=80,
+        username="synnax",
+        password="seldon",
+        secure=True
     )
     PRESS_DELAY = COLDFLOW_PRESS_DELAY
 
@@ -351,6 +351,10 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
 
     ###     RUNS ACTUAL AUTOSEQUENCE         ###
     try:
+        ans = input("Type 'start' to commence autosequence. ")
+        if not (ans == 'start' or ans == 'Start' or ans == 'START'):
+            exit()
+
         # starts by closing all valves and closing all vents
         print("Starting Press Fill Autosequence. Setting initial system state.")
         syauto.close_all(auto, [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, press_vent])
@@ -386,12 +390,12 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
             press_vent.open()
             print("press vent opened")
 
-        if real_test:
-            rng = client.ranges.create(
-                name=f"{start.__str__()[11:16]} Press Fill",
-                time_range=sy.TimeRange(start, datetime.now() + 5),
-            )
-            print(f"created range for test: {rng.name}")
+        # if real_test:
+        #     rng = client.ranges.create(
+        #         name=f"{start.__str__()[11:16]} Press Fill",
+        #         time_range=sy.TimeRange(start, datetime.now() + 5),
+        #     )
+        #     print(f"created range for test: {rng.name}")
 
     print("ctrl-c to terminate autosequence")
     time.sleep(60)

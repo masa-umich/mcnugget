@@ -405,10 +405,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 ox_feedline_purge.open()
             # time.sleep(0.5)
             if opened_fuel_mpv:
-                print("Opening fuel feedline purge and closing fuel prevalve")
+                print("Closing fuel prevalve")
                 fuel_prevalve.close()
             if opened_ox_mpv:
-                print("Opening ox feedline purge and closing ox prevalve")
+                print("Closing ox prevalve")
                 ox_prevalve.close()
             time.sleep(5)
             print("Closing dome ISO")
@@ -425,17 +425,17 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print("Opening ox feedline purge and closing ox prevalve")
                 syauto.open_close_many_valves(auto, [ox_feedline_purge], [ox_prevalve])
             time.sleep(5)  #TODO: increase this
-            print("Closing dome ISO and purges")
-            syauto.close_all(auto, [ox_dome_iso, ox_feedline_purge, fuel_feedline_purge])
+            print("Closing dome ISO")
+            syauto.close_all(auto, [ox_dome_iso])
             print("Terminating abort")
         time.sleep(10)
-        # this creates a range in synnax so we can view the data
-        if real_test:
-            rng = client.ranges.create(
-                name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
-                time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
-            )
-            print(f"Created range for test: {rng.name}")
+        # # this creates a range in synnax so we can view the data
+        # if real_test:
+        #     rng = client.ranges.create(
+        #         name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
+        #         time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
+        #     )
+        #     print(f"Created range for test: {rng.name}")
         exit()
 
     # this block runs the overall sequence
@@ -470,10 +470,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         if ans == "y":
             syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_prevalve, ox_prevalve])
 
-        # this creates a range in synnax so we can view the data
-        if real_test:
-            rng = client.ranges.create(
-                name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
-                time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
-            )
-            print(f"Created range for test: {rng.name}")
+        # # this creates a range in synnax so we can view the data
+        # if real_test:
+        #     rng = client.ranges.create(
+        #         name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
+        #         time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
+        #     )
+        #     print(f"Created range for test: {rng.name}")
