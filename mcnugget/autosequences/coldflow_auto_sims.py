@@ -223,16 +223,25 @@ DAQ_STATE.update({
 })
 
 true_fuel_pressure = INITIAL_FUEL_TANK_PRESSURE
+# fuel_PT_1_pressure = true_fuel_pressure
+# fuel_PT_2_pressure = true_fuel_pressure
+# fuel_PT_3_pressure = true_fuel_pressure
 fuel_PT_1_pressure = true_fuel_pressure + random.uniform(-20, 20)
 fuel_PT_2_pressure = true_fuel_pressure + random.uniform(-20, 20)
 fuel_PT_3_pressure = true_fuel_pressure + random.uniform(-20, 20)
 
 true_ox_pressure = INITIAL_OX_TANK_PRESSURE
+# ox_tank_1_pressure = true_ox_pressure
+# ox_tank_2_pressure = true_ox_pressure
+# ox_tank_3_pressure = true_ox_pressure
 ox_tank_1_pressure = true_ox_pressure + random.uniform(-20, 20)
 ox_tank_2_pressure = true_ox_pressure + random.uniform(-20, 20)
 ox_tank_3_pressure = true_ox_pressure + random.uniform(-20, 20)
 
 true_press_pressure = INITIAL_PRESS_TANK_PRESSURE
+# press_tank_PT_1 = true_press_pressure
+# press_tank_PT_2 = true_press_pressure
+# press_tank_PT_3 = true_press_pressure
 press_tank_PT_1 = true_press_pressure + random.uniform(-20, 20)
 press_tank_PT_2 = true_press_pressure + random.uniform(-20, 20)
 press_tank_PT_3 = true_press_pressure + random.uniform(-20, 20)
@@ -290,19 +299,19 @@ with client.open_streamer(command_channels) as streamer:
 
                 fuel_tank_delta = -0.05
                 trailer_pneumatics_delta = -0.005
-                press_tank_delta = -0.1
+                press_tank_delta = -0.5
                 ox_tank_delta = -0.07
 
                 ### PRESS ###
                 #print(press_fill_energized)
                 if press_fill_energized:
                     if supply_2k > true_press_pressure:
-                        diff = (supply_2k / INITIAL_2K_PRESSURE) * 2.5 + 0.1
+                        diff = (supply_2k / INITIAL_2K_PRESSURE) * 6 + 0.1
                         press_tank_delta += diff
                         supply_2k -= diff / 8
                     if gas_booster_fill_energized:
                         if air_drive_iso_1_energized and air_drive_iso_2_energized:
-                            diff = (supply_2k / INITIAL_2K_PRESSURE) * 2.5 + 1
+                            diff = (supply_2k / INITIAL_2K_PRESSURE) * 6 + 1
                             press_tank_delta += diff
                             supply_2k -= diff / 8
 
@@ -379,6 +388,9 @@ with client.open_streamer(command_channels) as streamer:
                 true_press_pressure = max(0, true_press_pressure)
                 supply_2k = max(0, supply_2k)
 
+                if true_press_pressure > 3800:
+                    raise Exception("You just blew up a press tank")
+
                 now = sy.TimeStamp.now()
 
                 # print(f"ox tank delta: {ox_tank_delta}")
@@ -413,15 +425,27 @@ with client.open_streamer(command_channels) as streamer:
                     IGNITOR_IN: int(ignitor_energized),
 
                     # writes to all 30 PTs
+                    # FUEL_PT_1_PRESSURE: true_fuel_pressure,
+                    # FUEL_PT_2_PRESSURE: true_fuel_pressure,
+                    # FUEL_PT_3_PRESSURE: true_fuel_pressure,
+                    # OX_TANK_1_PRESSURE: true_ox_pressure,
+                    # OX_TANK_2_PRESSURE: true_ox_pressure,
+                    # OX_TANK_3_PRESSURE: true_ox_pressure,
+                    # PRESS_TANK_PT_1: true_press_pressure,
+                    # PRESS_TANK_PT_2: true_press_pressure,
+                    # PRESS_TANK_PT_3: true_press_pressure,
                     FUEL_PT_1_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     FUEL_PT_2_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     FUEL_PT_3_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     OX_TANK_1_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_2_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_3_PRESSURE: true_ox_pressure + random.uniform(-20,20),
-                    PRESS_TANK_PT_1: true_press_pressure + random.uniform(-20, 20),
-                    PRESS_TANK_PT_2: true_press_pressure + random.uniform(-20, 20),
-                    PRESS_TANK_PT_3: true_press_pressure + random.uniform(-20, 20),
+                    PRESS_TANK_PT_1: random.normalvariate(true_press_pressure, 15),
+                    PRESS_TANK_PT_2: random.normalvariate(true_press_pressure, 15),
+                    PRESS_TANK_PT_3: random.normalvariate(true_press_pressure, 15),
+                    # PRESS_TANK_PT_1: true_press_pressure + random.uniform(-40, 40),
+                    # PRESS_TANK_PT_2: true_press_pressure + random.uniform(-40, 40),
+                    # PRESS_TANK_PT_3: true_press_pressure + random.uniform(-40, 40),
                     OX_PRE_FILL_PT: 0,
                     OX_PRESS_DOME_PILOT_REG_PT: 0,
                     OX_PRESS_PT: 0,
@@ -435,8 +459,9 @@ with client.open_streamer(command_channels) as streamer:
                     TRICKLE_PURGE_PRE_2K_PT: 0,
                     AIR_DRIVE_2K_PT: 0,
                     AIR_DRIVE_POST_REG_PT: 0,
+                    # PRESS_TANK_SUPPLY: supply_2k,
                     PRESS_TANK_SUPPLY: supply_2k + random.uniform(-20, 20),
-                    GAS_BOOSTER_OUTLET_PT: 0,
+                    GAS_BOOSTER_OUTLET_PT: true_press_pressure,
                     PRESS_TANK_2K_BOTTLE_PRE_FILL_PT: 0,
                     PNEUMATICS_BOTTLE_PT: 0,
                     TRAILER_PNEMATICS_PT: 0,
