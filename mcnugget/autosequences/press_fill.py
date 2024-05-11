@@ -54,11 +54,12 @@ REPRESS_TARGET = 3650 #psi
 MAX_PRESS_TANK_PRESSURE = 4400  # psi
 
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
-PRESS_INC_1 = 65  # psi/min
-PRESS_INC_2 = 100  # psi/min
+# PRESS_INC_1 is used for the first 4 iterations, then PRESS_INC_2 is used
+PRESS_INC_1 = 10  # psi/min
+PRESS_INC_2 = 30  # psi/min
 
 COLDFLOW_PRESS_DELAY = 60
-HOTFIRE_PRESS_DELAY = 100
+HOTFIRE_PRESS_DELAY = 60
 SIM_PRESS_DELAY = COLDFLOW_PRESS_DELAY
 
 # this variable defines how many samples should be averaged for PT or TC data
@@ -80,7 +81,8 @@ if(mode == "real" or mode == "Real" or mode == "REAL"):
         password="seldon",
         secure=True
     )
-    PRESS_DELAY = COLDFLOW_PRESS_DELAY
+    # PRESS_DELAY = COLDFLOW_PRESS_DELAY
+    PRESS_DELAY = HOTFIRE_PRESS_DELAY
 
 # If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
 elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":

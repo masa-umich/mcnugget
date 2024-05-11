@@ -85,7 +85,6 @@ if(mode == "real" or mode == "Real" or mode == "REAL"):
     password="seldon",
     secure=True
     )
-    PRESS_DELAY = 60  # seconds
 
 #If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
 elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
@@ -99,7 +98,6 @@ elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
         password="seldon",
         secure=False
     )
-    PRESS_DELAY = 1  # seconds
 
 else:
     print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
