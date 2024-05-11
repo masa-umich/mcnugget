@@ -55,15 +55,11 @@ MAX_PRESS_TANK_PRESSURE = 4400  # psi
 
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 # PRESS_INC_1 is used for the first 4 iterations, then PRESS_INC_2 is used
-PRESS_INC_1 = 10  # psi/min
-PRESS_INC_2 = 30  # psi/min
+PRESS_INC_1 = 20  # psi/min
+PRESS_INC_2 = 40  # psi/min
 
-COLDFLOW_PRESS_DELAY = 60
-HOTFIRE_PRESS_DELAY = 60
-SIM_PRESS_DELAY = COLDFLOW_PRESS_DELAY
+PRESS_DELAY = 60
 
-# this variable defines how many samples should be averaged for PT or TC data
-RUNNING_MEDIAN_SIZE = 50  # samples - at 200Hz this means every 1/2 second
 PRESS_FACTOR = 1  # this is used to speed up sims
 
 # Prompts for user input as to whether we want to run a simulation or run an actual test
@@ -81,8 +77,6 @@ if(mode == "real" or mode == "Real" or mode == "REAL"):
         password="seldon",
         secure=True
     )
-    # PRESS_DELAY = COLDFLOW_PRESS_DELAY
-    PRESS_DELAY = HOTFIRE_PRESS_DELAY
 
 # If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
 elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
