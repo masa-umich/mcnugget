@@ -50,7 +50,7 @@ from collections import deque
 from datetime import datetime, timedelta
 
 PRESS_TARGET = 3750  # psi
-REPRESS_TARGET = 3650 #psi
+REPRESS_TARGET = 3650 # psi
 MAX_PRESS_TANK_PRESSURE = 4400  # psi
 
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
@@ -63,7 +63,7 @@ PRESS_DELAY = 60
 PRESS_FACTOR = 1  # this is used to speed up sims
 
 # Prompts for user input as to whether we want to run a simulation or run an actual test
-# If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
+# If prompted to run a 'real' test, will connect to the MASA remote server
 real_test = False
 mode = input("Enter 'real' testing on actual hardware, or 'sim' to run a simulation: ")
 if(mode == "real" or mode == "Real" or mode == "REAL"):
@@ -90,7 +90,6 @@ elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
         password="seldon",
         secure=False
     )
-    PRESS_DELAY = SIM_PRESS_DELAY
     PRESS_FACTOR = 1/60
 
 else:
@@ -156,12 +155,17 @@ SUM_DICT = {
     PRESS_TANK_SUPPLY: PRESS_TANK_SUPPLY_SUM
 }
 
-RUNNING_AVERAGE_LENGTH = 20
-# for 200Hz data, this correlates to an average over 0.1 seconds
+RUNNING_AVERAGE_LENGTH = 8
+# for 50Hz data, this correlates to an average over 0.1 seconds
 
-def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
+def get_averages(auto: Controller, read_channels: list[str], reset=False) -> dict[str, float]:
     # this function takes in a list of channels to read from, 
     # and returns a dictionary with the average for each - {channel: average}
+    # if reset:
+    #     for channel in read_channels:
+    #         AVG_DICT[channel].clear()
+    #         SUM_DICT[channel] = 0
+    #         return
     averages = {}
     for channel in read_channels:
         AVG_DICT[channel].append(auto[channel])  # adds the new data to the deque
@@ -238,9 +242,12 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
     if statistics.median([pt1, pt2, pt3]) >= partial_target:
         return True
     
+    # if statistics.median([auto[PRESS_PT_1], auto[PRESS_PT_2], auto[PRESS_PT_3]]) >= partial_target:
+    #     return True
+    
     press_diff = statistics.median([pt1, pt2, pt3]) - get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
 
-    if (not phase_2) and (abs(press_diff) < 80 or press_diff > 0):
+    if (not phase_2) and (abs(press_diff) < 40 or press_diff > 0):
         # PRESS_FILL_EQUALIZED = True  # causes python to explode bc scope is stupid
         print("press tanks and 2k supply have been equalized")
         return True
@@ -261,9 +268,17 @@ def runsafe_press_tank_fill(partial_target: float, press_start_time_, phase_2=Fa
 def phase_1():
     # this function returns when the PRESS_TANKs pressure is within 80psi of the 2K bottle supply
     times_ran = 0
+    # p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
+    for i in range(RUNNING_AVERAGE_LENGTH - 1):
+        time.sleep(0.1)
+        get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     p_avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
+    
     partial_target = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])  # start at current pressure
     while True:
+        # resets running averages since they are no longer accurate due to leaks during time.sleep
+        get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3], reset=True)  
+
         current_pressure = statistics.median([p_avgs[PRESS_PT_1], p_avgs[PRESS_PT_2], p_avgs[PRESS_PT_3]])
 
         press_supply = get_averages(auto, [PRESS_TANK_SUPPLY])[PRESS_TANK_SUPPLY]
@@ -278,7 +293,7 @@ def phase_1():
         # this is the only way for the function to return 
         # if  PRESS_TANK_SUPPLY does not eventually reach PRESS_TANKS pressure, you will enter a loop
         print(f"press tanks: {round(press_tanks, 2)}, 2k supply: {round(press_supply, 2)}")
-        if (abs(press_tanks - press_supply) < 80 or press_tanks > press_supply):
+        if (abs(press_tanks - press_supply) < 40 or press_tanks > press_supply):
             return
 
         # Open press_fill until partial_target is reached and ensure we do not exceed maximum rate
@@ -299,6 +314,9 @@ def phase_1():
 
 def phase_2():
     PRESS_FILL_EQUALIZED = True
+    for i in range(RUNNING_AVERAGE_LENGTH - 1):
+        time.sleep(0.1)
+        get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
     partial_target = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
 
@@ -306,6 +324,9 @@ def phase_2():
     air_drive_ISO_1.open()
 
     while True:
+        # resets running averages since they are no longer accurate due to leaks during time.sleep
+        get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3], reset=True)
+
         avgs = get_averages(auto, [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3])
         current_press = statistics.median([avgs[PRESS_PT_1], avgs[PRESS_PT_2], avgs[PRESS_PT_3]])
 
