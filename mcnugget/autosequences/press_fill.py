@@ -55,8 +55,8 @@ MAX_PRESS_TANK_PRESSURE = 4400  # psi
 
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 # PRESS_INC_1 is used for the first 4 iterations, then PRESS_INC_2 is used
-PRESS_INC_1 = 20  # psi/min
-PRESS_INC_2 = 40  # psi/min
+PRESS_INC_1 = 30  # psi/min
+PRESS_INC_2 = 30  # psi/min
 
 PRESS_DELAY = 60
 
