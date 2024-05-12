@@ -299,7 +299,7 @@ with client.open_streamer(command_channels) as streamer:
 
                 fuel_tank_delta = -0.05
                 trailer_pneumatics_delta = -0.005
-                press_tank_delta = -0.5
+                press_tank_delta = -0.1
                 ox_tank_delta = -0.07
 
                 ### PRESS ###
