@@ -105,7 +105,7 @@ else:
 
 USING_FUEL = True
 
-USING_OX = True
+USING_OX = False
 
 # PRE_PRESS = False
 
@@ -348,6 +348,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         opened_fuel_mpv = False
         opened_ox_mpv = False
         try: 
+            print(USING_FUEL)
+            print(USING_OX)
             print("commencing fire sequence - firing in: ")
             time.sleep(1)
             print("10")
@@ -371,15 +373,21 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("3")
             time.sleep(1)
             
-            print("2 Opening Ox Dome Iso and Ox Press Iso")
-            syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+            if USING_OX:
+                print("2 Opening Ox Dome Iso and Ox Press Iso")
+                syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+            else:
+                print("2")
+
             time.sleep(1)
             print("1")
             time.sleep(1)
             
-            print("0 Opening Fuel ISO and Ox MPV")
-            syauto.open_all(auto, [fuel_press_iso, ox_mpv])
-            opened_ox_mpv = True
+            print("0 Opening Fuel ISO and maybe Ox MPV")
+            syauto.open_all(auto, [fuel_press_iso])
+            if USING_OX:
+                ox_mpv.open()
+                opened_ox_mpv = True
 
             # print(f"Opening Fuel MPV in {MPV_DELAY}")
             time.sleep(MPV_DELAY)
