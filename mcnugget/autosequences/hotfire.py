@@ -180,7 +180,7 @@ UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 10
 LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 10
 MAX_FUEL_PRESSURE = 575
 
-TARGET_OX_PRESSURE = 450  # Ox Reg Set Pressure
+TARGET_OX_PRESSURE = 460  # Ox Reg Set Pressure
 UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 10
 LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 10
 MAX_OX_PRESSURE = 575
@@ -191,15 +191,10 @@ RUNNING_AVERAGE_LENGTH = 5  # samples
 FIRE_DURATION = 20
 
 # TODO: Update these values based on testing requirements
-MPV_DELAY = 0.311
+MPV_DELAY = 0.281  # seconds
 # OX_MPV takes 0.357 s to reach chamber
-# FUEL_MPV takes 0.246 s to reach chamber
-# This delay puts OX in the chamber 0.200 seconds before fuel
-
-
-# OUTDATED as of 4/25 but kept for reference
-# OX_MPV takes 0.332 s to reach chamber
-# FUEL_MPV takes 0.224 s to reach chamber
+# FUEL_MPV used to take 0.246 s to reach chamber
+# FUEL_MPV now takes 0.276 s to reach chamber
 # This delay puts OX in the chamber 0.200 seconds before fuel
 
 # IGNITER_DELAY = 6  # seconds
@@ -422,7 +417,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             if opened_ox_mpv:
                 print("Opening ox feedline purge and closing ox prevalve")
                 syauto.open_close_many_valves(auto, [ox_feedline_purge], [ox_prevalve])
-            time.sleep(5)  #TODO: increase this
+            time.sleep(5)
             print("Closing dome ISO")
             syauto.close_all(auto, [ox_dome_iso])
             print("Terminating abort")
