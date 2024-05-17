@@ -49,14 +49,14 @@ import statistics
 from collections import deque
 from datetime import datetime, timedelta
 
-PRESS_TARGET = 3750  # psi
-REPRESS_TARGET = 3650 # psi
+PRESS_TARGET = 3700  # psi
+REPRESS_TARGET = 3600 # psi
 MAX_PRESS_TANK_PRESSURE = 4400  # psi
 
 # press tank will pressurize at a rate of PRESS_INC / PRESS_DELAY psi/second
 # PRESS_INC_1 is used for the first 4 iterations, then PRESS_INC_2 is used
-PRESS_INC_1 = 30  # psi/min
-PRESS_INC_2 = 30  # psi/min
+PRESS_INC_1 = 80  # psi/min
+PRESS_INC_2 = 80  # psi/min
 
 PRESS_DELAY = 60
 
@@ -375,14 +375,14 @@ with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=RE
         # starts by closing all valves and closing all vents
         print("Starting Press Fill Autosequence. Setting initial system state.")
         syauto.close_all(auto, [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, press_vent])
-        time.sleep(1)
+        # time.sleep(1)
 
-        print("PHASE 1: 2K Bottle Equalization")
-        print(f"pressurizing PRESS_TANKS using press_fill until approximately equal with 2K supply")
-        phase_1()
-        print("PHASE 1 complete")
+        # print("PHASE 1: 2K Bottle Equalization")
+        # print(f"pressurizing PRESS_TANKS using press_fill until approximately equal with 2K supply")
+        # phase_1()
+        # print("PHASE 1 complete")
 
-        time.sleep(1)
+        # time.sleep(1)
         print("Leaving press_fill open")
         press_fill.open()
 
