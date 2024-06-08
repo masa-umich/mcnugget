@@ -24,9 +24,14 @@ class Model:
         # table with node information
         # r, theta, and z coordinates 
         # sol_id is the index for the node in the solution matrix
-        # indexed by the node number 
+        # the node number equal to a sol_id will have the correct position even
+        # if multiple node numbers have that sol_id, so to convert from sol_id 
+        # to node number is just node = sol_id
+        # node_tbl indexed by the node number 
         self.node_tbl = pd.DataFrame({'r':[],'theta':[],'x':[],'sol_id':[]})
         # dict with node connections
+        # keys are nodes, and values are a set of (face,node) pairs for each 
+        #     connecting node
         self.node_connect = dict()
         # dict of Body objects with the names as the keys
         self.bodies = dict()
@@ -74,7 +79,7 @@ class Model:
                 # solution index for node0
                 sol_idx0 = sol_idx.loc[sol_id0]
                                 
-                for (face,node1) in self.node_connect[node0]:
+                for (axis,node1) in self.node_connect[node0]:
                     # node1 corresponds to the j index, or the column of the 
                     # matrix
                     
@@ -82,18 +87,8 @@ class Model:
                     sol_id1 = self.node_tbl.loc[node1,'sol_id']
                     # solution index
                     sol_idx1 = sol_idx.loc[sol_id1]
-                    
-                    # distance between the nodes
-                    L = self.node_dist(node0,node1)
-                    # node areas normal to heat flow
-                    A0 = body.areas[face].loc[node0]
-                    A1 = body.areas[face].loc[node1]
-                    # just take the average ig
-                    A = (A0+A1)/2
-                    # get thermal conductivity from the Body's Material
-                    k = body.material.get('k')
-                    # thermal resistance
-                    Rij = L/(k*A)
+                    # get the thermal resistance between the two nodes
+                    Rij = self.calc_R(body_name,axis,node0,node1)
                     
                     # now put this thermal resistance in the solution matrix
                     # add -1/Rij in i row, i col
@@ -128,7 +123,6 @@ class Model:
         # put into a series indexed by the sol_id
         self.T = pd.Series(data=T_vec[:,0],index=sol_id)
             
-
     def make_solid(self,shape,**args):
         '''Adds a solid body to the model.
         
@@ -153,6 +147,10 @@ class Model:
                         self.node_tbl.sol_id==self.node_tbl.sol_id[node1]
                         ] = self.node_tbl.sol_id[node0]
                     # TODO: log
+    
+    def clear_convections(self):
+        '''Clears all convection conditions applied to the model'''
+        self.convects = []
     
     def make_convection(self,body_name,direction,**args):
         '''Adds a convection boundary condition.
@@ -218,14 +216,26 @@ class Model:
             self.max_noden+1,self.max_noden+1+num_bnodes-1,num_bnodes
             ),(self.r_numel,self.theta_numel,self.x_numel))
         self.max_noden = np.max(body_nodes)
-                
-        # https://stackoverflow.com/questions/22981845/3-dimensional-array-in-numpy 
-        node_theta = np.linspace(args['theta1'],args['theta2'],
-            self.theta_numel)[np.newaxis,:,np.newaxis]+np.zeros((
-            self.r_numel,self.theta_numel,self.x_numel))
+        # convert node numbers to ints for indexing
+        for i in range(self.r_numel):
+            for j in range(self.theta_numel):
+                for k in range(self.x_numel):
+                    body_nodes[i,j,k] = int(body_nodes[i,j,k])
+        
+        
         node_x = np.linspace(args['x1'],args['x2'],self.x_numel)[
             np.newaxis,np.newaxis,:]+np.zeros((
             self.r_numel,self.theta_numel,self.x_numel))
+                
+        # https://stackoverflow.com/questions/22981845/3-dimensional-array-in-numpy 
+        # node_theta = np.linspace(args['theta1'],args['theta2'],
+        #     self.theta_numel)[np.newaxis,:,np.newaxis]+np.zeros((
+        #     self.r_numel,self.theta_numel,self.x_numel))
+        node_th1 = args['theta1'](node_x[:,0,:])
+        node_th2 = args['theta2'](node_x[:,-1,:])
+        node_theta = node_th1[:,np.newaxis,:] + (node_th2[:,np.newaxis,:]-
+                                    node_th1[:,np.newaxis,:])*np.linspace(
+            0,1,self.theta_numel)[np.newaxis,:,np.newaxis]
         
         # node_x[0] and node_x[self.r_numel] should be the same
         node_r1 = args['r1'](node_x[0])
@@ -254,15 +264,15 @@ class Model:
         # make the Body object for this body
         self.bodies[name] = Body(name,args['material'])
         # sort the nodes into faces
-        self.bodies[name].faces['r+']     = body_nodes[-1,:,:].copy()
-        self.bodies[name].faces['r-']     = body_nodes[0,:,:].copy()
-        self.bodies[name].faces['theta+'] = body_nodes[:,-1,:].copy()
-        self.bodies[name].faces['theta-'] = body_nodes[:,0,:].copy()
-        self.bodies[name].faces['x+']     = body_nodes[:,:,-1].copy()
-        self.bodies[name].faces['x-']     = body_nodes[:,:,0].copy()
+        self.bodies[name].faces['r+']   = body_nodes[-1,:,:].copy().reshape(-1)
+        self.bodies[name].faces['r-']   = body_nodes[0 ,:,:].copy().reshape(-1)
+        self.bodies[name].faces['theta+']=body_nodes[:,-1,:].copy().reshape(-1)
+        self.bodies[name].faces['theta-']=body_nodes[:,0 ,:].copy().reshape(-1)
+        self.bodies[name].faces['x+']   = body_nodes[:,:,-1].copy().reshape(-1)
+        self.bodies[name].faces['x-']   = body_nodes[:,:,0 ].copy().reshape(-1)
 
         # store the body nodes in the body
-        self.bodies[name].nodes = body_nodes.reshape(-1)
+        self.bodies[name].nodes = body_nodes.copy().reshape(-1)
         
         # get the surface areas for the nodes
         self.calc_body_areas(args,name,body_nodes,node_r,node_theta,node_x,
@@ -376,10 +386,12 @@ class Model:
             # midpoint arrary of theta coordinates for the theta face
             # TODO: update this when implementing theta profiles
             # assumes that the theta values are constant over the face
-            mid_th_th = node_theta[0,th_idx,0]+np.zeros((
+            '''mid_th_th = node_theta[0,th_idx,0]+np.zeros((
                 self.r_numel+1,self.x_numel+1))
             assert(
-                math.isclose(node_theta[-1,th_idx,-1],node_theta[0,th_idx,0]))
+                math.isclose(node_theta[-1,th_idx,-1],node_theta[0,th_idx,0]))'''
+            mid_th_th = geometry_tools.array_midpoints(
+                node_theta[:,th_idx],node_theta[:,th_idx])[0]
             
             # calculate areas by splitting each face into two triangles
             for r_idx in range(self.r_numel):
@@ -530,7 +542,87 @@ class Model:
             self.node_tbl.to_excel(writer,sheet_name='nodes')
         print('writing data to {}'.format(fname))
         
+    def get_heat_flux(self,body_name,face,x0,x1):
+        '''Returns the average outward heat flux in W/m^2 on the given body and
+        face between two x positions
+        
+        Inputs
+            body_name - string of the body name
             
+            face - string of the face name
+            
+            x0 - lower x value
+            
+            x1 - upper x value
+        '''
+        
+        # TODO: this implementation assumes the heat transfer parallel to the 
+        #       face isn't significant, which should be tested
+        #       but also it should average out so could be fine ¯\_(ツ)_/¯
+        
+        nodes = [n for n in self.bodies[body_name].faces[face] if 
+                 x0 <= self.node_tbl.x[n] and self.node_tbl.x[n] <= x1]
+        
+        # but hey, what if x0 and x1 are between two nodes in the mesh??
+        # find the closest node below x0 and above x1
+        if nodes == []:
+            face_nodes = self.bodies[body_name].faces[face]
+            # make nodes the first node below x0 and the first above x1
+            nodes = [max([n for n in face_nodes if self.node_tbl.x[n] <= x0]),
+                     min([n for n in face_nodes if self.node_tbl.x[n] >= x1])]
+        
+        # split the face into an axis and normal
+        axis = face[:-1]
+        norm = face[-1:]
+        # get the interior nodes that are in the right direction
+        if norm == '-':
+            # then the interior nodes are greater
+            nodes_in = [[m for (ax,m) in self.node_connect[n] if ax==axis and 
+                        m >= n][0] for n in nodes]
+        else:
+            # the interior nodes are less
+            nodes_in = [[m for (ax,m) in self.node_connect[n] if ax==axis and 
+                         m <= n][0] for n in nodes]
+        
+        # get the temperatures, need to convert to sol_id first
+        T_ex = np.array(self.T[self.node_tbl.sol_id[nodes]])
+        T_in = np.array(self.T[self.node_tbl.sol_id[nodes_in]])
+        # get the resistnaces between each pair
+        R = np.array([self.calc_R(body_name,axis,n,m) for (n,m) in 
+                      zip(nodes,nodes_in)])
+        
+        # calculate the heat from each interior node to its exterior node
+        Q = (T_in-T_ex)/R
+        
+        # get the area of each exterior node
+        A = np.array(self.bodies[body_name].areas[axis][nodes])
+        
+        # get the average heat flux
+        q_avg = sum(Q)/sum(A)
+        return q_avg
+        
+    def calc_R(self,body_name,axis,node0,node1):
+        '''Returns the thermal resistance between node0 and node1 in [K/W].
+        
+        Inputs
+        body_name
+        axis - 'r','theta', or 'x'
+        node0 - node number
+        node1
+        '''
+        # distance between the nodes
+        L = self.node_dist(node0,node1)
+        # node areas normal to heat flow
+        A0 = self.bodies[body_name].areas[axis].loc[node0]
+        A1 = self.bodies[body_name].areas[axis].loc[node1]
+        # just take the average ig
+        A = (A0+A1)/2
+        # get thermal conductivity from the Body's Material
+        k = self.bodies[body_name].material.get('k')
+        # thermal resistance
+        Rij = L/(k*A)
+        return Rij
+        
 class Body:
     '''Represents a solid body in the model.'''
     def __init__(self,name,material):
@@ -538,11 +630,12 @@ class Body:
         self.name = name
         self.material = Material(material)
         # stores nodes numbers that belong on each of the six faces
+        # the values are lists of node numbers
         self.faces = {
             'r+':[],'r-':[],'theta+':[],'theta-':[],'x+':[],'x-':[]
             }
         # stores the surface area that nodes have on this body, organized by 
-        # normal direction
+        # normal direction (axis)
         # each value is a pd.Series indexed by node numbers
         self.areas = {
             'r':pd.Series(),
@@ -601,6 +694,3 @@ class Convect:
         self.h = h
         self.T = T
         
-        
-        
-    
