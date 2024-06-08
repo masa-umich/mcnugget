@@ -359,7 +359,6 @@ class Model:
             # this also corresponds to using mdot/Nc as the flow rate in each 
             # single channel
             
-            # TODO: unfuck this
             # x distance between stations
             dx = abs(x1-x0)
             # average x location

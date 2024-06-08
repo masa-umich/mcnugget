@@ -22,7 +22,7 @@ class Model:
         # maximum node number created
         self.max_noden = -1
         # table with node information
-        # r, theta, and z coordinates 
+        # r, theta, and x coordinates 
         # sol_id is the index for the node in the solution matrix
         # the node number equal to a sol_id will have the correct position even
         # if multiple node numbers have that sol_id, so to convert from sol_id 
@@ -384,9 +384,9 @@ class Model:
             (mid_th_x,mid_th_r) = geometry_tools.array_midpoints(
                 node_x[:,th_idx],node_r[:,th_idx])
             # midpoint arrary of theta coordinates for the theta face
-            # TODO: update this when implementing theta profiles
-            # assumes that the theta values are constant over the face
-            '''mid_th_th = node_theta[0,th_idx,0]+np.zeros((
+
+            ''' old code from when theta couldn't change
+            mid_th_th = node_theta[0,th_idx,0]+np.zeros((
                 self.r_numel+1,self.x_numel+1))
             assert(
                 math.isclose(node_theta[-1,th_idx,-1],node_theta[0,th_idx,0]))'''
