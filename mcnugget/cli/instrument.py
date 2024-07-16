@@ -59,6 +59,102 @@ def instrument(sheet: str | None, gcreds: str | None):
     pure_instrument(sheet, client=client, gcreds=gcreds)
 
 
+def main():
+    print(
+        """[purple]Commencing instrumentation update procedure[/purple]"""
+    )
+    sheet, gcreds = create_popup()
+    # print(f"would run instrumentation on {sheet}")
+    pure_instrument(sheet, client, gcreds=None)
+
+
+global selected_value
+selected_value = None  # this is necessary; trust
+global confirm_button
+confirm_button = None  # this is also necessary; trust
+global gcreds_value
+gcreds_value = None
+global gcreds_button
+gcreds_button = None
+
+
+def create_popup():
+    def set_selected_value(x):
+        global selected_value
+        if x is not None and x != '':
+            selected_value = x
+        confirm_button.config(text=f"Confirm\n{selected_value}")
+
+    def get_selected_value():
+        global selected_value
+        return selected_value
+
+    def get_gcreds():
+        global gcreds_value
+        return gcreds_value
+
+    def clear_popup():
+        if get_selected_value() is None:
+            messagebox.showinfo(title="Warning", message="Please choose a source")
+        elif ".xlsx" not in get_selected_value() and get_gcreds() is None:
+            messagebox.showinfo(title="Warning", message="Please provide valid gcreds if retrieving from a google sheet.")
+        else:
+            popup.destroy()
+
+    def choose_gcreds():
+        global gcreds_value
+        foo = filedialog.askopenfilename(filetypes=[("Excel files", "*.json")])
+        if foo is not None and foo != '':
+            gcreds_value = foo
+        gcreds_button.config(text=f"Retrieving gcreds from:\n{get_gcreds()}")
+
+    popup = tk.Tk()
+    popup.title("Instrumentation Update")
+    # Get the screen width and height
+    screen_width = popup.winfo_screenwidth()
+    screen_height = popup.winfo_screenheight()
+    # popup.config(background='navy')
+
+    # Set the window dimensions to be half of the screen size
+    window_width = screen_width // 2
+    window_height = screen_height // 2
+
+    # Calculate the position of the window to be centered on the screen
+    window_x = (screen_width - window_width) // 2
+    window_y = (screen_height - window_height) // 2
+
+    # Set the window dimensions and position
+    popup.geometry(f"{window_width}x{window_height}+{window_x}+{window_y}")
+
+    file_button = tk.Button(popup, text="Select File", height=2, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+        filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])))
+    file_button.pack(padx=10, pady=10)
+
+    url_button = tk.Button(popup, text="Google Sheet URL", height=2, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+        simpledialog.askstring("Input", "Enter the URL of the Google Sheet")))
+    url_button.pack(padx=10, pady=10)
+
+    name_button = tk.Button(popup, text="Google Sheet by Name", height=2, width=30, font=("Helvetica", 24), command=lambda: set_selected_value(
+        simpledialog.askstring("Input", "Enter the name of the Google Sheet")))
+    name_button.pack(padx=10, pady=10)
+
+    global confirm_button
+    confirm_button = tk.Button(popup, text=f"Click to confirm source:\n{get_selected_value()}", height=3, width=60, font=("Helvetica", 18), command=lambda: clear_popup())
+    confirm_button.configure(highlightbackground='green2')
+    confirm_button.pack(padx=20, pady=20)
+
+    global gcreds_button
+    gcreds_button = tk.Button(popup, text=f"Retrieving gcreds from:\n{get_gcreds()}", height=2, width=60, font=("Helvetica", 18), command=lambda: choose_gcreds())
+    gcreds_button.pack(padx=20, pady=10)
+
+    popup.mainloop()
+
+    print(f"Running instrumentation updates from [yellow]{get_selected_value()}[/yellow]")
+    if get_gcreds():
+        print(f"Using gcreds from [yellow]{get_gcreds()}[/yellow]")
+    return get_selected_value(), get_gcreds()
+
+
 def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = None):
     if ".xlsx" in sheet:
         data = process_excel(sheet)
@@ -78,7 +174,14 @@ def pure_instrument(sheet: str | None, client: sy.Synnax, gcreds: str | None = N
         client=client, active_range=active, indexes={}
     )
 
+    if ctx.active_range is None:
+        print(
+            """[red]Active Range not found - aborting[/red]"""
+        )
+        raise "ActiveRangeNotFound"
+
     create_device_channels(ctx)
+    existing_ports = {}
     for index, row in data.iterrows():
         process_row(ctx, index, row)
     client.ranges.set_active(active.key)
@@ -124,9 +227,9 @@ def extract_google_sheet(sheet: gspread.Spreadsheet) -> pd.DataFrame:
     return pd.DataFrame(vals[1:], columns=vals[0])
 
 
-def process_name(source) -> pd.DataFrame:
+def process_name(source, creds) -> pd.DataFrame:
     try:
-        gspread_client = gspread.service_account("../../credentials.json")
+        gspread_client = gspread.service_account(creds)
     except FileNotFoundError:
         raise "to authenticate to the gcloud server, you must add a valid credentials.json file in this directory"
     sheet = gspread_client.open(source)
@@ -135,14 +238,24 @@ def process_name(source) -> pd.DataFrame:
     return extract_google_sheet(sheet)
 
 
-def process_row(ctx: Context, index: int, row: dict):
+def process_row(ctx: Context, index: int, row: dict, ports: dict):
     type_ = row[TYPE_COL]
+    port, ok = get_port(index, row, Device, type_)
+    if not ok:
+        return
+    if ports.get(port) is not None:
+        print(
+            f"""[purple]Row {index} - [/purple][red]Port {port} is already in use by channel {ports.get(port)} and was not updated.[/red]"""
+        )
+        return
+    else:
+        ports[port] = row[ALIAS_COL]
     if type_ == VLV_TYPE:
-        return process_valve(ctx, index, row)
+        return process_valve(ctx, index, row, port)
     if type_ == PT_TYPE:
-        return process_pt(ctx, index, row)
+        return process_pt(ctx, index, row, port)
     if type_ == TC_TYPE:
-        return process_tc(ctx, index, row)
+        return process_tc(ctx, index, row, port)
     if type_ == LC_TYPE:
         return process_lc(ctx, index, row)
 
@@ -165,7 +278,7 @@ def get_device(index: int, row: dict) -> (str, bool):
 GSE_VALID_PORTS = range(0, 80)
 
 
-def get_port(index: int, row: dict, device: Device) -> (int, bool):
+def get_port(index: int, row: dict, device: Device, type_: str) -> (int, bool):
     port = row[PORT_COL]
     try:
         port = int(port)
@@ -174,12 +287,39 @@ def get_port(index: int, row: dict, device: Device) -> (int, bool):
             f"""[red]Invalid port number '{port}' in row {index}[/red]\n[blue]Value must be a positive integer[/blue]"""
         )
         return -1, False
-    if device == GSE_DEVICE and port not in GSE_VALID_PORTS:
+    if type_ == VLV_TYPE:
+        port += VALVE_AI_PORT_OFFSET
+        if port not in VALID_VALVE_PORTS:
+            print(
+                f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are {VALID_VALVE_PORTS}[/blue]"""
+            )
+        return port, True
+    elif type_ == PT_TYPE:
+        if port + PT_PORT_OFFSET not in PT_VALID_PORTS:
+            print(
+                f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are {PT_VALID_PORTS}[/blue]"""
+            )
+        # had to hard-code in port 36 because it is mapped to 60, idk why
+        if port == 36:
+            return 60 + PT_PORT_OFFSET, True
+        return port + PT_PORT_OFFSET, True
+    elif type_ == TC_TYPE:
+        port += TC_PORT_OFFSET
+        if port not in TC_VALID_PORTS:
+            print(
+                f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are {TC_VALID_PORTS}[/blue]"""
+            )
+        return port, True
+    elif type_ == LC_TYPE:
         print(
-            f"""[red]Invalid port number for {device} '{port}' in row {index}[/red]\n[blue]Valid ports are: {GSE_VALID_PORTS}[/blue]"""
+            f"""[yellow]LC types not implemented yet[/yellow]"""
         )
         return -1, False
-    return port, True
+    else:
+        print(
+            f"""[red]Unable to retrieve port - invalid sensor type in row {index}[/red]"""
+        )
+        return -1, False
 
 
 def create_device_channels(ctx: Context) -> (dict, bool):
@@ -240,53 +380,46 @@ VALVE_AI_PORT_OFFSET = 36
 VALID_VALVE_PORTS = range(1, 25)
 
 
-def process_valve(ctx: Context, index: int, row: dict):
+def process_valve(ctx: Context, index: int, row: dict, port: int):
     # get the device name
     device, ok = get_device(index, row)
     if not ok:
         return
 
-    # get the port number
-    port, ok = get_port(index, row, device)
-    if not ok:
-        return
-
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring valve {port} on {device} port {VALVE_AI_PORT_OFFSET + port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring valve {port - VALVE_AI_PORT_OFFSET} on {device} port {port}[/blue]"
     )
 
-    if port not in VALID_VALVE_PORTS:
-        print(
-            f"""[red]Valves can only be connected to ports {VALID_VALVE_PORTS.start} through {VALID_VALVE_PORTS.stop}[/red]"""
-        )
-        return
-
     ack_channel = sy.Channel(
-        name=f"gse_doa_{port}",
+        name=f"gse_doa_{port - VALVE_AI_PORT_OFFSET}",
         data_type=sy.DataType.UINT8,
         index=ctx.indexes["gse_ai"].key,
     )
     i_channel = sy.Channel(
-        name=f"gse_ai_{port + VALVE_AI_PORT_OFFSET}",
+        name=f"gse_ai_{port}",
         data_type=sy.DataType.FLOAT32,
         index=ctx.indexes["gse_ai"].key,
     )
     v_channel = sy.Channel(
-        name=f"gse_di_{port}",
+        name=f"gse_di_{port - VALVE_AI_PORT_OFFSET}",
         data_type=sy.DataType.FLOAT32,
         index=ctx.indexes["gse_di"].key,
     )
     input_channels = [ack_channel, i_channel, v_channel]
-
-    try:
-        input_channels = ctx.client.channels.create(
-            input_channels, retrieve_if_name_exists=True
-        )
-    except Exception as e:
-        print(
-            f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
-        )
-        return
+    retrieved_channels = []
+    for channel in input_channels:
+        try:
+            retrieved_channel = ctx.client.channels.create(channel, retrieve_if_name_exists=True)
+            retrieved_channels.append(retrieved_channel)
+            if retrieved_channel.data_type != channel.data_type:
+                print(
+                    f"""[purple]Row {index} - [/purple][red]Was expecting data_type {channel.data_type}, but found a channel with data_type {retrieved_channel.data_type}[/red]"""
+                )
+        except Exception as e:
+            print(
+                f"[orange]Failed to retrieve channels for {device} valve {port}[/orange]\n[blue]Error: {e}[/blue]"
+            )
+            return
 
     cmd_time_channel = sy.Channel(
         name=f"gse_doc_{port}_time", data_type=sy.DataType.TIMESTAMP, is_index=True
@@ -366,21 +499,11 @@ def process_pt(ctx: Context, index: int, row: dict):
     if not ok:
         return False
 
-    # get the port number
-    port, ok = get_port(index, row, device)
-    if not ok:
-        return False
-    if port not in PT_VALID_PORTS:
-        print(
-            f"[red]Pressure transducers can only be connected to ports {PT_VALID_PORTS}[/red]"
-        )
-        return False
-
     print(
-        f"[purple]Row {index} - [/purple][blue]Configuring PT {port} on {device} port {port}[/blue]"
+        f"[purple]Row {index} - [/purple][blue]Configuring PT {port - PT_PORT_OFFSET} on {device} port {port}[/blue]"
     )
 
-    name = f"{device}_ai_{pt_analog_port(port)}"
+    name = f"{device}_ai_{port}"
 
     try:
         ctx.client.channels.create(
@@ -473,28 +596,15 @@ TC_PORT_OFFSET = 64
 TC_VALID_PORTS = range(1, 17)
 
 
-def process_tc(ctx: Context, index: int, row: dict):
+def process_tc(ctx: Context, index: int, row: dict, port: int):
     # get the device name
     device, ok = get_device(index, row)
     if not ok:
         return False
 
-    # get the port number
-    port, ok = get_port(index, row, device)
-    if not ok:
-        return False
-
-    if port not in TC_VALID_PORTS:
-        print(
-            f"""[red]Thermocouples can only be connected to ports {TC_VALID_PORTS}[/red]"""
-        )
-        return False
-
     print(
         f"[purple]Row {index} - [/purple][blue]Configuring TC {port} on {device} port {port + TC_PORT_OFFSET}[/blue]"
     )
-
-    port += TC_PORT_OFFSET
 
     name = f"{device}_ai_{port}"
 
@@ -512,19 +622,19 @@ def process_tc(ctx: Context, index: int, row: dict):
         )
         return False
 
-    tc_type = str(row[TC_TYPE_COL]).rstrip()
-    if len(tc_type) == 0:
+    if ch.data_type != sy.DataType.FLOAT32:
         print(
-            f"[red]Invalid value for TC type '{tc_type}' in row {index}[/red]\n[blue]Value must be a valid thermocouple type[/blue]"
+            f"""[orange]Invalid data type for {device} thermocouple {port} - should be FLOAT32.[/orange]"""
         )
-        return True
 
+    tc_type = TC_DEFAULT_VAL
     tc_offset = str(row[TC_OFFSET_COL]).rstrip()
     if len(tc_offset) == 0:
         print(
-            f"[orange]Invalid value for TC offset '{tc_offset}' in row {index}[/orange]\n[blue]We'll use the default value of 0[/blue]"
+            f"[orange]Invalid value for TC offset '{tc_offset}' in row {index}[/orange]"
+            f"\n[blue]We'll use the default value of 0[/blue]"
         )
-        return True
+        tc_offset = 0
 
     try:
         ctx.active_range.meta_data.set(
@@ -551,7 +661,7 @@ def process_tc(ctx: Context, index: int, row: dict):
         [orange]Alias for {device} thermocouple {port} is empty. We won't set any aliases for this channel.[/orange]
         """
         )
-        return True
+        return False
 
     try:
         ctx.active_range.set_alias({name: alias})
