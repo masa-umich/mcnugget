@@ -268,7 +268,11 @@ with client.open_streamer(command_channels) as streamer:
                 if streamer.received:
                     while streamer.received:
                         f = streamer.read() 
-                        for k in f.channels: # reads from rows? Need to take a deeper look into this
+                        print("streamer.read()")
+                        print(f)
+                        for k in f.channels:
+                           print("streamer.read().get(channel)")
+                           print(f.get(k))
                            DAQ_STATE[k] = f.get(k)
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1

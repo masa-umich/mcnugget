@@ -20,7 +20,7 @@ jupyter = "^1.0.0"
 refprop-connector = "^0.3.7"
 requests = "^2.31.0"
 #synnax = "^0.14.18"
-synnax = "0.17.1"
+synnax = "^0.27.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
