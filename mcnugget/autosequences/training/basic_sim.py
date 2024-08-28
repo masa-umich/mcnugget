@@ -139,7 +139,8 @@ with client.open_streamer(READ_FROM) as streamer:
                 if f is None:
                     break
                 for c in f.channels:
-                    print(f"setting {c} to {f[c][-1]}")
+                    if DEBUG:
+                        print(f"setting {c} to {f[c][-1]}")
                     REMOTE_STATE[c] = f[c][-1]
         
             press_valve_energized = REMOTE_STATE[PRESS_VALVE_CMD] == 1
