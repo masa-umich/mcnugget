@@ -153,17 +153,17 @@ with client.open_streamer(READ_FROM) as streamer:
                 print(f"true_supply_pressure:{true_supply_pressure}")
 
             if press_valve_energized and true_supply_pressure > true_press_pressure:
-                true_supply_pressure -= 0.3
+                true_supply_pressure = max(0, true_supply_pressure - 0.3)
                 true_press_pressure += 0.9
 
             if (not press_vent_energized) and true_press_pressure > 0:
-                true_press_pressure -= 1.4
+                true_press_pressure = max(0, true_press_pressure - 0.1)
             
             if true_press_pressure < 0:
                 raise Exception("You created negative pressure, this should not be allowed.")
 
-            if true_press_pressure > 700:
-                raise Exception("You just blew up a press tank.")
+            if true_press_pressure > 800:
+                raise Exception("You just blew up a press tank by exceeding the MAWP.")
 
             now = synnax.TimeStamp.now()
 
