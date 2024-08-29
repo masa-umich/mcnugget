@@ -124,14 +124,14 @@ WRITE_TO = list(LOCAL_STATE)
 print(f"reading from {READ_FROM}")
 print(f"writing to {WRITE_TO}")
 
-i = 0  # for logging
 with client.open_streamer(READ_FROM) as streamer:
     with client.open_writer(
         synnax.TimeStamp.now(),
         channels=WRITE_TO,
-        name="sim",
+        name="basic_sim",
         enable_auto_commit=True
     ) as writer:
+        i = 0  # for logging
         while True:
             time.sleep(rate)
             while True:

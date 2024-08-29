@@ -253,27 +253,28 @@ OX_PREVALVE_LAST_OPEN = None
 FUEL_MPV_LAST_OPEN = None
 OX_MPV_LAST_OPEN = None
 
-with client.open_streamer(command_channels) as streamer:
-    READ_CHANNELS = command_channels
-    WRITE_CHANNELS = ack_channels + PTs + [DAQ_TIME]  # + TCs
-    print(f"writing to {len(WRITE_CHANNELS)} channels")
+READ_CHANNELS = command_channels
+WRITE_CHANNELS = ack_channels + PTs + [DAQ_TIME]  # + TCs
+print(f"writing to {len(WRITE_CHANNELS)} channels")
+print(f"reading from {len(READ_CHANNELS)} channels")
+
+with client.open_streamer(READ_CHANNELS) as streamer:
     with client.open_writer(
         sy.TimeStamp.now(),
-        channels = WRITE_CHANNELS
-    ) as w:
-        i = 0
+        channels = WRITE_CHANNELS,
+        name="daq_sim",
+        enable_auto_commit=True
+    ) as writer:
+        # i = 0
         while True:
             try:
                 time.sleep(rate)
-                if streamer.received:
-                    while streamer.received:
-                        f = streamer.read() 
-                        print("streamer.read()")
-                        print(f)
-                        for k in f.channels:
-                           print("streamer.read().get(channel)")
-                           print(f.get(k))
-                           DAQ_STATE[k] = f.get(k)
+                while True:
+                    f = streamer.read(0)
+                    if f is None:
+                        break
+                    for c in f.channels:
+                        DAQ_STATE[c] = f[c][-1]
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
@@ -303,7 +304,7 @@ with client.open_streamer(command_channels) as streamer:
 
                 fuel_tank_delta = -0.05
                 trailer_pneumatics_delta = -0.005
-                press_tank_delta = -0.1
+                press_tank_delta = -1
                 ox_tank_delta = -0.07
 
                 ### PRESS ###
@@ -399,7 +400,7 @@ with client.open_streamer(command_channels) as streamer:
 
                 # print(f"ox tank delta: {ox_tank_delta}")
 
-                ok = w.write({
+                ok = writer.write({
                     DAQ_TIME: now,
 
                     # writes to 21 valves
@@ -473,12 +474,6 @@ with client.open_streamer(command_channels) as streamer:
                     PURGE_2K_BOTTLE_PT: 0,
                     PURGE_POST_REG_PT: 0,
                 })
-
-                i += 1
-                if (i % 40) == 0:
-                    print(f"Committing {i} samples")
-                    ok = w.commit()
-                    print(ok)
 
             except Exception as e:
                 print(e)

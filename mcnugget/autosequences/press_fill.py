@@ -44,10 +44,9 @@ After initializing the client and reference variables, the autosequence will:
 import time
 import synnax as sy
 from synnax.control.controller import Controller
-import syauto
+from mcnugget.autosequences import syauto
 import statistics
 from collections import deque
-from datetime import datetime, timedelta
 
 PRESS_TARGET = 3700  # psi
 REPRESS_TARGET = 3600 # psi
@@ -350,69 +349,73 @@ def phase_2():
             print(f"Target pressure reached. Repressurizing at {REPRESS_TARGET}")
             break
 
-with client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180) as auto:
-    air_drive_ISO_1 = syauto.Valve(
-        auto=auto, cmd=AIR_DRIVE_ISO_1_CMD, ack=AIR_DRIVE_ISO_1_ACK, normally_open=False)
-    air_drive_ISO_2 = syauto.Valve(
-        auto=auto, cmd=AIR_DRIVE_ISO_2_CMD, ack=AIR_DRIVE_ISO_2_ACK, normally_open=False)
-    gas_booster_fill = syauto.Valve(
-        auto=auto, cmd=GAS_BOOSTER_FILL_CMD, ack=GAS_BOOSTER_FILL_ACK, normally_open=False)
-    press_fill = syauto.Valve(auto=auto, cmd=PRESS_FILL_CMD,
-                              ack=PRESS_FILL_ACK, normally_open=False)
-    
-    press_vent = syauto.Valve(auto=auto, cmd=PRESS_VENT_CMD,
-                              ack=PRESS_VENT_ACK, normally_open=True)
+auto = client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180)
+air_drive_ISO_1 = syauto.Valve(
+    auto=auto, cmd=AIR_DRIVE_ISO_1_CMD, ack=AIR_DRIVE_ISO_1_ACK, normally_open=False)
+air_drive_ISO_2 = syauto.Valve(
+    auto=auto, cmd=AIR_DRIVE_ISO_2_CMD, ack=AIR_DRIVE_ISO_2_ACK, normally_open=False)
+gas_booster_fill = syauto.Valve(
+    auto=auto, cmd=GAS_BOOSTER_FILL_CMD, ack=GAS_BOOSTER_FILL_ACK, normally_open=False)
+press_fill = syauto.Valve(auto=auto, cmd=PRESS_FILL_CMD,
+                            ack=PRESS_FILL_ACK, normally_open=False)
 
-    all_vents = [press_vent]
-    all_valves = [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill]
+press_vent = syauto.Valve(auto=auto, cmd=PRESS_VENT_CMD,
+                            ack=PRESS_VENT_ACK, normally_open=True)
 
-    ###     RUNS ACTUAL AUTOSEQUENCE         ###
-    try:
-        ans = input("Type 'start' to commence autosequence. ")
-        if not (ans == 'start' or ans == 'Start' or ans == 'START'):
-            exit()
+all_vents = [press_vent]
+all_valves = [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill]
 
-        # starts by closing all valves and closing all vents
-        print("Starting Press Fill Autosequence. Setting initial system state.")
-        syauto.close_all(auto, [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, press_vent])
-        # time.sleep(1)
+###     RUNS ACTUAL AUTOSEQUENCE         ###
+try:
+    ans = input("Type 'start' to commence autosequence. ")
+    if not (ans == 'start' or ans == 'Start' or ans == 'START'):
+        exit()
 
-        # print("PHASE 1: 2K Bottle Equalization")
-        # print(f"pressurizing PRESS_TANKS using press_fill until approximately equal with 2K supply")
-        # phase_1()
-        # print("PHASE 1 complete")
+    # starts by closing all valves and closing all vents
+    print("Starting Press Fill Autosequence. Setting initial system state.")
+    syauto.close_all(auto, [air_drive_ISO_1, air_drive_ISO_2, gas_booster_fill, press_fill, press_vent])
+    time.sleep(1)
 
-        # time.sleep(1)
-        print("Leaving press_fill open")
-        press_fill.open()
+    print("PHASE 1: 2K Bottle Equalization")
+    print(f"pressurizing PRESS_TANKS using press_fill until approximately equal with 2K supply")
+    phase_1()
+    print("PHASE 1 complete")
 
-        input("Press any key to continue to PHASE 2")
+    time.sleep(1)
+    print("Leaving press_fill open")
+    press_fill.open()
 
-        print("PHASE 2: Pressurization with Gas Booster")
-        print("opening gas_booster_fill and air_drive_ISO_1")
-        gas_booster_fill.open()
-        air_drive_ISO_1.open()
+    input("Press any key to continue to PHASE 2")
 
-        while True:
-            phase_2()
-            auto.wait_until(repress)
+    print("PHASE 2: Pressurization with Gas Booster")
+    print("opening gas_booster_fill and air_drive_ISO_1")
+    gas_booster_fill.open()
+    air_drive_ISO_1.open()
 
-    except KeyboardInterrupt as e:
-        print("Manual abort, safing system")
-        print("Closing all valves and vents")
-        syauto.close_all(auto=auto, valves=(all_vents + all_valves))
+    while True:
+        phase_2()
+        auto.wait_until(repress)
 
-        response = input("Would you like to open Press Vent? y/n ")
-        if(response == "y" or response == "Y"):
-            press_vent.open()
-            print("press vent opened")
+except KeyboardInterrupt as e:
+    print("Manual abort, safing system")
+    print("Closing all valves and vents")
+    syauto.close_all(auto=auto, valves=(all_vents + all_valves))
 
-        # if real_test:
-        #     rng = client.ranges.create(
-        #         name=f"{start.__str__()[11:16]} Press Fill",
-        #         time_range=sy.TimeRange(start, datetime.now() + 5),
-        #     )
-        #     print(f"created range for test: {rng.name}")
+    response = input("Would you like to open Press Vent? y/n ")
+    if(response == "y" or response == "Y"):
+        press_vent.open()
+        print("press vent opened")
 
-    print("ctrl-c to terminate autosequence")
-    time.sleep(60)
+    auto.release()
+    print("terminated")
+    # if real_test:
+    #     rng = client.ranges.create(
+    #         name=f"{start.__str__()[11:16]} Press Fill",
+    #         time_range=sy.TimeRange(start, datetime.now() + 5),
+    #     )
+    #     print(f"created range for test: {rng.name}")
+
+auto.release()
+print("terminated")
+print("ctrl-c to terminate autosequence")
+time.sleep(60)
