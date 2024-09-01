@@ -1,18 +1,41 @@
-import time
-import synnax as sy
 from synnax.control.controller import Controller
-from typing import Union, Callable
-import statistics
+
+"""
+syauto is a library intended to abstract away confusing parts of how we interface with the system.
+
+Some brief background on valves, commands, and this library:
+Valves are basically 'gates for pressure'. They can be open (allowing pressure to flow through) or closed.
+Note that pressure always goes from the higher pressure to the lower pressure.
+
+A valve can be 'normally open' or 'normally closed'. Usually we want this property to be 
+    specified based on what the 'fail state' of the component is (whether we want it open/closed if things go wrong).
+    Vents are generally 'normally open', so if we lose power, the system will automatically depressurize.
+A valve can be 'energized' or 'deenergized'. 
+    If a valve is deenergized, it is in its default state.
+    If a valve is energized, it is in the opposite of its default state.
+In Synnax, valves have a command channel and an acknowledgement channel. 
+    The command channel is where we send commands to open or close, and the acknowledgement channel sends the 
+    'state' of the system (from the source where we physically implement the commands we send).
+
+Pulling this all together, suppose we have a valve with the following specifications:
+    command channel 'valve_1_cmd'
+    acknowledgement channel 'valve_1_ack'
+    normally_open = false (it is not a vent)
+If we want to open the valve, we need to send a command to energize the valve. We do this with
+    `auto['valve_1_cmd'] = True`
+Since `auto` is a controller which gives us access to the state of the Synnax cluster (and, by extension, the physical system),
+sending this command results in energizing valve_1, after which we will receive a `1` or `True` value on the acknowledgement channel.
+
+"""
 
 class Valve:
     # this defines a class that can be used for both regular valves and vents
     def __init__(
-            self,
-            auto: Controller,
-            cmd: str,
-            ack: str,
-            normally_open: bool = False,
-            mawp: float = 0,
+            self,                               # python thing
+            auto: Controller,                   # the controller this valve uses to talk with system
+            cmd: str,                           # command channel name
+            ack: str,                           # acknowledgement channel name
+            normally_open: bool = False,        # whether the valve's default state is 'open'
             wait_for_ack: bool = False
     ):
         self.cmd_chan = cmd
@@ -20,11 +43,11 @@ class Valve:
         self.normally_open = normally_open
         self.auto = auto
         self.wait_for_ack = wait_for_ack
-        self.mawp = mawp
 
     def open(self):
         # for reg. valve, normally_open is false so cmd is set to True
         # for vent valve, normally_open is true so cmd is set to False
+        # sanity check ^
         self.auto[self.cmd_chan] = not self.normally_open
         if self.wait_for_ack:
             self.auto.wait_until(self.ack_chan != self.normally_open)
@@ -32,54 +55,10 @@ class Valve:
     def close(self):
         # for reg. valve, normally_open is false so cmd is set to False
         # for vent valve, normally_open is true so cmd is set to True
+        # sanity check ^
         self.auto[self.cmd_chan] = self.normally_open
         if self.wait_for_ack:
             self.auto.wait_until(self.ack_chan == self.normally_open)
-
-    # returns true iff the valve is below the MAWP
-    def check_safe(self, pressure: str):
-        return self.auto[pressure] < self.mawp
-
-
-class DualTescomValve:
-    def __init__(
-        self,
-        auto: Controller,
-        close_cmd_chan: str,
-        open_cmd_chan: str,
-        normally_open: bool = False,
-        mawp: float = 0,
-        wait_for_ack: bool = False,
-        open_cmd_ack: str = "",
-        close_cmd_ack: str = "",
-    ):
-        self.normally_open = normally_open
-        self.auto = auto
-        self.wait_for_ack = wait_for_ack
-        self.mawp = mawp
-        self.open_cmd_chan = open_cmd_chan
-        self.close_cmd_chan = close_cmd_chan
-        self.open_cmd_ack = open_cmd_ack
-        self.close_cmd_ack = close_cmd_ack
-
-    # energizes the open_cmd_chan valve to open the valve
-    def open(self):
-        self.auto.set({
-            self.close_cmd_chan: False,
-            self.open_cmd_chan: True,
-        })
-        if self.wait_for_ack:
-            self.auto.wait_until(self.open_cmd_ack)
-
-    # energizes the close_cmd_chan valve to close the valve
-    def close(self):
-        self.auto.set({
-            self.close_cmd_chan: True,
-            self.open_cmd_chan: False,
-        })
-        if self.wait_for_ack:
-            self.auto.wait_until(self.close_cmd_ack)
-
 
 def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves_to_close: list[Valve]):
     commands = {}
@@ -119,74 +98,24 @@ def open_all(auto: Controller, valves: list[Valve]):
             commands[valve.cmd_chan] = 1
     auto.set(commands)
 
+# functions that we don't use but could be used as ideas for future functionality:
 
-# def pressurize(auto: Controller, valve_s: Union[list[Valve], Valve], pressure_s: Union[list[str], str],
-#                target: float, max: float, inc: float, delay: float = 1):
-#     # This energizes the valve until the target pressure is reached.
-#     # valve_s can be either a single valve or a list.
-
-#     # if custom_auto is None:
-#     #     custom_auto = Controller
-
-#     if isinstance(valve_s, Valve):
-#         print(f"Pressurizing {valve_s.cmd_chan} to {target}")
-#         valve_s = [valve_s]
-
-#     else:
-#         print("Pressurizing these valves:")
-#         for v in valve_s:
-#             print(str(v.cmd_chan) + ", ")
-
-#     if isinstance(pressure_s, str):
-#         print(f"Reading from one pressure channel: {pressure_s}")
-#         pressure_s = [pressure_s]
-
-#     else:
-#         print("Reading from these pressure channels:")
-#         for p in pressure_s:
-#             print(p)
-
-#     # pressurizes the valve until the target pressure is reached
-#     median = statistics.median(auto[pressure] for pressure in pressure_s)
-#     partial_target = median + inc
-#     while partial_target <= target:
-#         # if median exceeds max, return
-#         if (statistics.median(auto[pressure] for pressure in pressure_s) > max):
-#             return
-#         print(f"Pressurizing to {partial_target}")
-
-#         # Opens all valves since a single valve would already be converted to list of size 1
-#         open_all(auto, valve_s)
-
-#         auto.wait_until(
-#             lambda pressure: all(
-#                 auto[pressure] >= partial_target for pressure in pressure_s), delay
-#         )
-
-#         close_all(auto, valve_s)
-
-#         time.sleep(delay)
-#         partial_target += inc
-
-#     print(f"Valve(s) have reached {target}")
+# def purge(valves: list[Valve], duration: float = 1):
+#     prev_time = time.time()
+#     for valve in valves:
+#         while (time.time() - prev_time < duration):
+#             open_all(valve.auto, valves)
+#             time.sleep(1)
 
 
-def purge(valves: list[Valve], duration: float = 1):
-    prev_time = time.time()
-    for valve in valves:
-        while (time.time() - prev_time < duration):
-            open_all(valve.auto, valves)
-            time.sleep(1)
-
-#returns a list of medians
-def compute_medians(auto_: Controller, channels: list[str], running_median_size: int = 100):
-    # this function takes in a list of channel names and returns a list
-    # where each channel name is replaced by its reading, averaged over RUNNING_MEDIAN_SIZE readings
-    median_arrs = []
-    for channel in channels:
+# def compute_medians(auto_: Controller, channels: list[str], running_median_size: int = 100):
+#     # this function takes in a list of channel names and returns a list
+#     # where each channel name is replaced by its reading, averaged over RUNNING_MEDIAN_SIZE readings
+#     median_arrs = []
+#     for channel in channels:
         
-        if len(median_arrs) > running_median_size:
-            median_arrs.pop(0)
-        median_arrs.append(statistics.median(auto_[channel]))
+#         if len(median_arrs) > running_median_size:
+#             median_arrs.pop(0)
+#         median_arrs.append(statistics.median(auto_[channel]))
 
-    return median_arrs
+#     return median_arrs
