@@ -20,7 +20,8 @@ try:
 except Exception as e:
     raise Exception(
         f"""
-        Failed to connect to Synnax data processing sever. Screenshot
-        this error and send it in the #avionics slack channel.
+        Failed to connect to Synnax data processing sever. 
+        Check your connection credentials and other options. 
+        Screenshot this error and send it in the #sw_eng slack channel.
     """
     ) from e
