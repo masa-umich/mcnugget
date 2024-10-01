@@ -62,16 +62,16 @@ press_vent = syauto.Valve(
     normally_open=True,
 )
 
-#returns true if tank pressure is greater than target pressure
+# returns true if tank pressure is greater than target pressure
 def pressurize(auto: synnax.control.Controller):
     return auto[TANK_PRESSURE] > target_pressure
 
-#returns true if tank pressure is greater than a temp (frequently modified) target pressure
+# returns true if tank pressure is greater than a temp (frequently modified) target pressure
 def temp_pressurize(auto):
      return auto[TANK_PRESSURE] > temp_target_pressure
 
-#pressurizes tank in increments of 50 for when there is a specified target pressure
-def base_inc_pressurize(auto):
+# pressurizes tank in increments of 50 for when there is a specified target pressure
+def target_inc_pressurize(auto):
     global temp_target_pressure
     while auto[TANK_PRESSURE] + 50 < target_pressure:
         press_valve.open()
@@ -84,7 +84,7 @@ def base_inc_pressurize(auto):
     press_valve.close()
     return True     
 
-#creturns true if there's a sudden drop in pressure
+# returns true if there's a sudden drop in pressure
 def drop(auto):
     global CURR_PRESSURE
     global PREV_PRESSURE
@@ -94,7 +94,8 @@ def drop(auto):
 
     return (((CURR_PRESSURE - PREV_PRESSURE) + 100) < 0)
 
-#returns true if either (a) temp target pressure is reached or (b) the tank has burst
+# returns true if either (a) temp target pressure is reached or (b) the tank has burst
+# also sets BURST to true if tank has burst
 def check_drop(auto):
      global BURST
 
@@ -104,7 +105,7 @@ def check_drop(auto):
           BURST = True
           return True
 
-#incremental pressurization for unspecified target pressure
+# incremental pressurization for unspecified target pressure
 def inc_pressurize(auto):
      global temp_target_pressure
      temp_target_pressure += 50
@@ -116,6 +117,16 @@ def inc_pressurize(auto):
         press_valve.close()
         temp_target_pressure += 50
         time.sleep(3)
+     return True
+
+# maintains pressure at target pressure
+def keep_pressure(auto):
+     for i in range(300):
+        if auto[TANK_PRESSURE] < target_pressure - 10:
+            press_valve.open()
+            auto.wait_until(pressurize)
+            press_valve.close()
+        time.sleep(2)
      return True
     
 
@@ -129,15 +140,15 @@ try:
 
     print("pressurizing to MAWP (850 psi)")
     target_pressure = 850
-    base_inc_pressurize(auto)
+    target_inc_pressurize(auto)
     print(f"pressurized to {auto[TANK_PRESSURE]}\n")
     time.sleep(5)
 
     print("pressurizing to 1.1x MAWP (935 psi)")
     target_pressure = 850 * 1.1
-    base_inc_pressurize(auto)
+    target_inc_pressurize(auto)
     print(f"pressurized to {auto[TANK_PRESSURE]}\n")
-    time.sleep(600)
+    keep_pressure(auto)
     input("continue?")
 
     print("pressurizing to burst...")
