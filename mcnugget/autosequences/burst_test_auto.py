@@ -124,7 +124,7 @@ try:
     input("confirm you would like to start autosequence (press enter)")
     print("setting system state\n")
 
-    # often want to start by closing everything
+    # start by closing everything
     press_valve.close()
 
     print("pressurizing to MAWP (850 psi)")
@@ -137,10 +137,10 @@ try:
     target_pressure = 850 * 1.1
     base_inc_pressurize(auto)
     print(f"pressurized to {auto[TANK_PRESSURE]}\n")
-    time.sleep(5)
+    time.sleep(600)
     input("continue?")
 
-    print("pressurizing...")
+    print("pressurizing to burst...")
     press_valve.open()
     PREV_PRESSURE = CURR_PRESSURE
     CURR_PRESSURE = auto[TANK_PRESSURE]

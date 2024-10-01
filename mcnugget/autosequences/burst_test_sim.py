@@ -9,10 +9,6 @@ client = synnax.Synnax()
 
 DEBUG = False
 
-#added stuff
-
-#end added stuff
-
 # sim index
 SIM_TIME = "sim_time"
 
@@ -166,6 +162,7 @@ with client.open_streamer(READ_FROM) as streamer:
             if true_press_pressure < 0:
                 raise Exception("You created negative pressure, this should not be allowed.")
 
+            # drop pressure once it hits 1200 to simulate burst
             if true_press_pressure > 1200:
                 true_press_pressure = 500
 
