@@ -10,17 +10,17 @@ client = synnax.Synnax()
 DEBUG = False
 
 # sim index
-SIM_TIME = "sim_time"
+SIM_TIME = "gse_time"
 
 # valves
-PRESS_VALVE_ACK = "sim_doa_1"
-PRESS_VALVE_CMD = "sim_doc_1"
-PRESS_VENT_ACK = "sim_doa_2"
-PRESS_VENT_CMD = "sim_doc_2"
+PRESS_VALVE_ACK = "gse_doa_1"
+PRESS_VALVE_CMD = "gse_doc_1"
+PRESS_VENT_ACK = "gse_doa_2"
+PRESS_VENT_CMD = "gse_doc_2"
 
 # PTs
-PRESS_TANK = "sim_ai_1"
-PRESS_SUPPLY = "sim_ai_2"
+PRESS_TANK = "gse_ai_1"
+PRESS_SUPPLY = "gse_ai_2"
 
 CMDS = [PRESS_VALVE_CMD, PRESS_VENT_CMD]
 ACKS = [PRESS_VALVE_ACK, PRESS_VENT_ACK]
