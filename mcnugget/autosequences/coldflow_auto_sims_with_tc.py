@@ -2,6 +2,7 @@ import math
 import time
 import random
 import synnax as sy
+from pynput import keyboard
 
 client = sy.Synnax(
     host="localhost",
@@ -10,6 +11,22 @@ client = sy.Synnax(
     password="seldon",
     secure=False
 )
+#adding pausing feature
+paused = False
+print("Space bar pauses the autosequence")
+
+def on_press(key):
+    if key == keyboard.Key.space:
+        global paused
+        if paused:
+            paused = False
+            print("Sim resumed")
+        else:
+            paused = True
+            print("Sim paused")
+
+listener = keyboard.Listener(on_press = on_press)
+listener.start()
 
 # testing if leon can git push
 DAQ_TIME = "daq_time"
@@ -425,10 +442,12 @@ with client.open_streamer(READ_CHANNELS) as streamer:
 
                 if not ox_high_flow_vent_energized:
                     ox_tank_delta -= 5.0
-
-                true_ox_pressure += ox_tank_delta - ox_leak_rate
-                true_fuel_pressure += fuel_tank_delta - fuel_leak_rate
-                true_press_pressure += press_tank_delta - press_leak_rate
+                
+                #Can't change it if we're paused :)
+                if not paused:
+                    true_ox_pressure += ox_tank_delta - ox_leak_rate
+                    true_fuel_pressure += fuel_tank_delta - fuel_leak_rate
+                    true_press_pressure += press_tank_delta - press_leak_rate
                 
 
                 # no negative pressures pls ;-;
