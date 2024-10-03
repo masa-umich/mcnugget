@@ -98,7 +98,8 @@ press_supply_pt = client.channels.create(
 
 # this just specifies the rate at which we commit data
 rate = (synnax.Rate.HZ * 50).period.seconds
-
+print("rate: ", rate)
+BURST = False
 
 true_press_pressure = 0
 true_supply_pressure = 2000
@@ -154,17 +155,22 @@ with client.open_streamer(READ_FROM) as streamer:
 
             if press_valve_energized and true_supply_pressure > true_press_pressure:
                 true_supply_pressure = max(0, true_supply_pressure - 0.3)
-                true_press_pressure += 0.9
+                true_press_pressure += 9
 
             if (not press_vent_energized) and true_press_pressure > 0:
-                true_press_pressure = max(0, true_press_pressure - 0.1)
+                true_press_pressure = max(0, true_press_pressure - 1)
             
             if true_press_pressure < 0:
                 raise Exception("You created negative pressure, this should not be allowed.")
 
             # drop pressure once it hits 1200 to simulate burst
-            if true_press_pressure > 1200:
-                true_press_pressure = 500
+            if BURST or true_press_pressure > 1200:
+                BURST = True
+                true_press_pressure -= 10
+                true_press_pressure = max(0, true_press_pressure)
+
+            if true_press_pressure < 100:
+                BURST = False
 
             now = synnax.TimeStamp.now()
 
