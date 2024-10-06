@@ -15,8 +15,8 @@ SIM_TIME = "daq_time"
 # valves
 PRESS_VALVE_ACK = "gse_doa_1"
 PRESS_VALVE_CMD = "gse_doc_1"
-PRESS_VENT_ACK = "gse_doa_2"
-PRESS_VENT_CMD = "gse_doc_2"
+PRESS_VENT_ACK = "gse_doa_7"
+PRESS_VENT_CMD = "gse_doc_7"
 
 # PTs
 PRESS_TANK = "gse_ai_1"
@@ -182,7 +182,7 @@ with client.open_streamer(READ_FROM) as streamer:
                 true_supply_pressure = max(0, true_supply_pressure - 0.3)
                 true_press_pressure += 9
 
-            if (not press_vent_energized) and true_press_pressure > 0:
+            if (press_vent_energized) and true_press_pressure > 0:
                 true_press_pressure = max(0, true_press_pressure - 1)
             
             if true_press_pressure < 0:
