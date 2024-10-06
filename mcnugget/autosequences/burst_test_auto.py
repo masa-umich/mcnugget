@@ -4,6 +4,7 @@ import synnax.control
 from collections import deque
 from enum import Enum
 from mcnugget.autosequences import syauto
+import statistics
 
 client = synnax.Synnax()
 
@@ -12,6 +13,11 @@ PRESS_VALVE_CMD = "gse_doc_1"
 PRESS_VENT_ACK = "gse_doa_2"
 PRESS_VENT_CMD = "gse_doc_2"
 TANK_PRESSURE = "gse_ai_1_avg"
+
+TANK_PRESSURE_1 = "gse_ai_1_avg"
+TANK_PRESSURE_2 = "gse_ai_2_avg"
+TANK_PRESSURE_3 = "gse_ai_3_avg"
+
 TANK_PRESSURE_OLD = "gse_ai_1_avg_delay"
 SUPPLY_PRESSURE = "gse_ai_2_avg"
 
@@ -80,6 +86,11 @@ press_vent = syauto.Valve(
     normally_open=True,
 )
 
+def get_tank_pressure(auto: synnax.control.Controller):
+    return statistics.median(auto[TANK_PRESSURE_1],
+                             auto[TANK_PRESSURE_2],
+                             auto[TANK_PRESSURE_3])
+
 def pressurize_tank(
         auto: synnax.control.Controller, 
         press_method_: press_method, 
@@ -90,7 +101,7 @@ def pressurize_tank(
         case press_method.time:
             return start_time + target_delay <= synnax.TimeStamp.now()
         case press_method.pressure:
-            return auto[TANK_PRESSURE] > target_pressure
+            return get_tank_pressure(auto) > target_pressure
 
 def check_lower_bound(
         auto: synnax.control.Controller,
@@ -98,7 +109,7 @@ def check_lower_bound(
         max_time: synnax.TimeSpan,
         start_time: synnax.TimeStamp
 ):
-    return auto[TANK_PRESSURE] < lower_bound or synnax.TimeStamp.now().since(start_time) > max_time
+    return get_tank_pressure(auto) < lower_bound or synnax.TimeStamp.now().since(start_time) > max_time
     
 def pressurize_tank_monitor_burst(
         auto: synnax.control.Controller, 
@@ -109,9 +120,9 @@ def pressurize_tank_monitor_burst(
 ):
     match press_method_:
         case press_method.time:
-            return start_time + target_delay <= synnax.TimeStamp.now() or auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD] 
+            return start_time + target_delay <= synnax.TimeStamp.now() or get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD] 
         case press_method.pressure: 
-            return auto[TANK_PRESSURE] > target_pressure or auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]
+            return get_tank_pressure(auto) > target_pressure or get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]
 
 try:
     print(f"MAWP: {MAWP} +/- {MAWP_BOUND}")
@@ -140,9 +151,9 @@ try:
     press_vent.close()
 
     print(f"pressurizing to MAWP {MAWP}")
-    partial_target = auto[TANK_PRESSURE]  # starting pressure
+    partial_target = get_tank_pressure(auto)  # starting pressure
     partial_target += INC_PRESS
-    pressure = auto[TANK_PRESSURE]
+    pressure = get_tank_pressure(auto)
     while pressure < MAWP and partial_target < MAWP:
         press_valve.open()
         auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
@@ -154,8 +165,8 @@ try:
                 partial_target += INC_PRESS
                 partial_target = min(partial_target, MAWP)
             case press_method.time:
-                partial_target = auto[TANK_PRESSURE]
-        pressure = auto[TANK_PRESSURE]
+                partial_target = get_tank_pressure(auto)
+        pressure = get_tank_pressure(auto)
 
     input("pressure has reached MAWP, press any key to continue ")
     
@@ -169,7 +180,7 @@ try:
             partial_target += INC_PRESS
             partial_target = min(partial_target, MAWP * 1.1)
         else:
-            partial_target = auto[TANK_PRESSURE]
+            partial_target = get_tank_pressure(auto)
 
     print("pressure has reached MAWP * 1.1")
 
@@ -199,12 +210,12 @@ try:
         print("proof terminated")
         press_valve.close()
 
-    partial_target = auto[TANK_PRESSURE]
+    partial_target = get_tank_pressure(auto)
     partial_target += BURST_INC_PRESS
     while True:
         bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
         print("pressurizing to burst...")
-        partial_target = auto[TANK_PRESSURE]
+        partial_target = get_tank_pressure(auto)
         BURST = False
         while not BURST:
             # if less than 80% of way to est. burst
@@ -213,7 +224,7 @@ try:
                 press_valve.open()
                 auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME))
                 press_valve.close()
-                if auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
+                if get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
                     break
                 partial_target += BURST_INC_PRESS
                 time.sleep(BURST_INC_DELAY)
@@ -222,7 +233,7 @@ try:
                 press_valve.open()
                 auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME * 0.5))
                 press_valve.close()
-                if auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
+                if get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
                     break
                 partial_target += BURST_INC_PRESS * 0.5
                 time.sleep(BURST_INC_DELAY)

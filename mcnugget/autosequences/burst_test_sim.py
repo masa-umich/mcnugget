@@ -20,6 +20,9 @@ PRESS_VENT_CMD = "gse_doc_2"
 
 # PTs
 PRESS_TANK = "gse_ai_1"
+PRESS_TANK_1 = "gse_ai_6"
+PRESS_TANK_2 = "gse_ai_7"
+PRESS_TANK_3 = "gse_ai_8"
 PRESS_SUPPLY = "gse_ai_2"
 
 CMDS = [PRESS_VALVE_CMD, PRESS_VENT_CMD]
@@ -97,6 +100,15 @@ press_tank_pt = client.channels.create(
 )
 print(f"created/retrieved channel {PRESS_TANK} with key", press_tank_pt.key)
 
+for i in range(6, 9):
+    press_tank_pt = client.channels.create(
+        name=f"gse_ai_{i}",
+        data_type=synnax.DataType.FLOAT64,
+        index=sim_time.key,
+        retrieve_if_name_exists=True,
+    )
+    print(f"created/retrieved channel gse_ai_{i} with key", press_tank_pt.key)
+
 press_supply_pt = client.channels.create(
     name=PRESS_SUPPLY,
     data_type=synnax.DataType.FLOAT64,
@@ -120,7 +132,9 @@ LOCAL_STATE = {
     PRESS_VALVE_ACK: 0,
     PRESS_VENT_ACK: 0,
     PRESS_SUPPLY: true_supply_pressure,
-    PRESS_TANK: true_press_pressure,
+    PRESS_TANK_1: true_press_pressure,
+    PRESS_TANK_2: true_press_pressure,
+    PRESS_TANK_3: true_press_pressure,
     SIM_TIME: synnax.TimeStamp.now()
 }
 
@@ -191,7 +205,9 @@ with client.open_streamer(READ_FROM) as streamer:
             LOCAL_STATE[PRESS_VALVE_ACK] = REMOTE_STATE[PRESS_VALVE_CMD]
             LOCAL_STATE[PRESS_VENT_ACK] = REMOTE_STATE[PRESS_VENT_CMD]
             LOCAL_STATE[PRESS_SUPPLY] = noise(true_supply_pressure)
-            LOCAL_STATE[PRESS_TANK] = noise(true_press_pressure)
+            LOCAL_STATE[PRESS_TANK_1] = noise(true_press_pressure)
+            LOCAL_STATE[PRESS_TANK_2] = noise(true_press_pressure)
+            LOCAL_STATE[PRESS_TANK_3] = noise(true_press_pressure)
             LOCAL_STATE[SIM_TIME] = synnax.TimeStamp.now()
 
             writer.write(LOCAL_STATE)

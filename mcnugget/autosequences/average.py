@@ -8,7 +8,9 @@ from mcnugget.autosequences import syauto
 client = synnax.Synnax()
 
 channels_to_average = [
-    "gse_ai_1",
+    "gse_ai_6",
+    "gse_ai_7",
+    "gse_ai_8",
     "gse_ai_2"
 ]
 
