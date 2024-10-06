@@ -20,9 +20,9 @@ PRESS_VENT_CMD = "gse_doc_2"
 
 # PTs
 PRESS_TANK = "gse_ai_1"
-PRESS_TANK_1 = "gse_ai_6"
-PRESS_TANK_2 = "gse_ai_7"
-PRESS_TANK_3 = "gse_ai_8"
+PRESS_TANK_1 = "gse_ai_9"
+PRESS_TANK_2 = "gse_ai_10"
+PRESS_TANK_3 = "gse_ai_11"
 PRESS_SUPPLY = "gse_ai_2"
 
 CMDS = [PRESS_VALVE_CMD, PRESS_VENT_CMD]
