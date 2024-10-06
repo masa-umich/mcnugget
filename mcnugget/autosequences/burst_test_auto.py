@@ -219,6 +219,7 @@ try:
 
     partial_target = get_tank_pressure(auto)
     partial_target += BURST_INC_PRESS
+    input("press enter to continue to burst phase")
     while True:
         bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
         print("pressurizing to burst...")
