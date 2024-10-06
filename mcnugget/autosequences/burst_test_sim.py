@@ -27,7 +27,7 @@ PRESS_SUPPLY = "gse_ai_2"
 
 CMDS = [PRESS_VALVE_CMD, PRESS_VENT_CMD]
 ACKS = [PRESS_VALVE_ACK, PRESS_VENT_ACK]
-PTS = [PRESS_TANK, PRESS_SUPPLY]
+PTS = [PRESS_TANK_1, PRESS_TANK_2, PRESS_TANK_3, PRESS_SUPPLY]
 
 # this channel keeps track of timestamps on the sim, which is committing data
 sim_time = client.channels.create(
