@@ -35,7 +35,7 @@ class press_method(Enum):
 INC_PRESS = 50                                  # psi
 INC_TIME = 0.5                                  # seconds
 INC_DELAY = 1                                   # seconds
-PRESS_METHOD = press_method.pressure            # either pressure or time
+PRESS_METHOD = press_method.time          # either pressure or time
 # MAWP = 850                                      # will target 1.1x MAWP for proofing
 MAWP = 300                                      # will target 1.1x MAWP for proofing
 MAX_PRESSURE = 0                                # psi (highest recorded pressure)
@@ -80,7 +80,7 @@ def pressurize_tank(
         start_time: synnax.TimeStamp = synnax.TimeStamp.now()):
     match press_method_:
         case press_method.time:
-            return start_time + target_delay <= synnax.TimeStamp.now() 
+            return start_time + target_delay <= synnax.TimeStamp.now() or target_pressure > MAWP
         case press_method.pressure:
             return auto[TANK_PRESSURE_AVG] > target_pressure
 
@@ -132,24 +132,44 @@ try:
     print(f"pressurizing to MAWP {MAWP}")
     partial_target = auto[TANK_PRESSURE_AVG]  # starting pressure
     partial_target += INC_PRESS
+    # while partial_target < MAWP:
+    #     press_valve.open()
+    #     auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
+    #     press_valve.close()
+    #     time.sleep(INC_DELAY)
+    #     partial_target += INC_PRESS
+    #     partial_target = min(partial_target, MAWP)
     while partial_target < MAWP:
         press_valve.open()
         auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
         press_valve.close()
         time.sleep(INC_DELAY)
-        partial_target += INC_PRESS
-        partial_target = min(partial_target, MAWP)
+        if PRESS_METHOD == press_method.pressure:
+            partial_target += INC_PRESS
+            partial_target = min(partial_target, MAWP)
+        else:
+            partial_target = auto[TANK_PRESSURE_AVG]
 
     input("pressure has reached MAWP, press any key to continue ")
     
     print(f"pressurizing to 1.1x MAWP {round(MAWP * 1.1, 2)}")
+    # while partial_target < (MAWP * 1.1):
+    #     press_valve.open()
+    #     auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
+    #     press_valve.close()
+    #     time.sleep(INC_DELAY)
+    #     partial_target += INC_PRESS
+    #     partial_target = min(partial_target, MAWP * 1.1)
     while partial_target < (MAWP * 1.1):
         press_valve.open()
         auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
         press_valve.close()
         time.sleep(INC_DELAY)
-        partial_target += INC_PRESS
-        partial_target = min(partial_target, MAWP * 1.1)
+        if PRESS_METHOD == press_method.pressure:
+            partial_target += INC_PRESS
+            partial_target = min(partial_target, MAWP * 1.1)
+        else:
+            partial_target = auto[TANK_PRESSURE_AVG]
 
     print("pressure has reached MAWP * 1.1")
 
