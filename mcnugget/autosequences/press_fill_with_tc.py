@@ -113,9 +113,14 @@ PRESS_FILL_ACK = "gse_doa_23"
 PRESS_VENT_CMD = "gse_doc_18"
 PRESS_VENT_ACK = "gse_doa_18"
 
+PRESS_TC_1 = "gse_ai_74"
+PRESS_TC_2 = "gse_ai_75"
+PRESS_TC_3 = "gse_ai_76"
+
 CMDS = [AIR_DRIVE_ISO_1_CMD, AIR_DRIVE_ISO_2_CMD, GAS_BOOSTER_FILL_CMD, PRESS_FILL_CMD, PRESS_VENT_CMD]
 ACKS = [AIR_DRIVE_ISO_1_ACK, AIR_DRIVE_ISO_2_ACK, GAS_BOOSTER_FILL_ACK, PRESS_FILL_ACK, PRESS_VENT_ACK]
 PTS = [PRESS_PT_1, PRESS_PT_2, PRESS_PT_3, PRESS_TANK_SUPPLY]
+TCS = [PRESS_TC_1, PRESS_TC_2, PRESS_TC_3]
 
 WRITE_TO = []
 READ_FROM = []
@@ -125,6 +130,9 @@ for ack in ACKS:
     READ_FROM.append(ack)
 for pt in PTS:
     READ_FROM.append(pt)
+for tc in TCS:
+    READ_FROM.append(tc)
+
 
 start = sy.TimeStamp.now()
 press_start_time = time.time()
@@ -139,6 +147,8 @@ PRESS_PT_1_SUM = 0
 PRESS_PT_2_SUM = 0
 PRESS_PT_3_SUM = 0
 PRESS_TANK_SUPPLY_SUM = 0
+
+
 
 AVG_DICT = {
     PRESS_PT_1: PRESS_PT_1_DEQUE,

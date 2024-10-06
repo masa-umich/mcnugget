@@ -186,6 +186,7 @@ for pt in PTs:
     )
 
 rate = (sy.Rate.HZ * 50).period.seconds
+print (rate)
 
 # Create DAQ_STATE dictionary
 DAQ_STATE = {}
@@ -385,6 +386,7 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                 true_ox_pressure += ox_tank_delta
                 true_fuel_pressure += fuel_tank_delta
                 true_press_pressure += press_tank_delta
+                print (press_tank_delta)
                 
 
                 # no negative pressures pls ;-;
@@ -436,18 +438,18 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     # OX_TANK_1_PRESSURE: true_ox_pressure,
                     # OX_TANK_2_PRESSURE: true_ox_pressure,
                     # OX_TANK_3_PRESSURE: true_ox_pressure,
-                    # PRESS_TANK_PT_1: true_press_pressure,
-                    # PRESS_TANK_PT_2: true_press_pressure,
-                    # PRESS_TANK_PT_3: true_press_pressure,
+                    PRESS_TANK_PT_1: true_press_pressure,
+                    PRESS_TANK_PT_2: true_press_pressure,
+                    PRESS_TANK_PT_3: true_press_pressure,
                     FUEL_PT_1_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     FUEL_PT_2_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     FUEL_PT_3_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     OX_TANK_1_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_2_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_3_PRESSURE: true_ox_pressure + random.uniform(-20,20),
-                    PRESS_TANK_PT_1: random.normalvariate(true_press_pressure, 15),
-                    PRESS_TANK_PT_2: random.normalvariate(true_press_pressure, 15),
-                    PRESS_TANK_PT_3: random.normalvariate(true_press_pressure, 15),
+                    # PRESS_TANK_PT_1: random.normalvariate(true_press_pressure, 15),
+                    # PRESS_TANK_PT_2: random.normalvariate(true_press_pressure, 15),
+                    # PRESS_TANK_PT_3: random.normalvariate(true_press_pressure, 15),
                     # PRESS_TANK_PT_1: true_press_pressure + random.uniform(-40, 40),
                     # PRESS_TANK_PT_2: true_press_pressure + random.uniform(-40, 40),
                     # PRESS_TANK_PT_3: true_press_pressure + random.uniform(-40, 40),
@@ -464,8 +466,8 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     TRICKLE_PURGE_PRE_2K_PT: 0,
                     AIR_DRIVE_2K_PT: 0,
                     AIR_DRIVE_POST_REG_PT: 0,
-                    # PRESS_TANK_SUPPLY: supply_2k,
-                    PRESS_TANK_SUPPLY: supply_2k + random.uniform(-20, 20),
+                    PRESS_TANK_SUPPLY: supply_2k,
+                    # PRESS_TANK_SUPPLY: supply_2k + random.uniform(-20, 20),
                     GAS_BOOSTER_OUTLET_PT: true_press_pressure,
                     PRESS_TANK_2K_BOTTLE_PRE_FILL_PT: 0,
                     PNEUMATICS_BOTTLE_PT: 0,

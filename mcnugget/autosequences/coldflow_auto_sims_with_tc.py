@@ -293,9 +293,9 @@ press_tank_PT_3 = true_press_pressure + random.uniform(-20, 20)
 supply_2k = INITIAL_2K_PRESSURE
 
 true_press_temp = INITIAL_PRESS_TANK_TEMP
-press_tank_TC_1 = true_press_temp + random.uniform(-2, 2)
-press_tank_TC_2 = true_press_temp + random.uniform(-2, 2)
-press_tank_TC_3 = true_press_temp + random.uniform(-2, 2)
+press_tank_TC_1 = true_press_temp + random.uniform(-0.1, 0.1)
+press_tank_TC_2 = true_press_temp + random.uniform(-0.1, 0.1)
+press_tank_TC_3 = true_press_temp + random.uniform(-0.1, 0.1)
 
 
 
@@ -357,6 +357,7 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                 trailer_pneumatics_delta = -0.005
                 ox_tank_delta = -0.07
                 press_tank_delta = -0.03
+                temp_delta = 0.0001
                 
                 # leak rate is 2 psi/sec based off of target press (3800 psi)   
                 fuel_leak_rate = (2 * math.sqrt(true_fuel_pressure)) / math.sqrt(PRESS_TANK_TARGET_PRESSURE) * rate
@@ -370,19 +371,23 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                         diff = (supply_2k / INITIAL_2K_PRESSURE) * 6 + 0.1
                         press_tank_delta += diff
                         supply_2k -= diff / 8
+                        temp_delta += 2 * rate # this should be +2 C every second while filling
+                else:
+                    temp_delta -= 0.1 * rate # test temp decay
 
                     if gas_booster_fill_energized:
                         if air_drive_iso_1_energized and air_drive_iso_2_energized:
                             diff = (supply_2k / INITIAL_2K_PRESSURE) * 6 + 1
                             press_tank_delta += diff
                             supply_2k -= diff / 8
+                            temp_delta += 2 * rate # this should be +2 C every second while filling
 
                 if not press_vent_energized:
                     press_tank_delta -= 4
-
+                
 
                 ### TEMP ###
-
+                
 
                 ### FUEL ###
                 if fuel_prevalve_energized and FUEL_PREVALVE_LAST_OPEN is None:
@@ -442,12 +447,16 @@ with client.open_streamer(READ_CHANNELS) as streamer:
 
                 if not ox_high_flow_vent_energized:
                     ox_tank_delta -= 5.0
-                
-                #Can't change it if we're paused :)
+                                
+                # speed up simulation, can be slowed down in auto seq
+                # Can't change it if we're paused :)
                 if not paused:
-                    true_ox_pressure += ox_tank_delta - ox_leak_rate
-                    true_fuel_pressure += fuel_tank_delta - fuel_leak_rate
-                    true_press_pressure += press_tank_delta - press_leak_rate
+                    true_ox_pressure += ox_tank_delta - (60 * ox_leak_rate) 
+                    true_fuel_pressure += fuel_tank_delta - (60 * fuel_leak_rate)
+                    true_press_pressure += press_tank_delta - (60 * press_leak_rate) 
+                    true_press_temp += temp_delta
+                
+                print ("Press leak rate:", press_leak_rate) # testing comment to check leak rate
                 
 
                 # no negative pressures pls ;-;
@@ -499,18 +508,18 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     # OX_TANK_1_PRESSURE: true_ox_pressure,
                     # OX_TANK_2_PRESSURE: true_ox_pressure,
                     # OX_TANK_3_PRESSURE: true_ox_pressure,
-                    # PRESS_TANK_PT_1: true_press_pressure,
-                    # PRESS_TANK_PT_2: true_press_pressure,
-                    # PRESS_TANK_PT_3: true_press_pressure,
+                    PRESS_TANK_PT_1: true_press_pressure,
+                    PRESS_TANK_PT_2: true_press_pressure,
+                    PRESS_TANK_PT_3: true_press_pressure,
                     FUEL_PT_1_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     FUEL_PT_2_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     FUEL_PT_3_PRESSURE: true_fuel_pressure + random.uniform(-20, 20),
                     OX_TANK_1_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_2_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_3_PRESSURE: true_ox_pressure + random.uniform(-20,20),
-                    PRESS_TANK_PT_1: random.normalvariate(true_press_pressure, 15),
-                    PRESS_TANK_PT_2: random.normalvariate(true_press_pressure, 15),
-                    PRESS_TANK_PT_3: random.normalvariate(true_press_pressure, 15),
+                    # PRESS_TANK_PT_1: random.normalvariate(true_press_pressure, 15),
+                    # PRESS_TANK_PT_2: random.normalvariate(true_press_pressure, 15),
+                    # PRESS_TANK_PT_3: random.normalvariate(true_press_pressure, 15),
                     # PRESS_TANK_PT_1: true_press_pressure + random.uniform(-40, 40),
                     # PRESS_TANK_PT_2: true_press_pressure + random.uniform(-40, 40),
                     # PRESS_TANK_PT_3: true_press_pressure + random.uniform(-40, 40),
@@ -527,8 +536,8 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     TRICKLE_PURGE_PRE_2K_PT: 0,
                     AIR_DRIVE_2K_PT: 0,
                     AIR_DRIVE_POST_REG_PT: 0,
-                    # PRESS_TANK_SUPPLY: supply_2k,
-                    PRESS_TANK_SUPPLY: supply_2k + random.uniform(-20, 20),
+                    PRESS_TANK_SUPPLY: supply_2k,
+                    # PRESS_TANK_SUPPLY: supply_2k + random.uniform(-20, 20),
                     GAS_BOOSTER_OUTLET_PT: true_press_pressure,
                     PRESS_TANK_2K_BOTTLE_PRE_FILL_PT: 0,
                     PNEUMATICS_BOTTLE_PT: 0,
@@ -536,11 +545,13 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     ENGINE_PNEUMATICS_PT: 0,
                     PURGE_2K_BOTTLE_PT: 0,
                     PURGE_POST_REG_PT: 0,
-
+                    
                     # writes to 3 TCs
-                    PRESS_TANK_TC_1: true_press_temp + random.uniform(-2, 2),
-                    PRESS_TANK_TC_2: true_press_temp + random.uniform(-2, 2),
-                    PRESS_TANK_TC_3: true_press_temp + random.uniform(-2, 2)
+                    PRESS_TANK_TC_1: true_press_temp + random.uniform(-0.1, 0.1),
+                    PRESS_TANK_TC_2: true_press_temp + random.uniform(-0.1, 0.1),
+                    PRESS_TANK_TC_3: true_press_temp + random.uniform(-0.1, 0.1)
+
+                                      
                 })
 
             except Exception as e:
