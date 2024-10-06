@@ -8,14 +8,15 @@ from mcnugget.autosequences import syauto
 client = synnax.Synnax()
 
 channels_to_delay = [
-    "gse_ai_1_avg",
-    "gse_ai_2_avg"
+    "gse_ai_9_avg",
+    "gse_ai_10_avg",
+    "gse_ai_11_avg"
 ]
 
 rate = (synnax.Rate.HZ * 50).period.seconds
 print("rate: ", rate)
 values = {}
-delay_in_samples = 50  # for 50Hz data, this is equivalent to 0.2 seconds
+delay_in_samples = 20  # for 50Hz data, this is equivalent to 0.2 seconds
 
 daq_time = client.channels.create(
     name="daq_time",
@@ -107,7 +108,7 @@ try:
                 continue
             update_values(frame[channel][-1], channel)
             STATE[channel + "_delay"] = read_delay(channel)
-        STATE["delay_time"] = synnax.TimeStamp.now()
+        STATE["delay_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
         writer.write(STATE)
         time.sleep(rate)
 

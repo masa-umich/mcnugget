@@ -10,19 +10,21 @@ client = synnax.Synnax()
 
 PRESS_VALVE_ACK = "gse_doa_1"
 PRESS_VALVE_CMD = "gse_doc_1"
-PRESS_VENT_ACK = "gse_doa_2"
-PRESS_VENT_CMD = "gse_doc_2"
-TANK_PRESSURE = "gse_ai_1_avg"
+PRESS_VENT_ACK = "gse_doa_7"
+PRESS_VENT_CMD = "gse_doc_7"
+# TANK_PRESSURE = "gse_ai_1_avg"
 
-TANK_PRESSURE_1 = "gse_ai_1_avg"
-TANK_PRESSURE_2 = "gse_ai_2_avg"
-TANK_PRESSURE_3 = "gse_ai_3_avg"
+TANK_PRESSURE_1 = "gse_ai_9_avg"
+TANK_PRESSURE_2 = "gse_ai_10_avg"
+TANK_PRESSURE_3 = "gse_ai_11_avg"
 
-TANK_PRESSURE_OLD = "gse_ai_1_avg_delay"
-SUPPLY_PRESSURE = "gse_ai_2_avg"
+TANK_PRESSURE_OLD_1 = "gse_ai_1_avg_delay"
+TANK_PRESSURE_OLD_2 = "gse_ai_2_avg_delay"
+TANK_PRESSURE_OLD_3 = "gse_ai_3_avg_delay"
+# SUPPLY_PRESSURE = "gse_ai_2_avg"
 
 WRITE_TO = [PRESS_VENT_CMD, PRESS_VALVE_CMD]
-READ_FROM = [PRESS_VENT_ACK, PRESS_VALVE_ACK, TANK_PRESSURE, SUPPLY_PRESSURE, TANK_PRESSURE_OLD]
+READ_FROM = [PRESS_VENT_ACK, PRESS_VALVE_ACK, TANK_PRESSURE_1, TANK_PRESSURE_2, TANK_PRESSURE_3, TANK_PRESSURE_OLD_1, TANK_PRESSURE_OLD_2, TANK_PRESSURE_OLD_3]
 
 class press_method(Enum):
     time = 0,
@@ -83,13 +85,18 @@ press_vent = syauto.Valve(
     auto=auto,
     cmd=PRESS_VENT_CMD,
     ack=PRESS_VENT_ACK,
-    normally_open=True,
+    normally_open=False,
 )
 
 def get_tank_pressure(auto: synnax.control.Controller):
-    return statistics.median(auto[TANK_PRESSURE_1],
+    return statistics.median([auto[TANK_PRESSURE_1],
                              auto[TANK_PRESSURE_2],
-                             auto[TANK_PRESSURE_3])
+                             auto[TANK_PRESSURE_3]])
+
+def get_old_tank_pressure(auto: synnax.control.Controller):
+    return statistics.median([auto[TANK_PRESSURE_OLD_1],
+                             auto[TANK_PRESSURE_OLD_2],
+                             auto[TANK_PRESSURE_OLD_3]])
 
 def pressurize_tank(
         auto: synnax.control.Controller, 
@@ -120,9 +127,9 @@ def pressurize_tank_monitor_burst(
 ):
     match press_method_:
         case press_method.time:
-            return start_time + target_delay <= synnax.TimeStamp.now() or get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD] 
+            return start_time + target_delay <= synnax.TimeStamp.now() or get_tank_pressure(auto) + DROP_THRESHOLD <= get_old_tank_pressure(auto) 
         case press_method.pressure: 
-            return get_tank_pressure(auto) > target_pressure or get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]
+            return get_tank_pressure(auto) > target_pressure or get_tank_pressure(auto) + DROP_THRESHOLD <= get_old_tank_pressure(auto)
 
 try:
     print(f"MAWP: {MAWP} +/- {MAWP_BOUND}")
@@ -224,7 +231,7 @@ try:
                 press_valve.open()
                 auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME))
                 press_valve.close()
-                if get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
+                if get_tank_pressure(auto) + DROP_THRESHOLD <= get_old_tank_pressure(auto):
                     break
                 partial_target += BURST_INC_PRESS
                 time.sleep(BURST_INC_DELAY)
@@ -233,7 +240,7 @@ try:
                 press_valve.open()
                 auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME * 0.5))
                 press_valve.close()
-                if get_tank_pressure(auto) + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
+                if get_tank_pressure(auto) + DROP_THRESHOLD <= get_old_tank_pressure(auto):
                     break
                 partial_target += BURST_INC_PRESS * 0.5
                 time.sleep(BURST_INC_DELAY)

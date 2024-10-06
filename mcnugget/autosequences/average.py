@@ -8,17 +8,17 @@ from mcnugget.autosequences import syauto
 client = synnax.Synnax()
 
 channels_to_average = [
-    "gse_ai_6",
-    "gse_ai_7",
-    "gse_ai_8",
-    "gse_ai_2"
+    "gse_ai_9",
+    "gse_ai_10",
+    "gse_ai_11",
+    "gse_ai_1"
 ]
 
 rate = (synnax.Rate.HZ * 50).period.seconds
 print("rate: ", rate)
 running_average_values = {}
 running_average_sums = {}
-running_average_length = 50  # for 50Hz data, this is equivalent to 1 second
+running_average_length = 10  # for 50Hz data, this is equivalent to 0.2 second
 
 # average_time = client.channels.create(
 #     name="average_time",
@@ -128,7 +128,7 @@ try:
                 continue
             update_average(frame[channel][-1], channel)
             STATE[channel + "_avg"] = read_average(channel)
-        STATE["average_time"] = synnax.TimeStamp.now()
+        STATE["average_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
         writer.write(STATE)
         time.sleep(rate)
 
