@@ -16,7 +16,7 @@ rate = (synnax.Rate.HZ * 50).period.seconds
 print("rate: ", rate)
 running_average_values = {}
 running_average_sums = {}
-running_average_length = 10  # for 50Hz data, this is equivalent to 0.2 seconds
+running_average_length = 50  # for 50Hz data, this is equivalent to 1 second
 
 # average_time = client.channels.create(
 #     name="average_time",

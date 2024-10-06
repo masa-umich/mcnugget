@@ -51,7 +51,7 @@ else:
     PRESS_METHOD = press_method.pressure            # press_method - used to determine how to increment pressure
     MAWP = 850                                      # psi - maximum allowable working pressure
     billion = 1000000000
-    PROOF_DURATION = synnax.TimeSpan(20 * billion)  # ns - 20 seconds
+    PROOF_DURATION = synnax.TimeSpan(30 * billion)   # ns - 5 seconds
     MAWP_BOUND = 50                                 # psi
 
     BURST_TARGET = 1300                             # psi - estimated burst
@@ -198,12 +198,13 @@ try:
     except KeyboardInterrupt as e:
         print("proof terminated")
         press_valve.close()
-        
+
     partial_target = auto[TANK_PRESSURE]
     partial_target += BURST_INC_PRESS
-    bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
-    while bursting:
+    while True:
+        bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
         print("pressurizing to burst...")
+        partial_target = auto[TANK_PRESSURE]
         BURST = False
         while not BURST:
             # if less than 80% of way to est. burst
@@ -215,6 +216,7 @@ try:
                 if auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
                     break
                 partial_target += BURST_INC_PRESS
+                time.sleep(BURST_INC_DELAY)
             else: 
                 print(f"presurizing for {round(BURST_INC_TIME * 0.5, 2)}")
                 press_valve.open()
@@ -223,8 +225,8 @@ try:
                 if auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
                     break
                 partial_target += BURST_INC_PRESS * 0.5
+                time.sleep(BURST_INC_DELAY)
         print("tank has burst!")
-        bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
 
 except KeyboardInterrupt as e:
     print("\naborting")
