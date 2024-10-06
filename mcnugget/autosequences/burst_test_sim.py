@@ -10,7 +10,7 @@ client = synnax.Synnax()
 DEBUG = False
 
 # sim index
-SIM_TIME = "gse_time"
+SIM_TIME = "daq_time"
 
 # valves
 PRESS_VALVE_ACK = "gse_doa_1"
@@ -33,6 +33,7 @@ sim_time = client.channels.create(
     is_index=True,
     retrieve_if_name_exists=True
 )
+print(f"created/retrieved channel {SIM_TIME} with key", sim_time.key)
 
 # this channel keeps track of timestamps for the press_valve channel, which is where we send commands
 press_valve_time = client.channels.create(
@@ -41,6 +42,7 @@ press_valve_time = client.channels.create(
     is_index=True,
     retrieve_if_name_exists=True
 )
+# print("created/retrieved channel press_valve_time with key", press_valve_time.key)
 
 # this channel is a command channel to send commands from us to the sim
 press_valve_cmd = client.channels.create(
@@ -49,6 +51,7 @@ press_valve_cmd = client.channels.create(
     index=press_valve_time.key,
     retrieve_if_name_exists=True,
 )
+print(f"created/retrieved channel {PRESS_VALVE_CMD} with key", press_valve_cmd.key)
 
 # this channel is an acknowledgement channel to confirm commands are received
 press_valve_ack = client.channels.create(
@@ -57,6 +60,7 @@ press_valve_ack = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
+print(f"created/retrieved channel {PRESS_VALVE_ACK} with key", press_valve_ack.key)
 
 # this channel keeps track of timestamps for the press_vent channel, which is where we send commands
 press_vent_time = client.channels.create(
@@ -65,6 +69,7 @@ press_vent_time = client.channels.create(
     is_index=True,
     retrieve_if_name_exists=True
 )
+# print("created/retrieved channel press_vent_time with key", press_vent_time.key)
 
 # this channel is a command channel to send commands from us to the sim
 press_vent_cmd = client.channels.create(
@@ -73,6 +78,7 @@ press_vent_cmd = client.channels.create(
     index=press_vent_time.key,
     retrieve_if_name_exists=True,
 )
+print(f"created/retrieved channel {PRESS_VENT_CMD} with key", press_vent_cmd.key)
 
 # this channel is an acknowledgement channel to confirm commands are received
 press_vent_ack = client.channels.create(
@@ -81,6 +87,7 @@ press_vent_ack = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
+print(f"created/retrieved channel {PRESS_VENT_ACK} with key", press_vent_ack.key)
 
 press_tank_pt = client.channels.create(
     name=PRESS_TANK,
@@ -88,6 +95,7 @@ press_tank_pt = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
+print(f"created/retrieved channel {PRESS_TANK} with key", press_tank_pt.key)
 
 press_supply_pt = client.channels.create(
     name=PRESS_SUPPLY,
@@ -95,6 +103,7 @@ press_supply_pt = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
+print(f"created/retrieved channel {PRESS_SUPPLY} with key", press_supply_pt.key)
 
 # this just specifies the rate at which we commit data
 rate = (synnax.Rate.HZ * 50).period.seconds
@@ -112,7 +121,7 @@ LOCAL_STATE = {
     PRESS_VENT_ACK: 0,
     PRESS_SUPPLY: true_supply_pressure,
     PRESS_TANK: true_press_pressure,
-    SIM_TIME: synnax.TimeStamp.now(),
+    SIM_TIME: synnax.TimeStamp.now()
 }
 
 REMOTE_STATE = {
@@ -147,6 +156,8 @@ with client.open_streamer(READ_FROM) as streamer:
             press_valve_energized = REMOTE_STATE[PRESS_VALVE_CMD] == 1
             press_vent_energized = REMOTE_STATE[PRESS_VENT_CMD] == 1
 
+            if i % 100 == 0:
+                print(f"cycle {i}")
             if DEBUG and i % 100 == 0:
                 print(f"press_valve_energized:{press_valve_energized}")
                 print(f"press_vent_energized:{press_vent_energized}")
@@ -165,11 +176,14 @@ with client.open_streamer(READ_FROM) as streamer:
 
             # drop pressure once it hits 1200 to simulate burst
             if BURST or true_press_pressure > 1200:
+                if not BURST:
+                    print("tank has burst")
                 BURST = True
-                true_press_pressure -= 10
+                true_press_pressure -= 40
                 true_press_pressure = max(0, true_press_pressure)
 
-            if true_press_pressure < 100:
+            if true_press_pressure < 100 and BURST:
+                print("tank has unburst :)")
                 BURST = False
 
             now = synnax.TimeStamp.now()
@@ -181,4 +195,5 @@ with client.open_streamer(READ_FROM) as streamer:
             LOCAL_STATE[SIM_TIME] = synnax.TimeStamp.now()
 
             writer.write(LOCAL_STATE)
+            writer.commit()
             i += 1

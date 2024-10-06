@@ -98,7 +98,6 @@ print("averaging the following channels: ")
 for c in channels_to_average:
     print(c)
 
-# auto = client.control.acquire(name="average.py", read=READ_FROM, write=[],  write_authorities=2)
 streamer = client.open_streamer(READ_FROM)
 writer = client.open_writer(
         synnax.TimeStamp.now(),
@@ -110,19 +109,15 @@ writer = client.open_writer(
 i = 0
 try:
     print("initializing...")
-    time.sleep(2)
-    print("averaging the following channels: ")
-    for c in channels_to_average:
-        print(c)
+    time.sleep(1)
     while True:
         i += 1
-        if i % 2000 == 0:
+        if i % 100 == 0:
             print(f"cycle {i}")
         frame = streamer.read(0)
-        # print(f"frame: {frame}")
         streamer.read
         if frame is None:
-            # print("rip")
+            # print("frame is None")
             time.sleep(rate)
             continue
         for channel in READ_FROM:
@@ -130,10 +125,8 @@ try:
                 print(f"channel {channel} not found in frame")
                 continue
             update_average(frame[channel][-1], channel)
-            # update_average(auto[channel], channel)
             STATE[channel + "_avg"] = read_average(channel)
         STATE["average_time"] = synnax.TimeStamp.now()
-        # print(f"writing {STATE}")
         writer.write(STATE)
         time.sleep(rate)
 
@@ -141,8 +134,7 @@ except KeyboardInterrupt:
     print("terminating")
     time.sleep(2)
     writer.close()
-    # auto.release()
-    reader.close()
+    streamer.close()
     client.close()
     print("terminated")
     exit()

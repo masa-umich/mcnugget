@@ -5,59 +5,67 @@ from collections import deque
 from enum import Enum
 from mcnugget.autosequences import syauto
 
-# this initializes a connection to the Synnax server
 client = synnax.Synnax()
 
-# these are the channel names we will be using
 PRESS_VALVE_ACK = "gse_doa_1"
 PRESS_VALVE_CMD = "gse_doc_1"
 PRESS_VENT_ACK = "gse_doa_2"
 PRESS_VENT_CMD = "gse_doc_2"
-TANK_PRESSURE = "gse_ai_1"
-SUPPLY_PRESSURE = "gse_ai_2"
-TANK_PRESSURE_AVG = "gse_ai_1"
-SUPPLY_PRESSURE_AVG = "gse_ai_2"
+TANK_PRESSURE = "gse_ai_1_avg"
+TANK_PRESSURE_OLD = "gse_ai_1_avg_delay"
+SUPPLY_PRESSURE = "gse_ai_2_avg"
 
 WRITE_TO = [PRESS_VENT_CMD, PRESS_VALVE_CMD]
-READ_FROM = [PRESS_VENT_ACK, PRESS_VALVE_ACK, TANK_PRESSURE, SUPPLY_PRESSURE]
-
-"""
-We want variables to store
-press increment (time version, pressure version)
-method of incrementing (time or pressure)
-press delay
-"""
+READ_FROM = [PRESS_VENT_ACK, PRESS_VALVE_ACK, TANK_PRESSURE, SUPPLY_PRESSURE, TANK_PRESSURE_OLD]
 
 class press_method(Enum):
     time = 0,
     pressure = 1
 
-INC_PRESS = 50                                  # psi
-INC_TIME = 0.5                                  # seconds
-INC_DELAY = 1                                   # seconds
-PRESS_METHOD = press_method.time          # either pressure or time
-# MAWP = 850                                      # will target 1.1x MAWP for proofing
-MAWP = 300                                      # will target 1.1x MAWP for proofing
-MAX_PRESSURE = 0                                # psi (highest recorded pressure)
-DROP_THRESHOLD = 150                            # psi
-billion = 1000000000
-PROOF_DURATION = synnax.TimeSpan(10 * billion)   # nanoseconds again
-MAWP_BOUND = 50                                 # psi
+mode = input("enter 'real' to connect to GSE or 'sim' to connect to sim: ")
 
-BURST_TARGET = 1300
-BURST_INC_PRESS = INC_PRESS
-BURST_INC_TIME = INC_TIME
-BURST_INC_DELAY = INC_DELAY
-BURST = False                                   # whether the tank has burst
+if mode == "real":
+    RATE = 0.02                                     # seconds - rate of data collection
+    PRESS_METHOD = press_method.pressure            # press_method - used to determine how to increment pressure
+    INC_PRESS = 50                                  # psi - pressure increment
+    INC_TIME = 2                                    # seconds - time increment
+    INC_DELAY = 1                                   # seconds - delay between increments
+    MAWP = 850                                      # psi - maximum allowable working pressure
+    billion = 1000000000
+    PROOF_DURATION = synnax.TimeSpan(10 * 60 * billion)  # ns - 10 minutes
+    MAWP_BOUND = 50                                 # psi
+    DROP_THRESHOLD = 100                            # psi - threshold to qualify 'burst'
 
-# this acquires control of the autosequence, creating a controller which we can use to interact with the system
-auto = client.control.acquire(name="Demo Autosequence", read=READ_FROM, write=WRITE_TO, write_authorities=100)
+    BURST_TARGET = 1300                             # psi - estimated burst
+    BURST_INC_PRESS = INC_PRESS                     # psi - pressure increment used for burst phase
+    BURST_INC_TIME = INC_TIME                       # seconds - time increment used for burst phase
+    BURST_INC_DELAY = INC_DELAY                     # seconds - delay used for burst phase
+    BURST = False                                   # bool - whether the tank has burst
+
+else:
+    DROP_THRESHOLD = 100                            # psi - threshold to qualify 'burst'
+    RATE = 0.02                                     # seconds - rate of data collection
+    INC_PRESS = 50                                  # psi - pressure increment
+    INC_TIME = 2                                    # seconds - time increment
+    INC_DELAY = 1                                   # seconds - delay between increments
+    PRESS_METHOD = press_method.pressure            # press_method - used to determine how to increment pressure
+    MAWP = 850                                      # psi - maximum allowable working pressure
+    billion = 1000000000
+    PROOF_DURATION = synnax.TimeSpan(20 * billion)  # ns - 20 seconds
+    MAWP_BOUND = 50                                 # psi
+
+    BURST_TARGET = 1300                             # psi - estimated burst
+    BURST_INC_PRESS = INC_PRESS                     # psi - pressure increment used for burst phase
+    BURST_INC_TIME = INC_TIME                       # seconds - time increment used for burst phase
+    BURST_INC_DELAY = INC_DELAY                     # seconds - delay used for burst phase
+    BURST = False                                   # bool - whether the tank has burst
+
+
+auto = client.control.acquire(name="Burst Test Autosequence", read=READ_FROM, write=WRITE_TO, write_authorities=100)
 
 print("initializing...")
 time.sleep(1)
 
-# this creates a valve object which we can use to open and close the valve
-# syauto is a utility library we made to abstract away some of the more confusing parts of the controller
 press_valve = syauto.Valve(
     auto=auto,
     cmd=PRESS_VALVE_CMD,
@@ -80,9 +88,9 @@ def pressurize_tank(
         start_time: synnax.TimeStamp = synnax.TimeStamp.now()):
     match press_method_:
         case press_method.time:
-            return start_time + target_delay <= synnax.TimeStamp.now() or target_pressure > MAWP
+            return start_time + target_delay <= synnax.TimeStamp.now()
         case press_method.pressure:
-            return auto[TANK_PRESSURE_AVG] > target_pressure
+            return auto[TANK_PRESSURE] > target_pressure
 
 def check_lower_bound(
         auto: synnax.control.Controller,
@@ -90,9 +98,7 @@ def check_lower_bound(
         max_time: synnax.TimeSpan,
         start_time: synnax.TimeStamp
 ):
-    # returns true if pressure drops below lower_bound or if time exceeds max_time
-    return auto[TANK_PRESSURE_AVG] < lower_bound or synnax.TimeStamp.now().since(start_time) > max_time
-    # return synnax.TimeStamp.now().since(start_time) > max_time
+    return auto[TANK_PRESSURE] < lower_bound or synnax.TimeStamp.now().since(start_time) > max_time
     
 def pressurize_tank_monitor_burst(
         auto: synnax.control.Controller, 
@@ -101,28 +107,32 @@ def pressurize_tank_monitor_burst(
         target_delay: float = None,
         start_time: synnax.TimeStamp = synnax.TimeStamp.now()
 ):
-    # def drop(auto):
-        # return auto[TANK_PRESSURE_AVG] + DROP_THRESHOLD < MAX_PRESSURE
-        # curr_avg_pressure = 0
-        # prev_avg_pressure = 0
-        # prev_avg_pressure = curr_avg_pressure
-        # curr_avg_pressure = auto[TANK_PRESSURE_AVG]
-        # return (((curr_avg_pressure - prev_avg_pressure) + DROP_THRESHOLD) < 0)
-    # print(' i need a better name ')
     match press_method_:
         case press_method.time:
-            # if not drop(auto): 
-            return start_time + target_delay <= synnax.TimeStamp.now() 
-            # BURST = True 
-            # return True 
+            return start_time + target_delay <= synnax.TimeStamp.now() or auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD] 
         case press_method.pressure: 
-            # if not drop(auto):    
-            return auto[TANK_PRESSURE_AVG] > target_pressure
-            # return True
+            return auto[TANK_PRESSURE] > target_pressure or auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]
 
 try:
-    # good idea to add some safety checks
-    input("confirm you would like to start autosequence (press enter)")
+    print(f"MAWP: {MAWP} +/- {MAWP_BOUND}")
+    print(f"PRESS_METHOD: {PRESS_METHOD}")
+    print(f"PROOF_DURATION: {PROOF_DURATION}")
+    print(f"BURST_TARGET: {BURST_TARGET}")
+    print(f"DROP_THRESHOLD: {DROP_THRESHOLD}")
+    print("before MAWP:")
+    if PRESS_METHOD == press_method.pressure:
+        print(f"\tINC_PRESS: {INC_PRESS}")
+    else:
+        print(f"\tINC_TIME: {INC_TIME}")
+    print(f"\tINC_DELAY: {INC_DELAY}")
+    print("after MAWP:")
+    if PRESS_METHOD == press_method.pressure:
+        print(f"\tINC_PRESS: {BURST_INC_PRESS}")
+    else:
+        print(f"\tINC_TIME: {BURST_INC_TIME}")
+    print(f"\tINC_DELAY: {BURST_INC_DELAY}")
+    print()
+    input("press enter to continue ")
     print("setting system state\n")
 
     # start by closing everything
@@ -130,36 +140,26 @@ try:
     press_vent.close()
 
     print(f"pressurizing to MAWP {MAWP}")
-    partial_target = auto[TANK_PRESSURE_AVG]  # starting pressure
+    partial_target = auto[TANK_PRESSURE]  # starting pressure
     partial_target += INC_PRESS
-    # while partial_target < MAWP:
-    #     press_valve.open()
-    #     auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
-    #     press_valve.close()
-    #     time.sleep(INC_DELAY)
-    #     partial_target += INC_PRESS
-    #     partial_target = min(partial_target, MAWP)
-    while partial_target < MAWP:
+    pressure = auto[TANK_PRESSURE]
+    while pressure < MAWP and partial_target < MAWP:
         press_valve.open()
         auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
         press_valve.close()
+        print(f"pressurized to {round(partial_target, 2)}")
         time.sleep(INC_DELAY)
-        if PRESS_METHOD == press_method.pressure:
-            partial_target += INC_PRESS
-            partial_target = min(partial_target, MAWP)
-        else:
-            partial_target = auto[TANK_PRESSURE_AVG]
+        match PRESS_METHOD:
+            case press_method.pressure:
+                partial_target += INC_PRESS
+                partial_target = min(partial_target, MAWP)
+            case press_method.time:
+                partial_target = auto[TANK_PRESSURE]
+        pressure = auto[TANK_PRESSURE]
 
     input("pressure has reached MAWP, press any key to continue ")
     
     print(f"pressurizing to 1.1x MAWP {round(MAWP * 1.1, 2)}")
-    # while partial_target < (MAWP * 1.1):
-    #     press_valve.open()
-    #     auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
-    #     press_valve.close()
-    #     time.sleep(INC_DELAY)
-    #     partial_target += INC_PRESS
-    #     partial_target = min(partial_target, MAWP * 1.1)
     while partial_target < (MAWP * 1.1):
         press_valve.open()
         auto.wait_until(lambda c: pressurize_tank(auto, PRESS_METHOD, partial_target, INC_TIME))
@@ -169,58 +169,65 @@ try:
             partial_target += INC_PRESS
             partial_target = min(partial_target, MAWP * 1.1)
         else:
-            partial_target = auto[TANK_PRESSURE_AVG]
+            partial_target = auto[TANK_PRESSURE]
 
     print("pressure has reached MAWP * 1.1")
 
-    if PRESS_METHOD == press_method.pressure:
-        print("beginning TPC")
-        proof_start = synnax.TimeStamp.now()
-        over_yet = synnax.TimeStamp.now().since(proof_start) >= PROOF_DURATION
-        
-        while synnax.TimeStamp.now().since(proof_start) < PROOF_DURATION:
-            # press_valve.close()
-            print(f"repressurizing for {PROOF_DURATION - synnax.TimeStamp.now().since(proof_start)}")
-            auto.wait_until(lambda c: check_lower_bound(auto=auto, lower_bound=(MAWP * 1.1) - MAWP_BOUND, max_time=(PROOF_DURATION - (synnax.TimeStamp.now().since(proof_start))), start_time=synnax.TimeStamp.now()))
-            press_valve.open()
-            auto.wait_until(lambda c: pressurize_tank(auto=auto, press_method_=PRESS_METHOD, target_pressure=(MAWP * 1.1) + MAWP_BOUND))
-            press_valve.close()
-    else:
-        print("beginning proof, console operator must manually repressurize the system")
-        breakdown = 30
-        for i in range(breakdown):
-            print(f"sleeping for {int(PROOF_DURATION / breakdown)}")
-            time.sleep(PROOF_DURATION / breakdown)
+    try:
+        if PRESS_METHOD == press_method.pressure:
+            print("beginning TPC")
+            proof_start = synnax.TimeStamp.now()
+            over_yet = synnax.TimeStamp.now().since(proof_start) >= PROOF_DURATION
+            
+            while synnax.TimeStamp.now().since(proof_start) < PROOF_DURATION:
+                # press_valve.close()
+                print(f"repressurizing for {round((PROOF_DURATION - synnax.TimeStamp.now().since(proof_start)).seconds, 2)}s")
+                auto.wait_until(lambda c: check_lower_bound(auto=auto, lower_bound=(MAWP * 1.1) - MAWP_BOUND, max_time=(PROOF_DURATION - (synnax.TimeStamp.now().since(proof_start))), start_time=synnax.TimeStamp.now()))
+                press_valve.open()
+                auto.wait_until(lambda c: pressurize_tank(auto=auto, press_method_=PRESS_METHOD, target_pressure=(MAWP * 1.1) + MAWP_BOUND))
+                press_valve.close()
+        else:
+            print("beginning proof, console operator must manually repressurize the system")
+            breakdown = 30
+            print(f"PROOF_DURATION: {PROOF_DURATION.seconds}s")
+            for i in range(breakdown):
+                print(f"sleeping for {int(PROOF_DURATION.seconds / breakdown)} seconds")
+                time.sleep(PROOF_DURATION.seconds / breakdown)
+        print(f"proof complete - tank has been at pressure for {PROOF_DURATION}")
 
-    print(f"proof complete - tank has been at pressure for {PROOF_DURATION}")
-    input("press any key to continue")
-    print("pressurizing to burst...")
-    partial_target = auto[TANK_PRESSURE_AVG]
+    except KeyboardInterrupt as e:
+        print("proof terminated")
+        press_valve.close()
+        
+    partial_target = auto[TANK_PRESSURE]
     partial_target += BURST_INC_PRESS
-    while not BURST:
-        # if less than 80% of way to est. burst
-        if partial_target < ((1.1 * MAWP) + 0.80 * (BURST_TARGET - (1.1 * MAWP))):
-            press_valve.open()
-            auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME))
-            press_valve.close()
-            partial_target += BURST_INC_PRESS
-        else: 
-            press_valve.open()
-            auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME * 0.5))
-            press_valve.close()
-            partial_target += BURST_INC_PRESS * 0.5
-    # press_valve.open()
-    # PREV_PRESSURE = CURR_PRESSURE
-    # CURR_PRESSURE = auto[TANK_PRESSURE]
-    
-    # inc_pressurize(auto)
-    # press_valve.close()
-    print(f"highest pressure recorded was {MAX_PRESSURE}")
+    bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
+    while bursting:
+        print("pressurizing to burst...")
+        BURST = False
+        while not BURST:
+            # if less than 80% of way to est. burst
+            if partial_target < ((1.1 * MAWP) + 0.80 * (BURST_TARGET - (1.1 * MAWP))):
+                print(f"presurizing to {round(partial_target, 2)}")
+                press_valve.open()
+                auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME))
+                press_valve.close()
+                if auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
+                    break
+                partial_target += BURST_INC_PRESS
+            else: 
+                print(f"presurizing for {round(BURST_INC_TIME * 0.5, 2)}")
+                press_valve.open()
+                auto.wait_until(lambda c: pressurize_tank_monitor_burst(auto, PRESS_METHOD, partial_target, BURST_INC_TIME * 0.5))
+                press_valve.close()
+                if auto[TANK_PRESSURE] + DROP_THRESHOLD <= auto[TANK_PRESSURE_OLD]:
+                    break
+                partial_target += BURST_INC_PRESS * 0.5
+        print("tank has burst!")
+        bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
 
 except KeyboardInterrupt as e:
     print("\naborting")
     press_valve.close()
     press_vent.close()
-    # press_vent.open()
-
     print("system has been safed")

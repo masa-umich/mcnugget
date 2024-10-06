@@ -186,6 +186,7 @@ for pt in PTs:
     )
 
 rate = (sy.Rate.HZ * 50).period.seconds
+print("rate: ", rate)
 
 # Create DAQ_STATE dictionary
 DAQ_STATE = {}
@@ -400,6 +401,11 @@ with client.open_streamer(READ_CHANNELS) as streamer:
 
                 # print(f"ox tank delta: {ox_tank_delta}")
 
+                # i += 1
+                # if i % 50 == 0:
+                #     print(now)
+                #     print(now.datetime)
+                
                 ok = writer.write({
                     DAQ_TIME: now,
 
