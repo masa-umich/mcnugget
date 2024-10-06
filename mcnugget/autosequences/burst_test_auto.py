@@ -18,9 +18,9 @@ TANK_PRESSURE_1 = "gse_ai_9_avg"
 TANK_PRESSURE_2 = "gse_ai_10_avg"
 TANK_PRESSURE_3 = "gse_ai_11_avg"
 
-TANK_PRESSURE_OLD_1 = "gse_ai_1_avg_delay"
-TANK_PRESSURE_OLD_2 = "gse_ai_2_avg_delay"
-TANK_PRESSURE_OLD_3 = "gse_ai_3_avg_delay"
+TANK_PRESSURE_OLD_1 = "gse_ai_9_avg_delay"
+TANK_PRESSURE_OLD_2 = "gse_ai_10_avg_delay"
+TANK_PRESSURE_OLD_3 = "gse_ai_11_avg_delay"
 # SUPPLY_PRESSURE = "gse_ai_2_avg"
 
 WRITE_TO = [PRESS_VENT_CMD, PRESS_VALVE_CMD]
