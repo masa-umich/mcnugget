@@ -200,10 +200,10 @@ try:
             while synnax.TimeStamp.now().since(proof_start) < PROOF_DURATION:
                 # press_valve.close()
                 print(f"repressurizing for {round((PROOF_DURATION - synnax.TimeStamp.now().since(proof_start)).seconds, 2)}s")
-                auto.wait_until(lambda c: check_lower_bound(auto=auto, lower_bound=(MAWP * 1.1) - MAWP_BOUND, max_time=(PROOF_DURATION - (synnax.TimeStamp.now().since(proof_start))), start_time=synnax.TimeStamp.now()))
                 press_valve.open()
                 auto.wait_until(lambda c: pressurize_tank(auto=auto, press_method_=PRESS_METHOD, target_pressure=(MAWP * 1.1) + MAWP_BOUND))
                 press_valve.close()
+                auto.wait_until(lambda c: check_lower_bound(auto=auto, lower_bound=(MAWP * 1.1) - MAWP_BOUND, max_time=(PROOF_DURATION - (synnax.TimeStamp.now().since(proof_start))), start_time=synnax.TimeStamp.now()))
         else:
             print("beginning proof, console operator must manually repressurize the system")
             breakdown = 30
