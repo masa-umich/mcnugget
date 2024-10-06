@@ -37,14 +37,14 @@ if mode == "real":
     PRESS_METHOD = press_method.pressure            # press_method - used to determine how to increment pressure
     INC_PRESS = 50                                  # psi - pressure increment
     INC_TIME = 2                                    # seconds - time increment
-    INC_DELAY = 1                                   # seconds - delay between increments
+    INC_DELAY = 20                                   # seconds - delay between increments
     MAWP = 850                                      # psi - maximum allowable working pressure
     billion = 1000000000
     PROOF_DURATION = synnax.TimeSpan(10 * 60 * billion)  # ns - 10 minutes
-    MAWP_BOUND = 50                                 # psi
+    MAWP_BOUND = 20                                 # psi
     DROP_THRESHOLD = 100                            # psi - threshold to qualify 'burst'
 
-    BURST_TARGET = 1300                             # psi - estimated burst
+    BURST_TARGET = 1250                             # psi - estimated burst
     BURST_INC_PRESS = INC_PRESS                     # psi - pressure increment used for burst phase
     BURST_INC_TIME = INC_TIME                       # seconds - time increment used for burst phase
     BURST_INC_DELAY = INC_DELAY                     # seconds - delay used for burst phase
@@ -219,7 +219,6 @@ try:
 
     partial_target = get_tank_pressure(auto)
     partial_target += BURST_INC_PRESS
-    input("press enter to continue to burst phase")
     while True:
         bursting = input("press enter to continue to burst or ctrl+c to terminate the autosequence ")
         print("pressurizing to burst...")
