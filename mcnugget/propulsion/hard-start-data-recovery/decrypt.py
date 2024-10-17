@@ -41,13 +41,13 @@ def process_directory(dirs, num_bytes, output_file, data_type='float32'):
         print(f"checking ${file_path}")
         if os.path.exists(file_path):
             last_bytes = None
+            num_bytes = 2048
             while last_bytes is None:
                 try:
                     last_bytes = extract_last_bytes(file_path, num_bytes)
                 except ValueError:
                     num_bytes //= 2
                     print(f"trying ${num_bytes} bytes")
-            print(last_bytes)
             if last_bytes is None:
                 print("no data found")
             if data_type == 'float32':
@@ -67,7 +67,7 @@ def process_directory(dirs, num_bytes, output_file, data_type='float32'):
 data_dir = '/Users/evanhekman/masa/var/lib/docker/volumes/deploy_synnax-data/_data/cesium/'
 # from 65537 to 65763
 dirs = [os.path.join(data_dir, str(d)) for d in range(65537, 65764)]
-num_bytes = 64  # Adjust as needed
+num_bytes = 2048  # Adjust as needed
 output_file = 'output.csv'
 data_type = 'float32'  # Can be 'float32', 'int64', or 'uint8'
 process_directory(dirs, num_bytes, output_file, data_type)
