@@ -10,9 +10,16 @@ import synnax as sy
 #     secure=False
 # )
 
+# client = sy.Synnax(
+#     host="141.212.192.160",
+#     port=80,
+#     username="synnax",
+#     password="seldon"
+# )
+
 client = sy.Synnax(
-    host="141.212.192.160",
-    port=80,
+    host="localhost",
+    port=9090,
     username="synnax",
     password="seldon"
 )
