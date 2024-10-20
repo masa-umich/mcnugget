@@ -69,6 +69,9 @@ import synnax as sy
 import statistics
 from collections import deque
 from datetime import datetime, timedelta
+import sys
+import threading
+
 
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
@@ -103,9 +106,35 @@ else:
     print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
     exit()
 
-USING_FUEL = True
 
-USING_OX = True
+#Using FUEL or OX depending on user's command line input
+boolFuel = False
+boolOx = False 
+if (len(sys.argv) == 1):
+    boolFuel = True
+    boolOx = True
+elif (len(sys.argv) == 2):
+    if (sys.argv[1] == "NOOX" or sys.argv[1] == "noox"):
+        boolFuel = True
+    elif (sys.argv[1] == "NOFUEL" or sys.argv[1] == "nofuel"):
+        boolOx = True
+    else:
+        print("Specify with 'noox' or 'nofuel' or no arguments, closing program")
+        exit()
+else: 
+    print("Bestie you want fuel and oxygen on or off? Closing program")
+    exit()
+#Tell user what the settings are
+if (boolFuel and not boolOx):
+    print("Running program with fuel on and oxygen off")
+elif (not boolFuel and boolOx):
+    print("Running program with fuel off and oxygen on")
+else:
+    print("Running program with fuel and oxygen on")
+
+USING_FUEL = boolFuel
+
+USING_OX = boolOx
 
 # PRE_PRESS = False
 
@@ -298,10 +327,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         if ans == "y" or ans == "Y" or ans == "yes":
             syauto.open_all(auto, valves_to_potentially_open)
         input("Press any key to continue or ctrl-c to fully abort")
-            
+       
     def pressurize(auto: Controller) -> bool:
+    
         averages = get_averages(auto, PTS)
-
         ox_average = statistics.median([averages[OX_PT_1], averages[OX_PT_2], averages[OX_PT_3]])
         ox_pre_press_open = auto[OX_PRE_PRESS_ACK]
         fuel_average = statistics.median([averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3]])
@@ -365,22 +394,48 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             
             print("3")
             time.sleep(1)
-            
-            print("2 Opening Ox Dome Iso and Ox Press Iso")
-            syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
-            time.sleep(1)
-            print("1")
-            time.sleep(1)
-            
-            print("0 Opening Fuel ISO and Ox MPV")
-            syauto.open_all(auto, [fuel_press_iso, ox_mpv])
-            opened_ox_mpv = True
 
-            # print(f"Opening Fuel MPV in {MPV_DELAY}")
-            time.sleep(MPV_DELAY)
-            print("Opening Fuel MPV")
-            syauto.open_all(auto, [fuel_mpv])
-            opened_fuel_mpv = True
+            if (USING_FUEL and not USING_OX):
+                print("2")
+                time.sleep(1)
+                print("1")
+                time.sleep(1)
+
+                print("0 Opening Fuel ISO")
+                syauto.open_all(auto, [fuel_press_iso])
+
+                time.sleep(MPV_DELAY)
+                print("Opening Fuel MPV")
+                syauto.open_all(auto, [fuel_mpv])
+                opened_fuel_mpv = True
+
+            elif (not USING_FUEL and USING_OX):
+                print("2 Opening Ox Dome Iso and Ox Press Iso")
+                syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+                time.sleep(1)
+                print("1")
+                time.sleep(1)
+
+                print("0 Opening Ox MPV")
+                syauto.open_all(auto, [ox_mpv])
+                opened_ox_mpv = True
+
+            else:
+                print("2 Opening Ox Dome Iso and Ox Press Iso")
+                syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
+                time.sleep(1)
+                print("1")
+                time.sleep(1)
+                
+                print("0 Opening Fuel ISO and Ox MPV")
+                syauto.open_all(auto, [fuel_press_iso, ox_mpv])
+                opened_ox_mpv = True
+
+                # print(f"Opening Fuel MPV in {MPV_DELAY}")
+                time.sleep(MPV_DELAY)
+                print("Opening Fuel MPV")
+                syauto.open_all(auto, [fuel_mpv])
+                opened_fuel_mpv = True
 
             print(f"\nTerminating fire in")
             for i in range(FIRE_DURATION):
@@ -444,18 +499,33 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         print("Setting starting state")
         syauto.close_all(auto, [ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent, ox_prepress, fuel_prepress, fuel_press_iso])
 
-        print("Pressurizing fuel and ox in 6 seconds")
+        
+        if (USING_FUEL and not USING_OX):
+            print("Pressurizing fuel in 6 seconds")
+        elif (not USING_FUEL and USING_OX):
+            print("Pressurizing ox in 6 seconds")
+        else:
+            print("Pressurizing fuel and ox in 6 seconds")
+
         time.sleep(1)
         for i in range(5):
             print(f"{5 - i}")
             time.sleep(1)
 
-        print("Pressurizing fuel and ox")
-        auto.wait_until(pressurize)
-        # the above statement will only finish if an abort is triggered
+        if (USING_FUEL and not USING_OX):
+            print("Pressurizing fuel")
+        elif (not USING_FUEL and USING_OX):
+            print("Pressurizing ox")
+        else:
+            print("Pressurizing fuel and ox")
 
+        auto.wait_until(pressurize)
+
+
+        # the above statement will only finish if an abort is triggered
+  
     except KeyboardInterrupt as e:
-        syauto.close_all(auto, [fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_prepress, ox_prepress])
+
         answer = input("\nValves are closed. Input `fire` to commence firing sequence anything else to skip:\n")
         if answer == "fire" or answer == "Fire" or answer == "FIRE":
             reg_fire()
@@ -471,3 +541,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         #         time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
         #     )
         #     print(f"Created range for test: {rng.name}")
+
+
+
+
