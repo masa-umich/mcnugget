@@ -490,7 +490,35 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     try:
         start = datetime.now()
 
-        input("Press enter to confirm you have opened prevalves ")
+        time.sleep(1)
+
+        #Check prevalves are opened or closed
+        if (USING_FUEL and not USING_OX):
+            if (auto[FUEL_PREVALVE_ACK]):
+                input("Fuel prevalve open, press enter to continue ")
+            else:
+                ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
+                if (ans != 'bypass'):
+                    print('closing program')
+                    exit()
+        elif (not USING_FUEL and USING_OX):
+            if (auto[OX_PREVALVE_ACK]):
+                input("Ox prevalve open, press enter to continue ")
+            else:
+                ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
+                if (ans != 'bypass'):
+                    print('closing program')
+                    exit()
+        else:
+            if (auto[FUEL_PREVALVE_ACK] and auto[OX_PREVALVE_ACK]):
+                input("Prevalves open, press enter to continue ")
+            else:
+                ans = input("Fuel and/or Ox prevalve NOT open, type 'bypass' to continue ")
+                if (ans != 'bypass'):
+                    print('closing program')
+                    exit()
+
+        
 
         ans = input("Type 'start' to commence autosequence. ")
         if not (ans == 'start' or ans == 'Start' or ans == 'START'):
