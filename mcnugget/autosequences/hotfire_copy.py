@@ -371,10 +371,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 fuel_ox_abort(auto, abort_fuel=False, abort_ox=True)
 
     def get_user_input():
-        """
-        Function to get user input for firing sequence.
-        Sets the event once input is received.
-        """
+        # Function to get user input for firing sequence.
+        # Sets the event once input is received.
         global user_input_received
         answer = input("\nValves are closed. Input `fire` to commence firing sequence, anything else to skip:\n")
         
@@ -390,18 +388,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_prevalve, ox_prevalve])
 
     def wait_until_pressurized(auto: Controller, condition) -> None:
-        """
-        Waits until the pressurize condition is met or the user interrupts.
-        """
-        try:
-            while not user_input_received.is_set():
-                if condition(auto):
-                    print("Pressurization condition met.")
-                    return
-                time.sleep(0.1)  # Polling interval
-            print("User input received, wait_until terminated.")
-        except TimeoutError:
-            print("Timeout occurred while waiting for pressurization.")
+        #keeps pressurizing until user inputs
+        while not user_input_received.is_set():
+            condition(auto)
+            time.sleep(0.1)  
 
     def reg_fire():
         opened_fuel_mpv = False
@@ -552,8 +542,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 if (ans != 'bypass'):
                     print('closing program')
                     exit()
-
-        
 
         ans = input("Type 'start' to commence autosequence. ")
         if not (ans == 'start' or ans == 'Start' or ans == 'START'):
