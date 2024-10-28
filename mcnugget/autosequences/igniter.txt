@@ -1,0 +1,113 @@
+NITROUS_MPV_DOC = "gse_doc_1"
+NITROUS_MPV_DOA = "gse_doa_1"
+
+ETHANOL_MPV_DOC = "gse_doc_2"
+ETHANOL_MPV_DOA = "gse_doa_2"
+
+TORCH_ISO_DOC = "gse_doc_3"
+TORCH_ISO_DOA = "gse_doa_3"
+
+TORCH_PURGE_DOC = "gse_doc_4"
+TORCH_PURGE_DOA = "gse_doa_4"
+
+ETHANOL_TANK_VENT_DOC = "gse_doc_5"
+ETHANOL_TANK_VENT_DOA = "gse_doa_5"
+
+SPARK_PLUG_DOC = "gse_doc_6"
+SPARK_PLUG_DOA = "gse_doa_6"
+
+ETHANOL_PRESS_TARGET = 750
+
+CHAMBER_PRESS_TARGET = 100
+
+PRESS_RATE = 50
+
+ETHANOL_TANK_PT = "gse_ai_1"
+
+TORCH_PT_1 = "gse_ai_2"
+TORCH_PT_2 = "gse_ai_3"
+TORCH_PT_3 = "gse_ai_4"
+
+client = sy.Synnax()
+
+CMDS = [NITROUS_MPV_DOC,ETHANOL_MPV_DOC,TORCH_ISO_DOC,TORCH_PURGE_DOC,ETHANOL_TANK_VENT_DOC,SPARK_PLUG_DOC]
+ACKS = [NITROUS_MPV_DOA,ETHANOL_MPV_DOA,TORCH_ISO_DOA,TORCH_PURGE_DOA,ETHANOL_TANK_VENT_DOA,ETHANOL_TANK_VENT_DOA]
+PTS = [ETHANOL_TANK_PT,TORCH_PT_1,TORCH_PT_2,TORCH_PT_3]
+
+WRITE_TO = []
+READ_FROM = []
+
+for cmd in CMDS:
+    WRITE_TO.append(cmd)
+
+for ack in ACKS:
+    READ_FROM.append(ack)
+
+for pt in PTS:
+    READ_FROM.append(pt)
+
+pts_median = statistics.median(auto[TORCH_PT_1],auto[TORCH_PT_2],auto[TORCH_PT_3])
+
+def ethanol_press():
+    return auto[ETHANOL_TANK_PT] >= ETHANOL_PRESS_TARGET
+
+auto = client.control.acquire(name="Torch Ignition Booyah", write="WRITE_TO", read="READ_FROM", write_authorities=222)
+
+nitrous_mpv = syauto.Valve(auto=auto, cmd=NITROUS_MPV_DOC, ack=NITROUS_MPV_DOA, normally_open=True)
+
+ethanol_mpv = syauto.Valve(auto=auto, cmd=ETHANOL_MPV_DOC, ack=ETHANOL_MPV_DOA, normally_open=True)
+
+torch_iso = syauto.Valve(auto=auto, cmd=TORCH_ISO_DOC, ack=TORCH_ISO_DOA, normally_open=False)
+
+torch_purge = syauto.Valve(auto=auto, cmd=TORCH_PURGE_DOC, ack=TORCH_PURGE_DOA, normally_open=False)
+
+ethanol_tank_mpv = syauto.Valve(auto=auto, cmd=ETHANOL_TANK_VENT_DOC, ack=ETHANOL_TANK_VENT_DOA, normally_open=True)
+
+igniter = syauto.Valve(auto=auto, cmd=SPARK_PLUG_DOC, ack=SPARK_PLUG_DOA, normally_open=False)
+
+try:
+    ans = input("Type 'start' to commence autosequence. ")
+    if not (ans == 'start' or ans == 'Start' or ans == 'START'):
+        exit()
+
+    print("Starting Press Fill Autosequence. Setting initial system state.")
+    syauto.close_all(auto, [nitrous_mpv, ethanol_mpv, ethanol_mpv, torch_iso, torch_purge, ethanol_tank_mpv])
+    time.sleep(1)
+
+    print(f"pressurizing ethanol to {ETHANOL_PRESS_TARGET}")
+    syauto.open(torch_iso)
+    auto.wait_until(ethanol_press)
+    syauto.close(torch_iso)
+
+    print("opening ethanol mpv")
+    syauto.open(ethanol_mpv)
+
+    time.sleep(.1)
+
+    print("opening nitrous mpv")
+    syauto.open(nitrous_mpv)
+
+    print("purging and terminating autosequence")
+    time.sleep(5)
+
+    syauto.close_all(auto, [nitrous_mpv, ethanol_mpv, ethanol_mpv, torch_iso, torch_purge, ethanol_tank_mpv])
+
+    syauto.open(torch_purge)
+
+    time.sleep(2)
+
+    syauto.close(torch_purge)
+
+except KeyboardInterrupt as e:
+    print("Manual abort, safing system")
+    print("Closing all valves and vents")
+    syauto.close_all(auto=auto, valves=(all_vents + all_valves))
+
+    auto.release()
+    print("terminated")
+
+auto.release()
+print("terminated")
+print("ctrl-c to terminate autosequence")
+time.sleep(60)
+    
