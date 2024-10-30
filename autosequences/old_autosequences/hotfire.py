@@ -62,7 +62,7 @@ X. Abort
 
 """
 
-import syauto
+from autosequences import syauto
 import time
 from synnax.control.controller import Controller
 import synnax as sy
