@@ -44,7 +44,7 @@ After initializing the client and reference variables, the autosequence will:
 import time
 import synnax as sy
 from synnax.control.controller import Controller
-from mcnugget.autosequences import syauto
+from autosequences import syauto
 import statistics
 from collections import deque
 
