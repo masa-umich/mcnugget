@@ -2,6 +2,8 @@ import time
 import random
 import synnax as sy
 
+# hehehehaw
+
 client = sy.Synnax()
 
 # testing if leon can git push
