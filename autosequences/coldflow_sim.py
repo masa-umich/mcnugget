@@ -2,7 +2,27 @@ import time
 import random
 import synnax as sy
 
-# hehehehaw
+# client = sy.Synnax(
+#     host="localhost",
+#     port=9090,
+#     username="synnax",
+#     password="seldon",
+#     secure=False
+# )
+
+# client = sy.Synnax(
+#     host="141.212.192.160",
+#     port=80,
+#     username="synnax",
+#     password="seldon"
+# )
+
+# client = sy.Synnax(
+#     host="localhost",
+#     port=9090,
+#     username="synnax",
+#     password="seldon"
+# )
 
 client = sy.Synnax()
 
