@@ -71,7 +71,7 @@ from collections import deque
 from datetime import datetime, timedelta
 import sys
 import threading
-
+import logging
 
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
@@ -219,8 +219,10 @@ RUNNING_AVERAGE_LENGTH = 5  # samples
 
 FIRE_DURATION = 20
 
-# TODO: Update these values based on testing requirements
-MPV_DELAY = 0.281  # seconds
+# MPV_DELAY is set such that OX is put in the chamber 0.200 seconds before fuel
+ox_time_to_reach_chamber = 0.357
+fuel_time_to_reach_chamber = 0.276
+MPV_DELAY = 0.2 + ox_time_to_reach_chamber - fuel_time_to_reach_chamber   # seconds
 # OX_MPV takes 0.357 s to reach chamber
 # FUEL_MPV used to take 0.246 s to reach chamber
 # FUEL_MPV now takes 0.276 s to reach chamber
@@ -277,7 +279,9 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
         averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
     return averages
 
-
+# state variable tells which part of the autosequence we are in 
+#       settings are [before prepress, after prepress before ignition, after ignition] 
+PROGRAM_STATE = ""
 with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as auto:
     # creates valve objects for each valve
     fuel_prepress = syauto.Valve(auto=auto, cmd = FUEL_PRE_PRESS_CMD, ack = FUEL_PRE_PRESS_ACK, normally_open=False)
@@ -311,6 +315,9 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     # ox_mpv_open = auto[OX_MPV_ACK]
     # igniter_open = auto[IGNITER_ACK]
 
+    user_input_received = threading.Event()
+
+
     def fuel_ox_abort(auto: Controller, abort_fuel=False, abort_ox=False):
         valves_to_close = []
         valves_to_potentially_open = []
@@ -326,8 +333,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         ans = input("would you like to open vents? y/n ")
         if ans == "y" or ans == "Y" or ans == "yes":
             syauto.open_all(auto, valves_to_potentially_open)
-        input("Press any key to continue or ctrl-c to fully abort")
-       
+            if (PROGRAM_STATE == "after prepress before ignition"):
+                syauto.close_all([fuel_prevalve, ox_prevalve])
+        #input("Press any key to continue or ctrl-c to fully abort")
+        
     def pressurize(auto: Controller) -> bool:
     
         averages = get_averages(auto, PTS)
@@ -368,9 +377,38 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print("ABORTING OX due to high pressure")
                 fuel_ox_abort(auto, abort_fuel=False, abort_ox=True)
 
+    def get_user_input():
+        # Function to get user input for firing sequence.
+        # Sets the event once input is received.
+        global user_input_received
+        answer = input("\nValves are closed. Input `fire` to commence firing sequence. Press enter to abort autosequence.\n")
+        
+        # Signal that user input has been received
+        user_input_received.set()
+        
+        if answer == 'fire':
+            print("Firing sequence commenced!")
+            reg_fire()
+        elif answer == '':
+            fuel_ox_abort(auto, USING_FUEL, USING_OX)
+
+        #elif answer == 'vent':
+            #ans = input("Confirm hard abort - would you like to open vents and close prevalves? y/n ")
+            #if ans == "y":
+                #syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_prevalve, ox_prevalve])
+
+    def wait_until_pressurized(auto: Controller, condition) -> None:
+        #keeps pressurizing until user inputs
+        while not user_input_received.is_set():
+            condition(auto)
+            time.sleep(0.1)  
+ 
     def reg_fire():
+        fuel_prepress.close()
+        ox_prepress.close()
         opened_fuel_mpv = False
         opened_ox_mpv = False
+        PROGRAM_STATE = "after ignition"
         try: 
             print("commencing fire sequence - firing in: ")
             time.sleep(1)
@@ -487,11 +525,13 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         exit()
 
     # this block runs the overall sequence
+
     try:
         start = datetime.now()
 
+        PROGRAM_STATE = "before prepress"
         time.sleep(1)
-
+    
         #Check prevalves are opened or closed
         if (USING_FUEL and not USING_OX):
             if (auto[FUEL_PREVALVE_ACK]):
@@ -518,8 +558,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                     print('closing program')
                     exit()
 
-        
-
         ans = input("Type 'start' to commence autosequence. ")
         if not (ans == 'start' or ans == 'Start' or ans == 'START'):
             exit()
@@ -540,6 +578,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print(f"{5 - i}")
             time.sleep(1)
 
+
         if (USING_FUEL and not USING_OX):
             print("Pressurizing fuel")
         elif (not USING_FUEL and USING_OX):
@@ -547,29 +586,20 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         else:
             print("Pressurizing fuel and ox")
 
+        PROGRAM_STATE = "after prepress before ignition"
         auto.wait_until(pressurize)
 
-
-        # the above statement will only finish if an abort is triggered
-  
     except KeyboardInterrupt as e:
 
-        answer = input("\nValves are closed. Input `fire` to commence firing sequence anything else to skip:\n")
-        if answer == "fire" or answer == "Fire" or answer == "FIRE":
-            reg_fire()
+        if (PROGRAM_STATE == "before prepress"):
+            fuel_ox_abort(auto, USING_FUEL, USING_OX)
 
-        ans = input("Firing sequence skipped - would you like to open vents and close prevalves? y/n ")
-        if ans == "y":
-            syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_prevalve, ox_prevalve])
+        elif (PROGRAM_STATE == "after prepress before ignition"):
+            wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, pressurize))
+            input_thread = threading.Thread(target=get_user_input)
 
-        # # this creates a range in synnax so we can view the data
-        # if real_test:
-        #     rng = client.ranges.create(
-        #         name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
-        #         time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
-        #     )
-        #     print(f"Created range for test: {rng.name}")
+            wait_thread.start()
+            input_thread.start()
 
-
-
-
+            wait_thread.join()
+            input_thread.join()  
