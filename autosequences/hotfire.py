@@ -77,31 +77,17 @@ mode = input("Enter 'real' for coldflow/hotfire or 'sim' to run a simulation: ")
 if(mode == "real" or mode == "Real" or mode == "REAL"):
     real_test = True
     print("Testing mode")
-    # this connects to the synnax testing server
-    client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
-    username="synnax",
-    password="seldon",
-    secure=True
-    )
 
 #If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
 elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
     real_test = False
     print("Simulation mode")
-    # this connects to the synnax simulation server
-    client = sy.Synnax(
-        host="localhost",
-        port=9090,
-        username="synnax",
-        password="seldon",
-        secure=False
-    )
 
 else:
     print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
     exit()
+
+client = sy.Synnax()
 
 USING_FUEL = True
 
