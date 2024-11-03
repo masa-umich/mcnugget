@@ -2,31 +2,8 @@ import time
 import random
 import synnax as sy
 
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon",
-#     secure=False
-# )
-
-# client = sy.Synnax(
-#     host="141.212.192.160",
-#     port=80,
-#     username="synnax",
-#     password="seldon"
-# )
-
-# client = sy.Synnax(
-#     host="localhost",
-#     port=9090,
-#     username="synnax",
-#     password="seldon"
-# )
-
 client = sy.Synnax()
 
-# testing if leon can git push
 DAQ_TIME = "daq_time"
 
 # valves for fuel system
