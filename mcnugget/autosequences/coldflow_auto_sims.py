@@ -2,12 +2,26 @@ import time
 import random
 import synnax as sy
 
+# client = sy.Synnax(
+#     host="localhost",
+#     port=9090,
+#     username="synnax",
+#     password="seldon",
+#     secure=False
+# )
+
+# client = sy.Synnax(
+#     host="141.212.192.160",
+#     port=80,
+#     username="synnax",
+#     password="seldon"
+# )
+
 client = sy.Synnax(
     host="localhost",
     port=9090,
     username="synnax",
-    password="seldon",
-    secure=False
+    password="seldon"
 )
 
 # testing if leon can git push
@@ -94,6 +108,15 @@ ack_channels = [FUEL_VENT_IN, FUEL_PREVALVE_IN, FUEL_FEEDLINE_PURGE_IN,
                 AIR_DRIVE_ISO_1_IN, AIR_DRIVE_ISO_2_IN, GAS_BOOSTER_FILL_IN, PRESS_FILL_IN,
                 PRESS_VENT_IN, FUEL_PRESS_ISO_IN, OX_PRESS_IN, OX_LOW_VENT_IN, OX_FILL_VALVE_IN,
                 OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN, OX_DOME_ISO_IN, OX_MPV_IN, FUEL_MPV_IN, IGNITOR_IN]
+
+# client.channels.create(
+#     sy.Channel(
+#         name="gse_doa_time",
+#         data_type=sy.DataType.TIMESTAMP,
+#         is_index=True
+#     ),
+#     retrieve_if_name_exists=True
+# )
 
 # Pressure sensors
 OX_PRE_FILL_PT = "gse_ai_1"  # Ox pre-fill pressure
@@ -186,6 +209,7 @@ for pt in PTs:
     )
 
 rate = (sy.Rate.HZ * 50).period.seconds
+print("rate: ", rate)
 
 # Create DAQ_STATE dictionary
 DAQ_STATE = {}
@@ -400,6 +424,11 @@ with client.open_streamer(READ_CHANNELS) as streamer:
 
                 # print(f"ox tank delta: {ox_tank_delta}")
 
+                # i += 1
+                # if i % 50 == 0:
+                #     print(now)
+                #     print(now.datetime)
+                
                 ok = writer.write({
                     DAQ_TIME: now,
 
