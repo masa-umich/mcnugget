@@ -9,3 +9,11 @@
 /scripts/credentials.json
 /credentials.json
 /mcnugget/.venv/
+/mcnugget/hard-start-data-recovery/data
+/mcnugget/hard-start-data-recovery/data_backup
+/mcnugget/hard-start-data-recovery/filtered_data
+/mcnugget/hard-start-data-recovery/more_filtered_data
+/mcnugget/hard-start-data-recovery/even_more_filtered_data
+/mcnugget/hard-start-data-recovery/screenshots
+/mcnugget/hard-start-data-recovery/more_screenshots
+/mcnugget/hard-start-data-recovery/even_more_screenshots
