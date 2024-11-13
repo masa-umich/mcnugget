@@ -10,8 +10,7 @@ client = synnax.Synnax()
 channels_to_average = [
     "gse_ai_9",
     "gse_ai_10",
-    "gse_ai_11",
-    "gse_ai_1"
+    "gse_ai_11"
 ]
 
 rate = (synnax.Rate.HZ * 50).period.seconds
@@ -128,7 +127,8 @@ try:
                 continue
             update_average(frame[channel][-1], channel)
             STATE[channel + "_avg"] = read_average(channel)
-        STATE["average_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
+        # STATE["average_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
+        STATE["average_time"] = synnax.TimeStamp.now()
         writer.write(STATE)
         time.sleep(rate)
 
