@@ -1,13 +1,16 @@
 import time
 import random
 import synnax
-
 import synnax.control
+from pynput import keyboard  # Import for key listener
+
 # these are just some imports we will use
 
 client = synnax.Synnax()
 
 DEBUG = False
+paused = False  # Global pause flag
+state = {}  # State storage for pause/resume
 
 # sim index
 SIM_TIME = "sim_time"
@@ -99,11 +102,33 @@ press_supply_pt = client.channels.create(
 # this just specifies the rate at which we commit data
 rate = (synnax.Rate.HZ * 50).period.seconds
 
-
 true_press_pressure = 0
 true_supply_pressure = 2000
+
 def noise(pressure):
     return pressure + random.uniform(-20, 20)
+
+# Key press handler
+def on_key_press(key):
+    global paused
+    if key == keyboard.Key.space:
+        paused = not paused
+        if paused:
+            # Save state and close valves/vents
+            state["press_valve_open"] = REMOTE_STATE[PRESS_VALVE_CMD] == 1
+            state["press_vent_open"] = REMOTE_STATE[PRESS_VENT_CMD] == 1
+            REMOTE_STATE[PRESS_VALVE_CMD] = 0
+            REMOTE_STATE[PRESS_VENT_CMD] = 0
+            print("System paused. Valves and vents are closed.")
+        else:
+            # Restore state on resume
+            REMOTE_STATE[PRESS_VALVE_CMD] = 1 if state.get("press_valve_open") else 0
+            REMOTE_STATE[PRESS_VENT_CMD] = 1 if state.get("press_vent_open") else 0
+            print("System resumed. Valves and vents restored to saved state.")
+
+# Start key listener
+listener = keyboard.Listener(on_press=on_key_press)
+listener.start()
 
 # Create DAQ_STATE dictionary
 LOCAL_STATE = {
@@ -133,6 +158,11 @@ with client.open_streamer(READ_FROM) as streamer:
     ) as writer:
         i = 0  # for logging
         while True:
+            # Check for pause
+            if paused:
+                while paused:
+                    time.sleep(0.1)
+
             time.sleep(rate)
             while True:
                 f = streamer.read(0)
