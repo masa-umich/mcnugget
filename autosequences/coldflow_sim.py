@@ -1,6 +1,7 @@
 import time
 import random
 import synnax as sy
+import concurrent.futures
 
 # client = sy.Synnax(
 #     host="localhost",
@@ -281,18 +282,21 @@ with client.open_streamer(READ_CHANNELS) as streamer:
         sy.TimeStamp.now(),
         channels = WRITE_CHANNELS,
         name="daq_sim",
-        enable_auto_commit=True
+        # enable_auto_commit=True
     ) as writer:
-        # i = 0
+        i = 0
         while True:
             try:
                 time.sleep(rate)
-                while True:
-                    f = streamer.read(0)
+                i += 1
+
+                if streamer.received:
+                    f = streamer.read()
                     if f is None:
-                        break
-                    for c in f.channels:
-                        DAQ_STATE[c] = f[c][-1]
+                        print("received empty frame, continuing")
+                    else:
+                        for c in f.channels:
+                            DAQ_STATE[c] = f[c][-1]
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
@@ -497,6 +501,10 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     PURGE_2K_BOTTLE_PT: 0,
                     PURGE_POST_REG_PT: 0,
                 })
+
+                if i % 100 == 0:
+                    writer.commit()
+                    print(f"commiting {i} samples")
 
             except Exception as e:
                 print(e)

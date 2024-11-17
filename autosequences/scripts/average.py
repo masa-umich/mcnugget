@@ -2,15 +2,14 @@ import time
 import synnax
 import synnax.control
 from collections import deque
-from mcnugget.autosequences import syauto
 
 # this initializes a connection to the Synnax server
 client = synnax.Synnax()
 
 channels_to_average = [
-    "gse_ai_9",
-    "gse_ai_10",
-    "gse_ai_11"
+    "gse_ai_6",
+    "gse_ai_7",
+    "gse_ai_8"
 ]
 
 rate = (synnax.Rate.HZ * 50).period.seconds
@@ -104,7 +103,7 @@ writer = client.open_writer(
         synnax.TimeStamp.now(),
         channels = WRITE_TO,
         name="average.py",
-        enable_auto_commit=True
+        # enable_auto_commit=True
     )
 
 i = 0
@@ -113,23 +112,27 @@ try:
     time.sleep(1)
     while True:
         i += 1
-        if i % 100 == 0:
-            print(f"cycle {i}")
-        frame = streamer.read(0)
-        streamer.read
-        if frame is None:
-            # print("frame is None")
-            time.sleep(rate)
-            continue
-        for channel in READ_FROM:
-            if not channel in frame:
-                print(f"channel {channel} not found in frame")
+        if streamer.received:
+            frame = streamer.read().to_df()
+            if frame is None:
+                print("frame is None")
+                time.sleep(rate)
                 continue
-            update_average(frame[channel][-1], channel)
-            STATE[channel + "_avg"] = read_average(channel)
-        # STATE["average_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
+            if frame.empty:
+                print("frame is .empty")
+                time.sleep(rate)
+                continue
+            for channel in READ_FROM:
+                if not channel in frame:
+                    continue
+                update_average(frame[channel], channel)
+                STATE[channel + "_avg"] = read_average(channel)
+            # STATE["average_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
         STATE["average_time"] = synnax.TimeStamp.now()
         writer.write(STATE)
+        if i % 100 == 0:
+            writer.commit()
+            print(f"committing {i} samples")
         time.sleep(rate)
 
 except KeyboardInterrupt:
