@@ -8,10 +8,10 @@ from mcnugget.autosequences import syauto
 client = synnax.Synnax()
 
 channels_to_average = [
-    "gse_ai_9",
-    "gse_ai_10",
-    "gse_ai_11",
-    "gse_ai_1"
+    "gse_ai_6",
+    "gse_ai_7",
+    "gse_ai_8",
+    #"gse_ai_1"
 ]
 
 rate = (synnax.Rate.HZ * 50).period.seconds
@@ -116,6 +116,7 @@ try:
         i += 1
         if i % 100 == 0:
             print(f"cycle {i}")
+            print(STATE)
         frame = streamer.read(0)
         streamer.read
         if frame is None:
@@ -128,7 +129,7 @@ try:
                 continue
             update_average(frame[channel][-1], channel)
             STATE[channel + "_avg"] = read_average(channel)
-        STATE["average_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
+        STATE["average_time"] = synnax.TimeStamp.now() 
         writer.write(STATE)
         time.sleep(rate)
 
