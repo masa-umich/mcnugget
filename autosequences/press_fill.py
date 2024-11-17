@@ -44,9 +44,18 @@ After initializing the client and reference variables, the autosequence will:
 import time
 import synnax as sy
 from synnax.control.controller import Controller
-from autosequences import syauto
+from mcnugget.autosequences import syauto
 import statistics
 from collections import deque
+
+#option to speed up autosequence (w/ max speedup takes about 30s)
+speed_up_rate = 1
+original_sleep = time.sleep
+def faster_sleep(seconds):
+    original_sleep(seconds * speed_up_rate)
+
+time.sleep = faster_sleep
+
 
 PRESS_TARGET = 3700  # psi
 REPRESS_TARGET = 3600 # psi
@@ -68,18 +77,32 @@ mode = input("Enter 'real' testing on actual hardware, or 'sim' to run a simulat
 if(mode == "real" or mode == "Real" or mode == "REAL"):
     real_test = True
     print("Testing mode")
+    # this connects to the synnax testing server
+    client = sy.Synnax(
+        host="synnax.masa.engin.umich.edu",
+        port=80,
+        username="synnax",
+        password="seldon",
+        secure=True
+    )
 
 # If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
 elif mode == "sim" or mode == "Sim" or mode == "SIM" or mode == "":
     real_test = False
     print("Simulation mode")
+    # this connects to a local synnax simulation server
+    client = sy.Synnax(
+        host="localhost",
+        port=9090,
+        username="synnax",
+        password="seldon",
+        secure=False
+    )
     PRESS_FACTOR = 1/60
 
 else:
     print("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3")
     exit()
-
-client = sy.Synnax()
 
 PRESS_FILL_EQUALIZED = False
 
