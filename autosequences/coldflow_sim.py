@@ -1,7 +1,6 @@
 import time
 import random
 import synnax as sy
-import concurrent.futures
 
 # client = sy.Synnax(
 #     host="localhost",
@@ -18,8 +17,14 @@ import concurrent.futures
 #     password="seldon"
 # )
 
-client = sy.Synnax()
+client = sy.Synnax(
+    host="localhost",
+    port=9090,
+    username="synnax",
+    password="seldon"
+)
 
+# testing if leon can git push
 DAQ_TIME = "daq_time"
 
 # valves for fuel system
@@ -284,7 +289,7 @@ with client.open_streamer(READ_CHANNELS) as streamer:
         name="daq_sim",
         enable_auto_commit=True
     ) as writer:
-        i = 0
+        # i = 0
         while True:
             try:
                 time.sleep(rate)
@@ -498,10 +503,6 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     PURGE_2K_BOTTLE_PT: 0,
                     PURGE_POST_REG_PT: 0,
                 })
-
-                if i % 100 == 0:
-                    print(f"iteration {i}")
-                i += 1
 
             except Exception as e:
                 print(e)
