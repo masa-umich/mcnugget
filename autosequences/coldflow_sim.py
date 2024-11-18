@@ -282,21 +282,18 @@ with client.open_streamer(READ_CHANNELS) as streamer:
         sy.TimeStamp.now(),
         channels = WRITE_CHANNELS,
         name="daq_sim",
-        # enable_auto_commit=True
+        enable_auto_commit=True
     ) as writer:
         i = 0
         while True:
             try:
                 time.sleep(rate)
-                i += 1
-
-                if streamer.received:
-                    f = streamer.read()
+                while True:
+                    f = streamer.read(0)
                     if f is None:
-                        print("received empty frame, continuing")
-                    else:
-                        for c in f.channels:
-                            DAQ_STATE[c] = f[c][-1]
+                        break
+                    for c in f.channels:
+                        DAQ_STATE[c] = f[c][-1]
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
@@ -503,8 +500,8 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                 })
 
                 if i % 100 == 0:
-                    writer.commit()
-                    print(f"commiting {i} samples")
+                    print(f"iteration {i}")
+                i += 1
 
             except Exception as e:
                 print(e)
