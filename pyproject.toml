@@ -5,6 +5,9 @@ description = "The McNugget of Data Analysis"
 authors = ["emiliano bonilla <ebonilla@synnaxlabs.com>"]
 license = "MIT"
 readme = "README.md"
+packages = [
+    { include = "autosequences" }
+]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
@@ -12,34 +15,18 @@ toml = "^0.10.2"
 matplotlib = "^3.7.1"
 scipy = "^1.10.1"
 pyfluids = "^2.3.2"
-#synnax = { path = "../../synnaxlabs/synnax/client/py", develop = true }
 click = "^8.1.7"
 gspread = "^5.12.0"
 openpyxl = "^3.1.2"
 jupyter = "^1.0.0"
 refprop-connector = "^0.3.7"
 requests = "^2.31.0"
-#synnax = "^0.14.18"
-synnax = "^0.27.0"
+synnax = "0.32.0"
+pynput = "^1.7.7"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
 pytest = "^7.4.3"
-
-[tool.poetry.scripts]
-mcnugget = "mcnugget.cli.cli:mcnugget"
-
-[tool.synnax]
-#host = "localhost"
-#port = 9090
-#username = "synnax"
-#password = "seldon"
-#secure = false
-host = "synnax.masa.engin.umich.edu"
-port = 80
-username = "synnax"
-password = "seldon"
-secure = true
 
 [build-system]
 requires = ["poetry-core"]
