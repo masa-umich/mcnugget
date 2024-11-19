@@ -8,25 +8,25 @@ import random
 client = synnax.Synnax()
 
 # valves
-NITROUS_MPV_CMD = "torch_vlv_0"
+NITROUS_MPV_VLV = "torch_vlv_0"
 NITROUS_MPV_STATE = "torch_state_0"
-ETHANOL_MPV_CMD = "torch_vlv_1"
+ETHANOL_MPV_VLV = "torch_vlv_1"
 ETHANOL_MPV_STATE = "torch_state_1"
-ETHANOL_PRESS_CMD = "torch_vlv_2"
+ETHANOL_PRESS_VLV = "torch_vlv_2"
 ETHANOL_PRESS_STATE = "torch_state_2"
-ETHANOL_VENT_CMD = "torch_vlv_3"
+ETHANOL_VENT_VLV = "torch_vlv_3"
 ETHANOL_VENT_STATE = "torch_state_3"
-TORCH_PURGE_CMD = "torch_vlv_4"
+TORCH_PURGE_VLV = "torch_vlv_4"
 TORCH_PURGE_STATE = "torch_state_4"
-SPARK_CMD = "torch_vlv_5"
+SPARK_VLV = "torch_vlv_5"
 SPARK_STATE = "torch_state_5"
-ALL_CMDS = [
-    NITROUS_MPV_CMD,
-    ETHANOL_MPV_CMD,
-    ETHANOL_PRESS_CMD,
-    ETHANOL_VENT_CMD,
-    TORCH_PURGE_CMD,
-    SPARK_CMD,
+ALL_VLVS = [
+    NITROUS_MPV_VLV,
+    ETHANOL_MPV_VLV,
+    ETHANOL_PRESS_VLV,
+    ETHANOL_VENT_VLV,
+    TORCH_PURGE_VLV,
+    SPARK_VLV,
 ]
 ALL_STATES = [
     NITROUS_MPV_STATE,
@@ -61,8 +61,10 @@ ALL_PTS = [
     TORCH_PT_3,
 ]
 
-READ_FROM = ALL_CMDS
-WRITE_TO = ALL_STATES + ALL_PTS + ["torch_sim_time"]
+IGNITION = "torch_ignition"
+
+READ_FROM = ALL_VLVS
+WRITE_TO = ALL_STATES + ALL_PTS + ["torch_sim_time", "torch_ignition"]
 CHANNELS = {}
 
 sim_time = client.channels.create(
@@ -73,9 +75,17 @@ sim_time = client.channels.create(
 )
 CHANNELS["torch_sim_time"] = sim_time
 
-for channel in ALL_CMDS:
-    CHANNELS[channel + "_cmd_time"] = client.channels.create(
-        name=channel + "_cmd_time",
+torch_ignition = client.channels.create(
+    name="torch_ignition",
+    data_type=synnax.DataType.UINT8,
+    index=sim_time.key,
+    retrieve_if_name_exists=True,
+)
+CHANNELS["torch_ignition"] = torch_ignition
+
+for channel in ALL_VLVS:
+    CHANNELS[channel + "_VLV_time"] = client.channels.create(
+        name=channel + "_VLV_time",
         data_type=synnax.DataType.TIMESTAMP,
         is_index=True,
         retrieve_if_name_exists=True,
@@ -83,7 +93,7 @@ for channel in ALL_CMDS:
     CHANNELS[channel] = client.channels.create(
         name=channel,
         data_type=synnax.DataType.UINT8,
-        index=CHANNELS[channel + "_cmd_time"].key,
+        index=CHANNELS[channel + "_VLV_time"].key,
         retrieve_if_name_exists=True,
     )
 
@@ -129,14 +139,14 @@ print(f"writing to {len(WRITE_TO)} channels")
 
 def ignition(state):
     if random.random() > 0.1:
-        return False
+        return 0
     if state["chamber_nitrous"] < 10:
-        return False
+        return 0
     if state["chamber_ethanol"] < 10:
-        return False
+        return 0
     if state["chamber_spark"] == False:
-        return False
-    return True
+        return 0
+    return 1
 
 with client.open_streamer(READ_FROM) as streamer:
     with client.open_writer(
@@ -153,52 +163,52 @@ with client.open_streamer(READ_FROM) as streamer:
                 f = streamer.read(0)
                 if f is None:
                     break
-                READ_STATE[f.name] = f.value
+                for c in f.channels:
+                    if c in READ_FROM:
+                        READ_STATE[c] = f[c][-1]
 
-            # this sets the state based on received CMDs
-            for channel in ALL_CMDS:
-                if READ_STATE[channel] == 1:
-                    WRITE_STATE[channel.replace("_cmd", "_state")] = 1
-                    WRITE_STATE[channel] = 0
+            # this sets the state based on received valves
+            for channel in ALL_VLVS:
+                WRITE_STATE[channel.replace("_vlv", "_state")] = READ_STATE[channel]
 
             # nitrous
             if WRITE_STATE[NITROUS_MPV_STATE] == 1 and TRUE_VALUES[NITROUS_SUPPLY] > 0:
-                TRUE_VALUES[NITROUS_SUPPLY] -= 1
+                TRUE_VALUES[NITROUS_SUPPLY] -= 2
                 TRUE_VALUES["chamber_nitrous"] += 3
 
             # press
             if WRITE_STATE[ETHANOL_PRESS_STATE] == 1 and TRUE_VALUES[PRESS_SUPPLY] > 0:
-                TRUE_VALUES[PRESS_SUPPLY] -= 1
-                TRUE_VALUES[ETHANOL_TANK] += 1
+                TRUE_VALUES[PRESS_SUPPLY] -= 2
+                TRUE_VALUES[ETHANOL_TANK] += 2
 
             # ethanol
             if WRITE_STATE[ETHANOL_MPV_STATE] == 1 and TRUE_VALUES[ETHANOL_TANK] > 0:
-                TRUE_VALUES[ETHANOL_TANK] -= 1
+                TRUE_VALUES[ETHANOL_TANK] -= 2
                 TRUE_VALUES["chamber_ethanol"] += 3
 
             # vent
             if WRITE_STATE[ETHANOL_VENT_STATE] == 0 and TRUE_VALUES[ETHANOL_TANK] > 0:
-                TRUE_VALUES[ETHANOL_TANK] -= 2
-            
+                TRUE_VALUES[ETHANOL_TANK] -= 4
+
             # spark
-            if WRITE_STATE[SPARK_STATE] == 1:
-                TRUE_VALUES["chamber_spark"] = True
-            
+            TRUE_VALUES["chamber_spark"] = WRITE_STATE[SPARK_STATE] == 1
+
             # purge
             if WRITE_STATE[TORCH_PURGE_STATE] == 1:
-                TRUE_VALUES[PRESS_SUPPLY] -= 2
-                TRUE_VALUES["chamber_ethanol"] -= 3
-                TRUE_VALUES["chamber_nitrous"] -= 3
-            
+                TRUE_VALUES[PRESS_SUPPLY] -= 4
+                TRUE_VALUES["chamber_ethanol"] -= 6
+                TRUE_VALUES["chamber_nitrous"] -= 6
+
             # flowmeters
 
             # filter out negatives in TRUE_VALUES
             for key in TRUE_VALUES:
                 TRUE_VALUES[key] = max(0, TRUE_VALUES[key])
 
-            if ignition(TRUE_VALUES):
+            ignition_ = ignition(TRUE_VALUES)
+            if ignition_:
                 TRUE_VALUES["chamber_pressure"] \
-                    = 700 + (math.random() - 0.5) * 200
+                    = 700 + (random.random() - 0.5) * 200
             
             #randomize
             WRITE_STATE[ETHANOL_TANK] = TRUE_VALUES[ETHANOL_TANK] + random.normalvariate(-30, 30)
@@ -207,10 +217,8 @@ with client.open_streamer(READ_FROM) as streamer:
             WRITE_STATE[TORCH_PT_1] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
             WRITE_STATE[TORCH_PT_2] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
             WRITE_STATE[TORCH_PT_3] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
-
+            WRITE_STATE["torch_ignition"] = ignition_
             WRITE_STATE["torch_sim_time"] = synnax.TimeStamp.now()
 
             # write to channels
-            if i % 100 == 0:
-                print(f"writing to {WRITE_STATE}")
             writer.write(WRITE_STATE)
