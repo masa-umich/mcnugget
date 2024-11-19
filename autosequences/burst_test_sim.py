@@ -54,7 +54,7 @@ press_valve_cmd = client.channels.create(
     index=press_valve_time.key,
     retrieve_if_name_exists=True,
 )
-print(f"created/retrieved channel {PRESS_VALVE_CMD} with key", press_valve_cmd.key)
+# print(f"created/retrieved channel {PRESS_VALVE_CMD} with key", press_valve_cmd.key)
 
 # this channel is an acknowledgement channel to confirm commands are received
 press_valve_ack = client.channels.create(
@@ -63,7 +63,7 @@ press_valve_ack = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
-print(f"created/retrieved channel {PRESS_VALVE_ACK} with key", press_valve_ack.key)
+# print(f"created/retrieved channel {PRESS_VALVE_ACK} with key", press_valve_ack.key)
 
 # this channel keeps track of timestamps for the press_vent channel, which is where we send commands
 press_vent_time = client.channels.create(
@@ -81,7 +81,7 @@ press_vent_cmd = client.channels.create(
     index=press_vent_time.key,
     retrieve_if_name_exists=True,
 )
-print(f"created/retrieved channel {PRESS_VENT_CMD} with key", press_vent_cmd.key)
+# print(f"created/retrieved channel {PRESS_VENT_CMD} with key", press_vent_cmd.key)
 
 # this channel is an acknowledgement channel to confirm commands are received
 press_vent_ack = client.channels.create(
@@ -90,7 +90,7 @@ press_vent_ack = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
-print(f"created/retrieved channel {PRESS_VENT_ACK} with key", press_vent_ack.key)
+# print(f"created/retrieved channel {PRESS_VENT_ACK} with key", press_vent_ack.key)
 
 press_tank_pt = client.channels.create(
     name=PRESS_TANK,
@@ -98,7 +98,7 @@ press_tank_pt = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
-print(f"created/retrieved channel {PRESS_TANK} with key", press_tank_pt.key)
+# print(f"created/retrieved channel {PRESS_TANK} with key", press_tank_pt.key)
 
 for i in range(6, 9):
     press_tank_pt = client.channels.create(
@@ -107,7 +107,7 @@ for i in range(6, 9):
         index=sim_time.key,
         retrieve_if_name_exists=True,
     )
-    print(f"created/retrieved channel gse_ai_{i} with key", press_tank_pt.key)
+    # print(f"created/retrieved channel gse_ai_{i} with key", press_tank_pt.key)
 
 press_supply_pt = client.channels.create(
     name=PRESS_SUPPLY,
@@ -115,7 +115,7 @@ press_supply_pt = client.channels.create(
     index=sim_time.key,
     retrieve_if_name_exists=True,
 )
-print(f"created/retrieved channel {PRESS_SUPPLY} with key", press_supply_pt.key)
+# print(f"created/retrieved channel {PRESS_SUPPLY} with key", press_supply_pt.key)
 
 # this just specifies the rate at which we commit data
 rate = (synnax.Rate.HZ * 50).period.seconds
@@ -211,5 +211,7 @@ with client.open_streamer(READ_FROM) as streamer:
             LOCAL_STATE[SIM_TIME] = synnax.TimeStamp.now()
 
             writer.write(LOCAL_STATE)
+            if i % 100 == 0:
+                print(f"writing {LOCAL_STATE}")
             writer.commit()
             i += 1

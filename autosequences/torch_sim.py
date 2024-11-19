@@ -106,9 +106,12 @@ for channel in ALL_PTS:
 rate = (synnax.Rate.HZ * 50).period.seconds
 print(f"rate: {rate}")
 
-TORCH_STATE = {}
-for channel in READ_FROM + WRITE_TO:
-    TORCH_STATE[channel] = 0
+READ_STATE = {}
+WRITE_STATE = {}
+for channel in READ_FROM:
+    READ_STATE[channel] = 0
+for channel in WRITE_TO:
+    WRITE_STATE[channel] = 0
 
 TRUE_VALUES = {
     pt: 0 for pt in ALL_PTS
@@ -150,39 +153,39 @@ with client.open_streamer(READ_FROM) as streamer:
                 f = streamer.read(0)
                 if f is None:
                     break
-                TORCH_STATE[f.name] = f.value
+                READ_STATE[f.name] = f.value
 
             # this sets the state based on received CMDs
             for channel in ALL_CMDS:
-                if TORCH_STATE[channel] == 1:
-                    TORCH_STATE[channel.replace("_cmd", "_state")] = 1
-                    TORCH_STATE[channel] = 0
+                if READ_STATE[channel] == 1:
+                    WRITE_STATE[channel.replace("_cmd", "_state")] = 1
+                    WRITE_STATE[channel] = 0
 
             # nitrous
-            if TORCH_STATE[NITROUS_MPV_STATE] == 1 and TRUE_VALUES[NITROUS_SUPPLY] > 0:
+            if WRITE_STATE[NITROUS_MPV_STATE] == 1 and TRUE_VALUES[NITROUS_SUPPLY] > 0:
                 TRUE_VALUES[NITROUS_SUPPLY] -= 1
                 TRUE_VALUES["chamber_nitrous"] += 3
 
             # press
-            if TORCH_STATE[ETHANOL_PRESS_STATE] == 1 and TRUE_VALUES[PRESS_SUPPLY] > 0:
+            if WRITE_STATE[ETHANOL_PRESS_STATE] == 1 and TRUE_VALUES[PRESS_SUPPLY] > 0:
                 TRUE_VALUES[PRESS_SUPPLY] -= 1
                 TRUE_VALUES[ETHANOL_TANK] += 1
 
             # ethanol
-            if TORCH_STATE[ETHANOL_MPV_STATE] == 1 and TRUE_VALUES[ETHANOL_TANK] > 0:
+            if WRITE_STATE[ETHANOL_MPV_STATE] == 1 and TRUE_VALUES[ETHANOL_TANK] > 0:
                 TRUE_VALUES[ETHANOL_TANK] -= 1
                 TRUE_VALUES["chamber_ethanol"] += 3
 
             # vent
-            if TORCH_STATE[ETHANOL_VENT_STATE] == 0 and TRUE_VALUES[ETHANOL_TANK] > 0:
+            if WRITE_STATE[ETHANOL_VENT_STATE] == 0 and TRUE_VALUES[ETHANOL_TANK] > 0:
                 TRUE_VALUES[ETHANOL_TANK] -= 2
             
             # spark
-            if TORCH_STATE[SPARK_STATE] == 1:
+            if WRITE_STATE[SPARK_STATE] == 1:
                 TRUE_VALUES["chamber_spark"] = True
             
             # purge
-            if TORCH_STATE[TORCH_PURGE_STATE] == 1:
+            if WRITE_STATE[TORCH_PURGE_STATE] == 1:
                 TRUE_VALUES[PRESS_SUPPLY] -= 2
                 TRUE_VALUES["chamber_ethanol"] -= 3
                 TRUE_VALUES["chamber_nitrous"] -= 3
@@ -198,17 +201,16 @@ with client.open_streamer(READ_FROM) as streamer:
                     = 700 + (math.random() - 0.5) * 200
             
             #randomize
-            TORCH_STATE[ETHANOL_TANK] = TRUE_VALUES[ETHANOL_TANK] + random.normalvariate(-30, 30)
-            TORCH_STATE[NITROUS_SUPPLY] = TRUE_VALUES[NITROUS_SUPPLY] + random.normalvariate(-30, 30)
-            TORCH_STATE[PRESS_SUPPLY] = TRUE_VALUES[PRESS_SUPPLY] + random.normalvariate(-30, 30)
-            TORCH_STATE[TORCH_PT_1] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
-            TORCH_STATE[TORCH_PT_2] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
-            TORCH_STATE[TORCH_PT_3] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
+            WRITE_STATE[ETHANOL_TANK] = TRUE_VALUES[ETHANOL_TANK] + random.normalvariate(-30, 30)
+            WRITE_STATE[NITROUS_SUPPLY] = TRUE_VALUES[NITROUS_SUPPLY] + random.normalvariate(-30, 30)
+            WRITE_STATE[PRESS_SUPPLY] = TRUE_VALUES[PRESS_SUPPLY] + random.normalvariate(-30, 30)
+            WRITE_STATE[TORCH_PT_1] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
+            WRITE_STATE[TORCH_PT_2] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
+            WRITE_STATE[TORCH_PT_3] = TRUE_VALUES["chamber_pressure"] + random.normalvariate(-30, 30)
 
-            TORCH_STATE["torch_sim_time"] = synnax.TimeStamp.now()
+            WRITE_STATE["torch_sim_time"] = synnax.TimeStamp.now()
 
             # write to channels
-            for channel in WRITE_TO:
-                if i % 100 == 0:
-                    print("writing to", channel, TORCH_STATE[channel])
-                writer.write(channel, TORCH_STATE[channel])
+            if i % 100 == 0:
+                print(f"writing to {WRITE_STATE}")
+            writer.write(WRITE_STATE)
