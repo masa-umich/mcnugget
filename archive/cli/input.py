@@ -1,66 +1,30 @@
-# import click
-# import math
 import pandas as pd
-# from dataclasses import dataclass
-# import gspread
 import synnax as sy
 from synnax.hardware.ni import types
-# from synnax.hardware.ni import AnalogReadTask, DigitalReadTask, DigitalWriteTask, DigitalReadConfig, DigitalWriteConfig, AnalogReadTaskConfig, DOChan, DIChan, AIChan
-# from rich.prompt import Prompt, Confirm
-# import os
-# from rich import print
 # from mcnugget.client import client
 import numpy as np
 
-# class Item:
-#     def __init__(
-#         self, 
-#         name: str, 
-#         test: int, 
-#         sensor_type: str, 
-#         port: int, 
-#         channel: int, 
-#         volt: int, 
-#         max_press: int = 0, 
-#         slope: int = 0, 
-#         nat_open: bool = False, 
-#         power: int = 0, 
-#         tc_type: str = "",
-#     ):
-#         self.name = name
-#         self.test = test
-#         self.sensor_type = sensor_type
-#         self.port = port
-#         self.channel = channel
-#         self.volt = volt
-#         self.max_press = max_press
-#         self.slope = slope
-#         self.nat_open = nat_open
-#         self.power = power
-#         self.tc_type = tc_type
-    
-#     def __repr__(self):
-#         return (
-#             f"Item(name={self.name}, test={self.test}, sensor_type={self.sensor_type}, "
-#             f"port={self.port}, channel={self.channel}, volt={self.volt}, "
-#             f"max_press={self.max_press}, slope={self.slope}, nat_open={self.nat_open}, "
-#             f"power={self.power}, tc_type={self.tc_type})"
-#         )
-    
+client = sy.Synnax()
+
+# print(client.hardware.tasks.retrieve().name)
+# print(client.hardware.tasks.retrieve().key)
+# print(client.hardware.tasks.retrieve().config)
+# print(client.hardware.devices.retrieve(location="Dev1"))
 ar_task = types.AnalogReadTask(
     name = "Analog Read Task",
-    device = "PCI-6225", 
-    sample_rate = 10,# CONFIRM
-    stream_rate = 5,# CONFIRM
+    device = "01875AD0", 
+    sample_rate = sy.Rate.HZ * 50,
+    stream_rate = sy.Rate.HZ * 10,
     data_saving = True,
     channels = []
 )
 
+
 dr_task = types.DigitalReadTask(
     name = "Digital Read Task",
     device = "PCI-6514", 
-    sample_rate = 10,# CONFIRM
-    stream_rate = 5,# CONFIRM
+    sample_rate = sy.Rate.HZ * 50,
+    stream_rate = sy.Rate.HZ * 10,
     data_saving = True,
     channels = []
 )
@@ -68,7 +32,7 @@ dr_task = types.DigitalReadTask(
 dw_task = types.DigitalWriteTask(
     name = "Digital Write Task",
     device = "PCI-6514", 
-    state_rate = 50, # CONFIRM
+    state_rate = sy.Rate.HZ * 50, # CONFIRM
     data_saving = True,
     channels = []
 )   
@@ -81,8 +45,15 @@ def main():
 def input_excel(file_path: str, item_num: int):
     try:
         df = pd.read_excel(file_path)
+    except FileNotFoundError as e:
+        print("File not found:", e)
+        return
+    except ValueError as e:
+        print("Invalid Excel file or format:", e)
+        return
     except Exception as e:
-        print("Exception 1 caught: ", e)
+        print("Check sheet read in:", e)
+        return
     
     df = df.drop('Type', axis=1)
     df_new = df.head(item_num) 
@@ -90,38 +61,22 @@ def input_excel(file_path: str, item_num: int):
     process_excel(df_new)
 
 def process_excel(file: pd.DataFrame):
-    # print("Input DF: ")
-    # print_df(file)
-    # print("Processing DataFrame into Items...")
-    # print("Columns in DataFrame:", file.columns)
-
-    for x, row in file.iterrows():
+    for _, row in file.iterrows():
         try:
-            # new_item = Item(
-            #     name = row["Name"],
-            #     test = row["Test"],
-            #     sensor_type = row["Sensor Type"],
-            #     port = row["Port"],
-            #     channel = row["Channel"],
-            #     volt = row["Supply Voltage (V)"],
-            #     max_press = row["Max Pressure"],
-            #     slope = row["Calibration Slope (mV/psig)"],
-            #     nat_open = row["NO/NC"].strip().upper() == "NO",
-            #     power = row["Power (W)"],
-            #     tc_type = row["TC Type"],
-            # )
-            # items.append(new_item)
             if row["Sensor Type"] == "VLV":
                 populate_digital(row)
             elif row["Sensor Type"] in ["PT", "TC", "LC"]:
                 populate_analogue(row)
             else:
                 print("Check Sensor Type in Sheet")
+        except KeyError as e:
+            print(f"Missing column in row: {e}")
+            return
         except Exception as e:
-            print(f"Error processing row {row}: {e}")
+            print(f"Error populating tasks: {e}")
+            # return
 
 def populate_digital(row):
-    # print("Making DI/DO channels")
     port = int(row["Port"])
     channel = int(row["Channel"])
 
@@ -137,50 +92,37 @@ def populate_digital(row):
     vlv_do_channel.port =  (channel / 8) + 4
     vlv_do_channel.line = channel % 8
     dw_task.config.channels.append(vlv_do_channel)
-    # print("Added VLV channel")
+    print("Added VLV channel")
 
 def populate_analogue(row):
-    # print("Making AI Channels")   
-    if row["Sensor Type"] == ["TC"]:
+    if row["Sensor Type"] == "TC":
         volt_lst, temp_lst = process_tc_poly()
-        tc_channel = types.AIVoltageChan()
+
+        tc_channel = types.AIVoltageChan(port=row["Port"], channel=row["Channel"])
         tc_channel.units = "Volts"
         tc_channel.custom_scale = types.TableScale(
-            pre_scaled_vals = volt_lst, # Volts list
-            scaled_vals = temp_lst, # Temperatures list
+            pre_scaled_vals = volt_lst,
+            scaled_vals = temp_lst,
             pre_scaled_units = "Volts",
         )
+   
         ar_task.config.channels.append(tc_channel)
         # print("Added TC channel")
-    elif row["Sensor Type"] == ["PT"]:
-        pt_channel = types.AIVoltageChan()
-        pt_channel.units = "Volts" 
+    elif row["Sensor Type"] == "PT":
+        pt_channel = types.AIVoltageChan(port=row["Port"], channel=row["Channel"])
+        pt_channel.units = "Volts"
         pt_channel.custom_scale = types.LinScale(
             slope = row["Calibration Slope (mV/psig)"] * .0001, 
             y_intercept = row["Calibration Offset (V)"],
-            pre_scaled_units = types.UnitsVolts,
-            scaled_units = types.UnitsLbsPerSquareInch
+            pre_scaled_units = "Volts",
+            scaled_units = "PoundsPerSquareInch"
         )
         ar_task.config.channels.append(pt_channel)
-        # print("Added PT channel")
-    elif row["Sensor Type"] == ["LC"]:
-        lc_channel = types.AIStrainGageChan()  # i assume the lcs use strain like the physics qty
-        lc_channel.strain_config = "full-bridge-I"  # CONFIRM
-        lc_channel.voltage_excit_source = "External"  # CONFIRM
-        lc_channel.voltage_excit_val = row["Supply Voltage (V)"]
-        lc_channel.gage_factor = 2.0  # CONFIRM, app 2.0 is common. also its spelt guage smh synnax people
-        lc_channel.nominal_gage_resistance = 120.0  # CONFIRM. this what i found online as an option
-        lc_channel.poisson_ratio = 0.3  # CONFIRM, dep. on metal apparently
-        lc_channel.lead_wire_resistance = 0.0  # NO CLUE CONFIRM
-        lc_channel.initial_bridge_voltage = 0.0  # CONFIRM i think this is irl offset
-        #lc_channel.custom_scale = NoScale()  ---> idk if we need this
-        ar_task.config.channels.append(lc_channel)
         print("Added PT channel")
+    elif row["Sensor Type"] == "LC":
+        print("Added LC channel")
 
 def process_tc_poly():
-    # WE DONT NEED TO MAKE SHEETS
-    # We convert directly expression -> lists
-
     # choose expression for each TC (by channel? id?)
     # conv to list and return (alr have this logic)
 
@@ -197,6 +139,19 @@ def process_tc_poly():
         temp_lst.append(temperature)
 
     return volt_lst, temp_lst
+
+
+syn_ar_task = client.hardware.tasks.create([ar_task])[0]
+print("z")
+print("ar_task = ", syn_ar_task)
+print("ar_task = ", ar_task)
+client.hardware.tasks.configure(syn_ar_task)
+
+
+# client.hardware.tasks.create([dr_task])
+# client.hardware.tasks.create([dw_task])
+
+
 
 
 
@@ -246,27 +201,6 @@ def print_df(file: pd.DataFrame):
 
     # print("Row 1: ")
     # print(file.loc[1])
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
