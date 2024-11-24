@@ -3,16 +3,24 @@ import synnax as sy
 from synnax.hardware.ni import types
 # from mcnugget.client import client
 import numpy as np
+from synnax.hardware.device import Device
 
 client = sy.Synnax()
 
-# print(client.hardware.tasks.retrieve().name)
-# print(client.hardware.tasks.retrieve().key)
-# print(client.hardware.tasks.retrieve().config)
-# print(client.hardware.devices.retrieve(location="Dev1"))
+"""
+- query synnax for devices
+- query synnax for tasks based on devices
+- 
+"""
+
+analog_card = client.hardware.devices.retrieve(name="PCI-6225")
+digital_card = client.hardware.devices.retrieve(name="PCI-6514")
+print("analog_card = ", analog_card)
+print("digital_card = ", digital_card)
+
 ar_task = types.AnalogReadTask(
     name = "Analog Read Task",
-    device = "01875AD0", 
+    # device = "01875AD0", 
     sample_rate = sy.Rate.HZ * 50,
     stream_rate = sy.Rate.HZ * 10,
     data_saving = True,
@@ -22,7 +30,7 @@ ar_task = types.AnalogReadTask(
 
 dr_task = types.DigitalReadTask(
     name = "Digital Read Task",
-    device = "PCI-6514", 
+    device = digital_card.key, 
     sample_rate = sy.Rate.HZ * 50,
     stream_rate = sy.Rate.HZ * 10,
     data_saving = True,
@@ -31,16 +39,29 @@ dr_task = types.DigitalReadTask(
 
 dw_task = types.DigitalWriteTask(
     name = "Digital Write Task",
-    device = "PCI-6514", 
-    state_rate = sy.Rate.HZ * 50, # CONFIRM
+    device = digital_card.key, 
+    state_rate = sy.Rate.HZ * 50,
     data_saving = True,
     channels = []
 )   
 
+pt_channel = types.AIVoltageChan(port=4, channel=4, device=analog_card.key)
+ar_task.config.channels.append(pt_channel)
+print("appended pt_channel", pt_channel.port, pt_channel.channel, pt_channel.device)
+
+sy_ar_task = client.hardware.tasks.create([ar_task])[0]
+print("sy_ar_task = ", sy_ar_task)
+sy_dr_task = client.hardware.tasks.create([dr_task])[0]
+print("sy_dr_task = ", sy_dr_task)
+sy_dw_task = client.hardware.tasks.create([dw_task])[0]
+print("sy_dw_task = ", sy_dw_task)
+
+exit(1)
 
 def main():
     NUMBER_OF_ITEMS = 4 #change to take in input and then put into the function
-    input_excel(r"C:\Users\ruchi\mcnugget\archive\cli\testing.xlsx", NUMBER_OF_ITEMS) #change to take in input and then put into the function
+    # input_excel(r"C:\Users\ruchi\mcnugget\archive\cli\testing.xlsx", NUMBER_OF_ITEMS) #change to take in input and then put into the function
+    input_excel("/Users/evanhekman/masa/testing.xlsx", 4)
 
 def input_excel(file_path: str, item_num: int):
     try:
@@ -61,7 +82,9 @@ def input_excel(file_path: str, item_num: int):
     process_excel(df_new)
 
 def process_excel(file: pd.DataFrame):
+    print(f"reading {len(file)} rows")
     for _, row in file.iterrows():
+        print(len(row), row)
         try:
             if row["Sensor Type"] == "VLV":
                 populate_digital(row)
@@ -98,7 +121,7 @@ def populate_analogue(row):
     if row["Sensor Type"] == "TC":
         volt_lst, temp_lst = process_tc_poly()
 
-        tc_channel = types.AIVoltageChan(port=row["Port"], channel=row["Channel"])
+        tc_channel = types.AIVoltageChan(port=row["Port"], channel=row["Channel"], device=analog_card.key)
         tc_channel.units = "Volts"
         tc_channel.custom_scale = types.TableScale(
             pre_scaled_vals = volt_lst,
@@ -109,7 +132,7 @@ def populate_analogue(row):
         ar_task.config.channels.append(tc_channel)
         # print("Added TC channel")
     elif row["Sensor Type"] == "PT":
-        pt_channel = types.AIVoltageChan(port=row["Port"], channel=row["Channel"])
+        pt_channel = types.AIVoltageChan(port=row["Port"], channel=row["Channel"], device=analog_card.key)
         pt_channel.units = "Volts"
         pt_channel.custom_scale = types.LinScale(
             slope = row["Calibration Slope (mV/psig)"] * .0001, 
@@ -118,9 +141,9 @@ def populate_analogue(row):
             scaled_units = "PoundsPerSquareInch"
         )
         ar_task.config.channels.append(pt_channel)
-        print("Added PT channel")
+        print("Added PT channel", pt_channel.port, pt_channel.channel, pt_channel.device)
     elif row["Sensor Type"] == "LC":
-        print("Added LC channel")
+        print("LC channels not yet supported")
 
 def process_tc_poly():
     # choose expression for each TC (by channel? id?)
@@ -141,12 +164,11 @@ def process_tc_poly():
     return volt_lst, temp_lst
 
 
-syn_ar_task = client.hardware.tasks.create([ar_task])[0]
-print("z")
-print("ar_task = ", syn_ar_task)
-print("ar_task = ", ar_task)
-client.hardware.tasks.configure(syn_ar_task)
-
+# syn_ar_task = client.hardware.tasks.create([ar_task])[0]
+# print("z")
+# print("ar_task = ", syn_ar_task)
+# print("ar_task = ", ar_task)
+# client.hardware.tasks.configure(syn_ar_task)
 
 # client.hardware.tasks.create([dr_task])
 # client.hardware.tasks.create([dw_task])
