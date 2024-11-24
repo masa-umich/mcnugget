@@ -80,14 +80,32 @@ if digital_write_task is None:
 if DEBUG:
     print("digital_write_task = ", digital_write_task)
 
-new_pt_channel = AIVoltageChan(port=4, channel=4, device=analog_card.key)
-sy_analog_task = client.hardware.tasks.retrieve(name="Analog Read Task")
+# new_pt_channel = AIVoltageChan(port=6, channel=6, device=analog_card.key, data_type="float64")
+# new_pt_channel = AIVoltageChan(port=6, channel=6, device=analog_card.key, type="ai_voltage", data_type="float64")
+channel_channel = client.channels.retrieve("gse_ai_ai_5").key
+new_pt_channel = AIVoltageChan(port=5, channel=channel_channel, device=analog_card.key, type="ai_voltage")
+# index = client.channels.retrieve("gse_ai_time").key
+# client.channels.create(sy.Channel(
+#     name = "Dev1/ai6",
+#     data_type = "float64",
+#     index=index
+# ), retrieve_if_name_exists=True)
+sy_analog_task = AnalogReadTask(client.hardware.tasks.retrieve(name="Analog Read Task"))
+print("configured base task")
+sy_analog_task.config.channels.append(new_pt_channel)
 print(sy_analog_task)
 print(sy_analog_task.config)
-print(type(sy_analog_task.config))
-config = eval(sy_analog_task.config)
-print(config)
-config["channels"].append(new_pt_channel)
+client.hardware.tasks.configure(sy_analog_task, timeout=30)
+# client.hardware.tasks.create([sy_analog_task])
+# print("created new")
+print("configured")
+exit(1)
+# print(sy_analog_task)
+# print(sy_analog_task.config)
+# print(type(sy_analog_task.config))
+# config = eval(sy_analog_task.config)
+# print(config)
+# config["channels"].append(new_pt_channel)
 sy_analog_task.config = json.dumps(config, default=lambda o: o.__dict__)
 client.hardware.tasks.configure(sy_analog_task)
 
@@ -102,9 +120,9 @@ client.hardware.tasks.configure(sy_analog_task)
 
 exit(1)
 
-pt_channel = AIVoltageChan(port=4, channel=4, device=analog_card.key)
-analog_task.config.channels.append(pt_channel)
-print("appended pt_channel", pt_channel.port, pt_channel.channel, pt_channel.device)
+# pt_channel = AIVoltageChan(port=4, channel=4, device=analog_card.key)
+# analog_task.config.channels.append(pt_channel)
+# print("appended pt_channel", pt_channel.port, pt_channel.channel, pt_channel.device)
 
 sy_ar_task = client.hardware.tasks.create([analog_task])[0]
 print("sy_ar_task = ", sy_ar_task)
