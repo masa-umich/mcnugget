@@ -1,9 +1,7 @@
 import pandas as pd
 import synnax as sy
 from synnax.hardware.ni.types import *
-import numpy as np
 from synnax.hardware.device import Device
-import ast
 from pt_configuration import configure_pt_channel
 from tc_configuration import configure_tc_channel, process_tc_poly
 from lc_configuration import configure_lc_channel
