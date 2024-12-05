@@ -6,7 +6,12 @@ from pt_configuration import configure_pt_channel
 from tc_configuration import configure_tc_channel, process_tc_poly
 from lc_configuration import configure_lc_channel
 
-client = sy.Synnax()
+client = sy.Synnax(
+    host="masasynnax.ddns.net",
+    port=9090,
+    username="synnax",
+    password="seldon"
+)
 
 DEBUG = False
 
