@@ -119,7 +119,8 @@ try:
                         torch_ignited = True
                     else:
                         time.sleep(1)
-            break;
+            break
+
         
         if(torch_ignited == False):
             syauto.close_all(auto, [nitrous_mpv,ethanol_mpv])
@@ -144,6 +145,8 @@ except KeyboardInterrupt as e:
     auto.release()
     print("terminated")
 
+time.sleep(2)
+syauto.close_all(auto, [nitrous_mpv,ethanol_mpv])
 print("Terminating Autosequence")
 print("Closing all valves and vents")
 syauto.open_close_many_valves(auto=auto, valves_to_open=[ethanol_tank_vent], valves_to_close=[torch_iso])
