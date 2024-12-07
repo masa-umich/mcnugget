@@ -10,7 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.12"
+python = ">=3.12,<3.13"
 toml = "^0.10.2"
 matplotlib = "^3.7.1"
 scipy = "^1.10.1"
@@ -21,7 +21,7 @@ openpyxl = "^3.1.2"
 jupyter = "^1.0.0"
 refprop-connector = "^0.3.7"
 requests = "^2.31.0"
-synnax = "0.32.0"
+synnax = "0.34.0"
 pynput = "^1.7.7"
 
 [tool.poetry.group.dev.dependencies]
