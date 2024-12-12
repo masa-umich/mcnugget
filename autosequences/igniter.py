@@ -1,5 +1,5 @@
 from synnax.control.controller import Controller
-from mcnugget.autosequences import syauto
+from autosequences import syauto
 import time
 import synnax as sy
 import statistics
