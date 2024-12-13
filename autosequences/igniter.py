@@ -32,6 +32,14 @@ SECONDS_OF_SPARKING = 3
 
 SPARK_RATE = 25
 
+IGNITION_TIMEOUT = 3  
+
+INITIAL_SLEEP = 0.01
+
+SPARK_SLEEP = 0.04
+
+PURGE_DURATION = 2 
+
 ETHANOL_TANK_PT = "ethanol_pt_5"
 
 NITROUS_TANK_PT = "nitrous_pt_1"
@@ -92,7 +100,7 @@ try:
         print("opening ethanol mpv")
         ethanol_mpv.open()
 
-        time.sleep(.01)
+        time.sleep(INITIAL_SLEEP)
 
         print("opening nitrous mpv")
         nitrous_mpv.open()
@@ -101,7 +109,7 @@ try:
 
         start = sy.TimeStamp.now();
         torch_ignited = False
-        while(sy.TimeStamp.now() - start < 3 and torch_ignited == False):
+        while(sy.TimeStamp.now() - start < IGNITION_TIMEOUT and torch_ignited == False):
             for j in range(SPARK_RATE):
                 spark_plug.open()
                 spark_plug.close()
@@ -111,18 +119,18 @@ try:
                     retry = False
                     break
                 else:
-                    time.sleep(.04)
+                    time.sleep(SPARK_SLEEP)
 
         
         if(torch_ignited == False):
             syauto.close_all(auto, [nitrous_mpv,ethanol_mpv])
             torch_purge.open()
-            time.sleep(2)
+            time.sleep(PURGE_DURATION)
             torch_purge.close()
             print(f"Ethanol Supply: {auto[ETHANOL_TANK_PT]} psig")
             print(f"Nitrous Supply: {auto[NITROUS_TANK_PT]} psig")
             testAgain = input("Type 'retry' to retry autosequence. ")
-            if testAgain != 'retry' or testAgain != 'Retry':
+            if testAgain != 'retry' and testAgain != 'Retry':
                 retry = False
 
 except KeyboardInterrupt as e:
@@ -131,7 +139,7 @@ except KeyboardInterrupt as e:
     syauto.open_close_many_valves(auto=auto, valves_to_open=[ethanol_tank_vent], valves_to_close=[ethanol_mpv, nitrous_mpv, torch_iso])
     
     torch_purge.open()
-    time.sleep(2)
+    time.sleep(PURGE_DURATION)
     torch_purge.close()
 
     auto.release()
