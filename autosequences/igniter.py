@@ -4,6 +4,8 @@ import time
 import synnax as sy
 import statistics
 
+client = sy.Synnax()
+
 NITROUS_MPV_DOC = "torch_state_0"
 NITROUS_MPV_DOA = "torch_vlv_0"
 
@@ -40,6 +42,8 @@ SPARK_SLEEP = 0.04
 
 PURGE_DURATION = 2 
 
+PRESS_SUPPLY = "torch_pt_0"
+
 ETHANOL_TANK_PT = "ethanol_pt_5"
 
 NITROUS_TANK_PT = "nitrous_pt_1"
@@ -48,11 +52,10 @@ TORCH_PT_1 = "torch_pt_6"
 TORCH_PT_2 = "torch_pt_7"
 TORCH_PT_3 = "torch_pt_8"
 
-client = sy.Synnax()
 
 CMDS = [NITROUS_MPV_DOC,ETHANOL_MPV_DOC,TORCH_ISO_DOC,TORCH_PURGE_DOC,ETHANOL_TANK_VENT_DOC,SPARK_PLUG_DOC]
-ACKS = [NITROUS_MPV_DOA,ETHANOL_MPV_DOA,TORCH_ISO_DOA,TORCH_PURGE_DOA,ETHANOL_TANK_VENT_DOA,ETHANOL_TANK_VENT_DOA]
-PTS = [ETHANOL_TANK_PT,NITROUS_TANK_PT,TORCH_PT_1,TORCH_PT_2,TORCH_PT_3]
+ACKS = [NITROUS_MPV_DOA,ETHANOL_MPV_DOA,TORCH_ISO_DOA,TORCH_PURGE_DOA,ETHANOL_TANK_VENT_DOA,SPARK_PLUG_DOA]
+PTS = [ETHANOL_TANK_PT,NITROUS_TANK_PT,TORCH_PT_1,TORCH_PT_2,TORCH_PT_3, PRESS_SUPPLY]
 
 WRITE_TO = []
 READ_FROM = []
@@ -93,13 +96,14 @@ try:
     syauto.close_all(auto, [nitrous_mpv, ethanol_mpv, torch_iso, torch_purge, ethanol_tank_vent])
     time.sleep(1)
 
+    print("opening torch 2K iso")
     torch_iso.open()
 
     retry = True
     while(retry == True):
         print("opening ethanol mpv")
         ethanol_mpv.open()
-
+        
         time.sleep(INITIAL_SLEEP)
 
         print("opening nitrous mpv")
