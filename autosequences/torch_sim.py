@@ -40,14 +40,14 @@ ALL_STATES = [
 # pressure transducers
 PRESS_SUPPLY = "torch_pt_0"
 # PRESS_POSTREG = "torch_pt_1"
-NITROUS_SUPPLY = "torch_pt_2"
+NITROUS_SUPPLY = "nitrous_pt_1"
 # NITROUS_POSTREG = "torch_pt_3"
-ETHANOL_TANK = "torch_pt_4"
+ETHANOL_TANK = "ethanol_pt_5"
 NITROUS_FLOWMETER = "torch_pt_5"
 ETHANOL_FLOWMETER = "torch_pt_6"
-TORCH_PT_1 = "torch_pt_7"
-TORCH_PT_2 = "torch_pt_8"
-TORCH_PT_3 = "torch_pt_9"
+TORCH_PT_1 = "torch_pt_6"
+TORCH_PT_2 = "torch_pt_7"
+TORCH_PT_3 = "torch_pt_8"
 ALL_PTS = [
     PRESS_SUPPLY,
     # PRESS_POSTREG,
