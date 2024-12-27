@@ -93,9 +93,9 @@ for pt in PTS:
 
 auto = client.control.acquire(name="Torch Ignition Booyah", write=WRITE_TO, read=READ_FROM, write_authorities=222)
 
-nitrous_mpv = syauto.Valve(auto=auto, cmd=NITROUS_MPV_DOC, ack=NITROUS_MPV_DOA, normally_open=True)
+nitrous_mpv = syauto.Valve(auto=auto, cmd=NITROUS_MPV_DOC, ack=NITROUS_MPV_DOA, normally_open=False)
 
-ethanol_mpv = syauto.Valve(auto=auto, cmd=ETHANOL_MPV_DOC, ack=ETHANOL_MPV_DOA, normally_open=True)
+ethanol_mpv = syauto.Valve(auto=auto, cmd=ETHANOL_MPV_DOC, ack=ETHANOL_MPV_DOA, normally_open=False)
 
 torch_iso = syauto.Valve(auto=auto, cmd=TORCH_ISO_DOC, ack=TORCH_ISO_DOA, normally_open=False)
 
@@ -111,12 +111,14 @@ try:
         exit()
 
     print("Starting Igniter Autosequence. Setting initial system state.")
-    syauto.close_all(auto, [nitrous_mpv, ethanol_mpv, torch_iso, torch_purge, ethanol_tank_vent])
+    ethanol_tank_vent.close()
+    
+    
     time.sleep(1)
 
     print("opening torch 2K iso")
     torch_iso.open()
-
+    
     retry = True
     while(retry == True):
         print("opening ethanol mpv")
@@ -129,13 +131,15 @@ try:
 
         time.sleep(DURATION_BEFORE_SPARK)
 
-        start = sy.TimeStamp.now();
+        start = time.time();
         torch_ignited = False
-        while(sy.TimeStamp.now() - start < IGNITION_TIMEOUT and torch_ignited == False):
+        while(time.time()- start < IGNITION_TIMEOUT and torch_ignited == False):
             for j in range(SPARK_RATE):
+                print(f"Attempt {j+1}/{SPARK_RATE}: Opening spark plug.")
                 spark_plug.open()
+                print("Closing spark plug.")
                 spark_plug.close()
-                pts_median = statistics.median(auto[TORCH_PT_1],auto[TORCH_PT_2],auto[TORCH_PT_3])
+                pts_median = statistics.median([auto[TORCH_PT_1],auto[TORCH_PT_2],auto[TORCH_PT_3]])
                 if(pts_median >= TORCH_PT_TARGET):
                     torch_ignited = True
                     retry = False
@@ -159,8 +163,8 @@ except KeyboardInterrupt as e:
     print("Manual abort, safing system")
     print("Closing all valves and vents")
     ethanol_tank_vent.open()
-    syauto.open_all(auto=auto,valves=[ethanol_mpv, nitrous_mpv, torch_iso])
-    syauto.open_close_many_valves(auto=auto, valves_to_close=[ethanol_mpv,nitrous_mpv],valves_to_open=[ethanol_tank_vent, torch_iso])
+    # syauto.open_all(auto=auto,valves=[ethanol_mpv, nitrous_mpv, torch_iso])
+    syauto.open_close_many_valves(auto=auto, valves_to_close=[ethanol_mpv,nitrous_mpv,torch_iso],valves_to_open=[ethanol_tank_vent])
     torch_purge.open()
     time.sleep(PURGE_DURATION)
     torch_purge.close()
@@ -169,10 +173,12 @@ except KeyboardInterrupt as e:
     print("terminated")
 
 time.sleep(2)
-syauto.close_all(auto, [nitrous_mpv,ethanol_mpv])
+syauto.close_all(auto=auto, valves=[nitrous_mpv,ethanol_mpv,torch_iso])
 print("Terminating Autosequence")
 print("Closing all valves and vents")
-syauto.open_all(auto=auto,valves=[torch_iso, ethanol_tank_vent])
+torch_purge.open()
+time.sleep(PURGE_DURATION)
+torch_purge.close()
 # syauto.open_close_many_valves(auto=auto, valves_to_open=[ethanol_tank_vent], valves_to_close=[torch_iso])
 auto.release()
 print("terminated")
