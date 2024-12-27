@@ -6,24 +6,6 @@ import statistics
 
 client = sy.Synnax()
 
-# NITROUS_MPV_DOC = "torch_state_0"
-# NITROUS_MPV_DOA = "torch_vlv_0"
-
-# ETHANOL_MPV_DOC = "torch_state_1"
-# ETHANOL_MPV_DOA = "torch_vlv_1"
-
-# TORCH_ISO_DOC = "torch_state_2"
-# TORCH_ISO_DOA = "torch_vlv_2"
-
-# TORCH_PURGE_DOC = "torch_state_4"
-# TORCH_PURGE_DOA = "torch_vlv_4"
-
-# ETHANOL_TANK_VENT_DOC = "torch_state_3"
-# ETHANOL_TANK_VENT_DOA = "torch_vlv_3"
-
-# SPARK_PLUG_DOC = "torch_state_5"
-# SPARK_PLUG_DOA = "torch_vlv_5"
-
 NITROUS_MPV_DOC = "torch_vlv_0"
 NITROUS_MPV_DOA = "torch_state_0"
 
@@ -116,17 +98,17 @@ try:
     
     time.sleep(1)
 
-    print("opening torch 2K iso")
+    print("Opening torch 2K iso")
     torch_iso.open()
     
     retry = True
     while(retry == True):
-        print("opening ethanol mpv")
+        print("Opening ethanol mpv")
         ethanol_mpv.open()
         
         time.sleep(INITIAL_SLEEP)
 
-        print("opening nitrous mpv")
+        print("Opening nitrous mpv")
         nitrous_mpv.open()
 
         time.sleep(DURATION_BEFORE_SPARK)
@@ -141,6 +123,7 @@ try:
                 spark_plug.close()
                 pts_median = statistics.median([auto[TORCH_PT_1],auto[TORCH_PT_2],auto[TORCH_PT_3]])
                 if(pts_median >= TORCH_PT_TARGET):
+                    print("Torch ignited.")
                     torch_ignited = True
                     retry = False
                     break
@@ -163,14 +146,13 @@ except KeyboardInterrupt as e:
     print("Manual abort, safing system")
     print("Closing all valves and vents")
     ethanol_tank_vent.open()
-    # syauto.open_all(auto=auto,valves=[ethanol_mpv, nitrous_mpv, torch_iso])
     syauto.open_close_many_valves(auto=auto, valves_to_close=[ethanol_mpv,nitrous_mpv,torch_iso],valves_to_open=[ethanol_tank_vent])
     torch_purge.open()
     time.sleep(PURGE_DURATION)
     torch_purge.close()
 
     auto.release()
-    print("terminated")
+    print("Terminated")
 
 time.sleep(2)
 syauto.close_all(auto=auto, valves=[nitrous_mpv,ethanol_mpv,torch_iso])
@@ -179,9 +161,8 @@ print("Closing all valves and vents")
 torch_purge.open()
 time.sleep(PURGE_DURATION)
 torch_purge.close()
-# syauto.open_close_many_valves(auto=auto, valves_to_open=[ethanol_tank_vent], valves_to_close=[torch_iso])
 auto.release()
-print("terminated")
-print("ctrl-c to terminate autosequence")
+print("Terminated")
+print("Ctrl-c to terminate autosequence")
 time.sleep(60)
     
