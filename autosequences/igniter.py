@@ -126,12 +126,29 @@ with client.control.acquire(
             exit()
 
         print("Starting Igniter Autosequence. Setting initial system state.")
+        if (auto[TORCH_PURGE_DOA] == 1):
+            print("Torch Purge is open, closing now")
+            torch_purge.close()
+        
+        if (auto[ETHANOL_MPV_DOA] == 1):
+            print("Ethanol MPV is open, closing now")
+            ethanol_mpv.close()
+
+        if (auto[NITROUS_MPV_DOA] == 1):
+            print("Nitrous MPV is open, closing now")
+            nitrous_mpv.close()
+            
         ethanol_tank_vent.close()
 
         time.sleep(1)
 
         print("Opening torch 2K iso")
         torch_iso.open()
+
+        if (auto[TORCH_ISO_DOA] == 0):
+            print("Torch Iso is closed, opening now")
+            torch_iso.open()
+
 
         retry = True
         while retry == True:
