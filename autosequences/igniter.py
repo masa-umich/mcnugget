@@ -152,7 +152,6 @@ with client.control.acquire(
 
         ethanol_tank_vent.close()
 
-        time.sleep(1)
 
         if (auto[TORCH_ISO_DOA] == 0):
             ans = input("Torch 2K Iso is closed, type 'yes' to confirm opening")
@@ -163,6 +162,7 @@ with client.control.acquire(
                 print("Torch 2K Iso was not prompted to open, moving on with the sequence")
            
 
+        time.sleep(1)
 
         retry = True
         while retry == True:
