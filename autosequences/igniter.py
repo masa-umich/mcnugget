@@ -156,7 +156,7 @@ with client.control.acquire(
                     pts_median = statistics.median(
                         [auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]]
                     )
-                    print("measured pressure: ", pts_median)
+                    # print("measured pressure: ", pts_median)
                     if pts_median >= TORCH_PT_TARGET:
                         print("Torch ignited.")
                         torch_ignited = True
@@ -166,6 +166,7 @@ with client.control.acquire(
                         time.sleep(SPARK_SLEEP)
 
             if torch_ignited == False:
+                print("Torch failed to ignite.")
                 syauto.close_all(auto, [nitrous_mpv, ethanol_mpv])
                 torch_purge.open()
                 time.sleep(PURGE_DURATION)
