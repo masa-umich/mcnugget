@@ -127,27 +127,41 @@ with client.control.acquire(
 
         print("Starting Igniter Autosequence. Setting initial system state.")
         if (auto[TORCH_PURGE_DOA] == 1):
-            print("Torch Purge is open, closing now")
-            torch_purge.close()
+            ans = input("Torch Purge is open, type 'yes' to confirm close")
+            if (ans == 'yes' or ans == 'Yes'):
+                print("Closing Torch Purge")
+                torch_purge.close()
+            else:
+                print("Torch Purge was not prompted to close, moving on with the sequence")
         
         if (auto[ETHANOL_MPV_DOA] == 1):
-            print("Ethanol MPV is open, closing now")
-            ethanol_mpv.close()
+            ans = input("Ethanol MPV is open, type 'yes' to confirm close")
+            if (ans == 'yes' or ans == 'Yes'):
+                print("Closing ethanol MPV")
+                ethanol_mpv.close()
+            else:
+                print("Ethanol MPV was not prompted to close, moving on with the sequence")
 
         if (auto[NITROUS_MPV_DOA] == 1):
-            print("Nitrous MPV is open, closing now")
-            nitrous_mpv.close()
-            
+            ans = input("Nitrous MPV is open, type 'yes' to confirm close")
+            if (ans == 'yes' or ans == 'Yes'):
+                print("Closing nitrous MPV")
+                nitrous_mpv.close()
+            else:
+                print("Nitrous MPV was not prompted to close, moving on with the sequence")
+
         ethanol_tank_vent.close()
 
         time.sleep(1)
 
-        print("Opening torch 2K iso")
-        torch_iso.open()
-
         if (auto[TORCH_ISO_DOA] == 0):
-            print("Torch Iso is closed, opening now")
-            torch_iso.open()
+            ans = input("Torch 2K Iso is closed, type 'yes' to confirm opening")
+            if (ans == 'yes' or ans == 'Yes'):
+                print("Opening Torch 2K Iso")
+                torch_iso.open()
+            else:
+                print("Torch 2K Iso was not prompted to open, moving on with the sequence")
+           
 
 
         retry = True
