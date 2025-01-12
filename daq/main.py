@@ -153,7 +153,6 @@ def input_excel(file_path: str, item_num: int):
         print("Check sheet read in:", e)
         return
     
-    df = df.drop('Type', axis=1)
     df_new = df.head(item_num) 
     print("Excel file succesfully read.")
     process_excel(df_new)
@@ -176,7 +175,6 @@ def process_excel(file: pd.DataFrame):
             print(f"Error populating tasks: {e}")
 
 def populate_digital(row):
-    port = int(row["Port"])
     channel = int(row["Channel"])
 
     vlv_di_channel = DIChan()
