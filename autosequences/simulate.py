@@ -13,7 +13,7 @@ import os
 
 try:
     # start the coldflow and press_fill autosequence
-    cold_flow = subprocess.Popen(["python3", "coldflow_auto_sims.py"])
+    cold_flow = subprocess.Popen(["python3", "coldflow_sim.py"])
     time.sleep(3)
     press_fill = subprocess.Popen(["python3", "press_fill.py"], stdin = subprocess.PIPE, text=True)
     time.sleep(1)

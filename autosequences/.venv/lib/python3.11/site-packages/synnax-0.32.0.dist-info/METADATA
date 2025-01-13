@@ -1,0 +1,24 @@
+Metadata-Version: 2.1
+Name: synnax
+Version: 0.32.0
+Summary: Synnax Client Library
+Home-page: https://synnaxlabs.com
+Keywords: Synnax,Synnax Python Client
+Author: emiliano bonilla
+Author-email: emilbon99@gmail.com
+Requires-Python: >=3.11,<4.0
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Dist: alamos (>=0.32.0,<0.33.0)
+Requires-Dist: click (>=8.1.3,<9.0.0)
+Requires-Dist: keyring (>=23.9.3,<24.0.0)
+Requires-Dist: nptdms (>=1.7.1,<2.0.0)
+Requires-Dist: numpy (>=1.24.3,<2.0.0)
+Requires-Dist: pandas (>=2.0.2,<3.0.0)
+Requires-Dist: pick (>=2.0.2,<3.0.0)
+Requires-Dist: pydantic (>=1.10.9,<2.0.0)
+Requires-Dist: rich (>=13.4.1,<14.0.0)
+Requires-Dist: synnax-freighter (>=0.32.0,<0.33.0)
+Requires-Dist: urllib3 (>=2.2.1,<3.0.0)
+Project-URL: Repository, https://github.com/synnaxlabs/synnax

@@ -1,7 +1,6 @@
 import time
 import random
 import synnax as sy
-import concurrent.futures
 
 # client = sy.Synnax(
 #     host="localhost",
@@ -29,6 +28,8 @@ FUEL_PREVALVE_IN = "gse_doa_22"  # Fuel pre-valve input
 FUEL_PREVALVE_OUT = "gse_doc_22"  # Fuel pre-valve output
 FUEL_MPV_IN = "gse_doa_24"  
 FUEL_MPV_OUT = "gse_doc_24"  
+FUEL_DOME_ISO_IN = "gse_doa_27"
+FUEL_DOME_ISO_OUT = "gse_doc_27"
 
 # valves for purge system
 FUEL_FEEDLINE_PURGE_IN = "gse_doa_7"  # Fuel feedline purge
@@ -63,6 +64,8 @@ FUEL_PRESS_ISO_IN = "gse_doa_2"  # Fuel press ISO
 FUEL_PRESS_ISO_OUT = "gse_doc_2"  # Fuel press ISO
 OX_PRESS_IN = "gse_doa_1"  # Ox press
 OX_PRESS_OUT = "gse_doc_1"  # Ox press
+PREPRESS_ISO_IN = "gse_doa_26"
+PREPRESS_ISO_OUT = "gse_doa_26"
 
 # Ox system pressure valves
 OX_LOW_VENT_IN = "gse_doa_16"  # Ox low vent
@@ -71,7 +74,7 @@ OX_FILL_VALVE_IN = "gse_doa_19"  # Ox fill valve
 OX_FILL_VALVE_OUT = "gse_doc_19"  # Ox fill valve
 OX_HIGH_FLOW_VENT_IN = "gse_doa_17"  # Ox high vent
 OX_HIGH_FLOW_VENT_OUT = "gse_doc_17"  # Ox high vent
-OX_PRE_VALVE_IN = "gse_doa_21"  # Ox pre-valve
+OX_PREVALVE_IN = "gse_doa_21"  # Ox pre-valve
 OX_PRE_VALVE_OUT = "gse_doc_21"  # Ox pre-valve
 OX_DOME_ISO_IN = "gse_doa_3"  # Ox dome reg pilot ISO
 OX_DOME_ISO_OUT = "gse_doc_3"  # Ox dome reg pilot ISO
@@ -95,14 +98,16 @@ command_channels = [FUEL_VENT_OUT, FUEL_PREVALVE_OUT, FUEL_FEEDLINE_PURGE_OUT,
                     ENGINE_PNEUMATICS_ISO_OUT, ENGINE_PNEUMATICS_VENT_OUT,
                     AIR_DRIVE_ISO_1_OUT, AIR_DRIVE_ISO_2_OUT, GAS_BOOSTER_FILL_OUT, PRESS_FILL_OUT,
                     PRESS_VENT_OUT, FUEL_PRESS_ISO_OUT, OX_PRESS_OUT, OX_LOW_VENT_OUT, OX_FILL_VALVE_OUT,
-                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT, OX_DOME_ISO_OUT, OX_MPV_OUT, FUEL_MPV_OUT, IGNITOR_OUT]
+                    OX_HIGH_FLOW_VENT_OUT, OX_PRE_VALVE_OUT, OX_DOME_ISO_OUT, OX_MPV_OUT, FUEL_MPV_OUT, IGNITOR_OUT,
+                    FUEL_DOME_ISO_OUT, PREPRESS_ISO_OUT]
 
 ack_channels = [FUEL_VENT_IN, FUEL_PREVALVE_IN, FUEL_FEEDLINE_PURGE_IN,
                 OX_FILL_PURGE_IN, FUEL_PRE_PRESS_IN, OX_PRE_PRESS_IN, OX_FEEDLINE_PURGE_IN,
                 ENGINE_PNEUMATICS_ISO_IN, ENGINE_PNEUMATICS_VENT_IN,
                 AIR_DRIVE_ISO_1_IN, AIR_DRIVE_ISO_2_IN, GAS_BOOSTER_FILL_IN, PRESS_FILL_IN,
                 PRESS_VENT_IN, FUEL_PRESS_ISO_IN, OX_PRESS_IN, OX_LOW_VENT_IN, OX_FILL_VALVE_IN,
-                OX_HIGH_FLOW_VENT_IN, OX_PRE_VALVE_IN, OX_DOME_ISO_IN, OX_MPV_IN, FUEL_MPV_IN, IGNITOR_IN]
+                OX_HIGH_FLOW_VENT_IN, OX_PREVALVE_IN, OX_DOME_ISO_IN, OX_MPV_IN, FUEL_MPV_IN, IGNITOR_IN, 
+                FUEL_DOME_ISO_IN, PREPRESS_ISO_IN]
 
 # client.channels.create(
 #     sy.Channel(
@@ -282,21 +287,18 @@ with client.open_streamer(READ_CHANNELS) as streamer:
         sy.TimeStamp.now(),
         channels = WRITE_CHANNELS,
         name="daq_sim",
-        # enable_auto_commit=True
+        enable_auto_commit=True
     ) as writer:
-        i = 0
+        # i = 0
         while True:
             try:
                 time.sleep(rate)
-                i += 1
-
-                if streamer.received:
-                    f = streamer.read()
+                while True:
+                    f = streamer.read(0)
                     if f is None:
-                        print("received empty frame, continuing")
-                    else:
-                        for c in f.channels:
-                            DAQ_STATE[c] = f[c][-1]
+                        break
+                    for c in f.channels:
+                        DAQ_STATE[c] = f[c][-1]
 
                 fuel_vent_energized = DAQ_STATE[FUEL_VENT_OUT] == 1
                 fuel_prevalve_energized = DAQ_STATE[FUEL_PREVALVE_OUT] == 1
@@ -450,7 +452,7 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     OX_LOW_VENT_IN: int(ox_low_vent_energized),
                     OX_FILL_VALVE_IN: int(ox_fill_valve_energized),
                     OX_HIGH_FLOW_VENT_IN: int(ox_high_flow_vent_energized),
-                    OX_PRE_VALVE_IN: int(ox_pre_valve_energized),
+                    OX_PREVALVE_IN: int(ox_pre_valve_energized),
                     OX_DOME_ISO_IN: int(ox_dome_iso_energized),
                     FUEL_MPV_IN: int(fuel_mpv_energized),
                     OX_MPV_IN: int(ox_mpv_energized),
@@ -472,9 +474,9 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     OX_TANK_1_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_2_PRESSURE: true_ox_pressure + random.uniform(-20,20),
                     OX_TANK_3_PRESSURE: true_ox_pressure + random.uniform(-20,20),
-                    PRESS_TANK_PT_1: random.normalvariate(true_press_pressure, 15),
-                    PRESS_TANK_PT_2: random.normalvariate(true_press_pressure, 15),
-                    PRESS_TANK_PT_3: random.normalvariate(true_press_pressure, 15),
+                    PRESS_TANK_PT_1: 3600 + random.normalvariate(true_press_pressure, 15),
+                    PRESS_TANK_PT_2: 3600 + random.normalvariate(true_press_pressure, 15),
+                    PRESS_TANK_PT_3: 3600 + random.normalvariate(true_press_pressure, 15),
                     # PRESS_TANK_PT_1: true_press_pressure + random.uniform(-40, 40),
                     # PRESS_TANK_PT_2: true_press_pressure + random.uniform(-40, 40),
                     # PRESS_TANK_PT_3: true_press_pressure + random.uniform(-40, 40),
@@ -501,10 +503,6 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     PURGE_2K_BOTTLE_PT: 0,
                     PURGE_POST_REG_PT: 0,
                 })
-
-                if i % 100 == 0:
-                    writer.commit()
-                    print(f"commiting {i} samples")
 
             except Exception as e:
                 print(e)

@@ -112,22 +112,17 @@ try:
     time.sleep(1)
     while True:
         i += 1
-        if streamer.received:
-            frame = streamer.read().to_df()
-            if frame is None:
-                print("frame is None")
-                time.sleep(rate)
-                continue
-            if frame.empty:
-                print("frame is .empty")
-                time.sleep(rate)
-                continue
-            for channel in READ_FROM:
-                if not channel in frame:
+
+        while True:
+            f = streamer.read(0)
+            if f is None:
+                break
+            for c in f.channels:
+                if not channel in f:
                     continue
-                update_average(frame[channel], channel)
+                update_average(f[channel], channel)
                 STATE[channel + "_avg"] = read_average(channel)
-            # STATE["average_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
+
         STATE["average_time"] = synnax.TimeStamp.now()
         writer.write(STATE)
         if i % 100 == 0:
