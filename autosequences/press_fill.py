@@ -44,6 +44,7 @@ After initializing the client and reference variables, the autosequence will:
 import time
 import synnax as sy
 from synnax.control.controller import Controller
+<<<<<<< HEAD
 #from mcnugget.autosequences
 import syauto
 import statistics
@@ -54,6 +55,15 @@ speed_up_rate = 1
 original_sleep = time.sleep
 def faster_sleep(seconds):
     original_sleep(seconds * speed_up_rate)
+=======
+from mcnugget.autosequences import syauto
+import statistics
+from collections import deque
+
+original_sleep = time.sleep
+def faster_sleep(seconds):
+    original_sleep(seconds * 0.01)
+>>>>>>> main
 
 time.sleep = faster_sleep
 

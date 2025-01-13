@@ -32,7 +32,7 @@ daq_time = client.channels.create(
     is_index=True,
     retrieve_if_name_exists=True
 )
-print("created/retrieved channel daq_time with key", daq_time.key)
+# print("created/retrieved channel daq_time with key", daq_time.key)
 
 average_time = client.channels.create(
     name="average_time",
@@ -40,7 +40,7 @@ average_time = client.channels.create(
     is_index=True,
     retrieve_if_name_exists=True
 )
-print("created/retrieved channel average_time with key", average_time.key)
+# print("created/retrieved channel average_time with key", average_time.key)
 
 
 for channel in channels_to_average:
@@ -56,8 +56,8 @@ for channel in channels_to_average:
         index=average_time.key,
         retrieve_if_name_exists=True
     )
-    print(f"created/retrieved channel {channel} with key {base_channel.key}")
-    print(f"created/retrieved channel {channel}_avg with key {av_channel.key}")
+    # print(f"created/retrieved channel {channel} with key {base_channel.key}")
+    # print(f"created/retrieved channel {channel}_avg with key {av_channel.key}")
 
 def read_average(channel: str):
     return running_average_sums[channel] / len(running_average_values[channel])
@@ -111,23 +111,32 @@ try:
     print("initializing...")
     time.sleep(1)
     while True:
+<<<<<<< HEAD
         i += 1
 
+=======
+        time.sleep(rate)
+>>>>>>> main
         while True:
             f = streamer.read(0)
             if f is None:
                 break
             for c in f.channels:
+<<<<<<< HEAD
                 if not channel in f:
                     continue
                 update_average(f[channel], channel)
                 STATE[channel + "_avg"] = read_average(channel)
 
+=======
+                update_average(f[c][-1], c)
+                STATE[c + "_avg"] = read_average(c)
+>>>>>>> main
         STATE["average_time"] = synnax.TimeStamp.now()
         writer.write(STATE)
         if i % 100 == 0:
-            writer.commit()
-            print(f"committing {i} samples")
+            print(f"iteration {i}")
+        i += 1
         time.sleep(rate)
 
 except KeyboardInterrupt:

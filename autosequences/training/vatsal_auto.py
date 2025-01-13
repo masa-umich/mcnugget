@@ -3,8 +3,7 @@ import synnax
 import sys
 import os
 from pynput import keyboard
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
-from mcnugget.mcnugget.autosequences import syauto
+from autosequences import syauto
 
 # Initialize the connection to the Synnax server
 client = synnax.Synnax()

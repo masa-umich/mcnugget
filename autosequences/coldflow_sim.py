@@ -17,8 +17,14 @@ import synnax as sy
 #     password="seldon"
 # )
 
-client = sy.Synnax()
+client = sy.Synnax(
+    host="localhost",
+    port=9090,
+    username="synnax",
+    password="seldon"
+)
 
+# testing if leon can git push
 DAQ_TIME = "daq_time"
 
 # valves for fuel system
