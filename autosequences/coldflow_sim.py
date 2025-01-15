@@ -12,7 +12,7 @@ GSE_TIME = "gse_time"
 PNEUMATICS_BOTTLE = "gse_pt_1"
 TRAILER_PNEUMATICS = "gse_pt_2"
 ENGINE_PNEUMATICS = "gse_pt_3"
-PRESS_BOTTLE = "gse_pt_4"
+PRESS_SUPPLY = "gse_pt_4"
 OX_DOME_INLET = "gse_pt_5"
 OX_POST_PILOT_REG = "gse_pt_6"
 OX_DOME_REG = "gse_pt_7"
@@ -55,7 +55,7 @@ PTS = [
     PNEUMATICS_BOTTLE,
     TRAILER_PNEUMATICS,
     ENGINE_PNEUMATICS,
-    PRESS_BOTTLE,
+    PRESS_SUPPLY,
     OX_DOME_INLET,
     OX_POST_PILOT_REG,
     OX_DOME_REG,
@@ -287,43 +287,66 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                         break
                     for c in f.channels:
                         CLIENT_STATE[c] = f[c][-1]
-                        print("received ", c, f[c][-1])
+                        # print("received ", c, f[c][-1])
 
                 for cmd in CLIENT_STATE:
                     DAQ_STATE[cmd.replace("vlv", "state")] = int(CLIENT_STATE[cmd])
 
                 ### flow logic ###
                 ### PRESS ###
-                if CLIENT_STATE.get(PRESS_ISO):
-                    if FUEL_DOME_ISO:
+                if DAQ_STATE.get(PRESS_ISO.replace("vlv", "state")):
+                    if DAQ_STATE.get(FUEL_DOME_ISO.replace("vlv", "state")):
                         press_2k_supply -= 1
                         fuel_tank_true += 5
-                    if OX_DOME_ISO:
+                        # print("pressurizing fuel tank")
+                    if DAQ_STATE.get(OX_DOME_ISO.replace("vlv", "state")):
                         press_2k_supply -= 1
                         ox_tank_true += 5
+                        # print("pressurizing ox tank")
 
                 ### OX ###
-                if CLIENT_STATE.get(OX_VENT):
+                if not DAQ_STATE.get(OX_VENT.replace("vlv", "state")):
                     ox_tank_true -= 8
-                if CLIENT_STATE.get(OX_MPV) and CLIENT_STATE.get(OX_PREVALVE):
+                    # print("venting ox tank")
+                if (
+                    not DAQ_STATE.get(OX_MPV.replace("vlv", "state"))
+                ) and DAQ_STATE.get(OX_PREVALVE.replace("vlv", "state")):
                     ox_tank_true -= 6
+                    # print("ox to feedline")
 
                 ### FUEL ###
-                if CLIENT_STATE.get(FUEL_VENT):
+                if not DAQ_STATE.get(FUEL_VENT.replace("vlv", "state")):
                     fuel_tank_true -= 7
-                if CLIENT_STATE.get(FUEL_MPV) and CLIENT_STATE.get(FUEL_PREVALVE):
+                    # print("venting fuel tank")
+                if (
+                    not DAQ_STATE.get(FUEL_MPV.replace("vlv", "state"))
+                ) and DAQ_STATE.get(FUEL_PREVALVE.replace("vlv", "state")):
                     fuel_tank_true -= 6
+                    # print("fuel to feedline")
 
                 ### PRESSURE TRANSDUCERS ###
-                DAQ_STATE[PNEUMATICS_BOTTLE] = press_2k_supply + random.uniform(
-                    -100, 100
-                )
+                DAQ_STATE[PRESS_SUPPLY] = press_2k_supply + random.uniform(-100, 100)
+                DAQ_STATE[FUEL_TANK_1] = fuel_tank_true + random.uniform(-100, 100)
+                DAQ_STATE[FUEL_TANK_2] = fuel_tank_true + random.uniform(-100, 100)
+                DAQ_STATE[FUEL_TANK_3] = fuel_tank_true + random.uniform(-100, 100)
+                DAQ_STATE[OX_TANK_1] = ox_tank_true + random.uniform(-100, 100)
+                DAQ_STATE[OX_TANK_2] = ox_tank_true + random.uniform(-100, 100)
+                DAQ_STATE[OX_TANK_3] = ox_tank_true + random.uniform(-100, 100)
 
                 DAQ_STATE[GSE_TIME] = sy.TimeStamp.now()
                 writer.write(DAQ_STATE)
 
                 if i % 50 == 0:
                     print(len(DAQ_STATE), DAQ_STATE)
+                    print("ox_dome_iso state: ", CLIENT_STATE.get(OX_DOME_ISO))
+                    print("ox_vent state: ", CLIENT_STATE.get(OX_VENT))
+                    print("ox_prevalve state: ", CLIENT_STATE.get(OX_PREVALVE))
+                    print("ox_mpv state: ", CLIENT_STATE.get(OX_MPV))
+                    print("fuel_dome_iso state: ", CLIENT_STATE.get(FUEL_DOME_ISO))
+                    print("fuel_vent state: ", CLIENT_STATE.get(FUEL_VENT))
+                    print("fuel_prevalve state: ", CLIENT_STATE.get(FUEL_PREVALVE))
+                    print("fuel_mpv state: ", CLIENT_STATE.get(FUEL_MPV))
+                    print("press_iso state: ", CLIENT_STATE.get(PRESS_ISO))
                 i += 1
 
             except Exception as e:
