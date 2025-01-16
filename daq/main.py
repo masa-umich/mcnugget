@@ -7,10 +7,7 @@ from tc_configuration import configure_tc_channel, process_tc_poly
 from lc_configuration import configure_lc_channel
 
 client = sy.Synnax(
-    host="masasynnax.ddns.net",
-    port=9090,
-    username="synnax",
-    password="seldon"
+    host="masasynnax.ddns.net", port=9090, username="synnax", password="seldon"
 )
 
 DEBUG = False
@@ -34,12 +31,12 @@ except:
 if analog_task is None:
     print("new analog read task will be created")
     analog_task = AnalogReadTask(
-        name = "Analog Read Task",
-        # device = analog_card.key,  # on channels instead 
-        sample_rate = sy.Rate.HZ * 50,
-        stream_rate = sy.Rate.HZ * 10,
-        data_saving = True,
-        channels = []
+        name="Analog Read Task",
+        # device = analog_card.key,  # on channels instead
+        sample_rate=sy.Rate.HZ * 50,
+        stream_rate=sy.Rate.HZ * 10,
+        data_saving=True,
+        channels=[],
     )
     client.hardware.tasks.create([analog_task])
 if DEBUG:
@@ -54,12 +51,12 @@ except:
 if digital_read_task is None:
     print("new digital read task will be created")
     digital_read_task = DigitalReadTask(
-        name = "Digital Read Task",
-        device = digital_card.key, 
-        sample_rate = sy.Rate.HZ * 50,
-        stream_rate = sy.Rate.HZ * 10,
-        data_saving = True,
-        channels = []
+        name="Digital Read Task",
+        device=digital_card.key,
+        sample_rate=sy.Rate.HZ * 50,
+        stream_rate=sy.Rate.HZ * 10,
+        data_saving=True,
+        channels=[],
     )
     client.hardware.tasks.create([digital_read_task])
 if DEBUG:
@@ -74,11 +71,11 @@ except:
 if digital_write_task is None:
     print("new digital write task will be created")
     digital_write_task = DigitalWriteTask(
-        name = "Digital Write Task",
-        device = digital_card.key, 
-        state_rate = sy.Rate.HZ * 50,
-        data_saving = True,
-        channels = []
+        name="Digital Write Task",
+        device=digital_card.key,
+        state_rate=sy.Rate.HZ * 50,
+        data_saving=True,
+        channels=[],
     )
     client.hardware.tasks.create([digital_write_task])
 if DEBUG:
@@ -88,7 +85,9 @@ if DEBUG:
 # new_pt_channel = AIVoltageChan(port=6, channel=6, device=analog_card.key, data_type="float64")
 # new_pt_channel = AIVoltageChan(port=6, channel=6, device=analog_card.key, type="ai_voltage", data_type="float64")
 channel_channel = client.channels.retrieve("gse_ai_ai_5").key
-new_pt_channel = AIVoltageChan(port=5, channel=channel_channel, device=analog_card.key, type="ai_voltage")
+new_pt_channel = AIVoltageChan(
+    port=5, channel=channel_channel, device=analog_card.key, type="ai_voltage"
+)
 # index = client.channels.retrieve("gse_ai_time").key
 # client.channels.create(sy.Channel(
 #     name = "Dev1/ai6",
@@ -136,9 +135,10 @@ exit(1)
 
 
 def main():
-    NUMBER_OF_ITEMS = 4 #change to take in input and then put into the function
+    NUMBER_OF_ITEMS = 4  # change to take in input and then put into the function
     # input_excel(r"C:\Users\ruchi\mcnugget\archive\cli\testing.xlsx", NUMBER_OF_ITEMS) #change to take in input and then put into the function
     input_excel("/Users/evanhekman/masa/testing.xlsx", 4)
+
 
 def input_excel(file_path: str, item_num: int):
     try:
@@ -152,10 +152,11 @@ def input_excel(file_path: str, item_num: int):
     except Exception as e:
         print("Check sheet read in:", e)
         return
-    
-    df_new = df.head(item_num) 
+
+    df_new = df.head(item_num)
     print("Excel file succesfully read.")
     process_excel(df_new)
+
 
 def process_excel(file: pd.DataFrame):
     print(f"reading {len(file)} rows")
@@ -174,6 +175,7 @@ def process_excel(file: pd.DataFrame):
         except Exception as e:
             print(f"Error populating tasks: {e}")
 
+
 def populate_digital(row):
     channel = int(row["Channel"])
 
@@ -186,10 +188,11 @@ def populate_digital(row):
     vlv_do_channel = DOChan()
     vlv_do_channel.cmd_channel = channel
     vlv_do_channel.state_channel = channel
-    vlv_do_channel.port =  (channel / 8) + 4
+    vlv_do_channel.port = (channel / 8) + 4
     vlv_do_channel.line = channel % 8
     digital_write_task.config.channels.append(vlv_do_channel)
     print("Added VLV channel")
+
 
 def populate_analogue(row):
     if row["Sensor Type"] == "TC":
@@ -199,6 +202,7 @@ def populate_analogue(row):
         configure_pt_channel(analog_task, row, analog_card)
     elif row["Sensor Type"] == "LC":
         configure_lc_channel(analog_task, row, analog_card)
+
 
 if __name__ == "__main__":
     main()
