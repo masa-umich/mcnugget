@@ -140,7 +140,7 @@ print(f"writing to {len(WRITE_TO)} channels")
 
 
 def ignition(state):
-    if random.random() > 0.1:
+    if random.random() > 0.0000001:
         return 0
     if state["chamber_nitrous"] < 10:
         return 0
@@ -213,7 +213,7 @@ with client.open_streamer(READ_FROM) as streamer:
             for key in TRUE_VALUES:
                 TRUE_VALUES[key] = max(0, TRUE_VALUES[key])
 
-            ignition_ = ignition(TRUE_VALUES) and (random.random() > 0.7)
+            ignition_ = ignition(TRUE_VALUES)
             if ignition_:
                 TRUE_VALUES["chamber_pressure"] = 700 + (random.random() - 0.5) * 200
                 LAST_IGNITION = synnax.TimeStamp.now()

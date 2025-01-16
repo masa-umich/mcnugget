@@ -33,7 +33,7 @@ SECONDS_OF_SPARKING = 3
 
 SPARK_RATE = 25
 
-IGNITION_TIMEOUT = 3
+IGNITION_TIMEOUT = 2*(10**9)
 
 INITIAL_SLEEP = 0.01
 
@@ -89,9 +89,16 @@ for ack in ACKS:
 for pt in PTS:
     READ_FROM.append(pt)
 
+
 with client.control.acquire(
     name="Torch Ignition Booyah", write=WRITE_TO, read=READ_FROM, write_authorities=222
 ) as auto:
+
+    def monitor(auto, target, start):
+        if statistics.median([auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]]) >= target:
+            return True
+        if(sy.TimeStamp.since(start) >= IGNITION_TIMEOUT): #what is ignition timeout value
+            return True
 
     nitrous_mpv = syauto.Valve(
         auto=auto, cmd=NITROUS_MPV_DOC, ack=NITROUS_MPV_DOA, normally_open=False
@@ -127,7 +134,7 @@ with client.control.acquire(
 
         print("Starting Igniter Autosequence. Setting initial system state.")
         if (auto[TORCH_PURGE_DOA] == 1):
-            ans = input("Torch Purge is open, type 'yes' to confirm close")
+            ans = input("Torch Purge is open, type 'yes' to confirm close ")
             if (ans == 'yes' or ans == 'Yes'):
                 print("Closing Torch Purge")
                 torch_purge.close()
@@ -135,7 +142,7 @@ with client.control.acquire(
                 print("Torch Purge was not prompted to close, moving on with the sequence")
         
         if (auto[ETHANOL_MPV_DOA] == 1):
-            ans = input("Ethanol MPV is open, type 'yes' to confirm close")
+            ans = input("Ethanol MPV is open, type 'yes' to confirm close ")
             if (ans == 'yes' or ans == 'Yes'):
                 print("Closing ethanol MPV")
                 ethanol_mpv.close()
@@ -143,7 +150,7 @@ with client.control.acquire(
                 print("Ethanol MPV was not prompted to close, moving on with the sequence")
 
         if (auto[NITROUS_MPV_DOA] == 1):
-            ans = input("Nitrous MPV is open, type 'yes' to confirm close")
+            ans = input("Nitrous MPV is open, type 'yes' to confirm close ")
             if (ans == 'yes' or ans == 'Yes'):
                 print("Closing nitrous MPV")
                 nitrous_mpv.close()
@@ -154,7 +161,7 @@ with client.control.acquire(
 
 
         if (auto[TORCH_ISO_DOA] == 0):
-            ans = input("Torch 2K Iso is closed, type 'yes' to confirm opening")
+            ans = input("Torch 2K Iso is closed, type 'yes' to confirm opening ")
             if (ans == 'yes' or ans == 'Yes'):
                 print("Opening Torch 2K Iso")
                 torch_iso.open()
@@ -162,56 +169,80 @@ with client.control.acquire(
                 print("Torch 2K Iso was not prompted to open, moving on with the sequence")
            
 
-        time.sleep(1)
+        fire = input("Type 'fire' to commence ignition sequence with a 5 second countdown ")
 
-        retry = True
-        while retry == True:
-            print("Opening ethanol mpv")
-            ethanol_mpv.open()
+        if fire == 'fire' or fire == 'Fire':
 
-            time.sleep(INITIAL_SLEEP)
 
-            print("Opening nitrous mpv")
-            nitrous_mpv.open()
+            retry = True
+            while retry == True:
 
-            time.sleep(DURATION_BEFORE_SPARK)
+                print("5")
+                time.sleep(1)
+                print("4")
+                time.sleep(1)
+                print("3")
+                time.sleep(1)
+                print("2")
+                time.sleep(1)
+                print("1")
+                print("Energizing Spark Plug")
+                spark_plug.open()
+                time.sleep(1)
+                print("0")
+                print("Commencing ignition sequence")
 
-            start = time.time()
-            torch_ignited = False
-            while time.time() - start < IGNITION_TIMEOUT and torch_ignited == False:
-                for j in range(SPARK_RATE):
-                    print(f"Attempt {j+1}/{SPARK_RATE}: Opening spark plug.")
-                    spark_plug.open()
-                    print("Closing spark plug.")
-                    spark_plug.close()
-                    pts_median = statistics.median(
-                        [auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]]
-                    )
-                    # print("measured pressure: ", pts_median)
-                    if pts_median >= TORCH_PT_TARGET:
-                        print("Torch ignited.")
-                        torch_ignited = True
-                        retry = False
-                        break
-                    else:
-                        time.sleep(SPARK_SLEEP)
+                print("Opening ethanol mpv")
+                ethanol_mpv.open()
 
-            if torch_ignited == False:
-                print("Torch failed to ignite.")
-                syauto.close_all(auto, [nitrous_mpv, ethanol_mpv])
-                torch_purge.open()
-                time.sleep(PURGE_DURATION)
-                torch_purge.close()
-                print(f"Ethanol Supply: {auto[ETHANOL_TANK_PT]} psig")
-                print(f"Nitrous Supply: {auto[NITROUS_TANK_PT]} psig")
-                testAgain = input("Type 'retry' to retry autosequence. ")
-                if testAgain != "retry" and testAgain != "Retry":
+                time.sleep(INITIAL_SLEEP)
+                
+                print("Opening nitrous mpv")
+                nitrous_mpv.open()
+
+
+
+                #time.sleep(DURATION_BEFORE_SPARK)
+
+                start = sy.TimeStamp.now()
+
+                auto.wait_until(lambda func: monitor(auto, TORCH_PT_TARGET, start))
+
+                if statistics.median([auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]]) >= TORCH_PT_TARGET:
                     retry = False
+                    print("Torch ignited")
+                    time.sleep(5)
+                    print("Closing MPVs and Torch 2K Iso")
+                    syauto.close_all(auto=auto, valves=[nitrous_mpv, ethanol_mpv, torch_iso])
+                    spark_plug.close()
+                    print("Terminating Autosequence")
+                    print("Purging")
+                    torch_purge.open()
+                    time.sleep(PURGE_DURATION)
+                    torch_purge.close()
+                    print("Terminated")
+                    time.sleep(1)
+
+
+                else:
+                    print("Torch failed to ignite.")
+                    syauto.close_all(auto, [nitrous_mpv, ethanol_mpv])
+                    spark_plug.close()
+                    torch_purge.open()
+                    time.sleep(PURGE_DURATION)
+                    torch_purge.close()
+                    print(f"Ethanol Tank PT: {auto[ETHANOL_TANK_PT]} psig")
+                    print(f"Nitrous Bottle PT: {auto[NITROUS_TANK_PT]} psig")
+                    testAgain = input("Type 'retry' to retry autosequence. ")
+                    if testAgain != "retry" and testAgain != "Retry":
+                        retry = False
+                     
 
     except KeyboardInterrupt as e:
         print("\n\nManual abort, safing system")
         print("Closing all valves and vents")
-        ethanol_tank_vent.open()
+        #ethanol_tank_vent.open()
+        spark_plug.close()
         syauto.open_close_many_valves(
             auto=auto,
             valves_to_close=[ethanol_mpv, nitrous_mpv, torch_iso],
@@ -223,13 +254,4 @@ with client.control.acquire(
         print("Terminated")
         exit(0)
 
-syauto.close_all(auto=auto, valves=[nitrous_mpv, ethanol_mpv, torch_iso])
-print("Terminating Autosequence")
-print("Closing all valves and vents")
-print("Purging")
-torch_purge.open()
-time.sleep(PURGE_DURATION)
-torch_purge.close()
-print("Terminated")
-
-time.sleep(1)
+time.sleep(5)
