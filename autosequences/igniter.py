@@ -2,6 +2,7 @@ from autosequences import syauto
 import time
 import synnax as sy
 import statistics
+from collections import deque
 
 client = sy.Synnax()
 
@@ -93,11 +94,19 @@ for pt in PTS:
 with client.control.acquire(
     name="Torch Ignition Booyah", write=WRITE_TO, read=READ_FROM, write_authorities=222
 ) as auto:
-
-    def monitor(auto, target, start):
-        if statistics.median([auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]]) >= target:
+    def monitor(auto, target, start, SUM):
+        value = statistics.median([auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]])
+        values = deque()
+        if value >= target:
+            SUM += 1
+            values.append(1)
+        else:
+            values.append(0)
+        if len(values) > 10:
+            SUM -= values.popleft()
+        if SUM/len(values) >= 0.8 and len(values) == 10:
             return True
-        if(sy.TimeStamp.since(start) >= IGNITION_TIMEOUT): #what is ignition timeout value
+        if(sy.TimeStamp.since(start) >= IGNITION_TIMEOUT): 
             return True
 
     nitrous_mpv = syauto.Valve(
@@ -189,7 +198,7 @@ with client.control.acquire(
                 print("Energizing Spark Plug")
                 spark_plug.open()
                 time.sleep(1)
-                print("0")
+                
                 print("Commencing ignition sequence")
 
                 print("Opening ethanol mpv")
@@ -206,7 +215,7 @@ with client.control.acquire(
 
                 start = sy.TimeStamp.now()
 
-                auto.wait_until(lambda func: monitor(auto, TORCH_PT_TARGET, start))
+                auto.wait_until(lambda func: monitor(auto, TORCH_PT_TARGET, start,0))
 
                 if statistics.median([auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]]) >= TORCH_PT_TARGET:
                     retry = False
