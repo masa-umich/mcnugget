@@ -64,6 +64,7 @@ def process_pt(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
             pre_scaled_units="Volts",
             scaled_units="PoundsPerSquareInch",
         ),
+        terminal_config="RSE",
     )
     analog_task.config.channels.append(pt_channel)
     print("PT channel created.")
