@@ -3,7 +3,12 @@ from synnax.hardware import ni
 import pandas as pd
 from daq.processing import process_vlv, process_pt, process_tc, process_lc
 
-client = sy.Synnax()
+client = sy.Synnax(
+    host="masasynnax.ddns.net",
+    port=9090,
+    username="synnax",
+    password="seldon",
+)
 
 
 def main():

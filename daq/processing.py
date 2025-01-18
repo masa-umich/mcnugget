@@ -2,7 +2,12 @@ import synnax as sy
 from synnax.hardware import ni
 import pandas as pd
 
-client = sy.Synnax()
+client = sy.Synnax(
+    host="masasynnax.ddns.net",
+    port=9090,
+    username="synnax",
+    password="seldon",
+)
 
 
 def process_vlv(row: pd.Series, digital_task):
