@@ -134,6 +134,8 @@ with client.control.acquire(
         auto=auto, cmd=SPARK_VLV, ack=SPARK_STATE, normally_open=False
     )
 
+    time.sleep(1)
+
     try:
         ans = input("Type 'start' to commence autosequence. ")
         if not (ans == "start" or ans == "Start" or ans == "START"):
