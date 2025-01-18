@@ -44,7 +44,7 @@ After initializing the client and reference variables, the autosequence will:
 import time
 import synnax as sy
 from synnax.control.controller import Controller
-from mcnugget.autosequences import syauto
+from autosequences import syauto
 import statistics
 from collections import deque
 
@@ -356,7 +356,7 @@ def phase_2():
             print(f"Target pressure reached. Repressurizing at {REPRESS_TARGET}")
             break
 
-auto = client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=180)
+auto = client.control.acquire(name="Press and Fill Autos", write=WRITE_TO, read=READ_FROM, write_authorities=222)
 air_drive_ISO_1 = syauto.Valve(
     auto=auto, cmd=AIR_DRIVE_ISO_1_CMD, ack=AIR_DRIVE_ISO_1_ACK, normally_open=False)
 air_drive_ISO_2 = syauto.Valve(
