@@ -12,14 +12,14 @@ client = sy.Synnax(
 
 
 def main():
-    # input_excel(r"C:\Users\ruchi\mcnugget\archive\cli\testing.xlsx", NUMBER_OF_ITEMS) #change to take in input and then put into the function
-    # data = input_excel("/Users/evanhekman/mcnugget/daq/VLV.xlsx")
     data = input_excel("daq/TC_example.xlsx")
     analog_task, digital_task, analog_card = create_tasks()
     process_excel(data, analog_task, digital_task, analog_card)
-    if analog_task.config.channels != []: # only configure if there are channels
+    if analog_task.config.channels != []:  # only configure if there are channels
         print("Attempting to configure analog task")
-        client.hardware.tasks.configure(task=analog_task, timeout=60) # long timeout cause our NI hardware is dumb
+        client.hardware.tasks.configure(
+            task=analog_task, timeout=60
+        )  # long timeout cause our NI hardware is dumb
         print("Successfully configured analog task")
     if digital_task.config.channels != []:
         print("Attempting to configure digital task")
@@ -72,6 +72,7 @@ def process_excel(
     analog_card: sy.Device,
 ):
     print(f"reading {len(file)} rows")
+    setup_thermistor = False
 
     for _, row in file.iterrows():
         try:
@@ -80,11 +81,16 @@ def process_excel(
             elif row["Sensor Type"] == "PT":
                 process_pt(row, analog_task, analog_card)
             elif row["Sensor Type"] == "TC":
+                if not setup_thermistor:
+                    thermistor()
+                    setup_thermistor = True
                 process_tc(row, analog_task, analog_card)
             elif row["Sensor Type"] == "LC":
                 process_lc(row, analog_task, analog_card)
-            elif row["Sensor Type"] == "RAW": # for thermister and other raw voltage data
-                process_raw(row, analog_task, analog_card)
+            # elif (
+            #     row["Sensor Type"] == "RAW"
+            # ):  # for thermister and other raw voltage data
+            #     process_raw(row, analog_task, analog_card)
             else:
                 print(f"Sensor type {row["Sensor Type"]} not recognized")
         except KeyError as e:
@@ -92,6 +98,27 @@ def process_excel(
             return
         except Exception as e:
             print(f"Error populating tasks: {e}")
+
+
+def thermistor():
+    gse_ai_time = client.channels.create(
+        name="gse_ai_time",
+        data_type=sy.DataType.TIMESTAMP,
+        retrieve_if_name_exists=True,
+        is_index=True,
+    )
+    client.channels.create(
+        name="gse_thermistor_supply",
+        data_type=sy.DataType.FLOAT32,
+        index=gse_ai_time.key,
+        retrieve_if_name_exists=True,
+    )
+    client.channels.create(
+        name="gse_thermistor_signal",
+        data_type=sy.DataType.FLOAT32,
+        index=gse_ai_time.key,
+        retrieve_if_name_exists=True,
+    )
 
 
 main()
