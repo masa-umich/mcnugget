@@ -13,11 +13,12 @@ client = sy.Synnax(
 
 def main():
     # input_excel(r"C:\Users\ruchi\mcnugget\archive\cli\testing.xlsx", NUMBER_OF_ITEMS) #change to take in input and then put into the function
-    data = input_excel("/Users/evanhekman/mcnugget/daq/VLV.xlsx")
+    # data = input_excel("/Users/evanhekman/mcnugget/daq/VLV.xlsx")
+    data = input_excel("daq/example_test.xlsx")
     analog_task, digital_task, analog_card = create_tasks()
     process_excel(data, analog_task, digital_task, analog_card)
-    client.hardware.tasks.configure(digital_task)
-    client.hardware.tasks.configure(analog_task)
+    client.hardware.tasks.configure(task=digital_task, timeout=5)
+    client.hardware.tasks.configure(task=analog_task, timeout=60) # long timeout cause our NI hardware is dumb
     print("jubilate")
 
 
@@ -25,14 +26,14 @@ def create_tasks():
     analog_card = client.hardware.devices.retrieve(name="Analog")
     digital_card = client.hardware.devices.retrieve(name="Digital")
     analog_task = ni.AnalogReadTask(
-        name="Analog Read Task",
+        name="Analog Input",
         sample_rate=sy.Rate.HZ * 50,
         stream_rate=sy.Rate.HZ * 10,
         data_saving=True,
         channels=[],
     )
     digital_task = ni.DigitalWriteTask(
-        name="Digital Read/Write Task",
+        name="Valve Control",
         device=digital_card.key,
         state_rate=sy.Rate.HZ * 50,
         data_saving=True,

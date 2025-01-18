@@ -63,13 +63,13 @@ def process_pt(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
         device=analog_card.key,
         port=row["Channel"] - 1,
         custom_scale=ni.LinScale(
-            slope=((row["Max Output Voltage"] - row["Calibration Offset (V)"]) * 1000)
-            / row["Max Pressure"],
-            y_intercept=row["Calibration Offset (V)"],
+            slope= ((row["Max Pressure"]) / (row["Max Output Voltage"] - row["Calibration Offset (V)"])),
+            y_intercept= (-(row["Max Pressure"]) / (row["Max Output Voltage"] - row["Calibration Offset (V)"])) * row["Calibration Offset (V)"],
             pre_scaled_units="Volts",
             scaled_units="PoundsPerSquareInch",
         ),
         terminal_config="RSE",
+        max_val=row["Max Pressure"],
     )
     analog_task.config.channels.append(pt_channel)
     print("PT channel created.")
