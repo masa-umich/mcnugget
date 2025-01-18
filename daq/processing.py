@@ -52,8 +52,16 @@ def process_pt(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
         retrieve_if_name_exists=True,
         is_index=True,
     )
+
+    if (str(row["Port"]) != "nan"):
+        channel_num = row["Port"]
+    elif (str(row["Channel"]) != "nan"):
+        channel_num = row["Channel"]
+    else:
+        raise Exception("Could not find channel or port for channel " + row["Name"])
+    
     synnax_channel = client.channels.create(
-        name=f"gse_pt_{row['Channel']}",
+        name=f"gse_pt_{channel_num}",
         data_type=sy.DataType.FLOAT32,
         index=synnax_channel_time.key,
         retrieve_if_name_exists=True,
@@ -85,8 +93,15 @@ def process_tc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
         is_index=True,
     )
 
+    if (str(row["Port"]) != "nan"):
+        channel_num = row["Port"]
+    elif (str(row["Channel"]) != "nan"):
+        channel_num = row["Channel"]
+    else:
+        raise Exception("Could not find channel or port for channel " + row["Name"])
+
     synnax_channel = client.channels.create(
-        name=f"gse_tc_{row['Channel']}",
+        name=f"gse_tc_{channel_num}_raw", # pre-processed channel
         data_type=sy.DataType.FLOAT32,
         index=synnax_channel_time.key,
         retrieve_if_name_exists=True,
@@ -102,12 +117,41 @@ def process_tc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
             pre_scaled_units="Volts",
             scaled_units="Volts",
         ),
+        terminal_config="RSE",
+        max_val=row["Max Output Voltage"],
     )
 
     analog_task.config.channels.append(tc_channel)
 
-    print("I am a thermocouple")
+    print("Raw thermocouple channel created.")
 
+def process_raw(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.Device):
+    synnax_channel_time = client.channels.create(
+        name="gse_ai_time",
+        data_type=sy.DataType.TIMESTAMP,
+        retrieve_if_name_exists=True,
+        is_index=True,
+    )
+
+    if (row["Channel"] != "") and (row["Port"] == ""):
+        raise Exception("Cannot infer NI Port from Channel on 'RAW' sensor type. Please specify 'Port' for " + row["Name"])
+
+    synnax_channel = client.channels.create(
+        name=f"gse_raw_{row['Port']}", # only use port (if it exists)
+        data_type=sy.DataType.FLOAT32,
+        index=synnax_channel_time.key,
+        retrieve_if_name_exists=True,
+    )
+
+    raw_channel = ni.AIVoltageChan(
+        channel=synnax_channel.key,
+        device=analog_card.key,
+        port=row["Port"],
+        terminal_config="RSE",
+        max_val=row["Max Output Voltage"],
+    )
+    analog_task.config.channels.append(raw_channel)
+    print("Raw Voltage channel created.")
 
 def process_lc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.Device):
     print("I am a load cell")
