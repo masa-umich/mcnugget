@@ -76,61 +76,232 @@ USING_OX = boolOx
 
 REGFIRE_PREPRESS = False
 
-# change names and numbers to match the actual channels
-# valve names to channel names
-FUEL_PRE_PRESS_ACK = "gse_doa_9"
-FUEL_PRE_PRESS_CMD = "gse_doc_9"
-FUEL_VENT_ACK = "gse_doa_15"
-FUEL_VENT_CMD = "gse_doc_15"
-OX_PRE_PRESS_ACK = "gse_doa_10"
-OX_PRE_PRESS_CMD = "gse_doc_10"
-OX_LOW_FLOW_VENT_ACK = "gse_doa_16"
-OX_LOW_FLOW_VENT_CMD = "gse_doc_16"
-PRESS_VENT_CMD = "gse_doc_18"
-PRESS_VENT_ACK = "gse_doa_18"
-OX_PREVALVE_CMD = "gse_doc_21"
-OX_PREVALVE_ACK = "gse_doa_21"
-FUEL_PREVALVE_CMD = "gse_doc_22"
-FUEL_PREVALVE_ACK = "gse_doa_22"
-FUEL_PRESS_ISO_CMD = "gse_doc_2"
-FUEL_PRESS_ISO_ACK = "gse_doa_2"
-OX_PRESS_ISO_CMD = "gse_doc_1"
-OX_PRESS_ISO_ACK = "gse_doa_1"
-OX_DOME_ISO_CMD = "gse_doc_3"
-OX_DOME_ISO_ACK = "gse_doa_3"
-FUEL_FEEDLINE_PURGE_CMD = "gse_doc_7"
-FUEL_FEEDLINE_PURGE_ACK = "gse_doa_7"
-OX_FEEDLINE_PURGE_CMD = "gse_doc_8"
-OX_FEEDLINE_PURGE_ACK = "gse_doa_8"
-# TODO: Update these based on instrumentation sheet
-OX_MPV_CMD = "gse_doc_6"
-OX_MPV_ACK = "gse_doa_6"
-FUEL_MPV = "gse_doc_24"
-FUEL_MPV_ACK = "gse_doa_24"
-IGNITER_CMD = "gse_doc_25"
-IGNITER_ACK = "gse_doa_25"
-FUEL_DOME_ISO_CMD = "gse_doc_27"
-FUEL_DOME_ISO_ACK = "ges_doa_27"
-PREPRESS_ISO_CMD = "gse_doc_26"
-PREPRESS_ISO_ACK = "gse_doa_26"
 
-# Defining PT aliases
-FUEL_PT_1 = "gse_ai_3"
-FUEL_PT_2 = "gse_ai_4"
-FUEL_PT_3 = "gse_ai_35"
-OX_PT_1 = "gse_ai_6"
-OX_PT_2 = "gse_ai_7"
-OX_PT_3 = "gse_ai_8"
+## PRESSURE TRANSDUCERS ###
+PNEUMATICS_BOTTLE = "gse_pt_1"
+TRAILER_PNEUMATICS = "gse_pt_2"
+ENGINE_PNEUMATICS = "gse_pt_3"
+PRESS_BOTTLE = "gse_pt_4"
+OX_DOME_INLET = "gse_pt_5"
+OX_POST_PILOT_REG = "gse_pt_6"
+OX_DOME_REG = "gse_pt_7"
+OX_POST_DOME = "gse_pt_8"
+OX_FLOWMETER_INLET = "gse_pt_9"
+OX_FLOWMETER_THROAT = "gse_pt_10"
+MARGIN_1 = "gse_pt_11"
+FUEL_FLOWMETER_INLET = "gse_pt_12"
+FUEL_FLOWMETER_THROAT = "gse_pt_13"
+MARGIN_2 = "gse_pt_14"
+FUEL_DOME_INLET = "gse_pt_15"
+FUEL_POST_PILOT_REG = "gse_pt_16"
+FUEL_DOME_REG = "gse_pt_17"
+FUEL_POST_DOME = "gse_pt_18"
+FUEL_TANK_1 = "gse_pt_19"
+FUEL_TANK_2 = "gse_pt_20"
+FUEL_TANK_3 = "gse_pt_21"
+CHAMBER_1 = "gse_pt_22"
+CHAMBER_2 = "gse_pt_23"
+REGEN_MANIFOLD = "gse_pt_24"
+FUEL_MANIFOLD_1 = "gse_pt_25"
+TORCH_2K_BOTTLE = "gse_pt_26"
+TORCH_2K_BOTTLE_POST_REG = "gse_pt_27"
+TORCH_NITROUS_BOTTLE = "gse_pt_28"
+TORCH_NITROUS_BOTTLE_POST_REG = "gse_pt_29"
+TORCH_ETHANOL_TANK = "gse_pt_30"
+TORCH_BODY_1 = "gse_pt_31"
+TORCH_BODY_2 = "gse_pt_32"
+TORCH_BODY_3 = "gse_pt_33"
+PURGE_2K_BOTTLE = "gse_pt_34"
+PURGE_POST_REG = "gse_pt_35"
+TRICKLE_PURGE_BOTTLE = "gse_pt_36"
+TRICKLE_PURGE_POST_REG = "gse_pt_37"
+OX_FILL = "gse_pt_38"
+OX_TANK_1 = "gse_pt_39"
+OX_TANK_2 = "gse_pt_40"
+OX_TANK_3 = "gse_pt_41"
+OX_LEVEL_SENSOR = "gse_pt_42"
+PTS = [
+    PNEUMATICS_BOTTLE,
+    TRAILER_PNEUMATICS,
+    ENGINE_PNEUMATICS,
+    PRESS_BOTTLE,
+    OX_DOME_INLET,
+    OX_POST_PILOT_REG,
+    OX_DOME_REG,
+    OX_POST_DOME,
+    OX_FLOWMETER_INLET,
+    OX_FLOWMETER_THROAT,
+    MARGIN_1,
+    FUEL_FLOWMETER_INLET,
+    FUEL_FLOWMETER_THROAT,
+    MARGIN_2,
+    FUEL_DOME_INLET,
+    FUEL_POST_PILOT_REG,
+    FUEL_DOME_REG,
+    FUEL_POST_DOME,
+    FUEL_TANK_1,
+    FUEL_TANK_2,
+    FUEL_TANK_3,
+    CHAMBER_1,
+    CHAMBER_2,
+    REGEN_MANIFOLD,
+    FUEL_MANIFOLD_1,
+    TORCH_2K_BOTTLE,
+    TORCH_2K_BOTTLE_POST_REG,
+    TORCH_NITROUS_BOTTLE,
+    TORCH_NITROUS_BOTTLE_POST_REG,
+    TORCH_ETHANOL_TANK,
+    TORCH_BODY_1,
+    TORCH_BODY_2,
+    TORCH_BODY_3,
+    PURGE_2K_BOTTLE,
+    PURGE_POST_REG,
+    TRICKLE_PURGE_BOTTLE,
+    TRICKLE_PURGE_POST_REG,
+    OX_FILL,
+    OX_TANK_1,
+    OX_TANK_2,
+    OX_TANK_3,
+    OX_LEVEL_SENSOR,
+]
 
-PTS = [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3, OX_PT_1, OX_PT_2, OX_PT_3]
-ACKS = [FUEL_PREVALVE_ACK, OX_PREVALVE_ACK, FUEL_PRESS_ISO_ACK, OX_PRESS_ISO_ACK, OX_DOME_ISO_ACK, 
-        FUEL_VENT_ACK, OX_LOW_FLOW_VENT_ACK, PRESS_VENT_ACK, FUEL_PRE_PRESS_ACK, OX_PRE_PRESS_ACK,
-        FUEL_FEEDLINE_PURGE_ACK, OX_FEEDLINE_PURGE_ACK,OX_MPV_ACK, FUEL_MPV_ACK, IGNITER_ACK, 
-        FUEL_DOME_ISO_ACK, PREPRESS_ISO_ACK]
-CMDS = [FUEL_PREVALVE_CMD, OX_PREVALVE_CMD, FUEL_PRESS_ISO_CMD, OX_PRESS_ISO_CMD, OX_DOME_ISO_CMD, 
-        FUEL_VENT_CMD, OX_LOW_FLOW_VENT_CMD, PRESS_VENT_CMD, FUEL_PRE_PRESS_CMD, OX_PRE_PRESS_CMD,
-        FUEL_FEEDLINE_PURGE_CMD, OX_FEEDLINE_PURGE_CMD, OX_MPV_CMD, FUEL_MPV, IGNITER_CMD, 
-        FUEL_DOME_ISO_CMD, PREPRESS_ISO_CMD]
+### VALVES ###
+OX_RETURN_LINE = "gse_vlv_1"
+OX_RETURN_LINE_STATE = "gse_state_1"
+OX_FILL = "gse_vlv_2"
+OX_FILL_STATE = "gse_state_2"
+OX_PREVALVE = "gse_vlv_3"
+OX_PREVALVE_STATE = "gse_state_3"
+OX_DRAIN = "gse_vlv_4"
+OX_DRAIN_STATE = "gse_state_4"
+OX_FEEDLINE_PURGE = "gse_vlv_5"
+OX_FEEDLINE_PURGE_STATE = "gse_state_5"
+OX_FILL_PURGE = "gse_vlv_6"
+OX_FILL_PURGE_STATE = "gse_state_6"
+OX_PRE_PRESS = "gse_vlv_7"
+OX_PRE_PRESS_STATE = "gse_state_7"
+FUEL_FEEDLINE_PURGE = "gse_vlv_8"
+FUEL_FEEDLINE_PURGE_STATE = "gse_state_8"
+FUEL_FILL = "gse_vlv_9"
+FUEL_FILL_STATE = "gse_state_9"
+FUEL_PREVALVE = "gse_vlv_10"
+FUEL_PREVALVE_STATE = "gse_state_10"
+OX_MPV = "gse_vlv_11"
+OX_MPV_STATE = "gse_state_11"
+FUEL_MPV = "gse_vlv_12"
+FUEL_MPV_STATE = "gse_state_12"
+TORCH_FEEDLINE_PURGE = "gse_vlv_13"
+TORCH_FEEDLINE_PURGE_STATE = "gse_state_13"
+TORCH_ETHANOL_PRESS_ISO = "gse_vlv_14"
+TORCH_ETHANOL_PRESS_ISO_STATE = "gse_state_14"
+TORCH_ETHANOL_TANK_VENT = "gse_vlv_15"
+TORCH_ETHANOL_TANK_VENT_STATE = "gse_state_15"
+MARGIN_3 = "gse_vlv_16"
+MARGIN_3_STATE = "gse_state_16"
+TORCH_ETHANOL_MPV = "gse_vlv_17"
+TORCH_ETHANOL_MPV_STATE = "gse_state_17"
+TORCH_NITROUS_MPV = "gse_vlv_18"
+TORCH_NITROUS_MPV_STATE = "gse_state_18"
+TORCH_SPARK_PLUG = "gse_vlv_19"
+TORCH_SPARK_PLUG_STATE = "gse_state_19"
+PRESS_ISO = "gse_vlv_20"
+PRESS_ISO_STATE = "gse_state_20"
+FUEL_DOME_ISO = "gse_vlv_21"
+FUEL_DOME_ISO_STATE = "gse_state_21"
+OX_DOME_ISO = "gse_vlv_22"
+OX_DOME_ISO_STATE = "gse_state_22"
+OX_VENT = "gse_vlv_23"
+OX_VENT_STATE = "gse_state_23"
+FUEL_VENT = "gse_vlv_24"
+FUEL_VENT_STATE = "gse_state_24"
+VALVES = [
+    OX_RETURN_LINE,
+    OX_FILL,
+    OX_PREVALVE,
+    OX_DRAIN,
+    OX_FEEDLINE_PURGE,
+    OX_FILL_PURGE,
+    OX_PRE_PRESS,
+    FUEL_FEEDLINE_PURGE,
+    FUEL_FILL,
+    FUEL_PREVALVE,
+    OX_MPV,
+    FUEL_MPV,
+    TORCH_FEEDLINE_PURGE,
+    TORCH_ETHANOL_PRESS_ISO,
+    TORCH_ETHANOL_TANK_VENT,
+    MARGIN_3,
+    TORCH_ETHANOL_MPV,
+    TORCH_NITROUS_MPV,
+    TORCH_SPARK_PLUG,
+    PRESS_ISO,
+    FUEL_DOME_ISO,
+    OX_DOME_ISO,
+    OX_VENT,
+    FUEL_VENT,
+]
+
+NORMALLY_OPEN = [OX_VENT, FUEL_VENT, OX_MPV, FUEL_MPV]
+
+### THERMOCOUPLES ###
+OX_LIQUID_TC_1 = "gse_tc_1"
+OX_LIQUID_TC_2 = "gse_tc_2"
+OX_LIQUID_TC_3 = "gse_tc_3"
+OX_ULLAGE_TC_1 = "gse_tc_4"
+OX_FLOWMETER_TC = "gse_tc_5"
+OX_RETURN_LINE_TC = "gse_tc_6"
+REGEN_TC = "gse_tc_7"
+FUEL_MANIFOLD_TC_1 = "gse_tc_8"
+PRESS_SKIN_TC_1 = "gse_tc_9"
+PRESS_SKIN_TC_2 = "gse_tc_10"
+PRESS_SKIN_TC_3 = "gse_tc_11"
+THERMOCOUPLES = [
+    OX_LIQUID_TC_1,
+    OX_LIQUID_TC_2,
+    OX_LIQUID_TC_3,
+    OX_ULLAGE_TC_1,
+    OX_FLOWMETER_TC,
+    OX_RETURN_LINE_TC,
+    REGEN_TC,
+    FUEL_MANIFOLD_TC_1,
+    PRESS_SKIN_TC_1,
+    PRESS_SKIN_TC_2,
+    PRESS_SKIN_TC_3,
+]
+
+### LOAD CELLS ###
+LOAD_CELL_1 = "gse_lc_1"
+LOAD_CELL_2 = "gse_lc_2"
+LOAD_CELL_3 = "gse_lc_3"
+LOAD_CELLS = [LOAD_CELL_1, LOAD_CELL_2, LOAD_CELL_3]
+
+ACKS = VALVES
+
+CMDS = [OX_RETURN_LINE_STATE,
+    OX_FILL_STATE,
+    OX_PREVALVE_STATE,
+    OX_DRAIN_STATE,
+    OX_FEEDLINE_PURGE_STATE,
+    OX_FILL_PURGE_STATE,
+    OX_PRE_PRESS_STATE,
+    FUEL_FEEDLINE_PURGE_STATE,
+    FUEL_FILL_STATE,
+    FUEL_PREVALVE_STATE,
+    OX_MPV_STATE,
+    FUEL_MPV_STATE,
+    TORCH_FEEDLINE_PURGE_STATE,
+    TORCH_ETHANOL_PRESS_ISO_STATE,
+    TORCH_ETHANOL_TANK_VENT_STATE,
+    MARGIN_3_STATE,
+    TORCH_ETHANOL_MPV_STATE,
+    TORCH_NITROUS_MPV_STATE,
+    TORCH_SPARK_PLUG_STATE,
+    PRESS_ISO_STATE,
+    FUEL_DOME_ISO_STATE,
+    OX_DOME_ISO_STATE,
+    OX_VENT_STATE,
+    FUEL_VENT_STATE,
+    ]
 
 # List of channels we're going to read from and write to
 WRITE_TO = []
@@ -175,35 +346,35 @@ ISO_DELAY = 2  # seconds
 
 
 # Running average implementation
-FUEL_PT_1_DEQUE = deque()
-FUEL_PT_2_DEQUE = deque()
-FUEL_PT_3_DEQUE = deque()
-OX_PT_1_DEQUE = deque()
-OX_PT_2_DEQUE = deque()
-OX_PT_3_DEQUE = deque()
-FUEL_PT_1_SUM = 0
-FUEL_PT_2_SUM = 0
-FUEL_PT_3_SUM = 0
-OX_PT_1_SUM = 0
-OX_PT_2_SUM = 0
-OX_PT_3_SUM = 0
+FUEL_TANK_1_DEQUE = deque()
+FUEL_TANK_2_DEQUE = deque()
+FUEL_TANK_3_DEQUE = deque()
+OX_TANK_1_DEQUE = deque()
+OX_TANK_2_DEQUE = deque()
+OX_TANK_3_DEQUE = deque()
+FUEL_TANK_1_SUM = 0
+FUEL_TANK_2_SUM = 0
+FUEL_TANK_3_SUM = 0
+OX_TANK_1_SUM = 0
+OX_TANK_2_SUM = 0
+OX_TANK_3_SUM = 0
 
 AVG_DICT = {
-    FUEL_PT_1: FUEL_PT_1_DEQUE,
-    FUEL_PT_2: FUEL_PT_2_DEQUE,
-    FUEL_PT_3: FUEL_PT_3_DEQUE,
-    OX_PT_1: OX_PT_1_DEQUE,
-    OX_PT_2: OX_PT_2_DEQUE,
-    OX_PT_3: OX_PT_3_DEQUE
+    FUEL_TANK_1: FUEL_TANK_1_DEQUE,
+    FUEL_TANK_2: FUEL_TANK_2_DEQUE,
+    FUEL_TANK_3: FUEL_TANK_3_DEQUE,
+    OX_TANK_1: OX_TANK_1_DEQUE,
+    OX_TANK_2: OX_TANK_2_DEQUE,
+    OX_TANK_3: OX_TANK_3_DEQUE
 }
 
 SUM_DICT = {
-    FUEL_PT_1: FUEL_PT_1_SUM,
-    FUEL_PT_2: FUEL_PT_2_SUM,
-    FUEL_PT_3: FUEL_PT_3_SUM,
-    OX_PT_1: OX_PT_1_SUM,
-    OX_PT_2: OX_PT_2_SUM,
-    OX_PT_3: OX_PT_3_SUM
+    FUEL_TANK_1: FUEL_TANK_1_SUM,
+    FUEL_TANK_2: FUEL_TANK_2_SUM,
+    FUEL_TANK_3: FUEL_TANK_3_SUM,
+    OX_TANK_1: OX_TANK_1_SUM,
+    OX_TANK_2: OX_TANK_2_SUM,
+    OX_TANK_3: OX_TANK_3_SUM
 }
 
 RUNNING_AVERAGE_LENGTH = 5
@@ -226,21 +397,21 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
 PROGRAM_STATE = ""
 with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as auto:
     # creates valve objects for each valve
-    fuel_feedline_purge = syauto.Valve(auto=auto, cmd = FUEL_FEEDLINE_PURGE_CMD, ack = FUEL_FEEDLINE_PURGE_ACK, normally_open=False)
-    ox_feedline_purge = syauto.Valve(auto=auto, cmd = OX_FEEDLINE_PURGE_CMD, ack = OX_FEEDLINE_PURGE_ACK, normally_open=False)
+    fuel_feedline_purge = syauto.Valve(auto=auto, cmd = FUEL_FEEDLINE_PURGE, ack = FUEL_FEEDLINE_PURGE_STATE, normally_open=False)
+    ox_feedline_purge = syauto.Valve(auto=auto, cmd = OX_FEEDLINE_PURGE, ack = OX_FEEDLINE_PURGE_STATE, normally_open=False)
     #fuel_press_iso = syauto.Valve(auto=auto, cmd = FUEL_PRESS_ISO_CMD, ack = FUEL_PRESS_ISO_ACK, normally_open=False)
     #ox_press_iso = syauto.Valve(auto=auto, cmd = OX_PRESS_ISO_CMD, ack = OX_PRESS_ISO_ACK, normally_open=False)
-    ox_dome_iso = syauto.Valve(auto=auto, cmd = OX_DOME_ISO_CMD, ack = OX_DOME_ISO_ACK, normally_open=False)
-    fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE_CMD, ack=FUEL_PREVALVE_ACK, normally_open=False)
-    ox_prevalve = syauto.Valve(auto=auto, cmd=OX_PREVALVE_CMD, ack=OX_PREVALVE_ACK, normally_open=False)
-    fuel_vent = syauto.Valve(auto=auto, cmd = FUEL_VENT_CMD, ack = FUEL_VENT_ACK, normally_open=True)
-    ox_low_flow_vent = syauto.Valve(auto=auto, cmd = OX_LOW_FLOW_VENT_CMD, ack = OX_LOW_FLOW_VENT_ACK, normally_open=True)
+    ox_dome_iso = syauto.Valve(auto=auto, cmd = OX_DOME_ISO, ack = OX_DOME_ISO_STATE, normally_open=False)
+    fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE, ack=FUEL_PREVALVE_STATE, normally_open=False)
+    ox_prevalve = syauto.Valve(auto=auto, cmd=OX_PREVALVE, ack=OX_PREVALVE_STATE, normally_open=False)
+    fuel_vent = syauto.Valve(auto=auto, cmd = FUEL_VENT, ack = FUEL_VENT_STATE, normally_open=True)
+    ox_vent = syauto.Valve(auto=auto, cmd = OX_VENT, ack = OX_VENT_STATE, normally_open=True)
     #press_vent = syauto.Valve(auto=auto, cmd = PRESS_VENT_CMD, ack = PRESS_VENT_ACK, normally_open=True)
-    fuel_mpv = syauto.Valve(auto=auto, cmd = FUEL_MPV, ack = FUEL_MPV_ACK, normally_open=True)
-    ox_mpv = syauto.Valve(auto=auto, cmd = OX_MPV_CMD, ack = OX_MPV_ACK, normally_open=True)
-    igniter = syauto.Valve(auto=auto, cmd = IGNITER_CMD, ack = IGNITER_ACK, normally_open=False)
-    prepress_iso = syauto.Valve(auto=auto, cmd = PREPRESS_ISO_CMD, ack = PREPRESS_ISO_ACK, normally_open=False)
-    fuel_dome_iso = syauto.Valve(auto=auto, cmd = FUEL_DOME_ISO_CMD, ack = FUEL_DOME_ISO_ACK, normally_open=False)
+    fuel_mpv = syauto.Valve(auto=auto, cmd = FUEL_MPV, ack = FUEL_MPV_STATE, normally_open=True)
+    ox_mpv = syauto.Valve(auto=auto, cmd = OX_MPV, ack = OX_MPV_STATE, normally_open=True)
+    #igniter = syauto.Valve(auto=auto, cmd = IGNITER, ack = IGNITER_ACK, normally_open=False)
+    press_iso = syauto.Valve(auto=auto, cmd = PRESS_ISO, ack = PRESS_ISO_STATE, normally_open=False)
+    fuel_dome_iso = syauto.Valve(auto=auto, cmd = FUEL_DOME_ISO, ack = FUEL_DOME_ISO_STATE, normally_open=False)
     
 
     # # For determining if each valve is open 
@@ -261,7 +432,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     user_input_received = threading.Event()
 
     def fuel_ox_abort(auto: Controller, abort_fuel=False, abort_ox=False):
-        valves_to_close = []
+        valves_to_close = [press_iso]
         valves_to_potentially_open = []
         if abort_fuel:
             print("ABORTING FUEL")
@@ -270,21 +441,19 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         if abort_ox:
             print("ABORTING OX")
             valves_to_close += [ox_dome_iso]
-            valves_to_potentially_open += [ox_low_flow_vent]
+            valves_to_potentially_open += [ox_vent]
         syauto.close_all(auto, valves_to_close)
         ans = input("would you like to open vents? y/n ")
         if ans == "y" or ans == "Y" or ans == "yes":
             syauto.open_all(auto, valves_to_potentially_open)
-            if (PROGRAM_STATE == "after prepress before ignition"):
-                syauto.close_all([fuel_prevalve, ox_prevalve])
 
     def pressurize(auto: Controller) -> bool:
     
         averages = get_averages(auto, PTS)
-        ox_average = statistics.median([averages[OX_PT_1], averages[OX_PT_2], averages[OX_PT_3]])
-        ox_pre_press_open = auto[OX_DOME_ISO_ACK]
-        fuel_average = statistics.median([averages[FUEL_PT_1], averages[FUEL_PT_2], averages[FUEL_PT_3]])
-        fuel_pre_press_open = auto[FUEL_DOME_ISO_ACK]
+        ox_average = statistics.median([averages[OX_TANK_1], averages[OX_TANK_2], averages[OX_TANK_3]])
+        ox_pre_press_open = auto[OX_DOME_ISO]
+        fuel_average = statistics.median([averages[FUEL_TANK_1], averages[FUEL_TANK_2], averages[FUEL_TANK_3]])
+        fuel_pre_press_open = auto[FUEL_DOME_ISO]
 
         if USING_FUEL:
             if fuel_pre_press_open and (fuel_average >= UPPER_FUEL_PRESSURE):
@@ -403,7 +572,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
             print("Terminating fire")
             print("Opening vents and closing ISOs")
-            syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent],[fuel_dome_iso, ox_dome_iso])
+            syauto.open_close_many_valves(auto, [fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso])
             if opened_fuel_mpv:
                 print("Opening fuel feedline purge")
                 fuel_feedline_purge.open()
@@ -423,7 +592,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("\nFiring sequence has been completed nominally")
         except KeyboardInterrupt:
             print("\nFiring sequence aborted, closing all valves and opening all vents")
-            syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
+            syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso])
             time.sleep(0.5)
             if opened_fuel_mpv:
                 print("Opening fuel feedline purge and closing fuel prevalve")
@@ -432,8 +601,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print("Opening ox feedline purge and closing ox prevalve")
                 syauto.open_close_many_valves(auto, [ox_feedline_purge], [ox_prevalve])
             time.sleep(5)
-            print("Closing dome ISO")
-            syauto.close_all(auto, [ox_dome_iso])
             print("Terminating abort")
         time.sleep(10)
         # # this creates a range in synnax so we can view the data
@@ -451,11 +618,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         start = datetime.now()
 
         PROGRAM_STATE = "before prepress"
-        time.sleep(5)
+        time.sleep(1)
     
         #Check prevalves are opened or closed
         if (USING_FUEL and not USING_OX):
-            if (auto[FUEL_PREVALVE_ACK]):
+            if (auto[FUEL_PREVALVE]):
                 input("Fuel prevalve open, press enter to continue ")
             else:
                 ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
@@ -463,7 +630,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                     print('closing program')
                     exit()
         elif (not USING_FUEL and USING_OX):
-            if (auto[OX_PREVALVE_ACK]):
+            if (auto[OX_PREVALVE]):
                 input("Ox prevalve open, press enter to continue ")
             else:
                 ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
@@ -471,7 +638,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                     print('closing program')
                     exit()
         else:
-            if (auto[FUEL_PREVALVE_ACK] and auto[OX_PREVALVE_ACK]):
+            if (auto[FUEL_PREVALVE] and auto[OX_PREVALVE]):
                 input("Prevalves open, press enter to continue ")
             else:
                 ans = input("Fuel and/or Ox prevalve NOT open, type 'bypass' to continue ")
@@ -484,9 +651,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             exit()
 
         print("Setting starting state")
-           #old version: [ox_press_iso, ox_dome_iso, fuel_vent, ox_low_flow_vent, press_vent, ox_prepress, fuel_prepress, fuel_press_iso]
-        syauto.close_all(auto, [ox_dome_iso, fuel_dome_iso, prepress_iso, fuel_vent, ox_low_flow_vent])
+        syauto.close_all(auto, [ox_dome_iso, fuel_dome_iso, press_iso, fuel_vent, ox_vent])
 
+        print("opening press_iso in 6 seconds") 
+        time.sleep(6)
+        press_iso.open()
         
         if (USING_FUEL and not USING_OX):
             print("Pressurizing fuel in 6 seconds")
@@ -508,7 +677,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("Pressurizing fuel and ox")
 
         PROGRAM_STATE = "after prepress before ignition"
-        prepress_iso.open()
         auto.wait_until(pressurize)
 
     except KeyboardInterrupt as e:
