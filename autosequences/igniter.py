@@ -6,18 +6,18 @@ from collections import deque
 
 client = sy.Synnax()
 
-NITROUS_MPV_VLV = "gse_vlv_1"
-NITROUS_MPV_STATE = "gse_state_1"
-ETHANOL_MPV_VLV = "gse_vlv_2"
-ETHANOL_MPV_STATE = "gse_state_2"
-ETHANOL_VENT_VLV = "gse_vlv_3"
-ETHANOL_VENT_STATE = "gse_state_3"
-TORCH_PURGE_VLV = "gse_vlv_4"
-TORCH_PURGE_STATE = "gse_state_4"
-TORCH_2K_ISO_VLV = "gse_vlv_5"
-TORCH_2K_ISO_STATE = "gse_state_5"
-SPARK_VLV = "gse_vlv_6"
-SPARK_STATE = "gse_state_6"
+NITROUS_MPV_VLV = "gse_vlv_2"
+NITROUS_MPV_STATE = "gse_state_2"
+ETHANOL_MPV_VLV = "gse_vlv_3"
+ETHANOL_MPV_STATE = "gse_state_3"
+ETHANOL_VENT_VLV = "gse_vlv_5"
+ETHANOL_VENT_STATE = "gse_state_5"
+TORCH_PURGE_VLV = "gse_vlv_1"
+TORCH_PURGE_STATE = "gse_state_1"
+TORCH_2K_ISO_VLV = "gse_vlv_4"
+TORCH_2K_ISO_STATE = "gse_state_4"
+SPARK_VLV = "gse_vlv_7"
+SPARK_STATE = "gse_state_7"
 
 TORCH_PT_TARGET = 620
 
@@ -29,23 +29,23 @@ SECONDS_OF_SPARKING = 3
 
 SPARK_RATE = 25
 
-IGNITION_TIMEOUT = 2 * (10**9)
+IGNITION_TIMEOUT = 3 * (10**9)
 
-INITIAL_SLEEP = 0.01
+INITIAL_SLEEP = 1
 
 SPARK_SLEEP = 0.04
 
 PURGE_DURATION = 2
 
-PRESS_SUPPLY = "gse_pt_3"
+PRESS_SUPPLY = "gse_pt_1.0"
 
-ETHANOL_TANK_PT = "gse_pt_5"
+ETHANOL_TANK_PT = "gse_pt_3.0"
 
-NITROUS_TANK_PT = "gse_pt_1"
+NITROUS_TANK_PT = "gse_pt_4.0"
 
-TORCH_PT_1 = "gse_pt_6"
-TORCH_PT_2 = "gse_pt_7"
-TORCH_PT_3 = "gse_pt_8"
+TORCH_PT_1 = "gse_pt_6.0"
+TORCH_PT_2 = "gse_pt_6.0"
+TORCH_PT_3 = "gse_pt_6.0"
 
 
 CMDS = [
@@ -127,7 +127,7 @@ with client.control.acquire(
         auto=auto,
         cmd=ETHANOL_VENT_VLV,
         ack=ETHANOL_VENT_STATE,
-        normally_open=True,
+        normally_open=False,
     )
 
     spark_plug = syauto.Valve(
@@ -208,13 +208,10 @@ with client.control.acquire(
 
                 print("Commencing ignition sequence")
 
-                print("Opening ethanol mpv")
-                ethanol_mpv.open()
+                print("Opening nitrous mpv and ethanol mpv")
+                syauto.open_all(auto, [nitrous_mpv, ethanol_mpv])
 
-                time.sleep(INITIAL_SLEEP)
-
-                print("Opening nitrous mpv")
-                nitrous_mpv.open()
+                # time.sleep(INITIAL_SLEEP)
 
                 # time.sleep(DURATION_BEFORE_SPARK)
 
@@ -253,7 +250,9 @@ with client.control.acquire(
                     torch_purge.close()
                     print(f"Ethanol Tank PT: {auto[ETHANOL_TANK_PT]} psig")
                     print(f"Nitrous Bottle PT: {auto[NITROUS_TANK_PT]} psig")
-                    testAgain = input("Type 'retry' to retry autosequence. ")
+                    testAgain = input(
+                        "Type 'retry' to retry autosequence or anything else to terminate. "
+                    )
                     if testAgain != "retry" and testAgain != "Retry":
                         retry = False
 
