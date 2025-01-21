@@ -3,16 +3,11 @@ from synnax.hardware import ni
 import pandas as pd
 from daq.processing import process_vlv, process_pt, process_tc, process_lc, process_raw
 
-client = sy.Synnax(
-    host="masasynnax.ddns.net",
-    port=9090,
-    username="synnax",
-    password="seldon",
-)
+client = sy.Synnax()
 
 
 def main():
-    data = input_excel("daq/TC_example.xlsx")
+    data = input_excel("Phoenix Torch Igniter Hotfire SOP.xlsx")
     analog_task, digital_task, analog_card = create_tasks()
     process_excel(data, analog_task, digital_task, analog_card)
     if analog_task.config.channels != []:  # only configure if there are channels
@@ -82,7 +77,7 @@ def process_excel(
                 process_pt(row, analog_task, analog_card)
             elif row["Sensor Type"] == "TC":
                 if not setup_thermistor:
-                    thermistor()
+                    thermistor(analog_task, analog_card)
                     setup_thermistor = True
                 process_tc(row, analog_task, analog_card)
             elif row["Sensor Type"] == "LC":
@@ -100,25 +95,46 @@ def process_excel(
             print(f"Error populating tasks: {e}")
 
 
-def thermistor():
+def thermistor(analog_task: ni.AnalogReadTask, analog_card: sy.Device):
     gse_ai_time = client.channels.create(
         name="gse_ai_time",
         data_type=sy.DataType.TIMESTAMP,
         retrieve_if_name_exists=True,
         is_index=True,
     )
-    client.channels.create(
+    therm_supply = client.channels.create(
         name="gse_thermistor_supply",
         data_type=sy.DataType.FLOAT32,
         index=gse_ai_time.key,
         retrieve_if_name_exists=True,
     )
-    client.channels.create(
+    therm_signal = client.channels.create(
         name="gse_thermistor_signal",
         data_type=sy.DataType.FLOAT32,
         index=gse_ai_time.key,
         retrieve_if_name_exists=True,
     )
+    analog_task.config.channels.append(
+        ni.AIVoltageChan(
+            channel=therm_supply.key,
+            device=analog_card.key,
+            port=79,
+            min_val=-10,
+            max_val=10,
+            terminal_config="RSE",
+        ),
+    )
+    analog_task.config.channels.append(
+        ni.AIVoltageChan(
+            channel=therm_signal.key,
+            device=analog_card.key,
+            port=78,
+            min_val=0,
+            max_val=5,
+            terminal_config="RSE",
+        ),
+    )
+    print("created thermistor signal and supply channels")
 
 
 main()

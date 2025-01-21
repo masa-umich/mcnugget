@@ -3,23 +3,24 @@ import time
 import synnax as sy
 import statistics
 from collections import deque
+import datetime
 
 client = sy.Synnax()
 
-NITROUS_MPV_VLV = "gse_vlv_2"
-NITROUS_MPV_STATE = "gse_state_2"
+NITROUS_MPV_VLV = "gse_vlv_4"
+NITROUS_MPV_STATE = "gse_state_4"
 ETHANOL_MPV_VLV = "gse_vlv_3"
 ETHANOL_MPV_STATE = "gse_state_3"
 ETHANOL_VENT_VLV = "gse_vlv_5"
 ETHANOL_VENT_STATE = "gse_state_5"
 TORCH_PURGE_VLV = "gse_vlv_1"
 TORCH_PURGE_STATE = "gse_state_1"
-TORCH_2K_ISO_VLV = "gse_vlv_4"
-TORCH_2K_ISO_STATE = "gse_state_4"
+TORCH_2K_ISO_VLV = "gse_vlv_2"
+TORCH_2K_ISO_STATE = "gse_state_2"
 SPARK_VLV = "gse_vlv_7"
 SPARK_STATE = "gse_state_7"
 
-TORCH_PT_TARGET = 620
+TORCH_PT_TARGET = 500
 
 PRESS_RATE = 50
 
@@ -31,21 +32,23 @@ SPARK_RATE = 25
 
 IGNITION_TIMEOUT = 3 * (10**9)
 
-INITIAL_SLEEP = 1
+MPV_DELAY = 0.290
+
+BURN_DURATION = 3
 
 SPARK_SLEEP = 0.04
 
-PURGE_DURATION = 2
+PURGE_DURATION = 5
 
 PRESS_SUPPLY = "gse_pt_1.0"
 
-ETHANOL_TANK_PT = "gse_pt_3.0"
+ETHANOL_TANK_PT = "gse_pt_5.0"
 
-NITROUS_TANK_PT = "gse_pt_4.0"
+NITROUS_TANK_PT = "gse_pt_3.0"
 
 TORCH_PT_1 = "gse_pt_6.0"
-TORCH_PT_2 = "gse_pt_6.0"
-TORCH_PT_3 = "gse_pt_6.0"
+TORCH_PT_2 = "gse_pt_7.0"
+TORCH_PT_3 = "gse_pt_8.0"
 
 
 CMDS = [
@@ -208,12 +211,13 @@ with client.control.acquire(
 
                 print("Commencing ignition sequence")
 
-                print("Opening nitrous mpv and ethanol mpv")
-                syauto.open_all(auto, [nitrous_mpv, ethanol_mpv])
+                print(f"Opening ethanol mpv at {datetime.datetime.now()}")
+                ethanol_mpv.open()
 
-                # time.sleep(INITIAL_SLEEP)
+                time.sleep(MPV_DELAY)
 
-                # time.sleep(DURATION_BEFORE_SPARK)
+                print(f"Opening nitrous mpv at {datetime.datetime.now()}")
+                nitrous_mpv.open()
 
                 start = sy.TimeStamp.now()
 
@@ -226,15 +230,14 @@ with client.control.acquire(
                     >= TORCH_PT_TARGET
                 ):
                     retry = False
-                    print("Torch ignited")
-                    time.sleep(5)
-                    print("Closing MPVs and Torch 2K Iso")
+                    print("Torch ignited at ", datetime.datetime.now())
+                    time.sleep(BURN_DURATION)
+                    print("Closing MPVs and Torch 2K Iso at ", datetime.datetime.now())
                     syauto.close_all(
                         auto=auto, valves=[nitrous_mpv, ethanol_mpv, torch_iso]
                     )
                     spark_plug.close()
-                    print("Terminating Autosequence")
-                    print("Purging")
+                    print("Purging at ", datetime.datetime.now())
                     torch_purge.open()
                     time.sleep(PURGE_DURATION)
                     torch_purge.close()
@@ -242,14 +245,14 @@ with client.control.acquire(
                     time.sleep(1)
 
                 else:
-                    print("Torch failed to ignite.")
+                    print("Torch failed to ignite before ", datetime.datetime.now())
                     syauto.close_all(auto, [nitrous_mpv, ethanol_mpv])
                     spark_plug.close()
                     torch_purge.open()
                     time.sleep(PURGE_DURATION)
                     torch_purge.close()
-                    print(f"Ethanol Tank PT: {auto[ETHANOL_TANK_PT]} psig")
-                    print(f"Nitrous Bottle PT: {auto[NITROUS_TANK_PT]} psig")
+                    # print(f"Ethanol Tank PT: {auto[ETHANOL_TANK_PT]} psig")
+                    # print(f"Nitrous Bottle PT: {auto[NITROUS_TANK_PT]} psig")
                     testAgain = input(
                         "Type 'retry' to retry autosequence or anything else to terminate. "
                     )
@@ -259,7 +262,6 @@ with client.control.acquire(
     except KeyboardInterrupt as e:
         print("\n\nManual abort, safing system")
         print("Closing all valves and vents")
-        # ethanol_tank_vent.open()
         spark_plug.close()
         syauto.open_close_many_valves(
             auto=auto,
