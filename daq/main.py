@@ -7,7 +7,7 @@ client = sy.Synnax()
 
 
 def main():
-    data = input_excel("Phoenix Torch Igniter Hotfire SOP.xlsx")
+    data = input_excel("Torch Hotfire Instrumentation Sheet.xlsx")
     analog_task, digital_task, analog_card = create_tasks()
     process_excel(data, analog_task, digital_task, analog_card)
     if analog_task.config.channels != []:  # only configure if there are channels
@@ -96,24 +96,27 @@ def process_excel(
 
 
 def thermistor(analog_task: ni.AnalogReadTask, analog_card: sy.Device):
-    gse_ai_time = client.channels.create(
-        name="gse_ai_time",
-        data_type=sy.DataType.TIMESTAMP,
-        retrieve_if_name_exists=True,
-        is_index=True,
-    )
-    therm_supply = client.channels.create(
-        name="gse_thermistor_supply",
-        data_type=sy.DataType.FLOAT32,
-        index=gse_ai_time.key,
-        retrieve_if_name_exists=True,
-    )
-    therm_signal = client.channels.create(
-        name="gse_thermistor_signal",
-        data_type=sy.DataType.FLOAT32,
-        index=gse_ai_time.key,
-        retrieve_if_name_exists=True,
-    )
+    # gse_ai_time = client.channels.create(
+    #     name="gse_ai_time",
+    #     data_type=sy.DataType.TIMESTAMP,
+    #     retrieve_if_name_exists=True,
+    #     is_index=True,
+    # )
+    # gse_ai_time = client.channels.retrieve("gse_ai_time")
+    # therm_supply = client.channels.create(
+    #     name="gse_thermistor_supply",
+    #     data_type=sy.DataType.FLOAT32,
+    #     index=gse_ai_time.key,
+    #     retrieve_if_name_exists=True,
+    # )
+    therm_supply = client.channels.retrieve("gse_thermistor_supply")
+    # therm_signal = client.channels.create(
+    #     name="gse_thermistor_signal",
+    #     data_type=sy.DataType.FLOAT32,
+    #     index=gse_ai_time.key,
+    #     retrieve_if_name_exists=True,
+    # )
+    therm_signal = client.channels.retrieve("gse_thermistor_signal")
     analog_task.config.channels.append(
         ni.AIVoltageChan(
             channel=therm_supply.key,

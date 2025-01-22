@@ -8,26 +8,29 @@ client = sy.Synnax()
 def process_vlv(row: pd.Series, digital_task):
     channel = int(row["Channel"])
 
-    gse_state_time = client.channels.create(
-        name="gse_state_time",
-        is_index=True,
-        data_type=sy.DataType.TIMESTAMP,
-        retrieve_if_name_exists=True,
-    )
+    # gse_state_time = client.channels.create(
+    #     name="gse_state_time",
+    #     is_index=True,
+    #     data_type=sy.DataType.TIMESTAMP,
+    #     retrieve_if_name_exists=True,
+    # )
+    # gse_state_time = client.channels.retrieve("gse_state_time")
 
-    state_chan = client.channels.create(
-        name=f"gse_state_{channel}",
-        data_type=sy.DataType.UINT8,
-        retrieve_if_name_exists=True,
-        index=gse_state_time.key,
-    )
+    # state_chan = client.channels.create(
+    #     name=f"gse_state_{channel}",
+    #     data_type=sy.DataType.UINT8,
+    #     retrieve_if_name_exists=True,
+    #     index=gse_state_time.key,
+    # )
+    state_chan = client.channels.retrieve(f"gse_state_{channel}")
 
-    cmd_chan = client.channels.create(
-        name=f"gse_vlv_{channel}",
-        data_type=sy.DataType.UINT8,
-        retrieve_if_name_exists=True,
-        virtual=True,
-    )
+    # cmd_chan = client.channels.create(
+    #     name=f"gse_vlv_{channel}",
+    #     data_type=sy.DataType.UINT8,
+    #     retrieve_if_name_exists=True,
+    #     virtual=True,
+    # )
+    cmd_chan = client.channels.retrieve(f"gse_vlv_{channel}")
 
     do_chan = ni.DOChan(
         cmd_channel=cmd_chan.key,
@@ -41,12 +44,12 @@ def process_vlv(row: pd.Series, digital_task):
 
 
 def process_pt(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.Device):
-    synnax_channel_time = client.channels.create(
-        name="gse_ai_time",
-        data_type=sy.DataType.TIMESTAMP,
-        retrieve_if_name_exists=True,
-        is_index=True,
-    )
+    # synnax_channel_time = client.channels.create(
+    #     name="gse_ai_time",
+    #     data_type=sy.DataType.TIMESTAMP,
+    #     retrieve_if_name_exists=True,
+    #     is_index=True,
+    # )
 
     # if str(row["Port"]) != "nan":
     #     channel_num = int(row["Port"])
@@ -55,12 +58,13 @@ def process_pt(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
     # else:
     # raise Exception("Could not find channel or port for channel " + row["Name"])
 
-    synnax_channel = client.channels.create(
-        name=f"gse_pt_{channel_num}",
-        data_type=sy.DataType.FLOAT32,
-        index=synnax_channel_time.key,
-        retrieve_if_name_exists=True,
-    )
+    # synnax_channel = client.channels.create(
+    #     name=f"gse_pt_{channel_num}",
+    #     data_type=sy.DataType.FLOAT32,
+    #     index=synnax_channel_time.key,
+    #     retrieve_if_name_exists=True,
+    # )
+    synnax_channel = client.channels.retrieve(f"gse_pt_{channel_num}")
     pt_channel = ni.AIVoltageChan(
         channel=synnax_channel.key,
         device=analog_card.key,
@@ -88,12 +92,12 @@ def process_pt(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
 def process_tc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.Device):
     port = row["Channel"] - 1 + 64
 
-    synnax_channel_time = client.channels.create(
-        name="gse_ai_time",
-        data_type=sy.DataType.TIMESTAMP,
-        retrieve_if_name_exists=True,
-        is_index=True,
-    )
+    # synnax_channel_time = client.channels.create(
+    #     name="gse_ai_time",
+    #     data_type=sy.DataType.TIMESTAMP,
+    #     retrieve_if_name_exists=True,
+    #     is_index=True,
+    # )
 
     # if str(row["Port"]) != "nan":
     #     channel_num = int(row["Port"])
@@ -102,12 +106,13 @@ def process_tc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
     # else:
     # raise Exception("Could not find channel or port for channel " + row["Name"])
 
-    synnax_channel = client.channels.create(
-        name=f"gse_tc_{channel_num}_raw",  # pre-processed channel
-        data_type=sy.DataType.FLOAT32,
-        index=synnax_channel_time.key,
-        retrieve_if_name_exists=True,
-    )
+    # synnax_channel = client.channels.create(
+    #     name=f"gse_tc_{channel_num}_raw",  # pre-processed channel
+    #     data_type=sy.DataType.FLOAT32,
+    #     index=synnax_channel_time.key,
+    #     retrieve_if_name_exists=True,
+    # )
+    synnax_channel = client.channels.retrieve(f"gse_tc_{channel_num}_raw")
 
     tc_channel = ni.AIVoltageChan(
         channel=synnax_channel.key,
@@ -129,12 +134,12 @@ def process_tc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
 
 
 def process_raw(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.Device):
-    synnax_channel_time = client.channels.create(
-        name="gse_ai_time",
-        data_type=sy.DataType.TIMESTAMP,
-        retrieve_if_name_exists=True,
-        is_index=True,
-    )
+    # synnax_channel_time = client.channels.create(
+    #     name="gse_ai_time",
+    #     data_type=sy.DataType.TIMESTAMP,
+    #     retrieve_if_name_exists=True,
+    #     is_index=True,
+    # )
 
     # if (row["Channel"] != "") and (row["Port"] == ""):
     # raise Exception(
@@ -142,12 +147,13 @@ def process_raw(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.
     #     + row["Name"]
     # )
 
-    synnax_channel = client.channels.create(
-        name=f"gse_raw_{row['Port']}",  # only use port (if it exists)
-        data_type=sy.DataType.FLOAT32,
-        index=synnax_channel_time.key,
-        retrieve_if_name_exists=True,
-    )
+    # synnax_channel = client.channels.create(
+    #     name=f"gse_raw_{row['Port']}",  # only use port (if it exists)
+    #     data_type=sy.DataType.FLOAT32,
+    #     index=synnax_channel_time.key,
+    #     retrieve_if_name_exists=True,
+    # )
+    synnax_channel = client.channels.retrieve(f"gse_raw_{row['Port']}")
 
     raw_channel = ni.AIVoltageChan(
         channel=synnax_channel.key,
