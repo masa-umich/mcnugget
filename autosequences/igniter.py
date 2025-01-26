@@ -20,36 +20,19 @@ TORCH_2K_ISO_STATE = "gse_state_2"
 SPARK_VLV = "gse_vlv_7"
 SPARK_STATE = "gse_state_7"
 
-TORCH_PT_TARGET = 500
-
-PRESS_RATE = 50
-
-DURATION_BEFORE_SPARK = 0.19
-
-SECONDS_OF_SPARKING = 3
-
-SPARK_RATE = 25
-
-IGNITION_TIMEOUT = 3 * (10**9)
-
-MPV_DELAY = 0.290
-
-BURN_DURATION = 3
-
-SPARK_SLEEP = 0.04
-
-PURGE_DURATION = 5
-
-PRESS_SUPPLY = "gse_pt_1.0"
-
-ETHANOL_TANK_PT = "gse_pt_5.0"
-
-NITROUS_TANK_PT = "gse_pt_3.0"
-
 TORCH_PT_1 = "gse_pt_6.0"
 TORCH_PT_2 = "gse_pt_7.0"
 TORCH_PT_3 = "gse_pt_8.0"
 
+IGNITION_TIMEOUT = 3 * (10**9)  # convert to ns
+IGNITION_THRESHOLD = 500
+SAMPLES_TO_AVERAGE = 10
+AVERAGE_THRESHOLD = 0.8
+
+BURN_DURATION = 3
+PURGE_DURATION = 5
+
+MPV_DELAY = 0.290
 
 CMDS = [
     NITROUS_MPV_VLV,
@@ -59,7 +42,7 @@ CMDS = [
     ETHANOL_VENT_VLV,
     SPARK_VLV,
 ]
-ACKS = [
+STATES = [
     NITROUS_MPV_STATE,
     ETHANOL_MPV_STATE,
     TORCH_2K_ISO_STATE,
@@ -68,12 +51,9 @@ ACKS = [
     SPARK_STATE,
 ]
 PTS = [
-    ETHANOL_TANK_PT,
-    NITROUS_TANK_PT,
     TORCH_PT_1,
     TORCH_PT_2,
     TORCH_PT_3,
-    PRESS_SUPPLY,
 ]
 
 WRITE_TO = []
@@ -82,7 +62,7 @@ READ_FROM = []
 for cmd in CMDS:
     WRITE_TO.append(cmd)
 
-for ack in ACKS:
+for ack in STATES:
     READ_FROM.append(ack)
 
 for pt in PTS:
@@ -103,9 +83,9 @@ with client.control.acquire(
             values.append(1)
         else:
             values.append(0)
-        if len(values) > 10:
+        if len(values) > SAMPLES_TO_AVERAGE:
             SUM -= values.popleft()
-        if SUM / len(values) >= 0.8 and len(values) == 10:
+        if SUM / len(values) >= AVERAGE_THRESHOLD and len(values) >= SAMPLES_TO_AVERAGE:
             return True
         if sy.TimeStamp.since(start) >= IGNITION_TIMEOUT:
             return True
@@ -221,13 +201,15 @@ with client.control.acquire(
 
                 start = sy.TimeStamp.now()
 
-                auto.wait_until(lambda func: monitor(auto, TORCH_PT_TARGET, start, 0))
+                auto.wait_until(
+                    lambda func: monitor(auto, IGNITION_THRESHOLD, start, 0)
+                )
 
                 if (
                     statistics.median(
                         [auto[TORCH_PT_1], auto[TORCH_PT_2], auto[TORCH_PT_3]]
                     )
-                    >= TORCH_PT_TARGET
+                    >= IGNITION_THRESHOLD
                 ):
                     retry = False
                     print("Torch ignited at ", datetime.datetime.now())
@@ -251,8 +233,6 @@ with client.control.acquire(
                     torch_purge.open()
                     time.sleep(PURGE_DURATION)
                     torch_purge.close()
-                    # print(f"Ethanol Tank PT: {auto[ETHANOL_TANK_PT]} psig")
-                    # print(f"Nitrous Bottle PT: {auto[NITROUS_TANK_PT]} psig")
                     testAgain = input(
                         "Type 'retry' to retry autosequence or anything else to terminate. "
                     )
