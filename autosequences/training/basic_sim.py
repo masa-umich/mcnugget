@@ -2,7 +2,6 @@ import time
 import random
 import synnax
 import synnax.control
-from pynput import keyboard  # Import for key listener
 
 # these are just some imports we will use
 
@@ -107,28 +106,6 @@ true_supply_pressure = 2000
 
 def noise(pressure):
     return pressure + random.uniform(-20, 20)
-
-# Key press handler
-def on_key_press(key):
-    global paused
-    if key == keyboard.Key.space:
-        paused = not paused
-        if paused:
-            # Save state and close valves/vents
-            state["press_valve_open"] = REMOTE_STATE[PRESS_VALVE_CMD] == 1
-            state["press_vent_open"] = REMOTE_STATE[PRESS_VENT_CMD] == 1
-            REMOTE_STATE[PRESS_VALVE_CMD] = 0
-            REMOTE_STATE[PRESS_VENT_CMD] = 0
-            print("System paused. Valves and vents are closed.")
-        else:
-            # Restore state on resume
-            REMOTE_STATE[PRESS_VALVE_CMD] = 1 if state.get("press_valve_open") else 0
-            REMOTE_STATE[PRESS_VENT_CMD] = 1 if state.get("press_vent_open") else 0
-            print("System resumed. Valves and vents restored to saved state.")
-
-# Start key listener
-listener = keyboard.Listener(on_press=on_key_press)
-listener.start()
 
 # Create DAQ_STATE dictionary
 LOCAL_STATE = {
