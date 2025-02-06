@@ -9,6 +9,8 @@ import sys
 import threading
 import logging
 
+
+
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
 real_test = False
@@ -174,16 +176,16 @@ OX_PREVALVE = "gse_vlv_3"
 OX_PREVALVE_STATE = "gse_state_3"
 OX_DRAIN = "gse_vlv_4"
 OX_DRAIN_STATE = "gse_state_4"
-OX_FEEDLINE_PURGE = "gse_vlv_5"
-OX_FEEDLINE_PURGE_STATE = "gse_state_5"
+#OX_FEEDLINE_PURGE = "gse_vlv_5"
+#OX_FEEDLINE_PURGE_STATE = "gse_state_5"
 OX_FILL_PURGE = "gse_vlv_6"
 OX_FILL_PURGE_STATE = "gse_state_6"
 OX_PRE_PRESS = "gse_vlv_7"
 OX_PRE_PRESS_STATE = "gse_state_7"
-FUEL_FEEDLINE_PURGE = "gse_vlv_8"
-FUEL_FEEDLINE_PURGE_STATE = "gse_state_8"
-FUEL_FILL = "gse_vlv_9"
-FUEL_FILL_STATE = "gse_state_9"
+MPV_PURGE = "gse_vlv_8"
+MPV_PURGE_STATE = "gse_state_8"
+FUEL_PREPRESS = "gse_vlv_9"
+FUEL_PREPRESS_STATE = "gse_state_9"
 FUEL_PREVALVE = "gse_vlv_10"
 FUEL_PREVALVE_STATE = "gse_state_10"
 OX_MPV = "gse_vlv_11"
@@ -219,11 +221,10 @@ VALVES = [
     OX_FILL,
     OX_PREVALVE,
     OX_DRAIN,
-    OX_FEEDLINE_PURGE,
     OX_FILL_PURGE,
     OX_PRE_PRESS,
-    FUEL_FEEDLINE_PURGE,
-    FUEL_FILL,
+    MPV_PURGE,
+    FUEL_PREPRESS,
     FUEL_PREVALVE,
     OX_MPV,
     FUEL_MPV,
@@ -281,11 +282,10 @@ CMDS = [OX_RETURN_LINE_STATE,
     OX_FILL_STATE,
     OX_PREVALVE_STATE,
     OX_DRAIN_STATE,
-    OX_FEEDLINE_PURGE_STATE,
     OX_FILL_PURGE_STATE,
     OX_PRE_PRESS_STATE,
-    FUEL_FEEDLINE_PURGE_STATE,
-    FUEL_FILL_STATE,
+    MPV_PURGE_STATE,
+    FUEL_PREPRESS_STATE,
     FUEL_PREVALVE_STATE,
     OX_MPV_STATE,
     FUEL_MPV_STATE,
@@ -330,7 +330,7 @@ MAX_OX_PRESSURE = 575
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
 
-FIRE_DURATION = 20
+FIRE_DURATION = 25
 
 # MPV_DELAY is set such that OX is put in the chamber 0.200 seconds before fuel
 ox_time_to_reach_chamber = 0.357
@@ -397,21 +397,18 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
 PROGRAM_STATE = ""
 with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as auto:
     # creates valve objects for each valve
-    fuel_feedline_purge = syauto.Valve(auto=auto, cmd = FUEL_FEEDLINE_PURGE, ack = FUEL_FEEDLINE_PURGE_STATE, normally_open=False)
-    ox_feedline_purge = syauto.Valve(auto=auto, cmd = OX_FEEDLINE_PURGE, ack = OX_FEEDLINE_PURGE_STATE, normally_open=False)
-    #fuel_press_iso = syauto.Valve(auto=auto, cmd = FUEL_PRESS_ISO_CMD, ack = FUEL_PRESS_ISO_ACK, normally_open=False)
-    #ox_press_iso = syauto.Valve(auto=auto, cmd = OX_PRESS_ISO_CMD, ack = OX_PRESS_ISO_ACK, normally_open=False)
+    ox_prepress = syauto.Valve(auto=auto, cmd=OX_PRE_PRESS, ack=OX_PRE_PRESS_STATE, normally_open=False)
     ox_dome_iso = syauto.Valve(auto=auto, cmd = OX_DOME_ISO, ack = OX_DOME_ISO_STATE, normally_open=False)
-    fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE, ack=FUEL_PREVALVE_STATE, normally_open=False)
     ox_prevalve = syauto.Valve(auto=auto, cmd=OX_PREVALVE, ack=OX_PREVALVE_STATE, normally_open=False)
-    fuel_vent = syauto.Valve(auto=auto, cmd = FUEL_VENT, ack = FUEL_VENT_STATE, normally_open=True)
     ox_vent = syauto.Valve(auto=auto, cmd = OX_VENT, ack = OX_VENT_STATE, normally_open=True)
-    #press_vent = syauto.Valve(auto=auto, cmd = PRESS_VENT_CMD, ack = PRESS_VENT_ACK, normally_open=True)
-    fuel_mpv = syauto.Valve(auto=auto, cmd = FUEL_MPV, ack = FUEL_MPV_STATE, normally_open=True)
     ox_mpv = syauto.Valve(auto=auto, cmd = OX_MPV, ack = OX_MPV_STATE, normally_open=True)
-    #igniter = syauto.Valve(auto=auto, cmd = IGNITER, ack = IGNITER_ACK, normally_open=False)
-    press_iso = syauto.Valve(auto=auto, cmd = PRESS_ISO, ack = PRESS_ISO_STATE, normally_open=False)
+    mpv_purge = syauto.Valve(auto=auto, cmd = MPV_PURGE, ack = MPV_PURGE_STATE, normally_open=False)
+    fuel_prepress = syauto.Valve(auto=auto, cmd=FUEL_PREPRESS, ack=FUEL_PREPRESS_STATE, normally_open=False)
+    fuel_prevalve = syauto.Valve(auto=auto, cmd=FUEL_PREVALVE, ack=FUEL_PREVALVE_STATE, normally_open=False)
+    fuel_vent = syauto.Valve(auto=auto, cmd = FUEL_VENT, ack = FUEL_VENT_STATE, normally_open=True)
+    fuel_mpv = syauto.Valve(auto=auto, cmd = FUEL_MPV, ack = FUEL_MPV_STATE, normally_open=True)
     fuel_dome_iso = syauto.Valve(auto=auto, cmd = FUEL_DOME_ISO, ack = FUEL_DOME_ISO_STATE, normally_open=False)
+    press_iso = syauto.Valve(auto=auto, cmd = PRESS_ISO, ack = PRESS_ISO_STATE, normally_open=False)
     
 
     # # For determining if each valve is open 
@@ -432,15 +429,15 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     user_input_received = threading.Event()
 
     def fuel_ox_abort(auto: Controller, abort_fuel=False, abort_ox=False):
-        valves_to_close = [press_iso]
+        valves_to_close = []
         valves_to_potentially_open = []
         if abort_fuel:
             print("ABORTING FUEL")
-            valves_to_close += [fuel_dome_iso]
+            valves_to_close += [fuel_prepress]
             valves_to_potentially_open += [fuel_vent]
         if abort_ox:
             print("ABORTING OX")
-            valves_to_close += [ox_dome_iso]
+            valves_to_close += [ox_prepress]
             valves_to_potentially_open += [ox_vent]
         syauto.close_all(auto, valves_to_close)
         ans = input("would you like to open vents? y/n ")
@@ -451,37 +448,47 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     
         averages = get_averages(auto, PTS)
         ox_average = statistics.median([averages[OX_TANK_1], averages[OX_TANK_2], averages[OX_TANK_3]])
-        ox_pre_press_open = auto[OX_DOME_ISO]
+        ox_pre_press_open = auto[OX_PRE_PRESS]
         fuel_average = statistics.median([averages[FUEL_TANK_1], averages[FUEL_TANK_2], averages[FUEL_TANK_3]])
-        fuel_pre_press_open = auto[FUEL_DOME_ISO]
+        fuel_pre_press_open = auto[FUEL_PREPRESS]
 
         if USING_FUEL:
             if fuel_pre_press_open and (fuel_average >= UPPER_FUEL_PRESSURE):
                 print("fuel repressurized")
-                fuel_dome_iso.close()
+                fuel_prepress.close()
 
             if (not fuel_pre_press_open) and (fuel_average < LOWER_FUEL_PRESSURE):
                 print("repressurizing fuel")
-                fuel_dome_iso.open()
+                fuel_prepress.open()
 
             if fuel_pre_press_open and (fuel_average > MAX_FUEL_PRESSURE):
-                fuel_dome_iso.close()
+                fuel_prepress.close()
                 print("ABORTING FUEL due to high pressure")
                 fuel_ox_abort(auto, abort_fuel=True, abort_ox=False)
 
         if USING_OX:
             if ox_pre_press_open and (ox_average >= UPPER_OX_PRESSURE):
                 print("ox repressurized")
-                ox_dome_iso.close()
+                ox_prepress.close()
 
             if (not ox_pre_press_open) and (ox_average < LOWER_OX_PRESSURE):
                 print("repressurizing ox")
-                ox_dome_iso.open()    
+                ox_prepress.open()    
 
             if ox_pre_press_open and ox_average > MAX_OX_PRESSURE:
-                ox_dome_iso.close()
+                ox_prepress.close()
                 print("ABORTING OX due to high pressure")
                 fuel_ox_abort(auto, abort_fuel=False, abort_ox=True)
+
+    def pressurize_while_user_input ():
+            wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, pressurize))
+            input_thread = threading.Thread(target=get_user_input)
+
+            wait_thread.start()
+            input_thread.start()
+
+            wait_thread.join()
+            input_thread.join()  
 
     def get_user_input():
         # Function to get user input for firing sequence.
@@ -510,12 +517,12 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(0.1) 
 
     def reg_fire():
-        fuel_dome_iso.close()
-        ox_dome_iso.close()
-        opened_fuel_mpv = False
+        fuel_prepress.close()
+        ox_prepress.close()
+        opened_mpv = False
         opened_ox_mpv = False
         PROGRAM_STATE = "after ignition"
-        try: 
+        try: # add thing to call pressuriez while user input if igniter does not work - going back to pressurize
             print("commencing fire sequence - firing in: ")
             time.sleep(1)
             print("10")
@@ -535,10 +542,21 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(1)
             print("4")
             time.sleep(1)
-            
             print("3")
             time.sleep(1)
-            print("2")
+
+            if (USING_FUEL and not USING_OX):
+                print("2 Opening press and fuel dome isos")
+                syauto.open_all(auto, [press_iso, fuel_dome_iso])
+
+            elif (not USING_FUEL and USING_OX):
+                print("2 Opening press and ox dome isos")
+                syauto.open_all(auto, [press_iso, ox_dome_iso])
+
+            else:
+                print("2 Opening press and ox and fuel dome isos")
+                syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
+
             time.sleep(1)
             print("1")
             time.sleep(1)
@@ -571,15 +589,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 time.sleep(1)
 
             print("Terminating fire")
-            print("Opening vents and closing ISOs")
-            syauto.open_close_many_valves(auto, [fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso])
-            if opened_fuel_mpv:
-                print("Opening fuel feedline purge")
-                fuel_feedline_purge.open()
-            if opened_ox_mpv:
-                print("Opening ox feedline purge")
-                ox_feedline_purge.open()
-            # time.sleep(0.5)
+            print("Closing MPVs")
+            syauto.close_all(auto, [ox_mpv, fuel_mpv])
+            time.sleep(2)
+            print("Closing dome isos and openening vents and MPV purge")
+            syauto.open_close_many_valves(auto, [ox_vent, fuel_vent, mpv_purge], [fuel_dome_iso, ox_dome_iso, press_iso])
             if opened_fuel_mpv:
                 print("Closing fuel prevalve")
                 fuel_prevalve.close()
@@ -587,20 +601,19 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print("Closing ox prevalve")
                 ox_prevalve.close()
             time.sleep(5)
-            print("Closing dome ISO")
-            syauto.close_all(auto, [ox_dome_iso])
+            print("Closing MPV purge")
+            syauto.close_all(auto, [mpv_purge])
             print("\nFiring sequence has been completed nominally")
         except KeyboardInterrupt:
+            # hotfire abort
             print("\nFiring sequence aborted, closing all valves and opening all vents")
-            syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso])
+            syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_mpv, ox_mpv])
             time.sleep(0.5)
-            if opened_fuel_mpv:
-                print("Opening fuel feedline purge and closing fuel prevalve")
-                syauto.open_close_many_valves(auto, [fuel_feedline_purge], [fuel_prevalve])
-            if opened_ox_mpv:
-                print("Opening ox feedline purge and closing ox prevalve")
-                syauto.open_close_many_valves(auto, [ox_feedline_purge], [ox_prevalve])
+            print("Opening MPV purge and closing prevalves")
+            syauto.open_close_many_valves(auto, [mpv_purge], [fuel_prevalve, ox_prevalve])
             time.sleep(5)
+            print ("Closing Torch feedline purge and MPV purge")
+            syauto.close_all(auto, [mpv_purge])
             print("Terminating abort")
         time.sleep(10)
         # # this creates a range in synnax so we can view the data
@@ -651,11 +664,9 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             exit()
 
         print("Setting starting state")
-        syauto.close_all(auto, [ox_dome_iso, fuel_dome_iso, press_iso, fuel_vent, ox_vent])
+        syauto.close_all(auto, [press_iso, ox_dome_iso, fuel_dome_iso, press_iso, fuel_vent, ox_vent])
 
-        print("opening press_iso in 6 seconds") 
-        time.sleep(6)
-        press_iso.open()
+        time.sleep(1)
         
         if (USING_FUEL and not USING_OX):
             print("Pressurizing fuel in 6 seconds")
@@ -685,11 +696,4 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             exit()
 
         elif (PROGRAM_STATE == "after prepress before ignition"):
-            wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, pressurize))
-            input_thread = threading.Thread(target=get_user_input)
-
-            wait_thread.start()
-            input_thread.start()
-
-            wait_thread.join()
-            input_thread.join()  
+            pressurize_while_user_input()
