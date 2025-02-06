@@ -216,30 +216,30 @@ OX_VENT = "gse_vlv_23"
 OX_VENT_STATE = "gse_state_23"
 FUEL_VENT = "gse_vlv_24"
 FUEL_VENT_STATE = "gse_state_24"
-VALVES = [
-    OX_RETURN_LINE,
-    OX_FILL,
-    OX_PREVALVE,
-    OX_DRAIN,
-    OX_FILL_PURGE,
-    OX_PRE_PRESS,
-    MPV_PURGE,
-    FUEL_PREPRESS,
-    FUEL_PREVALVE,
-    OX_MPV,
-    FUEL_MPV,
-    TORCH_FEEDLINE_PURGE,
-    TORCH_ETHANOL_PRESS_ISO,
-    TORCH_ETHANOL_TANK_VENT,
-    MARGIN_3,
-    TORCH_ETHANOL_MPV,
-    TORCH_NITROUS_MPV,
-    TORCH_SPARK_PLUG,
-    PRESS_ISO,
-    FUEL_DOME_ISO,
-    OX_DOME_ISO,
-    OX_VENT,
-    FUEL_VENT,
+VALVE_STATES = [
+    OX_RETURN_LINE_STATE,
+    OX_FILL_STATE,
+    OX_PREVALVE_STATE,
+    OX_DRAIN_STATE,
+    OX_FILL_PURGE_STATE,
+    OX_PRE_PRESS_STATE,
+    MPV_PURGE_STATE,
+    FUEL_PREPRESS_STATE,
+    FUEL_PREVALVE_STATE,
+    OX_MPV_STATE,
+    FUEL_MPV_STATE,
+    TORCH_FEEDLINE_PURGE_STATE,
+    TORCH_ETHANOL_PRESS_ISO_STATE,
+    TORCH_ETHANOL_TANK_VENT_STATE,
+    MARGIN_3_STATE,
+    TORCH_ETHANOL_MPV_STATE,
+    TORCH_NITROUS_MPV_STATE,
+    TORCH_SPARK_PLUG_STATE,
+    PRESS_ISO_STATE,
+    FUEL_DOME_ISO_STATE,
+    OX_DOME_ISO_STATE,
+    OX_VENT_STATE,
+    FUEL_VENT_STATE,
 ]
 
 NORMALLY_OPEN = [OX_VENT, FUEL_VENT, OX_MPV, FUEL_MPV]
@@ -276,31 +276,31 @@ LOAD_CELL_2 = "gse_lc_2"
 LOAD_CELL_3 = "gse_lc_3"
 LOAD_CELLS = [LOAD_CELL_1, LOAD_CELL_2, LOAD_CELL_3]
 
-ACKS = VALVES
+ACKS = VALVE_STATES
 
-CMDS = [OX_RETURN_LINE_STATE,
-    OX_FILL_STATE,
-    OX_PREVALVE_STATE,
-    OX_DRAIN_STATE,
-    OX_FILL_PURGE_STATE,
-    OX_PRE_PRESS_STATE,
-    MPV_PURGE_STATE,
-    FUEL_PREPRESS_STATE,
-    FUEL_PREVALVE_STATE,
-    OX_MPV_STATE,
-    FUEL_MPV_STATE,
-    TORCH_FEEDLINE_PURGE_STATE,
-    TORCH_ETHANOL_PRESS_ISO_STATE,
-    TORCH_ETHANOL_TANK_VENT_STATE,
-    MARGIN_3_STATE,
-    TORCH_ETHANOL_MPV_STATE,
-    TORCH_NITROUS_MPV_STATE,
-    TORCH_SPARK_PLUG_STATE,
-    PRESS_ISO_STATE,
-    FUEL_DOME_ISO_STATE,
-    OX_DOME_ISO_STATE,
-    OX_VENT_STATE,
-    FUEL_VENT_STATE,
+CMDS = [OX_RETURN_LINE,
+    OX_FILL,
+    OX_PREVALVE,
+    OX_DRAIN,
+    OX_FILL_PURGE,
+    OX_PRE_PRESS,
+    MPV_PURGE,
+    FUEL_PREPRESS,
+    FUEL_PREVALVE,
+    OX_MPV,
+    FUEL_MPV,
+    TORCH_FEEDLINE_PURGE,
+    TORCH_ETHANOL_PRESS_ISO,
+    TORCH_ETHANOL_TANK_VENT,
+    MARGIN_3,
+    TORCH_ETHANOL_MPV,
+    TORCH_NITROUS_MPV,
+    TORCH_SPARK_PLUG,
+    PRESS_ISO,
+    FUEL_DOME_ISO,
+    OX_DOME_ISO,
+    OX_VENT,
+    FUEL_VENT,
     ]
 
 # List of channels we're going to read from and write to
@@ -446,11 +446,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     def pressurize(auto: Controller) -> bool:
     
-        averages = get_averages(auto, PTS)
+        averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
         ox_average = statistics.median([averages[OX_TANK_1], averages[OX_TANK_2], averages[OX_TANK_3]])
-        ox_pre_press_open = auto[OX_PRE_PRESS]
+        ox_pre_press_open = auto[OX_PRE_PRESS_STATE]
         fuel_average = statistics.median([averages[FUEL_TANK_1], averages[FUEL_TANK_2], averages[FUEL_TANK_3]])
-        fuel_pre_press_open = auto[FUEL_PREPRESS]
+        fuel_pre_press_open = auto[FUEL_PREPRESS_STATE]
 
         if USING_FUEL:
             if fuel_pre_press_open and (fuel_average >= UPPER_FUEL_PRESSURE):
@@ -535,10 +535,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(1)
 
             print("6 energizing the igniter")
-            igniter.open()
+            # igniter.open()
             time.sleep(1)
             print("5 deenergizing the igniter")
-            igniter.close()
+            # igniter.close()
             time.sleep(1)
             print("4")
             time.sleep(1)
@@ -651,7 +651,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                     print('closing program')
                     exit()
         else:
-            if (auto[FUEL_PREVALVE] and auto[OX_PREVALVE]):
+            if (auto[FUEL_PREVALVE_STATE] and auto[OX_PREVALVE_STATE]):
                 input("Prevalves open, press enter to continue ")
             else:
                 ans = input("Fuel and/or Ox prevalve NOT open, type 'bypass' to continue ")
