@@ -5,9 +5,120 @@ from daq.processing import process_vlv, process_pt, process_tc, process_lc, proc
 
 client = sy.Synnax()
 
+"""
+const double TC_SLOPES[14] = {
+    1.721453951, // TC 1
+    1.717979575, // TC 2
+    1.749114263, // TC 3
+    1.746326017, // TC 4
+    1.758960807, // TC 5
+    1.723974665, // TC 6
+    1.703447212, // TC 7
+    1.725947472, // TC 8
+    1.223907933, // TC 9
+    1.163575088, // TC 10
+    1.183121251, // TC 11
+    1.255762908, // TC 12
+    1.209157541, // TC 13
+    0, // TC 14
+};
+
+const double TC_OFFSETS[14] = {
+    -7.888645383, // TC 1
+    -7.887206187, // TC 2
+    -8.059569538, // TC 3
+    -7.988352324, // TC 4
+    -8.000751167, // TC 5
+    -7.891630334, // TC 6
+    -7.961173615, // TC 7
+    -7.928342723, // TC 8
+    -3.041473799, // TC 9
+    -3.001507707, // TC 10
+    -2.962919485, // TC 11
+    -2.436113303, // TC 12
+    -3.018604306, // TC 13
+    0, // TC 14
+};
+"""
+
+TC_SLOPES = [
+    1.721453951,  # TC 1
+    1.717979575,  # TC 2
+    1.749114263,  # TC 3
+    1.746326017,  # TC 4
+    1.758960807,  # TC 5
+    1.723974665,  # TC 6
+    1.703447212,  # TC 7
+    1.725947472,  # TC 8
+    1.223907933,  # TC 9
+    1.163575088,  # TC 10
+    1.183121251,  # TC 11
+    1.255762908,  # TC 12
+    1.209157541,  # TC 13
+    0,  # TC 14
+]
+
+TC_OFFSETS = [
+    -7.888645383,  # TC 1
+    -7.887206187,  # TC 2
+    -8.059569538,  # TC 3
+    -7.988352324,  # TC 4
+    -8.000751167,  # TC 5
+    -7.891630334,  # TC 6
+    -7.961173615,  # TC 7
+    -7.928342723,  # TC 8
+    -3.041473799,  # TC 9
+    -3.001507707,  # TC 10
+    -2.962919485,  # TC 11
+    -2.436113303,  # TC 12
+    -3.018604306,  # TC 13
+    0,  # TC 14
+]
+
+def let_there_be_data():
+    """
+    - "Sensor Type"
+    - "Channel"
+    - "Max Pressure"
+    - "Max Output Voltage"
+    - "Calibration Offset (V)"
+    - "Calibration Slope (mV/psig)"
+    Creates PTs 1-62, TCs 1-14, LCs 1-3
+    """
+    data = []
+    for pt in range(42):
+        data.append(
+            {
+                "Sensor Type": "PT",
+                "Channel": pt + 1,
+                "Max Pressure": 1000,
+                "Max Output Voltage": 4.5,
+                "Calibration Offset (V)": 0.5,
+                "Calibration Slope (mV/psig)": 4,
+            }
+        )
+    for tc in range(14):
+        data.append(
+            {
+                "Sensor Type": "TC",
+                "Channel": tc + 1,
+                "Calibration Slope (mV/psig)": TC_SLOPES[tc],
+                "Calibration Offset (V)": TC_OFFSETS[tc],
+                "Max Output Voltage": 5,
+            }
+        )
+    for vlv in range(24):
+        data.append(
+            {
+                "Sensor Type": "VLV",
+                "Channel": vlv + 1,
+            }
+        )
+    return pd.DataFrame(data)
 
 def main():
-    data = input_excel("Torch Hotfire Instrumentation Sheet.xlsx")
+    # data = input_excel("Torch Hotfire Instrumentation Sheet.xlsx")
+    data = let_there_be_data()
     analog_task, digital_task, analog_card = create_tasks()
     process_excel(data, analog_task, digital_task, analog_card)
     if analog_task.config.channels != []:  # only configure if there are channels
@@ -46,6 +157,7 @@ def create_tasks():
 def input_excel(file_path: str):
     try:
         df = pd.read_excel(file_path)
+
     except FileNotFoundError as e:
         print("File not found:", e)
         return
