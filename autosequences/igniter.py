@@ -167,15 +167,6 @@ with client.control.acquire(
                 print("Nitrous MPV was not prompted to close, moving on with the sequence")
 
         ethanol_tank_vent.close()
-
-
-        if (auto[TORCH_ISO_DOA] == 0):
-            ans = input("Torch 2K Iso is closed, type 'yes' to confirm opening ")
-            if (ans == 'yes' or ans == 'Yes'):
-                print("Opening Torch 2K Iso")
-                torch_iso.open()
-            else:
-                print("Torch 2K Iso was not prompted to open, moving on with the sequence")
            
 
         fire = input("Type 'fire' to commence ignition sequence with a 5 second countdown ")
