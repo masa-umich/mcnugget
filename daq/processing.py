@@ -35,7 +35,7 @@ def process_vlv(row: pd.Series, digital_task):
     do_chan = ni.DOChan(
         cmd_channel=cmd_chan.key,
         state_channel=state_chan.key,
-        port=(channel / 8) + 4,
+        port=((channel - 1) / 8) + 4,
         line=(channel - 1) % 8,
     )
 
