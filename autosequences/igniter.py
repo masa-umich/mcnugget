@@ -7,24 +7,27 @@ import datetime
 
 client = sy.Synnax()
 
-NITROUS_MPV_VLV = "gse_vlv_4"
-NITROUS_MPV_STATE = "gse_state_4"
-ETHANOL_MPV_VLV = "gse_vlv_3"
-ETHANOL_MPV_STATE = "gse_state_3"
-ETHANOL_VENT_VLV = "gse_vlv_5"
-ETHANOL_VENT_STATE = "gse_state_5"
-TORCH_PURGE_VLV = "gse_vlv_1"
-TORCH_PURGE_STATE = "gse_state_1"
-TORCH_2K_ISO_VLV = "gse_vlv_2"
-TORCH_2K_ISO_STATE = "gse_state_2"
-SPARK_VLV = "gse_vlv_7"
-SPARK_STATE = "gse_state_7"
+NITROUS_MPV_VLV = "gse_do_4_0_cmd"
+NITROUS_MPV_STATE = "gse_do_4_0_state"
+ETHANOL_MPV_VLV = "gse_do_4_1_cmd"
+ETHANOL_MPV_STATE = "gse_do_4_1_state"
+ETHANOL_VENT_VLV = "gse_do_4_2_cmd"
+ETHANOL_VENT_STATE = "gse_do_4_2_state"
+TORCH_PURGE_VLV = "gse_do_4_3_cmd"
+TORCH_PURGE_STATE = "gse_do_4_3_state"
+TORCH_2K_ISO_VLV = "gse_do_4_4_cmd"
+TORCH_2K_ISO_STATE = "gse_do_4_4_state"
 
-TORCH_PT_1 = "gse_pt_6.0"
-TORCH_PT_2 = "gse_pt_7.0"
-TORCH_PT_3 = "gse_pt_8.0"
+SPARK_VLV_1 = "gse_do_4_6_cmd"
+SPARK_STATE_1 = "gse_do_4_6_state"
+SPARK_VLV_2 = "gse_do_4_5_cmd"
+SPARK_STATE_2 = "gse_do_4_6_state"
 
-IGNITION_TIMEOUT = 3 * (10**9)  # convert to ns
+TORCH_PT_1 = "gse_ai_5"
+TORCH_PT_2 = "gse_ai_6"
+TORCH_PT_3 = "gse_ai_7"
+
+IGNITION_TIMEOUT = 5 * (10**9)  # convert to ns
 IGNITION_THRESHOLD = 500
 SAMPLES_TO_AVERAGE = 10
 AVERAGE_THRESHOLD = 0.8
@@ -32,7 +35,7 @@ AVERAGE_THRESHOLD = 0.8
 BURN_DURATION = 3
 PURGE_DURATION = 5
 
-MPV_DELAY = 0.290
+MPV_DELAY = 0.075
 
 CMDS = [
     NITROUS_MPV_VLV,
@@ -40,7 +43,8 @@ CMDS = [
     TORCH_2K_ISO_VLV,
     TORCH_PURGE_VLV,
     ETHANOL_VENT_VLV,
-    SPARK_VLV,
+    SPARK_VLV_1,
+    SPARK_VLV_2,
 ]
 STATES = [
     NITROUS_MPV_STATE,
@@ -48,7 +52,8 @@ STATES = [
     TORCH_2K_ISO_STATE,
     TORCH_PURGE_STATE,
     ETHANOL_VENT_STATE,
-    SPARK_STATE,
+    SPARK_STATE_1,
+    SPARK_STATE_2,
 ]
 PTS = [
     TORCH_PT_1,
@@ -113,8 +118,11 @@ with client.control.acquire(
         normally_open=False,
     )
 
-    spark_plug = syauto.Valve(
-        auto=auto, cmd=SPARK_VLV, ack=SPARK_STATE, normally_open=False
+    spark_plug_1 = syauto.Valve(
+        auto=auto, cmd=SPARK_VLV_1, ack=SPARK_STATE_1, normally_open=False
+    )
+    spark_plug_2 = syauto.Valve(
+        auto=auto, cmd=SPARK_VLV_2, ack=SPARK_STATE_2, normally_open=False
     )
 
     time.sleep(1)
@@ -125,47 +133,45 @@ with client.control.acquire(
             exit()
 
         print("Starting Igniter Autosequence. Setting initial system state.")
-        if auto[TORCH_PURGE_STATE] == 1:
-            ans = input("Torch Purge is open, type 'yes' to confirm close ")
-            if ans == "yes" or ans == "Yes":
-                print("Closing Torch Purge")
-                torch_purge.close()
-            else:
-                print(
-                    "Torch Purge was not prompted to close, moving on with the sequence"
-                )
+        # if auto[TORCH_PURGE_STATE] == 1:
+        #     ans = input("Torch Purge is open, type 'yes' to confirm close ")
+        #     if ans == "yes" or ans == "Yes":
+        #         print("Closing Torch Purge")
+        #         torch_purge.close()
+        #     else:
+        #         print(
+        #             "Torch Purge was not prompted to close, moving on with the sequence"
+        #         )
 
-        if auto[ETHANOL_MPV_STATE] == 1:
-            ans = input("Ethanol MPV is open, type 'yes' to confirm close ")
-            if ans == "yes" or ans == "Yes":
-                print("Closing ethanol MPV")
-                ethanol_mpv.close()
-            else:
-                print(
-                    "Ethanol MPV was not prompted to close, moving on with the sequence"
-                )
+        # if auto[ETHANOL_MPV_STATE] == 1:
+        #     ans = input("Ethanol MPV is open, type 'yes' to confirm close ")
+        #     if ans == "yes" or ans == "Yes":
+        #         print("Closing ethanol MPV")
+        #         ethanol_mpv.close()
+        #     else:
+        #         print(
+        #             "Ethanol MPV was not prompted to close, moving on with the sequence"
+        #         )
 
-        if auto[NITROUS_MPV_STATE] == 1:
-            ans = input("Nitrous MPV is open, type 'yes' to confirm close ")
-            if ans == "yes" or ans == "Yes":
-                print("Closing nitrous MPV")
-                nitrous_mpv.close()
-            else:
-                print(
-                    "Nitrous MPV was not prompted to close, moving on with the sequence"
-                )
+        # if auto[NITROUS_MPV_STATE] == 1:
+        #     ans = input("Nitrous MPV is open, type 'yes' to confirm close ")
+        #     if ans == "yes" or ans == "Yes":
+        #         print("Closing nitrous MPV")
+        #         nitrous_mpv.close()
+        #     else:
+        #         print(
+        #             "Nitrous MPV was not prompted to close, moving on with the sequence"
+        #         )
 
-        ethanol_tank_vent.close()
-
-        if auto[TORCH_2K_ISO_STATE] == 0:
-            ans = input("Torch 2K Iso is closed, type 'yes' to confirm opening ")
-            if ans == "yes" or ans == "Yes":
-                print("Opening Torch 2K Iso")
-                torch_iso.open()
-            else:
-                print(
-                    "Torch 2K Iso was not prompted to open, moving on with the sequence"
-                )
+        # if auto[TORCH_2K_ISO_STATE] == 0:
+        #     ans = input("Torch 2K Iso is closed, type 'yes' to confirm opening ")
+        #     if ans == "yes" or ans == "Yes":
+        #         print("Opening Torch 2K Iso")
+        #         torch_iso.open()
+        #     else:
+        #         print(
+        #             "Torch 2K Iso was not prompted to open, moving on with the sequence"
+        #         )
 
         fire = input(
             "Type 'fire' to commence ignition sequence with a 5 second countdown "
@@ -186,18 +192,19 @@ with client.control.acquire(
                 time.sleep(1)
                 print("1")
                 print("Energizing Spark Plug")
-                spark_plug.open()
+                syauto.open_all(auto, [spark_plug_1, spark_plug_2])
+                # spark_plug_1.open()
                 time.sleep(1)
 
                 print("Commencing ignition sequence")
 
-                print(f"Opening ethanol mpv at {datetime.datetime.now()}")
-                ethanol_mpv.open()
+                print(f"Opening nitrous mpv at {datetime.datetime.now()}")
+                nitrous_mpv.open()
 
                 time.sleep(MPV_DELAY)
 
-                print(f"Opening nitrous mpv at {datetime.datetime.now()}")
-                nitrous_mpv.open()
+                print(f"Opening ethanol mpv at {datetime.datetime.now()}")
+                ethanol_mpv.open()
 
                 start = sy.TimeStamp.now()
 
@@ -218,21 +225,23 @@ with client.control.acquire(
                     syauto.close_all(
                         auto=auto, valves=[nitrous_mpv, ethanol_mpv, torch_iso]
                     )
-                    spark_plug.close()
-                    print("Purging at ", datetime.datetime.now())
-                    torch_purge.open()
-                    time.sleep(PURGE_DURATION)
-                    torch_purge.close()
+                    syauto.close_all(auto, [spark_plug_1, spark_plug_2])
+                    # spark_plug_1.close()
+                    # print("Purging at ", datetime.datetime.now())
+                    # torch_purge.open()
+                    # time.sleep(PURGE_DURATION)
+                    # torch_purge.close()
                     print("Terminated")
                     time.sleep(1)
 
                 else:
                     print("Torch failed to ignite before ", datetime.datetime.now())
                     syauto.close_all(auto, [nitrous_mpv, ethanol_mpv])
-                    spark_plug.close()
-                    torch_purge.open()
-                    time.sleep(PURGE_DURATION)
-                    torch_purge.close()
+                    syauto.close_all(auto, [spark_plug_1, spark_plug_2])
+                    # spark_plug_1.close()
+                    # torch_purge.open()
+                    # time.sleep(PURGE_DURATION)
+                    # torch_purge.close()
                     testAgain = input(
                         "Type 'retry' to retry autosequence or anything else to terminate. "
                     )
@@ -242,15 +251,16 @@ with client.control.acquire(
     except KeyboardInterrupt as e:
         print("\n\nManual abort, safing system")
         print("Closing all valves and vents")
-        spark_plug.close()
+        syauto.close_all(auto, [spark_plug_1, spark_plug_2])
+        # spark_plug_1.close()
         syauto.open_close_many_valves(
             auto=auto,
             valves_to_close=[ethanol_mpv, nitrous_mpv, torch_iso],
             valves_to_open=[ethanol_tank_vent],
         )
-        torch_purge.open()
-        time.sleep(PURGE_DURATION)
-        torch_purge.close()
+        # torch_purge.open()
+        # time.sleep(PURGE_DURATION)
+        # torch_purge.close()
         print("Terminated")
         exit(0)
 

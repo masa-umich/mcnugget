@@ -4,8 +4,8 @@ from autosequences import syauto
 
 client = synnax.Synnax()
 
-VALVE = "gse_vlv_1"
-VALVE_STATE = "gse_state_1"
+VALVE = "gse_do_4_1_cmd"
+VALVE_STATE = "gse_do_4_1_state"
 
 MPV_OPEN_TIME = 2
 

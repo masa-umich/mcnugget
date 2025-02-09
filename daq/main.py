@@ -86,28 +86,28 @@ def let_there_be_data():
     Creates PTs 1-62, TCs 1-14, LCs 1-3
     """
     data = []
-    for pt in range(42):
+    for pt in range(8):
         data.append(
             {
                 "Sensor Type": "PT",
                 "Channel": pt + 1,
-                "Max Pressure": 1000,
+                "Max Pressure": 5000 if (pt == 2 or pt == 0) else 1000,
                 "Max Output Voltage": 4.5,
                 "Calibration Offset (V)": 0.5,
                 "Calibration Slope (mV/psig)": 4,
             }
         )
-    for tc in range(14):
-        data.append(
-            {
-                "Sensor Type": "TC",
-                "Channel": tc + 1,
-                "Calibration Slope (mV/psig)": TC_SLOPES[tc],
-                "Calibration Offset (V)": TC_OFFSETS[tc],
-                "Max Output Voltage": 5,
-            }
-        )
-    for vlv in range(24):
+    # for tc in range(14):
+    #     data.append(
+    #         {
+    #             "Sensor Type": "TC",
+    #             "Channel": tc + 1,
+    #             "Calibration Slope (mV/psig)": TC_SLOPES[tc],
+    #             "Calibration Offset (V)": TC_OFFSETS[tc],
+    #             "Max Output Voltage": 5,
+    #         }
+    #     )
+    for vlv in range(9):
         data.append(
             {
                 "Sensor Type": "VLV",
