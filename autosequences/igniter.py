@@ -18,10 +18,8 @@ TORCH_PURGE_STATE = "gse_do_4_3_state"
 TORCH_2K_ISO_VLV = "gse_do_4_4_cmd"
 TORCH_2K_ISO_STATE = "gse_do_4_4_state"
 
-SPARK_VLV_1 = "gse_do_4_6_cmd"
-SPARK_STATE_1 = "gse_do_4_6_state"
-SPARK_VLV_2 = "gse_do_4_5_cmd"
-SPARK_STATE_2 = "gse_do_4_6_state"
+SPARK_VLV = "gse_do_4_6_cmd"
+SPARK_STATE = "gse_do_4_6_state"
 
 TORCH_PT_1 = "gse_ai_5"
 TORCH_PT_2 = "gse_ai_6"
@@ -35,7 +33,8 @@ AVERAGE_THRESHOLD = 0.8
 BURN_DURATION = 3
 PURGE_DURATION = 5
 
-MPV_DELAY = 0.075
+# MPV_DELAY = 0.075
+MPV_DELAY = 1
 
 CMDS = [
     NITROUS_MPV_VLV,
@@ -43,8 +42,7 @@ CMDS = [
     TORCH_2K_ISO_VLV,
     TORCH_PURGE_VLV,
     ETHANOL_VENT_VLV,
-    SPARK_VLV_1,
-    SPARK_VLV_2,
+    SPARK_VLV,
 ]
 STATES = [
     NITROUS_MPV_STATE,
@@ -52,8 +50,7 @@ STATES = [
     TORCH_2K_ISO_STATE,
     TORCH_PURGE_STATE,
     ETHANOL_VENT_STATE,
-    SPARK_STATE_1,
-    SPARK_STATE_2,
+    SPARK_STATE,
 ]
 PTS = [
     TORCH_PT_1,
@@ -118,11 +115,8 @@ with client.control.acquire(
         normally_open=False,
     )
 
-    spark_plug_1 = syauto.Valve(
-        auto=auto, cmd=SPARK_VLV_1, ack=SPARK_STATE_1, normally_open=False
-    )
-    spark_plug_2 = syauto.Valve(
-        auto=auto, cmd=SPARK_VLV_2, ack=SPARK_STATE_2, normally_open=False
+    spark_plug = syauto.Valve(
+        auto=auto, cmd=SPARK_VLV, ack=SPARK_STATE, normally_open=False
     )
 
     time.sleep(1)
@@ -191,12 +185,11 @@ with client.control.acquire(
                 print("2")
                 time.sleep(1)
                 print("1")
-                print("Energizing Spark Plug")
-                syauto.open_all(auto, [spark_plug_1, spark_plug_2])
-                # spark_plug_1.open()
+                print(f"Energizing Spark Plug at {datetime.datetime.now()}")
+                spark_plug.open()
                 time.sleep(1)
 
-                print("Commencing ignition sequence")
+                print(f"Commencing ignition sequence at {datetime.datetime.now()}")
 
                 print(f"Opening nitrous mpv at {datetime.datetime.now()}")
                 nitrous_mpv.open()
@@ -219,14 +212,13 @@ with client.control.acquire(
                     >= IGNITION_THRESHOLD
                 ):
                     retry = False
-                    print("Torch ignited at ", datetime.datetime.now())
+                    print(f"Torch ignited at {datetime.datetime.now()}")
                     time.sleep(BURN_DURATION)
-                    print("Closing MPVs and Torch 2K Iso at ", datetime.datetime.now())
+                    print(f"Closing MPVs and Torch 2K Iso at {datetime.datetime.now()}")
                     syauto.close_all(
                         auto=auto, valves=[nitrous_mpv, ethanol_mpv, torch_iso]
                     )
-                    syauto.close_all(auto, [spark_plug_1, spark_plug_2])
-                    # spark_plug_1.close()
+                    spark_plug.close()
                     # print("Purging at ", datetime.datetime.now())
                     # torch_purge.open()
                     # time.sleep(PURGE_DURATION)
@@ -237,8 +229,7 @@ with client.control.acquire(
                 else:
                     print("Torch failed to ignite before ", datetime.datetime.now())
                     syauto.close_all(auto, [nitrous_mpv, ethanol_mpv])
-                    syauto.close_all(auto, [spark_plug_1, spark_plug_2])
-                    # spark_plug_1.close()
+                    spark_plug.close()
                     # torch_purge.open()
                     # time.sleep(PURGE_DURATION)
                     # torch_purge.close()
@@ -251,8 +242,7 @@ with client.control.acquire(
     except KeyboardInterrupt as e:
         print("\n\nManual abort, safing system")
         print("Closing all valves and vents")
-        syauto.close_all(auto, [spark_plug_1, spark_plug_2])
-        # spark_plug_1.close()
+        spark_plug.close()
         syauto.open_close_many_valves(
             auto=auto,
             valves_to_close=[ethanol_mpv, nitrous_mpv, torch_iso],
@@ -264,4 +254,4 @@ with client.control.acquire(
         print("Terminated")
         exit(0)
 
-time.sleep(5)
+time.sleep(2)
