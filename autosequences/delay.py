@@ -108,7 +108,7 @@ try:
                 continue
             update_values(frame[channel][-1], channel)
             STATE[channel + "_delay"] = read_delay(channel)
-        STATE["delay_time"] = synnax.TimeStamp.now() - synnax.TimeSpan(1000000000 * 3.3)
+        STATE["delay_time"] = synnax.TimeStamp.now() # - synnax.TimeSpan(1000000000 * 3.3)
         writer.write(STATE)
         time.sleep(rate)
 

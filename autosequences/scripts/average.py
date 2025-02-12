@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import time
 import synnax
 import synnax.control
@@ -134,3 +135,5 @@ except KeyboardInterrupt:
     client.close()
     print("terminated")
     exit()
+=======
+>>>>>>> hotfire_improvements
