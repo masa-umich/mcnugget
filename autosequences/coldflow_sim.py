@@ -380,6 +380,8 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     fuel_tank_true -= 6
                     # print("fuel to feedline")
 
+                fuel_tank_true -= 1
+
                 # no negative pressures plz ;-;
                 if press_2k_supply < 0:
                     press_2k_supply = 0
