@@ -700,7 +700,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
         PROGRAM_STATE = "after prepress before ignition"
         auto.wait_until(pressurize)
-        # pressurize()
 
     except KeyboardInterrupt as e:
 
@@ -708,4 +707,5 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             exit()
 
         elif (PROGRAM_STATE == "after prepress before ignition"):
-            get_user_input_and_pressurize()
+            # pressurize_while_user_input()
+                get_user_input()
