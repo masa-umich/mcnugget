@@ -533,7 +533,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(0.1) 
 
     def reg_fire():
-        print(f"{threading.enumerate()} active threads")
+        print(f"{threading.enumerate()} {threading.active_count} active threads")
         fuel_prepress.close()
         ox_prepress.close()
         opened_mpv = False
@@ -634,7 +634,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             # print ("Closing Torch feedline purge and MPV purge")
             # syauto.close_all(auto, [mpv_purge])
             # print("Terminating abort")
-        time.sleep(10)
+        time.sleep(1)
         # # this creates a range in synnax so we can view the data
         # if real_test:
         #     rng = client.ranges.create(
