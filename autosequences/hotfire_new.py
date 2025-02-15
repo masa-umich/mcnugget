@@ -84,20 +84,20 @@ PNEUMATICS_BOTTLE = "gse_pt_1"
 TRAILER_PNEUMATICS = "gse_pt_2"
 ENGINE_PNEUMATICS = "gse_pt_3"
 PRESS_BOTTLE = "gse_pt_4"
-OX_DOME_INLET = "gse_pt_5"
-OX_POST_PILOT_REG = "gse_pt_6"
-OX_DOME_REG = "gse_pt_7"
-OX_POST_DOME = "gse_pt_8"
+OX_TPC_INLET = "gse_pt_5"
+OX_PILOT_OUTLET = "gse_pt_6"
+OX_DOME = "gse_pt_7"
+OX_TPC_OUTLET = "gse_pt_8"
 OX_FLOWMETER_INLET = "gse_pt_9"
 OX_FLOWMETER_THROAT = "gse_pt_10"
-MARGIN_1 = "gse_pt_11"
+OX_LEVEL_SENSOR = "gse_pt_11"
 FUEL_FLOWMETER_INLET = "gse_pt_12"
 FUEL_FLOWMETER_THROAT = "gse_pt_13"
 MARGIN_2 = "gse_pt_14"
-FUEL_DOME_INLET = "gse_pt_15"
-FUEL_POST_PILOT_REG = "gse_pt_16"
-FUEL_DOME_REG = "gse_pt_17"
-FUEL_POST_DOME = "gse_pt_18"
+FUEL_TPC_INLET = "gse_pt_15"
+FUEL_PILOT_OUTLET = "gse_pt_16"
+FUEL_DOME = "gse_pt_17"
+FUEL_TPC_OUTLET = "gse_pt_18"
 FUEL_TANK_1 = "gse_pt_19"
 FUEL_TANK_2 = "gse_pt_20"
 FUEL_TANK_3 = "gse_pt_21"
@@ -127,20 +127,20 @@ PTS = [
     TRAILER_PNEUMATICS,
     ENGINE_PNEUMATICS,
     PRESS_BOTTLE,
-    OX_DOME_INLET,
-    OX_POST_PILOT_REG,
-    OX_DOME_REG,
-    OX_POST_DOME,
+    OX_TPC_INLET,
+    OX_PILOT_OUTLET,
+    OX_DOME,
+    OX_TPC_OUTLET,
     OX_FLOWMETER_INLET,
     OX_FLOWMETER_THROAT,
-    MARGIN_1,
+    OX_LEVEL_SENSOR,
     FUEL_FLOWMETER_INLET,
     FUEL_FLOWMETER_THROAT,
     MARGIN_2,
-    FUEL_DOME_INLET,
-    FUEL_POST_PILOT_REG,
-    FUEL_DOME_REG,
-    FUEL_POST_DOME,
+    FUEL_TPC_INLET,
+    FUEL_PILOT_OUTLET,
+    FUEL_DOME,
+    FUEL_TPC_OUTLET,
     FUEL_TANK_1,
     FUEL_TANK_2,
     FUEL_TANK_3,
@@ -184,16 +184,16 @@ OX_PRE_PRESS = "gse_vlv_7"
 OX_PRE_PRESS_STATE = "gse_state_7"
 MPV_PURGE = "gse_vlv_8"
 MPV_PURGE_STATE = "gse_state_8"
-FUEL_PREPRESS = "gse_vlv_9"
-FUEL_PREPRESS_STATE = "gse_state_9"
-FUEL_PREVALVE = "gse_vlv_10"
-FUEL_PREVALVE_STATE = "gse_state_10"
+FUEL_PREPRESS = "gse_vlv_15"
+FUEL_PREPRESS_STATE = "gse_state_15"
+FUEL_PREVALVE = "gse_vlv_17"
+FUEL_PREVALVE_STATE = "gse_state_17"
 OX_MPV = "gse_vlv_11"
 OX_MPV_STATE = "gse_state_11"
 FUEL_MPV = "gse_vlv_12"
 FUEL_MPV_STATE = "gse_state_12"
-TORCH_FEEDLINE_PURGE = "gse_vlv_13"
-TORCH_FEEDLINE_PURGE_STATE = "gse_state_13"
+# TORCH_FEEDLINE_PURGE = "gse_vlv_13"
+# TORCH_FEEDLINE_PURGE_STATE = "gse_state_13"
 TORCH_ETHANOL_PRESS_ISO = "gse_vlv_14"
 TORCH_ETHANOL_PRESS_ISO_STATE = "gse_state_14"
 TORCH_ETHANOL_TANK_VENT = "gse_vlv_15"
@@ -228,7 +228,7 @@ VALVE_STATES = [
     FUEL_PREVALVE_STATE,
     OX_MPV_STATE,
     FUEL_MPV_STATE,
-    TORCH_FEEDLINE_PURGE_STATE,
+    # TORCH_FEEDLINE_PURGE_STATE,
     TORCH_ETHANOL_PRESS_ISO_STATE,
     TORCH_ETHANOL_TANK_VENT_STATE,
     MARGIN_3_STATE,
@@ -289,7 +289,7 @@ CMDS = [OX_RETURN_LINE,
     FUEL_PREVALVE,
     OX_MPV,
     FUEL_MPV,
-    TORCH_FEEDLINE_PURGE,
+    # TORCH_FEEDLINE_PURGE,
     TORCH_ETHANOL_PRESS_ISO,
     TORCH_ETHANOL_TANK_VENT,
     MARGIN_3,
@@ -335,7 +335,8 @@ FIRE_DURATION = 25
 # MPV_DELAY is set such that OX is put in the chamber 0.200 seconds before fuel
 ox_time_to_reach_chamber = 0.357
 fuel_time_to_reach_chamber = 0.276
-MPV_DELAY = 0.2 + ox_time_to_reach_chamber - fuel_time_to_reach_chamber   # seconds
+# MPV_DELAY = 0.2 + ox_time_to_reach_chamber - fuel_time_to_reach_chamber   # seconds
+MPV_DELAY = 0   # seconds
 # OX_MPV takes 0.357 s to reach chamber
 # FUEL_MPV used to take 0.246 s to reach chamber
 # FUEL_MPV now takes 0.276 s to reach chamber
@@ -428,6 +429,18 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     user_input_received = threading.Event()
 
+    def hotfire_abort():
+        print("\nFiring sequence aborted, closing all valves and opening all vents")
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_mpv, ox_mpv])
+        time.sleep(0.5)
+        print("Opening MPV purge and closing prevalves")
+        syauto.open_close_many_valves(auto, [mpv_purge], [fuel_prevalve, ox_prevalve])
+        time.sleep(5)
+        print ("Closing Torch feedline purge and MPV purge")
+        syauto.close_all(auto, [mpv_purge])
+        print("Terminating abort")
+
+
     def fuel_ox_abort(auto: Controller, abort_fuel=False, abort_ox=False):
         valves_to_close = []
         valves_to_potentially_open = []
@@ -481,6 +494,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 fuel_ox_abort(auto, abort_fuel=False, abort_ox=True)
 
     def pressurize_while_user_input ():
+        try:
             wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, pressurize))
             input_thread = threading.Thread(target=get_user_input)
 
@@ -489,6 +503,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
             wait_thread.join()
             input_thread.join()  
+        except:
+            hotfire_abort()
 
     def get_user_input():
         # Function to get user input for firing sequence.
@@ -517,6 +533,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(0.1) 
 
     def reg_fire():
+        print(f"{threading.enumerate()} active threads")
         fuel_prepress.close()
         ox_prepress.close()
         opened_mpv = False
@@ -604,17 +621,19 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("Closing MPV purge")
             syauto.close_all(auto, [mpv_purge])
             print("\nFiring sequence has been completed nominally")
+
         except KeyboardInterrupt:
             # hotfire abort
-            print("\nFiring sequence aborted, closing all valves and opening all vents")
-            syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_mpv, ox_mpv])
-            time.sleep(0.5)
-            print("Opening MPV purge and closing prevalves")
-            syauto.open_close_many_valves(auto, [mpv_purge], [fuel_prevalve, ox_prevalve])
-            time.sleep(5)
-            print ("Closing Torch feedline purge and MPV purge")
-            syauto.close_all(auto, [mpv_purge])
-            print("Terminating abort")
+            hotfire_abort()
+            # print("\nFiring sequence aborted, closing all valves and opening all vents")
+            # syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_mpv, ox_mpv])
+            # time.sleep(0.5)
+            # print("Opening MPV purge and closing prevalves")
+            # syauto.open_close_many_valves(auto, [mpv_purge], [fuel_prevalve, ox_prevalve])
+            # time.sleep(5)
+            # print ("Closing Torch feedline purge and MPV purge")
+            # syauto.close_all(auto, [mpv_purge])
+            # print("Terminating abort")
         time.sleep(10)
         # # this creates a range in synnax so we can view the data
         # if real_test:
@@ -633,31 +652,31 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         PROGRAM_STATE = "before prepress"
         time.sleep(1)
     
-        #Check prevalves are opened or closed
-        if (USING_FUEL and not USING_OX):
-            if (auto[FUEL_PREVALVE]):
-                input("Fuel prevalve open, press enter to continue ")
-            else:
-                ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
-                if (ans != 'bypass'):
-                    print('closing program')
-                    exit()
-        elif (not USING_FUEL and USING_OX):
-            if (auto[OX_PREVALVE]):
-                input("Ox prevalve open, press enter to continue ")
-            else:
-                ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
-                if (ans != 'bypass'):
-                    print('closing program')
-                    exit()
-        else:
-            if (auto[FUEL_PREVALVE_STATE] and auto[OX_PREVALVE_STATE]):
-                input("Prevalves open, press enter to continue ")
-            else:
-                ans = input("Fuel and/or Ox prevalve NOT open, type 'bypass' to continue ")
-                if (ans != 'bypass'):
-                    print('closing program')
-                    exit()
+        # #Check prevalves are opened or closed
+        # if (USING_FUEL and not USING_OX):
+        #     if (auto[FUEL_PREVALVE]):
+        #         input("Fuel prevalve open, press enter to continue ")
+        #     else:
+        #         ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
+        #         if (ans != 'bypass'):
+        #             print('closing program')
+        #             exit()
+        # elif (not USING_FUEL and USING_OX):
+        #     if (auto[OX_PREVALVE]):
+        #         input("Ox prevalve open, press enter to continue ")
+        #     else:
+        #         ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
+        #         if (ans != 'bypass'):
+        #             print('closing program')
+        #             exit()
+        # else:
+        #     if (auto[FUEL_PREVALVE_STATE] and auto[OX_PREVALVE_STATE]):
+        #         print("Prevalves open")
+        #     else:
+        #         ans = input("Fuel and/or Ox prevalve NOT open, type 'bypass' to continue ")
+        #         if (ans != 'bypass'):
+        #             print('closing program')
+        #             exit()
 
         ans = input("Type 'start' to commence autosequence. ")
         if not (ans == 'start' or ans == 'Start' or ans == 'START'):
@@ -675,10 +694,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         else:
             print("Pressurizing fuel and ox in 6 seconds")
 
-        time.sleep(1)
-        for i in range(5):
-            print(f"{5 - i}")
-            time.sleep(1)
+        # time.sleep(1)
+        # for i in range(5):
+        #     print(f"{5 - i}")
+        #     time.sleep(1)
 
         if (USING_FUEL and not USING_OX):
             print("Pressurizing fuel")
@@ -689,6 +708,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
         PROGRAM_STATE = "after prepress before ignition"
         auto.wait_until(pressurize)
+        # pressurize()
 
     except KeyboardInterrupt as e:
 

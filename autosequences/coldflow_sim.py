@@ -12,21 +12,21 @@ GSE_TIME = "gse_time"
 PNEUMATICS_BOTTLE = "gse_pt_1"
 TRAILER_PNEUMATICS = "gse_pt_2"
 ENGINE_PNEUMATICS = "gse_pt_3"
-PRESS_SUPPLY = "gse_pt_4"
-OX_DOME_INLET = "gse_pt_5"
-OX_POST_PILOT_REG = "gse_pt_6"
-OX_DOME_REG = "gse_pt_7"
-OX_POST_DOME = "gse_pt_8"
+PRESS_BOTTLE = "gse_pt_4"
+OX_TPC_INLET = "gse_pt_5"
+OX_PILOT_OUTLET = "gse_pt_6"
+OX_DOME = "gse_pt_7"
+OX_TPC_OUTLET = "gse_pt_8"
 OX_FLOWMETER_INLET = "gse_pt_9"
 OX_FLOWMETER_THROAT = "gse_pt_10"
-MARGIN_1 = "gse_pt_11"
+OX_LEVEL_SENSOR = "gse_pt_11"
 FUEL_FLOWMETER_INLET = "gse_pt_12"
 FUEL_FLOWMETER_THROAT = "gse_pt_13"
 MARGIN_2 = "gse_pt_14"
-FUEL_DOME_INLET = "gse_pt_15"
-FUEL_POST_PILOT_REG = "gse_pt_16"
-FUEL_DOME_REG = "gse_pt_17"
-FUEL_POST_DOME = "gse_pt_18"
+FUEL_TPC_INLET = "gse_pt_15"
+FUEL_PILOT_OUTLET = "gse_pt_16"
+FUEL_DOME = "gse_pt_17"
+FUEL_TPC_OUTLET = "gse_pt_18"
 FUEL_TANK_1 = "gse_pt_19"
 FUEL_TANK_2 = "gse_pt_20"
 FUEL_TANK_3 = "gse_pt_21"
@@ -55,21 +55,21 @@ PTS = [
     PNEUMATICS_BOTTLE,
     TRAILER_PNEUMATICS,
     ENGINE_PNEUMATICS,
-    PRESS_SUPPLY,
-    OX_DOME_INLET,
-    OX_POST_PILOT_REG,
-    OX_DOME_REG,
-    OX_POST_DOME,
+    PRESS_BOTTLE,
+    OX_TPC_INLET,
+    OX_PILOT_OUTLET,
+    OX_DOME,
+    OX_TPC_OUTLET,
     OX_FLOWMETER_INLET,
     OX_FLOWMETER_THROAT,
-    MARGIN_1,
+    # MARGIN_1,
     FUEL_FLOWMETER_INLET,
     FUEL_FLOWMETER_THROAT,
     MARGIN_2,
-    FUEL_DOME_INLET,
-    FUEL_POST_PILOT_REG,
-    FUEL_DOME_REG,
-    FUEL_POST_DOME,
+    FUEL_TPC_INLET,
+    FUEL_PILOT_OUTLET,
+    FUEL_DOME,
+    FUEL_TPC_OUTLET,
     FUEL_TANK_1,
     FUEL_TANK_2,
     FUEL_TANK_3,
@@ -98,43 +98,67 @@ PTS = [
 
 ### VALVES ###
 OX_RETURN_LINE = "gse_vlv_1"
+OX_RETURN_LINE_STATE = "gse_state_1"
 OX_FILL = "gse_vlv_2"
+OX_FILL_STATE = "gse_state_2"
 OX_PREVALVE = "gse_vlv_3"
+OX_PREVALVE_STATE = "gse_state_3"
 OX_DRAIN = "gse_vlv_4"
-OX_FEEDLINE_PURGE = "gse_vlv_5"
+OX_DRAIN_STATE = "gse_state_4"
+#OX_FEEDLINE_PURGE = "gse_vlv_5"
+#OX_FEEDLINE_PURGE_STATE = "gse_state_5"
 OX_FILL_PURGE = "gse_vlv_6"
+OX_FILL_PURGE_STATE = "gse_state_6"
 OX_PRE_PRESS = "gse_vlv_7"
-FUEL_FEEDLINE_PURGE = "gse_vlv_8"
-FUEL_FILL = "gse_vlv_9"
-FUEL_PREVALVE = "gse_vlv_10"
+OX_PRE_PRESS_STATE = "gse_state_7"
+MPV_PURGE = "gse_vlv_8"
+MPV_PURGE_STATE = "gse_state_8"
+FUEL_PREPRESS = "gse_vlv_15"
+FUEL_PREPRESS_STATE = "gse_state_15"
+FUEL_PREVALVE = "gse_vlv_17"
+FUEL_PREVALVE_STATE = "gse_state_17"
 OX_MPV = "gse_vlv_11"
+OX_MPV_STATE = "gse_state_11"
 FUEL_MPV = "gse_vlv_12"
-TORCH_FEEDLINE_PURGE = "gse_vlv_13"
+FUEL_MPV_STATE = "gse_state_12"
+# TORCH_FEEDLINE_PURGE = "gse_vlv_13"
+# TORCH_FEEDLINE_PURGE_STATE = "gse_state_13"
 TORCH_ETHANOL_PRESS_ISO = "gse_vlv_14"
+TORCH_ETHANOL_PRESS_ISO_STATE = "gse_state_14"
 TORCH_ETHANOL_TANK_VENT = "gse_vlv_15"
+TORCH_ETHANOL_TANK_VENT_STATE = "gse_state_15"
 MARGIN_3 = "gse_vlv_16"
+MARGIN_3_STATE = "gse_state_16"
 TORCH_ETHANOL_MPV = "gse_vlv_17"
+TORCH_ETHANOL_MPV_STATE = "gse_state_17"
 TORCH_NITROUS_MPV = "gse_vlv_18"
+TORCH_NITROUS_MPV_STATE = "gse_state_18"
 TORCH_SPARK_PLUG = "gse_vlv_19"
+TORCH_SPARK_PLUG_STATE = "gse_state_19"
 PRESS_ISO = "gse_vlv_20"
+PRESS_ISO_STATE = "gse_state_20"
 FUEL_DOME_ISO = "gse_vlv_21"
+FUEL_DOME_ISO_STATE = "gse_state_21"
 OX_DOME_ISO = "gse_vlv_22"
+OX_DOME_ISO_STATE = "gse_state_22"
 OX_VENT = "gse_vlv_23"
+OX_VENT_STATE = "gse_state_23"
 FUEL_VENT = "gse_vlv_24"
+FUEL_VENT_STATE = "gse_state_24"
 VALVES = [
     OX_RETURN_LINE,
     OX_FILL,
     OX_PREVALVE,
     OX_DRAIN,
-    OX_FEEDLINE_PURGE,
+    # OX_FEEDLINE_PURGE,
     OX_FILL_PURGE,
     OX_PRE_PRESS,
-    FUEL_FEEDLINE_PURGE,
-    FUEL_FILL,
+    MPV_PURGE,
+    FUEL_PREPRESS,
     FUEL_PREVALVE,
     OX_MPV,
     FUEL_MPV,
-    TORCH_FEEDLINE_PURGE,
+    # TORCH_FEEDLINE_PURGE,
     TORCH_ETHANOL_PRESS_ISO,
     TORCH_ETHANOL_TANK_VENT,
     MARGIN_3,
@@ -146,6 +170,31 @@ VALVES = [
     OX_DOME_ISO,
     OX_VENT,
     FUEL_VENT,
+]
+VALVE_STATES = [
+    OX_RETURN_LINE_STATE,
+    OX_FILL_STATE,
+    OX_PREVALVE_STATE,
+    OX_DRAIN_STATE,
+    OX_FILL_PURGE_STATE,
+    OX_PRE_PRESS_STATE,
+    MPV_PURGE_STATE,
+    FUEL_PREPRESS_STATE,
+    FUEL_PREVALVE_STATE,
+    OX_MPV_STATE,
+    FUEL_MPV_STATE,
+    # TORCH_FEEDLINE_PURGE_STATE,
+    TORCH_ETHANOL_PRESS_ISO_STATE,
+    TORCH_ETHANOL_TANK_VENT_STATE,
+    MARGIN_3_STATE,
+    TORCH_ETHANOL_MPV_STATE,
+    TORCH_NITROUS_MPV_STATE,
+    TORCH_SPARK_PLUG_STATE,
+    PRESS_ISO_STATE,
+    FUEL_DOME_ISO_STATE,
+    OX_DOME_ISO_STATE,
+    OX_VENT_STATE,
+    FUEL_VENT_STATE,
 ]
 
 NORMALLY_OPEN = [OX_VENT, FUEL_VENT, OX_MPV, FUEL_MPV]
@@ -293,6 +342,13 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     DAQ_STATE[cmd.replace("vlv", "state")] = int(CLIENT_STATE[cmd])
 
                 ### flow logic ###
+                ### PREPRESS ###
+                if DAQ_STATE.get(OX_PRE_PRESS.replace("vlv", "state")):
+                    ox_tank_true += 4
+                
+                if DAQ_STATE.get(FUEL_PREPRESS.replace("vlv", "state")):
+                    fuel_tank_true += 4
+
                 ### PRESS ###
                 if DAQ_STATE.get(PRESS_ISO.replace("vlv", "state")):
                     if DAQ_STATE.get(FUEL_DOME_ISO.replace("vlv", "state")):
@@ -324,8 +380,16 @@ with client.open_streamer(READ_CHANNELS) as streamer:
                     fuel_tank_true -= 6
                     # print("fuel to feedline")
 
+                # no negative pressures plz ;-;
+                if press_2k_supply < 0:
+                    press_2k_supply = 0
+                if fuel_tank_true < 0:
+                    fuel_tank_true = 0
+                if ox_tank_true < 0:
+                    ox_tank_true = 0
+
                 ### PRESSURE TRANSDUCERS ###
-                DAQ_STATE[PRESS_SUPPLY] = press_2k_supply + random.uniform(-100, 100)
+                DAQ_STATE[PRESS_BOTTLE] = press_2k_supply + random.uniform(-100, 100)
                 DAQ_STATE[FUEL_TANK_1] = fuel_tank_true + random.uniform(-100, 100)
                 DAQ_STATE[FUEL_TANK_2] = fuel_tank_true + random.uniform(-100, 100)
                 DAQ_STATE[FUEL_TANK_3] = fuel_tank_true + random.uniform(-100, 100)
