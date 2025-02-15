@@ -493,22 +493,12 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print("ABORTING OX due to high pressure")
                 fuel_ox_abort(auto, abort_fuel=False, abort_ox=True)
 
-    def pressurize_while_user_input ():
-        try:
-            wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, pressurize))
-            input_thread = threading.Thread(target=get_user_input)
-
-            wait_thread.start()
-            input_thread.start()
-
-            wait_thread.join()
-            input_thread.join()  
-        except:
-            hotfire_abort()
-
-    def get_user_input():
+    def get_user_input_and_pressurize():
         # Function to get user input for firing sequence.
         # Sets the event once input is received.
+        wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, pressurize))
+        wait_thread.start()
+
         global user_input_received
         answer = input("\nValves are closed. Input `fire` to commence firing sequence. Press enter to abort autosequence.\n")
         
@@ -517,8 +507,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         
         if answer == 'fire':
             print("Firing sequence commenced!")
+            wait_thread.join()
             reg_fire()
-        elif answer == '':
+        else:
+            wait_thread.join()
             fuel_ox_abort(auto, USING_FUEL, USING_OX)
 
         #elif answer == 'vent':
@@ -715,5 +707,4 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             exit()
 
         elif (PROGRAM_STATE == "after prepress before ignition"):
-            # pressurize_while_user_input()
-                get_user_input()
+            get_user_input_and_pressurize()
