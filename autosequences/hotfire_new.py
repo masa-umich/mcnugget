@@ -564,23 +564,23 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             if (USING_FUEL and not USING_OX):
                 print("0")
                 time.sleep(MPV_DELAY)
-                print("Opening Fuel MPV")
-                syauto.open_all(auto, [fuel_mpv])
+                print("Opening Fuel MPV (fuel prevalve)")
+                syauto.open_all(auto, [fuel_prevalve])
                 opened_fuel_mpv = True
 
             elif (not USING_FUEL and USING_OX):
-                print("0 Opening Ox MPV")
-                syauto.open_all(auto, [ox_mpv])
+                print("0 Opening Ox MPV (ox prevalve)")
+                syauto.open_all(auto, [ox_prevalve])
                 opened_ox_mpv = True
 
             else:
                 print("0 Opening Ox MPV")
-                syauto.open_all(auto, [ox_mpv])
+                syauto.open_all(auto, [ox_prevalve])
                 opened_ox_mpv = True
 
                 time.sleep(MPV_DELAY)
                 print("Opening Fuel MPV")
-                syauto.open_all(auto, [fuel_mpv])
+                syauto.open_all(auto, [fuel_prevalve])
                 opened_fuel_mpv = True
 
             print(f"\nTerminating fire in")
