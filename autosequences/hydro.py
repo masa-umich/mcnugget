@@ -55,7 +55,7 @@ with client.control.acquire(name="Hydro Autosequence", read=READ_FROM, write=WRI
         press_vent.close()
 
         ### PRESSURIZE TANK ###
-        print(f"pressurizing to MAWP {MAWP}")
+        print(f"pressurizing to MAWP {PRESS_TARGET}")
         partial_target = get_tank_pressure(auto) + PRESS_INC
         pressure = get_tank_pressure(auto)
         while pressure < PRESS_TARGET and partial_target < PRESS_TARGET:
