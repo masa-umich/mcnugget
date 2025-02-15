@@ -25,16 +25,15 @@ TORCH_PT_1 = "gse_ai_5"
 TORCH_PT_2 = "gse_ai_6"
 TORCH_PT_3 = "gse_ai_7"
 
-IGNITION_TIMEOUT = 5 * (10**9)  # convert to ns
-IGNITION_THRESHOLD = 500
+IGNITION_TIMEOUT = 2 * (10**9)  # convert to ns
+IGNITION_THRESHOLD = 350
 SAMPLES_TO_AVERAGE = 10
 AVERAGE_THRESHOLD = 0.8
 
-BURN_DURATION = 3
+BURN_DURATION = 2
 PURGE_DURATION = 5
 
-# MPV_DELAY = 0.075
-MPV_DELAY = 1
+MPV_DELAY = 0.060
 
 CMDS = [
     NITROUS_MPV_VLV,
@@ -191,13 +190,13 @@ with client.control.acquire(
 
                 print(f"Commencing ignition sequence at {datetime.datetime.now()}")
 
-                print(f"Opening nitrous mpv at {datetime.datetime.now()}")
-                nitrous_mpv.open()
+                print(f"Opening ethanol mpv at {datetime.datetime.now()}")
+                ethanol_mpv.open()
 
                 time.sleep(MPV_DELAY)
 
-                print(f"Opening ethanol mpv at {datetime.datetime.now()}")
-                ethanol_mpv.open()
+                print(f"Opening nitrous mpv at {datetime.datetime.now()}")
+                nitrous_mpv.open()
 
                 start = sy.TimeStamp.now()
 
