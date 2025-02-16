@@ -61,7 +61,7 @@ def generate_tc_data():
         retrieve_if_name_exists=True,
         is_index=True,
     )
-    for i in range(13):
+    for i in range(11):
         tc_channel = client.channels.create(
             name=f"gse_tc_{i + 1}_raw",
             data_type=sy.DataType.FLOAT32,
@@ -239,7 +239,7 @@ def compute_temperature_from_mv(mv):
         return -1
 
     T0, V0, p1, p2, p3, p4, q1, q2, q3 = constants
-    print(T0, V0, p1, p2, p3, p4, q1, q2, q3)
+    # print(T0, V0, p1, p2, p3, p4, q1, q2, q3)
 
     numerator = (mv - V0) * (p1 + (mv - V0) * (p2 + (mv - V0) * (p3 + p4 * (mv - V0))))
     denominator = 1 + (mv - V0) * (q1 + (mv - V0) * (q2 + q3 * (mv - V0)))

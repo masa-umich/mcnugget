@@ -86,34 +86,55 @@ def let_there_be_data():
     Creates PTs 1-62, TCs 1-14, LCs 1-3
     """
     data = []
-    for pt in range(8):
+    fiveKs = [1, 4, 31, 34, 36] # 5000
+    sevens = [9, 10, 12, 13] # 700
+    fives = [22, 23] # 500
+    level_sensor = [11] # 5
+    twoKs = [29] # 2000
+    def calculate_pt_pressure(channel):
+        if channel in fiveKs:
+            return 5000
+        elif channel in sevens:
+            return 700
+        elif channel in fives:
+            return 500
+        elif channel in level_sensor:
+            return 5
+        elif channel in twoKs:
+            return 2000
+        else:
+            return 1000
+        
+    for pt in range(42):
         data.append(
             {
                 "Sensor Type": "PT",
                 "Channel": pt + 1,
-                "Max Pressure": 5000 if (pt == 2 or pt == 0) else 1000,
+                "Max Pressure": calculate_pt_pressure(pt + 1),
                 "Max Output Voltage": 4.5,
                 "Calibration Offset (V)": 0.5,
                 "Calibration Slope (mV/psig)": 4,
             }
         )
-    # for tc in range(14):
-    #     data.append(
-    #         {
-    #             "Sensor Type": "TC",
-    #             "Channel": tc + 1,
-    #             "Calibration Slope (mV/psig)": TC_SLOPES[tc],
-    #             "Calibration Offset (V)": TC_OFFSETS[tc],
-    #             "Max Output Voltage": 5,
-    #         }
-    #     )
-    for vlv in range(9):
+    for tc in range(12):
         data.append(
             {
-                "Sensor Type": "VLV",
-                "Channel": vlv + 1,
+                "Sensor Type": "TC",
+                "Channel": tc + 1,
+                "Calibration Slope (mV/psig)": TC_SLOPES[tc],
+                "Calibration Offset (V)": TC_OFFSETS[tc],
+                "Max Output Voltage": 5,
             }
         )
+    # for vlv in range(26):
+    #     if vlv == 9 or vlv == 10 or vlv == 13:
+    #         continue
+    #     data.append(
+    #         {
+    #             "Sensor Type": "VLV",
+    #             "Channel": vlv + 1,
+    #         }
+    #     )
     return pd.DataFrame(data)
 
 def main():
@@ -138,14 +159,14 @@ def create_tasks():
     analog_card = client.hardware.devices.retrieve(name="Analog")
     digital_card = client.hardware.devices.retrieve(name="Digital")
     analog_task = ni.AnalogReadTask(
-        name="Analog Input",
+        name="PTs and TCs",
         sample_rate=sy.Rate.HZ * 50,
         stream_rate=sy.Rate.HZ * 25,
         data_saving=True,
         channels=[],
     )
     digital_task = ni.DigitalWriteTask(
-        name="Valve Control",
+        name="New Valve Control",
         device=digital_card.key,
         state_rate=sy.Rate.HZ * 50,
         data_saving=True,
