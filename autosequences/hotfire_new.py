@@ -20,11 +20,11 @@ if(mode == "real" or mode == "Real" or mode == "REAL"):
     print("Testing mode")
     # this connects to the synnax testing server
     client = sy.Synnax(
-    host="synnax.masa.engin.umich.edu",
-    port=80,
+    host="141.212.192.160",
+    port=9090,
     username="synnax",
     password="seldon",
-    secure=True
+    secure=False
     )
 
 #If prompted to run a simulation, the delay will be 1 second and we will connect to the synnax simulation server
@@ -47,7 +47,7 @@ else:
 
 #Using FUEL or OX depending on user's command line input
 boolFuel = False
-boolOx = False 
+boolOx = False
 if (len(sys.argv) == 1):
     boolFuel = True
     boolOx = True
@@ -182,10 +182,10 @@ OX_FILL_PURGE = "gse_vlv_6"
 OX_FILL_PURGE_STATE = "gse_state_6"
 OX_PRE_PRESS = "gse_vlv_7"
 OX_PRE_PRESS_STATE = "gse_state_7"
-MPV_PURGE = "gse_vlv_8"
-MPV_PURGE_STATE = "gse_state_8"
-FUEL_PREPRESS = "gse_vlv_15"
-FUEL_PREPRESS_STATE = "gse_state_15"
+MPV_PURGE = "gse_vlv_15"
+MPV_PURGE_STATE = "gse_state_15"
+FUEL_PREPRESS = "gse_vlv_8"
+FUEL_PREPRESS_STATE = "gse_state_8"
 FUEL_PREVALVE = "gse_vlv_17"
 FUEL_PREVALVE_STATE = "gse_state_17"
 OX_MPV = "gse_vlv_11"
@@ -198,8 +198,8 @@ TORCH_ETHANOL_PRESS_ISO = "gse_vlv_14"
 TORCH_ETHANOL_PRESS_ISO_STATE = "gse_state_14"
 TORCH_ETHANOL_TANK_VENT = "gse_vlv_15"
 TORCH_ETHANOL_TANK_VENT_STATE = "gse_state_15"
-MARGIN_3 = "gse_vlv_16"
-MARGIN_3_STATE = "gse_state_16"
+# MARGIN_3 = "gse_vlv_16"
+# MARGIN_3_STATE = "gse_state_16"
 TORCH_ETHANOL_MPV = "gse_vlv_17"
 TORCH_ETHANOL_MPV_STATE = "gse_state_17"
 TORCH_NITROUS_MPV = "gse_vlv_18"
@@ -231,7 +231,7 @@ VALVE_STATES = [
     # TORCH_FEEDLINE_PURGE_STATE,
     TORCH_ETHANOL_PRESS_ISO_STATE,
     TORCH_ETHANOL_TANK_VENT_STATE,
-    MARGIN_3_STATE,
+    # MARGIN_3_STATE,
     TORCH_ETHANOL_MPV_STATE,
     TORCH_NITROUS_MPV_STATE,
     TORCH_SPARK_PLUG_STATE,
@@ -292,7 +292,7 @@ CMDS = [OX_RETURN_LINE,
     # TORCH_FEEDLINE_PURGE,
     TORCH_ETHANOL_PRESS_ISO,
     TORCH_ETHANOL_TANK_VENT,
-    MARGIN_3,
+    # MARGIN_3,
     TORCH_ETHANOL_MPV,
     TORCH_NITROUS_MPV,
     TORCH_SPARK_PLUG,
@@ -330,13 +330,13 @@ MAX_OX_PRESSURE = 575
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
 
-FIRE_DURATION = 25
+FIRE_DURATION = 22
 
 # MPV_DELAY is set such that OX is put in the chamber 0.200 seconds before fuel
 ox_time_to_reach_chamber = 0.357
 fuel_time_to_reach_chamber = 0.276
 # MPV_DELAY = 0.2 + ox_time_to_reach_chamber - fuel_time_to_reach_chamber   # seconds
-MPV_DELAY = 0   # seconds
+MPV_DELAY = 2   # seconds
 # OX_MPV takes 0.357 s to reach chamber
 # FUEL_MPV used to take 0.246 s to reach chamber
 # FUEL_MPV now takes 0.276 s to reach chamber
@@ -431,13 +431,14 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     def hotfire_abort():
         print("\nFiring sequence aborted, closing all valves and opening all vents")
-        syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_mpv, ox_mpv])
-        time.sleep(0.5)
-        print("Opening MPV purge and closing prevalves")
-        syauto.open_close_many_valves(auto, [mpv_purge], [fuel_prevalve, ox_prevalve])
+        syauto.open_close_many_valves(auto,[fuel_vent, ox_vent, mpv_purge],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_prevalve, ox_prevalve])
+        # print("Opening MPV purge and closing prevalves")
         time.sleep(5)
-        print ("Closing Torch feedline purge and MPV purge")
-        syauto.close_all(auto, [mpv_purge])
+        # syauto.close_all(auto, [mpv_purge])
+        mpv_purge.close()
+        # time.sleep(5)
+        # print ("Closing Torch feedline purge and MPV purge")
+        # syauto.close_all(auto, [mpv_purge])
         print("Terminating abort")
 
 
@@ -598,20 +599,21 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 time.sleep(1)
 
             print("Terminating fire")
-            print("Closing MPVs")
-            syauto.close_all(auto, [ox_mpv, fuel_mpv])
+            print("Opening vents and purge, closing prevalves and press iso")
+            syauto.open_close_many_valves(auto, [fuel_vent, ox_vent, mpv_purge], [fuel_prevalve, ox_prevalve, press_iso])
+            # syauto.close_all(auto, [ox_mpv, fuel_mpv, press_iso])
             time.sleep(2)
-            print("Closing dome isos and openening vents and MPV purge")
-            syauto.open_close_many_valves(auto, [ox_vent, fuel_vent, mpv_purge], [fuel_dome_iso, ox_dome_iso, press_iso])
-            if opened_fuel_mpv:
-                print("Closing fuel prevalve")
-                fuel_prevalve.close()
-            if opened_ox_mpv:
-                print("Closing ox prevalve")
-                ox_prevalve.close()
-            time.sleep(5)
-            print("Closing MPV purge")
-            syauto.close_all(auto, [mpv_purge])
+            print("Closing dome isos and MPV purge")
+            syauto.close_all(auto, [fuel_dome_iso, ox_dome_iso, mpv_purge])
+            # if opened_fuel_mpv:
+            #     print("Closing fuel prevalve")
+            #     fuel_prevalve.close()
+            # if opened_ox_mpv:
+            #     print("Closing ox prevalve")
+            #     ox_prevalve.close()
+            # time.sleep(5)
+            # print("Closing MPV purge")
+            # syauto.close_all(auto, [mpv_purge])
             print("\nFiring sequence has been completed nominally")
 
         except KeyboardInterrupt:
@@ -675,7 +677,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             exit()
 
         print("Setting starting state")
-        syauto.close_all(auto, [press_iso, ox_dome_iso, fuel_dome_iso, press_iso, fuel_vent, ox_vent])
+        # syauto.close_all(auto, [press_iso, ox_dome_iso, fuel_dome_iso, press_iso, fuel_vent, ox_vent])
+        syauto.close_all(auto, [fuel_dome_iso, press_iso, fuel_vent, ox_vent])
 
         time.sleep(1)
         
@@ -686,10 +689,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         else:
             print("Pressurizing fuel and ox in 6 seconds")
 
-        # time.sleep(1)
-        # for i in range(5):
-        #     print(f"{5 - i}")
-        #     time.sleep(1)
+        time.sleep(1)
+        for i in range(5):
+            print(f"{5 - i}")
+            time.sleep(1)
 
         if (USING_FUEL and not USING_OX):
             print("Pressurizing fuel")
