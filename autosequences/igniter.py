@@ -8,12 +8,12 @@ client = sy.Synnax()
 
 NITROUS_MPV_VLV = "gse_vlv_1"
 NITROUS_MPV_STATE = "gse_state_1"
-METHANE_MPV_VLV = "gse_vlv_2"
-METHANE_MPV_STATE = "gse_state_2"
-NITROUS_PILOT_VLV = "gse_vlv_4"
-NITROUS_PILOT_STATE = "gse_state_4"
-SPARK_VLV = "gse_vlv_6"
-SPARK_STATE = "gse_state_6"
+METHANE_MPV_VLV = "gse_vlv_3"
+METHANE_MPV_STATE = "gse_state_3"
+NITROUS_PILOT_VLV = "gse_vlv_2"
+NITROUS_PILOT_STATE = "gse_state_2"
+SPARK_VLV = "gse_vlv_4"
+SPARK_STATE = "gse_state_4"
 
 TORCH_PT_TARGET = 620
 
