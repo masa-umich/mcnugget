@@ -460,7 +460,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     def pressurize(auto: Controller) -> bool:
     
-        averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
+        # averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
+        averages = [auto[chan] for chan in [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3]]
         ox_average = statistics.median([averages[OX_TANK_1], averages[OX_TANK_2], averages[OX_TANK_3]])
         ox_pre_press_open = auto[OX_PRE_PRESS_STATE]
         fuel_average = statistics.median([averages[FUEL_TANK_1], averages[FUEL_TANK_2], averages[FUEL_TANK_3]])
