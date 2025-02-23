@@ -12,27 +12,19 @@ NITROUS_MPV_VLV = "gse_vlv_1"
 NITROUS_MPV_STATE = "gse_state_1"
 ETHANOL_MPV_VLV = "gse_vlv_2"
 ETHANOL_MPV_STATE = "gse_state_2"
-ETHANOL_VENT_VLV = "gse_vlv_3"
-ETHANOL_VENT_STATE = "gse_state_3"
 TORCH_PURGE_VLV = "gse_vlv_4"
 TORCH_PURGE_STATE = "gse_state_4"
-TORCH_2K_ISO_VLV = "gse_vlv_5"
-TORCH_2K_ISO_STATE = "gse_state_5"
 SPARK_VLV = "gse_vlv_6"
 SPARK_STATE = "gse_state_6"
 ALL_VLVS = [
     NITROUS_MPV_VLV,
     ETHANOL_MPV_VLV,
-    TORCH_2K_ISO_VLV,
-    ETHANOL_VENT_VLV,
     TORCH_PURGE_VLV,
     SPARK_VLV,
 ]
 ALL_STATES = [
     NITROUS_MPV_STATE,
     ETHANOL_MPV_STATE,
-    TORCH_2K_ISO_STATE,
-    ETHANOL_VENT_STATE,
     TORCH_PURGE_STATE,
     SPARK_STATE,
 ]
@@ -127,7 +119,7 @@ LAST_IGNITION = synnax.TimeStamp.now()
 TRUE_VALUES = {pt: 0 for pt in ALL_PTS}
 TRUE_VALUES[TORCH_2K_BOTTLE] = 2000
 TRUE_VALUES[NITROUS_SUPPLY] = 1000
-TRUE_VALUES[ETHANOL_TANK] = 0
+TRUE_VALUES[ETHANOL_TANK] = 10000
 TRUE_VALUES["chamber_nitrous"] = 0
 TRUE_VALUES["chamber_ethanol"] = 0
 TRUE_VALUES["chamber_pressure"] = 0
@@ -179,8 +171,7 @@ with client.open_streamer(READ_FROM) as streamer:
 
             # press
             if (
-                WRITE_STATE[TORCH_2K_ISO_STATE] == 1
-                and TRUE_VALUES[TORCH_2K_BOTTLE] > 0
+                TRUE_VALUES[TORCH_2K_BOTTLE] > 0
                 and TRUE_VALUES[TORCH_2K_BOTTLE] > ETHANOL_REG
                 and TRUE_VALUES[ETHANOL_TANK] < ETHANOL_REG
             ):
@@ -193,17 +184,13 @@ with client.open_streamer(READ_FROM) as streamer:
                 TRUE_VALUES["chamber_ethanol"] += 3
 
             # vent
-            if WRITE_STATE[ETHANOL_VENT_STATE] == 0 and TRUE_VALUES[ETHANOL_TANK] > 0:
+            if TRUE_VALUES[ETHANOL_TANK] > 0:
                 TRUE_VALUES[ETHANOL_TANK] -= 4
 
             # spark
             TRUE_VALUES["chamber_spark"] = WRITE_STATE[SPARK_STATE] == 1
 
             # purge
-            if WRITE_STATE[TORCH_PURGE_STATE] == 1:
-                TRUE_VALUES[TORCH_2K_BOTTLE] -= 4
-                TRUE_VALUES["chamber_ethanol"] -= 6
-                TRUE_VALUES["chamber_nitrous"] -= 6
 
             # flowmeters
 
