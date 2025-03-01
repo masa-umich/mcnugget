@@ -74,11 +74,6 @@ USING_FUEL = boolFuel
 
 USING_OX = boolOx
 
-# PRE_PRESS = False
-
-REGFIRE_PREPRESS = False
-
-
 ## PRESSURE TRANSDUCERS ###
 PNEUMATICS_BOTTLE = "gse_pt_1"
 TRAILER_PNEUMATICS = "gse_pt_2"
@@ -120,7 +115,7 @@ TRICKLE_PURGE_POST_REG = "gse_pt_37"
 OX_FILL = "gse_pt_38"
 OX_TANK_1 = "gse_pt_39"
 OX_TANK_2 = "gse_pt_40"
-OX_TANK_3 = "gse_pt_41"
+OX_TANK_3 = "gse_pt_40"
 OX_LEVEL_SENSOR = "gse_pt_42"
 PTS = [
     PNEUMATICS_BOTTLE,
@@ -178,14 +173,14 @@ OX_DRAIN = "gse_vlv_4"
 OX_DRAIN_STATE = "gse_state_4"
 #OX_FEEDLINE_PURGE = "gse_vlv_5"
 #OX_FEEDLINE_PURGE_STATE = "gse_state_5"
-OX_FILL_PURGE = "gse_vlv_6"
-OX_FILL_PURGE_STATE = "gse_state_6"
+#OX_FILL_PURGE = "gse_vlv_6"
+#OX_FILL_PURGE_STATE = "gse_state_6"
 OX_PRE_PRESS = "gse_vlv_7"
 OX_PRE_PRESS_STATE = "gse_state_7"
-MPV_PURGE = "gse_vlv_15"
-MPV_PURGE_STATE = "gse_state_15"
-FUEL_PREPRESS = "gse_vlv_8"
-FUEL_PREPRESS_STATE = "gse_state_8"
+MPV_PURGE = "gse_vlv_8"
+MPV_PURGE_STATE = "gse_state_8"
+FUEL_PREPRESS = "gse_vlv_6"
+FUEL_PREPRESS_STATE = "gse_state_6"
 FUEL_PREVALVE = "gse_vlv_17"
 FUEL_PREVALVE_STATE = "gse_state_17"
 OX_MPV = "gse_vlv_11"
@@ -200,8 +195,8 @@ TORCH_ETHANOL_TANK_VENT = "gse_vlv_15"
 TORCH_ETHANOL_TANK_VENT_STATE = "gse_state_15"
 # MARGIN_3 = "gse_vlv_16"
 # MARGIN_3_STATE = "gse_state_16"
-TORCH_ETHANOL_MPV = "gse_vlv_17"
-TORCH_ETHANOL_MPV_STATE = "gse_state_17"
+#TORCH_ETHANOL_MPV = "gse_vlv_17"
+#TORCH_ETHANOL_MPV_STATE = "gse_state_17"
 TORCH_NITROUS_MPV = "gse_vlv_18"
 TORCH_NITROUS_MPV_STATE = "gse_state_18"
 TORCH_SPARK_PLUG = "gse_vlv_19"
@@ -221,7 +216,7 @@ VALVE_STATES = [
     OX_FILL_STATE,
     OX_PREVALVE_STATE,
     OX_DRAIN_STATE,
-    OX_FILL_PURGE_STATE,
+    #OX_FILL_PURGE_STATE,
     OX_PRE_PRESS_STATE,
     MPV_PURGE_STATE,
     FUEL_PREPRESS_STATE,
@@ -232,7 +227,7 @@ VALVE_STATES = [
     TORCH_ETHANOL_PRESS_ISO_STATE,
     TORCH_ETHANOL_TANK_VENT_STATE,
     # MARGIN_3_STATE,
-    TORCH_ETHANOL_MPV_STATE,
+    #TORCH_ETHANOL_MPV_STATE,
     TORCH_NITROUS_MPV_STATE,
     TORCH_SPARK_PLUG_STATE,
     PRESS_ISO_STATE,
@@ -282,7 +277,7 @@ CMDS = [OX_RETURN_LINE,
     OX_FILL,
     OX_PREVALVE,
     OX_DRAIN,
-    OX_FILL_PURGE,
+    #OX_FILL_PURGE,
     OX_PRE_PRESS,
     MPV_PURGE,
     FUEL_PREPRESS,
@@ -293,7 +288,7 @@ CMDS = [OX_RETURN_LINE,
     TORCH_ETHANOL_PRESS_ISO,
     TORCH_ETHANOL_TANK_VENT,
     # MARGIN_3,
-    TORCH_ETHANOL_MPV,
+    #TORCH_ETHANOL_MPV,
     TORCH_NITROUS_MPV,
     TORCH_SPARK_PLUG,
     PRESS_ISO,
@@ -317,14 +312,14 @@ for PT_chan in PTS:
 
 # TODO: update these before running the autosequence
 
-TARGET_FUEL_PRESSURE = 450  # Fuel Reg Set Pressure
-UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 10
-LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 10
+TARGET_FUEL_PRESSURE = 480  # Fuel Reg Set Pressure
+UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 20
+LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 20
 MAX_FUEL_PRESSURE = 575
 
-TARGET_OX_PRESSURE = 460  # Ox Reg Set Pressure
-UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 10
-LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 10
+TARGET_OX_PRESSURE = 410  # Ox Reg Set Pressure
+UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 20
+LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 20
 MAX_OX_PRESSURE = 575
 
 RUNNING_AVERAGE_LENGTH = 5  # samples
@@ -411,27 +406,28 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     fuel_dome_iso = syauto.Valve(auto=auto, cmd = FUEL_DOME_ISO, ack = FUEL_DOME_ISO_STATE, normally_open=False)
     press_iso = syauto.Valve(auto=auto, cmd = PRESS_ISO, ack = PRESS_ISO_STATE, normally_open=False)
     
-
     # # For determining if each valve is open 
     # fuel_prevalve_open = auto[FUEL_PREVALVE_ACK]
     # ox_prevalve_open = auto[OX_PREVALVE_ACK]
     # fuel_press_iso_open = auto[FUEL_PRESS_ISO_ACK]
     # ox_press_iso_open = auto[OX_PRESS_ISO_ACK]
-    # ox_dome_iso_open = auto[OX_DOME_ISO_ACK]
-    # fuel_vent_open = auto[FUEL_VENT_ACK]
-    # ox_low_flow_vent_open = auto[OX_LOW_FLOW_VENT_ACK]
-    # fuel_prepress_open = auto[FUEL_PRE_PRESS_ACK]
-    # ox_prepress_open = auto[OX_PRE_PRESS_ACK]
-    # press_vent_open = auto[PRESS_VENT_ACK]
-    # fuel_mpv_open = auto[FUEL_MPV_ACK]
-    # ox_mpv_open = auto[OX_MPV_ACK]
-    # igniter_open = auto[IGNITER_ACK]
 
     user_input_received = threading.Event()
 
     def hotfire_abort():
-        print("\nFiring sequence aborted, closing all valves and opening all vents")
-        syauto.open_close_many_valves(auto,[fuel_vent, ox_vent, mpv_purge],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_prevalve, ox_prevalve])
+        valves_to_close = [press_iso]
+        valves_to_open = [mpv_purge]
+        if USING_FUEL:
+            print("Firing sequence aborted, aborting FUEL ")
+            valves_to_close += [fuel_prevalve, fuel_dome_iso]
+            valves_to_open += [fuel_vent]
+        if USING_OX:
+            print("Firing sequence aborted, aborting OX ")
+            valves_to_close += [ox_prevalve, ox_dome_iso]
+            valves_to_open += [ox_vent]
+            
+        print("\n Closing valves and opening vents")
+        syauto.open_close_many_valves(auto, valves_to_open, valves_to_close)
         # print("Opening MPV purge and closing prevalves")
         time.sleep(5)
         # syauto.close_all(auto, [mpv_purge])
@@ -441,15 +437,14 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         # syauto.close_all(auto, [mpv_purge])
         print("Terminating abort")
 
-
-    def fuel_ox_abort(auto: Controller, abort_fuel=False, abort_ox=False):
+    def fuel_ox_abort():
         valves_to_close = []
         valves_to_potentially_open = []
-        if abort_fuel:
+        if USING_FUEL:
             print("ABORTING FUEL")
             valves_to_close += [fuel_prepress]
             valves_to_potentially_open += [fuel_vent]
-        if abort_ox:
+        if USING_OX:
             print("ABORTING OX")
             valves_to_close += [ox_prepress]
             valves_to_potentially_open += [ox_vent]
@@ -460,8 +455,9 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     def pressurize(auto: Controller) -> bool:
     
-        # averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
-        averages = [auto[chan] for chan in [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3]]
+        averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
+        #averages = get_averages(auto, [FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
+        #averages = [auto[chan] for chan in [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3]]
         ox_average = statistics.median([averages[OX_TANK_1], averages[OX_TANK_2], averages[OX_TANK_3]])
         ox_pre_press_open = auto[OX_PRE_PRESS_STATE]
         fuel_average = statistics.median([averages[FUEL_TANK_1], averages[FUEL_TANK_2], averages[FUEL_TANK_3]])
@@ -479,7 +475,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             if fuel_pre_press_open and (fuel_average > MAX_FUEL_PRESSURE):
                 fuel_prepress.close()
                 print("ABORTING FUEL due to high pressure")
-                fuel_ox_abort(auto, abort_fuel=True, abort_ox=False)
+                fuel_ox_abort()
 
         if USING_OX:
             if ox_pre_press_open and (ox_average >= UPPER_OX_PRESSURE):
@@ -493,7 +489,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             if ox_pre_press_open and ox_average > MAX_OX_PRESSURE:
                 ox_prepress.close()
                 print("ABORTING OX due to high pressure")
-                fuel_ox_abort(auto, abort_fuel=False, abort_ox=True)
+                fuel_ox_abort()
 
     def get_user_input_and_pressurize():
         # Function to get user input for firing sequence.
@@ -513,12 +509,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             reg_fire()
         else:
             wait_thread.join()
-            fuel_ox_abort(auto, USING_FUEL, USING_OX)
-
-        #elif answer == 'vent':
-            #ans = input("Confirm hard abort - would you like to open vents and close prevalves? y/n ")
-            #if ans == "y":
-                #syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_prevalve, ox_prevalve])
+            fuel_ox_abort()
 
     def wait_until_pressurized(auto: Controller, condition) -> None:
         #keeps pressurizing until user inputs
@@ -527,12 +518,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(0.1) 
 
     def reg_fire():
-        print(f"{threading.enumerate()} {threading.active_count} active threads")
         fuel_prepress.close()
         ox_prepress.close()
-        opened_mpv = False
-        opened_ox_mpv = False
-        PROGRAM_STATE = "after ignition"
         try: # add thing to call pressuriez while user input if igniter does not work - going back to pressurize
             print("commencing fire sequence - firing in: ")
             time.sleep(1)
@@ -577,22 +564,18 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 time.sleep(MPV_DELAY)
                 print("Opening Fuel MPV (fuel prevalve)")
                 syauto.open_all(auto, [fuel_prevalve])
-                opened_fuel_mpv = True
 
             elif (not USING_FUEL and USING_OX):
                 print("0 Opening Ox MPV (ox prevalve)")
                 syauto.open_all(auto, [ox_prevalve])
-                opened_ox_mpv = True
 
             else:
                 print("0 Opening Ox MPV")
                 syauto.open_all(auto, [ox_prevalve])
-                opened_ox_mpv = True
 
                 time.sleep(MPV_DELAY)
                 print("Opening Fuel MPV")
                 syauto.open_all(auto, [fuel_prevalve])
-                opened_fuel_mpv = True
 
             print(f"\nTerminating fire in")
             for i in range(FIRE_DURATION):
@@ -600,35 +583,29 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 time.sleep(1)
 
             print("Terminating fire")
+            valves_to_open = [mpv_purge]
+            valves_to_close = [press_iso]
+            if USING_FUEL:
+                valves_to_open += [fuel_vent]
+                valves_to_close += [fuel_prevalve]
+            if USING_OX:
+                valves_to_open += [ox_vent]
+                valves_to_close += [ox_prevalve]
             print("Opening vents and purge, closing prevalves and press iso")
-            syauto.open_close_many_valves(auto, [fuel_vent, ox_vent, mpv_purge], [fuel_prevalve, ox_prevalve, press_iso])
-            # syauto.close_all(auto, [ox_mpv, fuel_mpv, press_iso])
+            syauto.open_close_many_valves(auto, valves_to_open, valves_to_close)
             time.sleep(2)
+            valves_to_close = [mpv_purge]
+            if USING_FUEL:
+                valves_to_close += [fuel_dome_iso]
+            if USING_OX:
+                valves_to_close += [ox_dome_iso]
             print("Closing dome isos and MPV purge")
-            syauto.close_all(auto, [fuel_dome_iso, ox_dome_iso, mpv_purge])
-            # if opened_fuel_mpv:
-            #     print("Closing fuel prevalve")
-            #     fuel_prevalve.close()
-            # if opened_ox_mpv:
-            #     print("Closing ox prevalve")
-            #     ox_prevalve.close()
-            # time.sleep(5)
-            # print("Closing MPV purge")
-            # syauto.close_all(auto, [mpv_purge])
+            syauto.close_all(auto, valves_to_close)
             print("\nFiring sequence has been completed nominally")
 
         except KeyboardInterrupt:
-            # hotfire abort
             hotfire_abort()
-            # print("\nFiring sequence aborted, closing all valves and opening all vents")
-            # syauto.open_close_many_valves(auto,[fuel_vent, ox_vent],[fuel_dome_iso, ox_dome_iso, press_iso, fuel_mpv, ox_mpv])
-            # time.sleep(0.5)
-            # print("Opening MPV purge and closing prevalves")
-            # syauto.open_close_many_valves(auto, [mpv_purge], [fuel_prevalve, ox_prevalve])
-            # time.sleep(5)
-            # print ("Closing Torch feedline purge and MPV purge")
-            # syauto.close_all(auto, [mpv_purge])
-            # print("Terminating abort")
+
         time.sleep(1)
         # # this creates a range in synnax so we can view the data
         # if real_test:
