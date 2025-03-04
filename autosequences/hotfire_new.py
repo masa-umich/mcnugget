@@ -453,7 +453,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         if ans == "y" or ans == "Y" or ans == "yes":
             syauto.open_all(auto, valves_to_potentially_open)
 
-    def pressurize(auto: Controller) -> bool:
+    def prepress(auto: Controller) -> bool:
     
         averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
         #averages = get_averages(auto, [FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
@@ -491,26 +491,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print("ABORTING OX due to high pressure")
                 fuel_ox_abort()
 
-    def get_user_input_and_pressurize():
-        # Function to get user input for firing sequence.
-        # Sets the event once input is received.
-        wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, pressurize))
-        wait_thread.start()
-
-        global user_input_received
-        answer = input("\nValves are closed. Input `fire` to commence firing sequence. Press enter to abort autosequence.\n")
-        
-        # Signal that user input has been received
-        user_input_received.set()
-        
-        if answer == 'fire':
-            print("Firing sequence commenced!")
-            wait_thread.join()
-            reg_fire()
-        else:
-            wait_thread.join()
-            fuel_ox_abort()
-
     def wait_until_pressurized(auto: Controller, condition) -> None:
         #keeps pressurizing until user inputs
         while not user_input_received.is_set():
@@ -518,20 +498,10 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(0.1) 
 
     def reg_fire():
-        fuel_prepress.close()
-        ox_prepress.close()
-        try: # add thing to call pressuriez while user input if igniter does not work - going back to pressurize
-            print("commencing fire sequence - firing in: ")
-            time.sleep(1)
-            print("10")
-            time.sleep(1)
-            print("9")
-            time.sleep(1)
-            print("8")
-            time.sleep(1)
-            print("7")
-            time.sleep(1)
 
+        try: # add thing to call pressuriez while user input if igniter does not work - going back to pressurize
+
+            # first four seconds of firing inside main block
             print("6 energizing the igniter")
             # igniter.open()
             time.sleep(1)
@@ -624,31 +594,17 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         PROGRAM_STATE = "before prepress"
         time.sleep(1)
     
-        # #Check prevalves are opened or closed
-        # if (USING_FUEL and not USING_OX):
-        #     if (auto[FUEL_PREVALVE]):
-        #         input("Fuel prevalve open, press enter to continue ")
-        #     else:
-        #         ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
-        #         if (ans != 'bypass'):
-        #             print('closing program')
-        #             exit()
-        # elif (not USING_FUEL and USING_OX):
-        #     if (auto[OX_PREVALVE]):
-        #         input("Ox prevalve open, press enter to continue ")
-        #     else:
-        #         ans = input("Fuel prevalve NOT open, type 'bypass' to continue ")
-        #         if (ans != 'bypass'):
-        #             print('closing program')
-        #             exit()
-        # else:
-        #     if (auto[FUEL_PREVALVE_STATE] and auto[OX_PREVALVE_STATE]):
-        #         print("Prevalves open")
-        #     else:
-        #         ans = input("Fuel and/or Ox prevalve NOT open, type 'bypass' to continue ")
-        #         if (ans != 'bypass'):
-        #             print('closing program')
-        #             exit()
+        #Check prevalves are opened or closed
+        # if (USING_FUEL and not auto[FUEL_PREVALVE]):
+        #     ans = input("Fuel prevalve NOT open, type 'bypass' to continue ") 
+        #     if (ans != 'bypass'):
+        #         print('closing program')
+        #         exit()
+        # if (USING_OX and not auto[OX_PREVALVE]):
+        #     ans = input("Ox prevalve open, type 'bypass' to continue ")
+        #     if (ans != 'bypass'):
+        #         print('closing program')
+        #         exit()
 
         ans = input("Type 'start' to commence autosequence. ")
         if not (ans == 'start' or ans == 'Start' or ans == 'START'):
@@ -680,7 +636,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("Pressurizing fuel and ox")
 
         PROGRAM_STATE = "after prepress before ignition"
-        auto.wait_until(pressurize)
+        auto.wait_until(prepress)
 
     except KeyboardInterrupt as e:
 
@@ -688,4 +644,40 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             exit()
 
         elif (PROGRAM_STATE == "after prepress before ignition"):
-            get_user_input_and_pressurize()
+            # Function to get user input for firing sequence.
+            # Sets the event once input is received.
+            wait_thread = threading.Thread(target=wait_until_pressurized, args=(auto, prepress))
+            wait_thread.start()
+
+            
+            answer = input("\nInput `fire` to commence firing sequence. Press enter to abort autosequence.\n")
+            
+            if answer == 'fire':
+                try:
+                    print("commencing fire sequence - firing in: ")
+                    time.sleep(1)
+                    print("10")
+                    time.sleep(1)
+                    print("9")
+                    time.sleep(1)
+                    print("8")
+                    time.sleep(1)
+                    print("7")
+                    time.sleep(1)
+
+                    user_input_received.set()
+                    wait_thread.join()
+
+                    fuel_prepress.close()
+                    ox_prepress.close()
+
+                    reg_fire()
+
+                except KeyboardInterrupt:
+                    user_input_received.set()
+                    wait_thread.join()
+                    fuel_ox_abort()
+            else:
+                user_input_received.set()
+                wait_thread.join()
+                fuel_ox_abort()
