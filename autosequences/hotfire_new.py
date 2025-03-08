@@ -312,14 +312,14 @@ for PT_chan in PTS:
 
 # TODO: update these before running the autosequence
 
-TARGET_FUEL_PRESSURE = 480  # Fuel Reg Set Pressure
-UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 20
-LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 20
+TARGET_FUEL_PRESSURE = 470  # Fuel Reg Set Pressure
+UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 10
+LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 10
 MAX_FUEL_PRESSURE = 575
 
-TARGET_OX_PRESSURE = 410  # Ox Reg Set Pressure
-UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 20
-LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 20
+TARGET_OX_PRESSURE = 380  # Ox Reg Set Pressure
+UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 10
+LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 10
 MAX_OX_PRESSURE = 575
 
 RUNNING_AVERAGE_LENGTH = 5  # samples
@@ -501,15 +501,8 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
         try: # add thing to call pressuriez while user input if igniter does not work - going back to pressurize
 
-            # first four seconds of firing inside main block
-            print("6 energizing the igniter")
-            # igniter.open()
-            time.sleep(1)
-            print("5 deenergizing the igniter")
-            # igniter.close()
-            time.sleep(1)
-            print("4")
-            time.sleep(1)
+            # first seconds of firing inside main block
+
             print("3")
             time.sleep(1)
 
@@ -663,6 +656,14 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                     print("8")
                     time.sleep(1)
                     print("7")
+                    time.sleep(1)
+                    print("6 energizing the igniter")
+                    # igniter.open()
+                    time.sleep(1)
+                    print("5 deenergizing the igniter")
+                    # igniter.close()
+                    time.sleep(1)
+                    print("4")
                     time.sleep(1)
 
                     user_input_received.set()
