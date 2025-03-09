@@ -8,8 +8,22 @@ from datetime import datetime, timedelta
 import sys
 import threading
 import logging
+import sys
 
+# windows keyboard interrupt shenanigans
+windows_keyboard_interrupt = False
+def handler(a,b=None):
+    #print("Windows Keyboard interrupt")
+    global windows_keyboard_interrupt
+    windows_keyboard_interrupt = True
+    return
 
+def install_handler():
+    if sys.platform == "win32":
+        import win32api
+        win32api.SetConsoleCtrlHandler(handler, True)
+
+install_handler()
 
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
@@ -454,7 +468,12 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             syauto.open_all(auto, valves_to_potentially_open)
 
     def prepress(auto: Controller) -> bool:
-    
+        global windows_keyboard_interrupt # windows keyboard interrupt shenanigans
+        if windows_keyboard_interrupt == True:
+            print("Windows Keyboard interrupt in prepress")
+            windows_keyboard_interrupt = False
+            raise KeyboardInterrupt
+
         averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
         #averages = get_averages(auto, [FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
         #averages = [auto[chan] for chan in [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3]]
@@ -658,7 +677,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         auto.wait_until(prepress)
 
     except KeyboardInterrupt as e:
-
+        
         if (PROGRAM_STATE == "before prepress"):
             exit()
 
