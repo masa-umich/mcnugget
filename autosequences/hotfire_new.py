@@ -312,14 +312,14 @@ for PT_chan in PTS:
 
 # TODO: update these before running the autosequence
 
-TARGET_FUEL_PRESSURE = 470  # Fuel Reg Set Pressure
-UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 10
-LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 10
+TARGET_FUEL_PRESSURE = 520  # Fuel Reg Set Pressure
+UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 5
+LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 5
 MAX_FUEL_PRESSURE = 575
 
-TARGET_OX_PRESSURE = 380  # Ox Reg Set Pressure
-UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 10
-LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 10
+TARGET_OX_PRESSURE = 315  # Ox Reg Set Pressure
+UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 5
+LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 5
 MAX_OX_PRESSURE = 575
 
 RUNNING_AVERAGE_LENGTH = 5  # samples
@@ -331,7 +331,7 @@ FIRE_DURATION = 22
 ox_time_to_reach_chamber = 0.357
 fuel_time_to_reach_chamber = 0.276
 # MPV_DELAY = 0.2 + ox_time_to_reach_chamber - fuel_time_to_reach_chamber   # seconds
-MPV_DELAY = 2   # seconds
+MPV_DELAY = 0   # seconds
 # OX_MPV takes 0.357 s to reach chamber
 # FUEL_MPV used to take 0.246 s to reach chamber
 # FUEL_MPV now takes 0.276 s to reach chamber
@@ -499,24 +499,50 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     def reg_fire():
 
-        try: # add thing to call pressuriez while user input if igniter does not work - going back to pressurize
+        try: # add thing to call pressurize  while user input if igniter does not work - going back to pressurize
 
-            # first seconds of firing inside main block
+            # first four seconds of firing inside main block
+            print("6 energizing the igniter")
+            # igniter.open()
+            # Close Pre Press Valves at T-6
+            fuel_prepress.close()
+            ox_prepress.close()
 
-            print("3")
             time.sleep(1)
+            print("5 deenergizing the igniter")
+            
 
             if (USING_FUEL and not USING_OX):
                 print("2 Opening press and fuel dome isos")
                 syauto.open_all(auto, [press_iso, fuel_dome_iso])
-
+            
             elif (not USING_FUEL and USING_OX):
                 print("2 Opening press and ox dome isos")
                 syauto.open_all(auto, [press_iso, ox_dome_iso])
-
+            
             else:
                 print("2 Opening press and ox and fuel dome isos")
                 syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
+            
+            # igniter.close()
+            time.sleep(1)
+            print("4")
+            time.sleep(1)
+            print("3")
+            time.sleep(1)
+
+        # moved to T-5
+            #if (USING_FUEL and not USING_OX):
+            #    print("2 Opening press and fuel dome isos")
+            #    syauto.open_all(auto, [press_iso, fuel_dome_iso])
+#
+            #elif (not USING_FUEL and USING_OX):
+            #    print("2 Opening press and ox dome isos")
+            #    syauto.open_all(auto, [press_iso, ox_dome_iso])
+#
+            #else:
+            #    print("2 Opening press and ox and fuel dome isos")
+            #    syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
 
             time.sleep(1)
             print("1")
@@ -657,20 +683,13 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                     time.sleep(1)
                     print("7")
                     time.sleep(1)
-                    print("6 energizing the igniter")
-                    # igniter.open()
-                    time.sleep(1)
-                    print("5 deenergizing the igniter")
-                    # igniter.close()
-                    time.sleep(1)
-                    print("4")
-                    time.sleep(1)
 
                     user_input_received.set()
                     wait_thread.join()
 
-                    fuel_prepress.close()
-                    ox_prepress.close()
+                    # Moved the following into regfire to close at a later time:
+                    #fuel_prepress.close()
+                    #ox_prepress.close()
 
                     reg_fire()
 
