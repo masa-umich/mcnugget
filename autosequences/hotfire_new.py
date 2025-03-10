@@ -529,18 +529,14 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
             time.sleep(1)
             print("5 deenergizing the igniter")
-            
-
-            if (USING_FUEL and not USING_OX):
-                print("2 Opening press and fuel dome isos")
-                syauto.open_all(auto, [press_iso, fuel_dome_iso])
-            
-            elif (not USING_FUEL and USING_OX):
-                print("2 Opening press and ox dome isos")
+           
+           
+            if (not USING_FUEL and USING_OX):
+                print("5 Opening press and ox dome isos")
                 syauto.open_all(auto, [press_iso, ox_dome_iso])
-            
-            else:
-                print("2 Opening press and ox and fuel dome isos")
+            # fix this
+            elif (USING_FUEL and USING_OX):
+                print("5 Opening press and ox and fuel dome isos")
                 syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
             
             # igniter.close()
@@ -549,7 +545,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             time.sleep(1)
             print("3")
             time.sleep(1)
-
+ 
         # moved to T-5
             #if (USING_FUEL and not USING_OX):
             #    print("2 Opening press and fuel dome isos")
@@ -562,9 +558,14 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             #else:
             #    print("2 Opening press and ox and fuel dome isos")
             #    syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
-
+            print("2")
             time.sleep(1)
+             # T-1: open fuel dome iso
             print("1")
+            if (USING_FUEL and not USING_OX):
+                print("1 Opening press and fuel dome isos")
+                syauto.open_all(auto, [press_iso, fuel_dome_iso])
+
             time.sleep(1)
 
             if (USING_FUEL and not USING_OX):
@@ -677,7 +678,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         auto.wait_until(prepress)
 
     except KeyboardInterrupt as e:
-        
+
         if (PROGRAM_STATE == "before prepress"):
             exit()
 
