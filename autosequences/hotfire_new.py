@@ -10,21 +10,6 @@ import threading
 import logging
 import sys
 
-# windows keyboard interrupt shenanigans
-windows_keyboard_interrupt = False
-def handler(a,b=None):
-    #print("Windows Keyboard interrupt")
-    global windows_keyboard_interrupt
-    windows_keyboard_interrupt = True
-    return
-
-def install_handler():
-    if sys.platform == "win32":
-        import win32api
-        win32api.SetConsoleCtrlHandler(handler, True)
-
-install_handler()
-
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
 real_test = False
@@ -59,78 +44,75 @@ else:
     exit()
 
 
-#Using FUEL or OX depending on user's command line input
-boolFuel = False
-boolOx = False
+# use the `noox` or `nofuel` arguments - DO NOT ATTEMPT TO CHANGE THESE MANUALLY`
+USING_FUEL = False
+USING_OX = False
 if (len(sys.argv) == 1):
-    boolFuel = True
-    boolOx = True
+    USING_FUEL = True
+    USING_OX = True
 elif (len(sys.argv) == 2):
     if (sys.argv[1] == "NOOX" or sys.argv[1] == "noox"):
-        boolFuel = True
+        USING_FUEL = True
     elif (sys.argv[1] == "NOFUEL" or sys.argv[1] == "nofuel"):
-        boolOx = True
+        USING_OX = True
     else:
         print("Specify with 'noox' or 'nofuel' or no arguments, closing program")
         exit()
 else: 
     print("Bestie you want fuel and oxygen on or off? Closing program")
     exit()
+
 #Tell user what the settings are
-if (boolFuel and not boolOx):
-    print("Running program with fuel on and oxygen off")
-elif (not boolFuel and boolOx):
-    print("Running program with fuel off and oxygen on")
+if (USING_FUEL and not USING_OX):
+    print("Running program with FUEL ON and oxygen off")
+elif (not USING_FUEL and USING_OX):
+    print("Running program with fuel off and OXYGEN ON")
 else:
-    print("Running program with fuel and oxygen on")
-
-USING_FUEL = boolFuel
-
-USING_OX = boolOx
+    print("Running program with FUEL ON and OXYGEN ON")
 
 ## PRESSURE TRANSDUCERS ###
-PNEUMATICS_BOTTLE = "gse_pt_1"
-TRAILER_PNEUMATICS = "gse_pt_2"
-ENGINE_PNEUMATICS = "gse_pt_3"
-PRESS_BOTTLE = "gse_pt_4"
-OX_TPC_INLET = "gse_pt_5"
-OX_PILOT_OUTLET = "gse_pt_6"
-OX_DOME = "gse_pt_7"
-OX_TPC_OUTLET = "gse_pt_8"
-OX_FLOWMETER_INLET = "gse_pt_9"
-OX_FLOWMETER_THROAT = "gse_pt_10"
-OX_LEVEL_SENSOR = "gse_pt_11"
-FUEL_FLOWMETER_INLET = "gse_pt_12"
-FUEL_FLOWMETER_THROAT = "gse_pt_13"
-MARGIN_2 = "gse_pt_14"
-FUEL_TPC_INLET = "gse_pt_15"
-FUEL_PILOT_OUTLET = "gse_pt_16"
-FUEL_DOME = "gse_pt_17"
-FUEL_TPC_OUTLET = "gse_pt_18"
-FUEL_TANK_1 = "gse_pt_19"
-FUEL_TANK_2 = "gse_pt_20"
-FUEL_TANK_3 = "gse_pt_21"
-CHAMBER_1 = "gse_pt_22"
-CHAMBER_2 = "gse_pt_23"
-REGEN_MANIFOLD = "gse_pt_24"
-FUEL_MANIFOLD_1 = "gse_pt_25"
-TORCH_2K_BOTTLE = "gse_pt_26"
-TORCH_2K_BOTTLE_POST_REG = "gse_pt_27"
-TORCH_NITROUS_BOTTLE = "gse_pt_28"
-TORCH_NITROUS_BOTTLE_POST_REG = "gse_pt_29"
-TORCH_ETHANOL_TANK = "gse_pt_30"
-TORCH_BODY_1 = "gse_pt_31"
-TORCH_BODY_2 = "gse_pt_32"
-TORCH_BODY_3 = "gse_pt_33"
-PURGE_2K_BOTTLE = "gse_pt_34"
-PURGE_POST_REG = "gse_pt_35"
-TRICKLE_PURGE_BOTTLE = "gse_pt_36"
-TRICKLE_PURGE_POST_REG = "gse_pt_37"
-OX_FILL = "gse_pt_38"
-OX_TANK_1 = "gse_pt_39"
-OX_TANK_2 = "gse_pt_40"
-OX_TANK_3 = "gse_pt_40"
-OX_LEVEL_SENSOR = "gse_pt_42"
+PNEUMATICS_BOTTLE = "gse_pt_1_avg"
+TRAILER_PNEUMATICS = "gse_pt_2_avg"
+ENGINE_PNEUMATICS = "gse_pt_3_avg"
+PRESS_BOTTLE = "gse_pt_4_avg"
+OX_TPC_INLET = "gse_pt_5_avg"
+OX_PILOT_OUTLET = "gse_pt_6_avg"
+OX_DOME = "gse_pt_7_avg"
+OX_TPC_OUTLET = "gse_pt_8_avg"
+OX_FLOWMETER_INLET = "gse_pt_9_avg"
+OX_FLOWMETER_THROAT = "gse_pt_10_avg"
+OX_LEVEL_SENSOR = "gse_pt_11_avg"
+FUEL_FLOWMETER_INLET = "gse_pt_12_avg"
+FUEL_FLOWMETER_THROAT = "gse_pt_13_avg"
+MARGIN_2 = "gse_pt_14_avg"
+FUEL_TPC_INLET = "gse_pt_15_avg"
+FUEL_PILOT_OUTLET = "gse_pt_16_avg"
+FUEL_DOME = "gse_pt_17_avg"
+FUEL_TPC_OUTLET = "gse_pt_18_avg"
+FUEL_TANK_1 = "gse_pt_19_avg"
+FUEL_TANK_2 = "gse_pt_20_avg"
+FUEL_TANK_3 = "gse_pt_21_avg"
+CHAMBER_1 = "gse_pt_22_avg"
+CHAMBER_2 = "gse_pt_23_avg"
+REGEN_MANIFOLD = "gse_pt_24_avg"
+FUEL_MANIFOLD_1 = "gse_pt_25_avg"
+TORCH_2K_BOTTLE = "gse_pt_26_avg"
+TORCH_2K_BOTTLE_POST_REG = "gse_pt_27_avg"
+TORCH_NITROUS_BOTTLE = "gse_pt_28_avg"
+TORCH_NITROUS_BOTTLE_POST_REG = "gse_pt_29_avg"
+TORCH_ETHANOL_TANK = "gse_pt_30_avg"
+TORCH_BODY_1 = "gse_pt_31_avg"
+TORCH_BODY_2 = "gse_pt_32_avg"
+TORCH_BODY_3 = "gse_pt_33_avg"
+PURGE_2K_BOTTLE = "gse_pt_34_avg"
+PURGE_POST_REG = "gse_pt_35_avg"
+TRICKLE_PURGE_BOTTLE = "gse_pt_36_avg"
+TRICKLE_PURGE_POST_REG = "gse_pt_37_avg"
+OX_FILL = "gse_pt_38_avg"
+OX_TANK_1 = "gse_pt_39_avg"
+OX_TANK_2 = "gse_pt_40_avg"
+OX_TANK_3 = "gse_pt_40_avg"
+OX_LEVEL_SENSOR = "gse_pt_42_avg"
 PTS = [
     PNEUMATICS_BOTTLE,
     TRAILER_PNEUMATICS,
@@ -351,57 +333,6 @@ MPV_DELAY = 0   # seconds
 # FUEL_MPV now takes 0.276 s to reach chamber
 # This delay puts OX in the chamber 0.200 seconds before fuel
 
-# IGNITER_DELAY = 6  # seconds
-ISO_DELAY = 2  # seconds
-
-
-# Running average implementation
-FUEL_TANK_1_DEQUE = deque()
-FUEL_TANK_2_DEQUE = deque()
-FUEL_TANK_3_DEQUE = deque()
-OX_TANK_1_DEQUE = deque()
-OX_TANK_2_DEQUE = deque()
-OX_TANK_3_DEQUE = deque()
-FUEL_TANK_1_SUM = 0
-FUEL_TANK_2_SUM = 0
-FUEL_TANK_3_SUM = 0
-OX_TANK_1_SUM = 0
-OX_TANK_2_SUM = 0
-OX_TANK_3_SUM = 0
-
-AVG_DICT = {
-    FUEL_TANK_1: FUEL_TANK_1_DEQUE,
-    FUEL_TANK_2: FUEL_TANK_2_DEQUE,
-    FUEL_TANK_3: FUEL_TANK_3_DEQUE,
-    OX_TANK_1: OX_TANK_1_DEQUE,
-    OX_TANK_2: OX_TANK_2_DEQUE,
-    OX_TANK_3: OX_TANK_3_DEQUE
-}
-
-SUM_DICT = {
-    FUEL_TANK_1: FUEL_TANK_1_SUM,
-    FUEL_TANK_2: FUEL_TANK_2_SUM,
-    FUEL_TANK_3: FUEL_TANK_3_SUM,
-    OX_TANK_1: OX_TANK_1_SUM,
-    OX_TANK_2: OX_TANK_2_SUM,
-    OX_TANK_3: OX_TANK_3_SUM
-}
-
-RUNNING_AVERAGE_LENGTH = 5
-# for 50Hz data, this correlates to an average over 0.1 seconds
-
-def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]:
-    # this function takes in a list of channels to read from, 
-    # and returns a dictionary with the average for each - {channel: average}
-    averages = {}
-    for channel in read_channels:
-        AVG_DICT[channel].append(auto[channel])  # adds the new data to the deque
-        SUM_DICT[channel] += auto[channel]  # updates running total
-        if len(AVG_DICT[channel]) > RUNNING_AVERAGE_LENGTH:
-            SUM_DICT[channel] -= AVG_DICT[channel].popleft()  # updates running total and removes elt
-        averages[channel] = SUM_DICT[channel] / len(AVG_DICT[channel])  # adds mean to return dictionary
-    return averages
-
 # state variable tells which part of the autosequence we are in 
 #       settings are [before prepress, after prepress before ignition, after ignition] 
 PROGRAM_STATE = ""
@@ -420,12 +351,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     fuel_dome_iso = syauto.Valve(auto=auto, cmd = FUEL_DOME_ISO, ack = FUEL_DOME_ISO_STATE, normally_open=False)
     press_iso = syauto.Valve(auto=auto, cmd = PRESS_ISO, ack = PRESS_ISO_STATE, normally_open=False)
     
-    # # For determining if each valve is open 
-    # fuel_prevalve_open = auto[FUEL_PREVALVE_ACK]
-    # ox_prevalve_open = auto[OX_PREVALVE_ACK]
-    # fuel_press_iso_open = auto[FUEL_PRESS_ISO_ACK]
-    # ox_press_iso_open = auto[OX_PRESS_ISO_ACK]
-
     user_input_received = threading.Event()
 
     def hotfire_abort():
@@ -468,18 +393,9 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             syauto.open_all(auto, valves_to_potentially_open)
 
     def prepress(auto: Controller) -> bool:
-        global windows_keyboard_interrupt # windows keyboard interrupt shenanigans
-        if windows_keyboard_interrupt == True:
-            print("Windows Keyboard interrupt in prepress")
-            windows_keyboard_interrupt = False
-            raise KeyboardInterrupt
-
-        averages = get_averages(auto, [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
-        #averages = get_averages(auto, [FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3])
-        #averages = [auto[chan] for chan in [OX_TANK_1, OX_TANK_2, OX_TANK_3, FUEL_TANK_1, FUEL_TANK_2, FUEL_TANK_3]]
-        ox_average = statistics.median([averages[OX_TANK_1], averages[OX_TANK_2], averages[OX_TANK_3]])
+        ox_average = statistics.median([auto[OX_TANK_1], auto[OX_TANK_2], auto[OX_TANK_3]])
         ox_pre_press_open = auto[OX_PRE_PRESS_STATE]
-        fuel_average = statistics.median([averages[FUEL_TANK_1], averages[FUEL_TANK_2], averages[FUEL_TANK_3]])
+        fuel_average = statistics.median([auto[FUEL_TANK_1], auto[FUEL_TANK_2], auto[FUEL_TANK_3]])
         fuel_pre_press_open = auto[FUEL_PREPRESS_STATE]
 
         if USING_FUEL:
@@ -521,23 +437,20 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         try: # add thing to call pressurize  while user input if igniter does not work - going back to pressurize
 
             # first four seconds of firing inside main block
-            print("6 energizing the igniter")
+            print("6")
             # igniter.open()
-            # Close Pre Press Valves at T-6
             fuel_prepress.close()
             ox_prepress.close()
 
             time.sleep(1)
-            print("5 deenergizing the igniter")
-           
-           
-            if (not USING_FUEL and USING_OX):
-                print("5 Opening press and ox dome isos")
-                syauto.open_all(auto, [press_iso, ox_dome_iso])
-            # fix this
-            elif (USING_FUEL and USING_OX):
-                print("5 Opening press and ox and fuel dome isos")
+            print("5 opening press iso and dome iso(s)")
+
+            if USING_FUEL and USING_OX:
                 syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
+            elif USING_FUEL and not USING_OX:
+                syauto.open_all(auto, [press_iso, fuel_dome_iso])
+            elif not USING_FUEL and USING_OX:
+                syauto.open_all(auto, [press_iso, ox_dome_iso])
             
             # igniter.close()
             time.sleep(1)
@@ -640,7 +553,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         #         print('closing program')
         #         exit()
         # if (USING_OX and not auto[OX_PREVALVE]):
-        #     ans = input("Ox prevalve open, type 'bypass' to continue ")
+        #     ans = input("Ox prevalve NOT open, type 'bypass' to continue ")
         #     if (ans != 'bypass'):
         #         print('closing program')
         #         exit()
