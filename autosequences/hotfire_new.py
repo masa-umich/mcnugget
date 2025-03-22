@@ -320,13 +320,13 @@ MAX_OX_PRESSURE = 575
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
 
-FIRE_DURATION = 22
+FIRE_DURATION = 12
 
 # MPV_DELAY is set such that OX is put in the chamber 0.200 seconds before fuel
-ox_time_to_reach_chamber = 0.357
-fuel_time_to_reach_chamber = 0.276
+# ox_time_to_reach_chamber = 0.357
+# fuel_time_to_reach_chamber = 0.276
 # MPV_DELAY = 0.2 + ox_time_to_reach_chamber - fuel_time_to_reach_chamber   # seconds
-MPV_DELAY = 0   # seconds
+MPV_DELAY = 1   # seconds
 # OX_MPV takes 0.357 s to reach chamber
 # FUEL_MPV used to take 0.246 s to reach chamber
 # FUEL_MPV now takes 0.276 s to reach chamber
@@ -393,7 +393,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
 
     def prepress(auto: Controller) -> bool:
         ox_average = statistics.median([auto[OX_TANK_1], auto[OX_TANK_2], auto[OX_TANK_3]])
-        ox_pre_press_open = auto[OX_PRE_PRESS_STATE]
+        ox_dome_iso_open = auto[OX_DOME_ISO_STATE]
         fuel_average = statistics.median([auto[FUEL_TANK_1], auto[FUEL_TANK_2], auto[FUEL_TANK_3]])
         fuel_pre_press_open = auto[FUEL_PREPRESS_STATE]
 
@@ -412,16 +412,16 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 fuel_ox_abort()
 
         if USING_OX:
-            if ox_pre_press_open and (ox_average >= UPPER_OX_PRESSURE):
+            if ox_dome_iso_open and (ox_average >= UPPER_OX_PRESSURE):
                 print("ox repressurized")
-                ox_prepress.close()
+                ox_dome_iso.close()
 
-            if (not ox_pre_press_open) and (ox_average < LOWER_OX_PRESSURE):
+            if (not ox_dome_iso_open) and (ox_average < LOWER_OX_PRESSURE):
                 print("repressurizing ox")
-                ox_prepress.open()    
+                ox_dome_iso.open()    
 
-            if ox_pre_press_open and ox_average > MAX_OX_PRESSURE:
-                ox_prepress.close()
+            if ox_dome_iso_open and ox_average > MAX_OX_PRESSURE:
+                ox_dome_iso.close()
                 print("ABORTING OX due to high pressure")
                 fuel_ox_abort()
 
@@ -434,46 +434,18 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     def reg_fire():
 
         try: # add thing to call pressuriez while user input if igniter does not work - going back to pressurize
-            
             PROGRAM_STATE = "after prepress before T-0"
-            print("3")
-            time.sleep(1)
-            print("5 opening press iso and dome iso(s)")
-
-            if USING_FUEL and USING_OX:
-                syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
-            elif USING_FUEL and not USING_OX:
-                syauto.open_all(auto, [press_iso, fuel_dome_iso])
-            elif not USING_FUEL and USING_OX:
-                syauto.open_all(auto, [press_iso, ox_dome_iso])
             
-            # igniter.close()
-            time.sleep(1)
-            print("4")
-            time.sleep(1)
+            syauto.close_all(auto, [ox_dome_iso, fuel_prepress])
             print("3")
             time.sleep(1)
  
-        # moved to T-5
-            #if (USING_FUEL and not USING_OX):
-            #    print("2 Opening press and fuel dome isos")
-            #    syauto.open_all(auto, [press_iso, fuel_dome_iso])
-#
-            #elif (not USING_FUEL and USING_OX):
-            #    print("2 Opening press and ox dome isos")
-            #    syauto.open_all(auto, [press_iso, ox_dome_iso])
-#
-            #else:
-            #    print("2 Opening press and ox and fuel dome isos")
-            #    syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
             print("2")
+            syauto.open_all(auto, [press_iso, fuel_dome_iso, ox_dome_iso])
+            print("opening dome isos")
             time.sleep(1)
-             # T-1: open fuel dome iso
-            print("1")
-            if (USING_FUEL and not USING_OX):
-                print("1 Opening press and fuel dome isos")
-                syauto.open_all(auto, [press_iso, fuel_dome_iso])
 
+            print("1")
             time.sleep(1)
 
             PROGRAM_STATE = "firing sequence"
@@ -481,11 +453,11 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             if (USING_FUEL and not USING_OX):
                 print("0")
                 time.sleep(MPV_DELAY)
-                print("Opening Fuel MPV (fuel prevalve)")
+                print("Opening Fuel MPV")
                 syauto.open_all(auto, [fuel_mpv])
 
             elif (not USING_FUEL and USING_OX):
-                print("0 Opening Ox MPV (ox prevalve)")
+                print("0 Opening Ox MPV")
                 syauto.open_all(auto, [ox_mpv])
 
             else:
@@ -513,13 +485,14 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("Opening vents and purge, closing mpvs and press iso")
             syauto.open_close_many_valves(auto, valves_to_open, valves_to_close)
             time.sleep(2)
-            valves_to_close = [mpv_purge]
+            print("Closing MPV purge")
+            mpv_purge.close()
+            time.sleep(5)
             if USING_FUEL:
-                valves_to_close += [fuel_dome_iso]
+                fuel_dome_iso.close()
             if USING_OX:
-                valves_to_close += [ox_dome_iso]
-            print("Closing dome isos and MPV purge")
-            syauto.close_all(auto, valves_to_close)
+                ox_dome_iso.close()
+            print("Closing dome isos")
             print("\nFiring sequence has been completed nominally")
 
         except KeyboardInterrupt:
@@ -558,12 +531,18 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 print('closing program')
                 exit()
 
+        if not auto[PRESS_ISO_STATE]:
+            ans = input("Press Iso NOT open, type 'bypass' to continue ")
+            if (ans != 'bypass'):
+                print('closing program')
+                exit()
+
         ans = input("Type 'start' to commence autosequence. ")
         if not (ans == 'start' or ans == 'Start' or ans == 'START'):
             exit()
 
         print("Setting starting state")
-        syauto.close_all(auto, [fuel_dome_iso, press_iso, ox_dome_iso])
+        syauto.close_all(auto, [fuel_dome_iso, ox_dome_iso])
         if (USING_FUEL):
             syauto.close_all(auto, [fuel_vent])
         if (USING_OX):
@@ -618,6 +597,12 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                     print("8")
                     time.sleep(1)
                     print("7")
+                    time.sleep(1)
+                    print("6")
+                    time.sleep(1)
+                    print("5")
+                    time.sleep(1)
+                    print("4")
                     time.sleep(1)
 
                     user_input_received.set()

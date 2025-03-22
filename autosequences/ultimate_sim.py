@@ -145,8 +145,8 @@ iteration = 0
 
 STATE["press_bottles"] = 2000
 STATE["purge_bottle"] = 2000
-STATE["fuel_tanks"] = 300
-STATE["ox_tanks"] = 300
+STATE["fuel_tanks"] = 0
+STATE["ox_tanks"] = 0
 STATE["fuel_mixage"] = 0
 STATE["ox_mixage"] = 0
 STATE["ox_flowmeter_inlet"] = 0
