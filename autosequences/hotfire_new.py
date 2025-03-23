@@ -1,5 +1,6 @@
 import syauto
 import time
+import math
 from synnax.control.controller import Controller
 import synnax as sy
 import statistics
@@ -7,7 +8,6 @@ from collections import deque
 from datetime import datetime, timedelta
 import sys
 import threading
-import logging
 
 #Prompts for user input as to whether we want to run a simulation or run an actual test
 #If prompted to run a coldflow test, we will connect to the MASA remote server and have a delay of 60 seconds
@@ -320,7 +320,7 @@ MAX_OX_PRESSURE = 575
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
 
-FIRE_DURATION = 12
+FIRE_DURATION = 2.5
 
 # MPV_DELAY is set such that OX is put in the chamber 0.200 seconds before fuel
 # ox_time_to_reach_chamber = 0.357
@@ -461,17 +461,19 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 syauto.open_all(auto, [ox_mpv])
 
             else:
-                print("0 Opening Ox MPV")
-                syauto.open_all(auto, [ox_mpv])
+                print("0 Opening Fuel MPV")
+                fuel_mpv.open()
 
                 time.sleep(MPV_DELAY)
-                print("Opening Fuel MPV")
-                syauto.open_all(auto, [fuel_mpv])
+                print("Opening Ox MPV")
+                ox_mpv.open()
 
             print(f"\nTerminating fire in")
-            for i in range(FIRE_DURATION):
+            for i in range(math.floor(FIRE_DURATION)):
                 print(f"{FIRE_DURATION - i}")
                 time.sleep(1)
+            print(f"Terminating fire in {FIRE_DURATION - math.floor(FIRE_DURATION)}")
+            time.sleep(FIRE_DURATION - math.floor(FIRE_DURATION))
 
             print("Terminating fire")
             valves_to_open = [mpv_purge]
