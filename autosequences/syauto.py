@@ -1,4 +1,6 @@
 from synnax.control.controller import Controller
+import math
+import time
 
 """
 syauto is a library intended to abstract away confusing parts of how we interface with the system.
@@ -97,6 +99,20 @@ def open_all(auto: Controller, valves: list[Valve]):
         else:
             commands[valve.cmd_chan] = 1
     auto.set(commands)
+
+def wait(wait_time: float, pretty_print: bool = True, round_to: int = 2):
+    if wait_time > 1:
+        for i in range(math.floor(wait_time)):
+            if pretty_print:
+                print(math.ceil(wait_time - i))
+            else:
+                print(round(wait_time - i, round_to))
+            time.sleep(1)
+    if pretty_print:
+        print(math.ceil(wait_time - math.floor(wait_time)))
+    else:
+        print(round(wait_time - math.floor(wait_time), round_to))
+    time.sleep(wait_time - math.floor(wait_time))
 
 # functions that we don't use but could be used as ideas for future functionality:
 

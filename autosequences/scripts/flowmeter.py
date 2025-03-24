@@ -19,10 +19,10 @@ FUEL_INLET_AREA = 0.00019490
 FUEL_THROAT_AREA = 0.00008128
 
 # Channels for reading pressure and temperature data
-fuel_p1_channel = "gse_pt_12_avg"
-fuel_p2_channel = "gse_pt_13_avg"
-ox_p1_channel = "gse_pt_9_avg"
-ox_p2_channel = "gse_pt_10_avg"
+fuel_p1_channel = "gse_pt_12_a"
+fuel_p2_channel = "gse_pt_13_a"
+ox_p1_channel = "gse_pt_9_a"
+ox_p2_channel = "gse_pt_10_a"
 ox_t1_channel = "gse_tc_5"
 
 flowmeter_time = client.channels.create(
@@ -87,14 +87,14 @@ read_channels = [
     ox_p1_channel,
     ox_p2_channel,
     ox_t1_channel,
-    "gse_time"
+    "gse_state_time"
 ]
 WRITE_DATA = {}
 STATE = {}
 
 # with client.open_streamer(read_channels) as imitation_streamer:
 with client.control.acquire("flowmeter cals", read_channels, [], 3) as imitation_streamer:
-    with client.open_writer(synnax.TimeStamp.now(), ["fuel_mdot", "ox_mdot", "flowmeter_time"], 20) as writer:
+    with client.open_writer(synnax.TimeStamp.now(), ["fuel_mdot", "ox_mdot", "flowmeter_time"], 20, enable_auto_commit=True) as writer:
         print("Starting flowmeter calculations...")
         time.sleep(1)
         errors = 0
@@ -139,7 +139,7 @@ with client.control.acquire("flowmeter cals", read_channels, [], 3) as imitation
                     print("iteration ", iteration)
                 iteration += 1
 
-                WRITE_DATA["flowmeter_time"] = STATE["gse_time"]
+                WRITE_DATA["flowmeter_time"] = STATE["gse_state_time"]
 
                 writer.write(WRITE_DATA)
                 time.sleep(RATE)

@@ -86,29 +86,32 @@ def let_there_be_data():
     Creates PTs 1-62, TCs 1-14, LCs 1-3
     """
     data = []
-    fiveKs = [1, 4, 5, 15, 26, 28, 31, 34, 36] # 5000
-    sevens = [9, 10, 12, 13] # 700
-    fives = [22, 23] # 500
-    level_sensor = [11] # 5
-    twoKs = [] # 2000
-    twofitty = [37] #250
+    p_5 = [11] # 5
+    p_250 = [37] #250
+    p_500 = [22, 23, 30] # 500
+    p_700 = [9, 10, 12, 13] # 700
+    # everything else is 1000
+    p_2000 = [] # 2000
+    p_5000 = [1, 4, 5, 15, 26, 28, 34, 36] # 5000
     def calculate_pt_pressure(channel):
-        if channel in fiveKs:
+        if channel in p_5000:
             return 5000
-        elif channel in sevens:
+        elif channel in p_700:
             return 700
-        elif channel in fives:
+        elif channel in p_500:
             return 500
-        elif channel in level_sensor:
+        elif channel in p_5:
             return 5
-        elif channel in twoKs:
+        elif channel in p_2000:
             return 2000
-        elif channel in twofitty:
+        elif channel in p_250:
             return 250
         else:
             return 1000
         
     for pt in range(42):
+        if calculate_pt_pressure(pt + 1) == -1:
+            continue
         data.append(
             {
                 "Sensor Type": "PT",

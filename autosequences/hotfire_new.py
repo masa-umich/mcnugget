@@ -70,48 +70,48 @@ else:
     print("Running program with FUEL ON and OXYGEN ON")
 
 ## PRESSURE TRANSDUCERS ###
-PNEUMATICS_BOTTLE = "gse_pt_1_avg"
-TRAILER_PNEUMATICS = "gse_pt_2_avg"
-ENGINE_PNEUMATICS = "gse_pt_3_avg"
-PRESS_BOTTLE = "gse_pt_4_avg"
-OX_TPC_INLET = "gse_pt_5_avg"
-OX_PILOT_OUTLET = "gse_pt_6_avg"
-OX_DOME = "gse_pt_7_avg"
-OX_TPC_OUTLET = "gse_pt_8_avg"
-OX_FLOWMETER_INLET = "gse_pt_9_avg"
-OX_FLOWMETER_THROAT = "gse_pt_10_avg"
-OX_LEVEL_SENSOR = "gse_pt_11_avg"
-FUEL_FLOWMETER_INLET = "gse_pt_12_avg"
-FUEL_FLOWMETER_THROAT = "gse_pt_13_avg"
-MARGIN_2 = "gse_pt_14_avg"
-FUEL_TPC_INLET = "gse_pt_15_avg"
-FUEL_PILOT_OUTLET = "gse_pt_16_avg"
-FUEL_DOME = "gse_pt_17_avg"
-FUEL_TPC_OUTLET = "gse_pt_18_avg"
-FUEL_TANK_1 = "gse_pt_19_avg"
-FUEL_TANK_2 = "gse_pt_20_avg"
-FUEL_TANK_3 = "gse_pt_21_avg"
-CHAMBER_1 = "gse_pt_22_avg"
-CHAMBER_2 = "gse_pt_23_avg"
-REGEN_MANIFOLD = "gse_pt_24_avg"
-FUEL_MANIFOLD_1 = "gse_pt_25_avg"
-TORCH_2K_BOTTLE = "gse_pt_26_avg"
-TORCH_2K_BOTTLE_POST_REG = "gse_pt_27_avg"
-TORCH_NITROUS_BOTTLE = "gse_pt_28_avg"
-TORCH_NITROUS_BOTTLE_POST_REG = "gse_pt_29_avg"
-TORCH_ETHANOL_TANK = "gse_pt_30_avg"
-TORCH_BODY_1 = "gse_pt_31_avg"
-TORCH_BODY_2 = "gse_pt_32_avg"
-TORCH_BODY_3 = "gse_pt_33_avg"
-PURGE_2K_BOTTLE = "gse_pt_34_avg"
-PURGE_POST_REG = "gse_pt_35_avg"
-TRICKLE_PURGE_BOTTLE = "gse_pt_36_avg"
-TRICKLE_PURGE_POST_REG = "gse_pt_37_avg"
-OX_FILL = "gse_pt_38_avg"
-OX_TANK_1 = "gse_pt_39_avg"
-OX_TANK_2 = "gse_pt_40_avg"
-OX_TANK_3 = "gse_pt_40_avg"
-OX_LEVEL_SENSOR = "gse_pt_42_avg"
+PNEUMATICS_BOTTLE = "gse_pt_1_a"
+TRAILER_PNEUMATICS = "gse_pt_2_a"
+ENGINE_PNEUMATICS = "gse_pt_3_a"
+PRESS_BOTTLE = "gse_pt_4_a"
+OX_TPC_INLET = "gse_pt_5_a"
+OX_PILOT_OUTLET = "gse_pt_6_a"
+OX_DOME = "gse_pt_7_a"
+OX_TPC_OUTLET = "gse_pt_8_a"
+OX_FLOWMETER_INLET = "gse_pt_9_a"
+OX_FLOWMETER_THROAT = "gse_pt_10_a"
+OX_LEVEL_SENSOR = "gse_pt_11_a"
+FUEL_FLOWMETER_INLET = "gse_pt_12_a"
+FUEL_FLOWMETER_THROAT = "gse_pt_13_a"
+MARGIN_2 = "gse_pt_14_a"
+FUEL_TPC_INLET = "gse_pt_15_a"
+FUEL_PILOT_OUTLET = "gse_pt_16_a"
+FUEL_DOME = "gse_pt_17_a"
+FUEL_TPC_OUTLET = "gse_pt_18_a"
+FUEL_TANK_1 = "gse_pt_19_a"
+FUEL_TANK_2 = "gse_pt_20_a"
+FUEL_TANK_3 = "gse_pt_21_a"
+CHAMBER_1 = "gse_pt_22_a"
+CHAMBER_2 = "gse_pt_23_a"
+REGEN_MANIFOLD = "gse_pt_24_a"
+FUEL_MANIFOLD_1 = "gse_pt_25_a"
+TORCH_2K_BOTTLE = "gse_pt_26_a"
+TORCH_2K_BOTTLE_POST_REG = "gse_pt_27_a"
+TORCH_NITROUS_BOTTLE = "gse_pt_28_a"
+TORCH_NITROUS_BOTTLE_POST_REG = "gse_pt_29_a"
+TORCH_ETHANOL_TANK = "gse_pt_30_a"
+TORCH_BODY_1 = "gse_pt_31_a"
+TORCH_BODY_2 = "gse_pt_32_a"
+TORCH_BODY_3 = "gse_pt_33_a"
+PURGE_2K_BOTTLE = "gse_pt_34_a"
+PURGE_POST_REG = "gse_pt_35_a"
+TRICKLE_PURGE_BOTTLE = "gse_pt_36_a"
+TRICKLE_PURGE_POST_REG = "gse_pt_37_a"
+OX_FILL = "gse_pt_38_a"
+OX_TANK_1 = "gse_pt_39_a"
+OX_TANK_2 = "gse_pt_40_a"
+OX_TANK_3 = "gse_pt_40_a"
+OX_LEVEL_SENSOR = "gse_pt_42_a"
 PTS = [
     PNEUMATICS_BOTTLE,
     TRAILER_PNEUMATICS,
@@ -178,8 +178,8 @@ FUEL_PREPRESS = "gse_vlv_6"
 FUEL_PREPRESS_STATE = "gse_state_6"
 FUEL_PREVALVE = "gse_vlv_17"
 FUEL_PREVALVE_STATE = "gse_state_17"
-OX_MPV = "gse_vlv_11"
-OX_MPV_STATE = "gse_state_11"
+OX_MPV = "gse_vlv_19"
+OX_MPV_STATE = "gse_state_19"
 FUEL_MPV = "gse_vlv_12"
 FUEL_MPV_STATE = "gse_state_12"
 # TORCH_FEEDLINE_PURGE = "gse_vlv_13"
@@ -307,20 +307,20 @@ for PT_chan in PTS:
 
 # TODO: update these before running the autosequence
 
-TARGET_FUEL_PRESSURE = 520  # Fuel Reg Set Pressure
-UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 5
-LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 5
-MAX_FUEL_PRESSURE = 575
+TARGET_FUEL_PRESSURE = 527  # Fuel Reg Set Pressure
+UPPER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE + 10
+LOWER_FUEL_PRESSURE = TARGET_FUEL_PRESSURE - 10
+MAX_FUEL_PRESSURE = 700
 
 TARGET_OX_PRESSURE = 235  # Ox Reg Set Pressure
 UPPER_OX_PRESSURE = TARGET_OX_PRESSURE + 10
 LOWER_OX_PRESSURE = TARGET_OX_PRESSURE - 10
-MAX_OX_PRESSURE = 575
+MAX_OX_PRESSURE = 700
 
 RUNNING_AVERAGE_LENGTH = 5  # samples
 # at 50Hz data, this means 0.1s
 
-FIRE_DURATION = 2.5
+FIRE_DURATION = 6
 
 # MPV_DELAY is set such that OX is put in the chamber 0.200 seconds before fuel
 # ox_time_to_reach_chamber = 0.357
@@ -445,28 +445,31 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
             print("opening dome isos")
             time.sleep(1)
 
-            print("1")
+            print("1 - opening Fuel MPV")
+            fuel_mpv.open()
             time.sleep(1)
 
             PROGRAM_STATE = "firing sequence"
 
+            # ignore below 3/23
             if (USING_FUEL and not USING_OX):
                 print("0")
                 time.sleep(MPV_DELAY)
                 print("Opening Fuel MPV")
-                syauto.open_all(auto, [fuel_mpv])
+                fuel_mpv.open()
 
             elif (not USING_FUEL and USING_OX):
                 print("0 Opening Ox MPV")
-                syauto.open_all(auto, [ox_mpv])
+                ox_mpv.open()
+            # ignore above 3/23
 
             else:
-                print("0 Opening Fuel MPV")
-                fuel_mpv.open()
-
-                time.sleep(MPV_DELAY)
-                print("Opening Ox MPV")
+                print("0 Opening Ox MPV")
                 ox_mpv.open()
+
+                # time.sleep(MPV_DELAY)
+                # print("Opening Ox MPV")
+                # ox_mpv.open()
 
             print(f"\nTerminating fire in")
             for i in range(math.floor(FIRE_DURATION)):

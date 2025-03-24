@@ -88,7 +88,7 @@ with client.control.acquire(
     name="Torch Ignition Booyah", write=WRITE_TO, read=READ_FROM, write_authorities=222
 ) as auto:
     
-    def torch_ignite(nitrous_pilot_mpv: syauto.Valve, spark_plug: syauto.Valve, methane_mpv: syauto.Valve, nitrous_mpv: syauto.Valve, NITROUS_PILOT_LEAD_TIME=NITROUS_PILOT_LEAD_TIME, METHANE_MPV_LEAD_TIME=METHANE_MPV_LEAD_TIME 
+    def torch_ignite(nitrous_pilot_mpv: syauto.Valve, spark_plug: syauto.Valve, methane_mpv: syauto.Valve, nitrous_mpv: syauto.Valve, NITROUS_PILOT_LEAD_TIME=NITROUS_PILOT_LEAD_TIME, METHANE_MPV_LEAD_TIME=METHANE_MPV_LEAD_TIME,
                      TORCH_PT_TARGET = TORCH_PT_TARGET, TORCH_PT_1 = TORCH_PT_1, TORCH_PT_2 = TORCH_PT_2, TORCH_PT_3 = TORCH_PT_3) -> bool:
         print("5")
         time.sleep(1)

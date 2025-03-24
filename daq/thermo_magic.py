@@ -101,7 +101,7 @@ def generate_tc_data():
     # stream TC data, calculating thermistor each iteration
     with client.open_streamer(channels=STREAM_CHANNELS) as streamer:
         with client.open_writer(
-            channels=WRITE_CHANNELS, start=sy.TimeStamp.now()
+            channels=WRITE_CHANNELS, start=sy.TimeStamp.now(), enable_auto_commit=True
         ) as writer:
             print(
                 f"streaming from {len(STREAM_CHANNELS)} channels: ",
@@ -127,7 +127,7 @@ def generate_tc_data():
                 # )
                 thermocouple_data["gse_tc_time"] = frame["gse_ai_time"][-1]
                 writer.write(thermocouple_data)
-                if iteration % 50 == 0:
+                if iteration % 6000 == 0:
                     print(f"processed {iteration} frames")
                     # print("example frame: ", frame)
                     # print(

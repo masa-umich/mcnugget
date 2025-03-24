@@ -44,27 +44,10 @@ def process_vlv(row: pd.Series, digital_task):
 
 
 def process_pt(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.Device):
-    # synnax_channel_time = client.channels.create(
-    #     name="gse_ai_time",
-    #     data_type=sy.DataType.TIMESTAMP,
-    #     retrieve_if_name_exists=True,
-    #     is_index=True,
-    # )
-
-    # if str(row["Port"]) != "nan":
-    #     channel_num = int(row["Port"])
-    # elif str(row["Channel"]) != "nan":
     channel_num = int(row["Channel"])
-    # else:
-    # raise Exception("Could not find channel or port for channel " + row["Name"])
-
-    # synnax_channel = client.channels.create(
-    #     name=f"gse_pt_{channel_num}",
-    #     data_type=sy.DataType.FLOAT32,
-    #     index=synnax_channel_time.key,
-    #     retrieve_if_name_exists=True,
-    # )
     synnax_channel = client.channels.retrieve(f"gse_pt_{channel_num}")
+    if row["Max Pressure"] == -1:
+        return
     pt_channel = ni.AIVoltageChan(
         channel=synnax_channel.key,
         device=analog_card.key,
