@@ -75,6 +75,9 @@ TC_OFFSETS = [
     0,  # TC 14
 ]
 
+LC_SLOPE = 881.849
+LC_OFFSET = 20
+
 def let_there_be_data():
     """
     - "Sensor Type"
@@ -132,6 +135,16 @@ def let_there_be_data():
                 "Max Output Voltage": 5,
             }
         )
+    for lc in range(3):
+        data.append(
+            {
+                "Sensor Type": "LC",
+                "Channel": lc + 1,
+                "Calibration Slope (mV/psig)": LC_SLOPE,
+                "Calibration Offset (V)": LC_OFFSET,
+                "Max Output Voltage": 5,
+            }
+        )
     # for vlv in range(26):
     #     if vlv == 9 or vlv == 10 or vlv == 13:
     #         continue
@@ -165,7 +178,8 @@ def create_tasks():
     analog_card = client.hardware.devices.retrieve(name="Analog")
     digital_card = client.hardware.devices.retrieve(name="Digital")
     analog_task = ni.AnalogReadTask(
-        name="PTs and TCs",
+        name="Analog Data",
+        device=analog_card.key,
         sample_rate=sy.Rate.HZ * 50,
         stream_rate=sy.Rate.HZ * 25,
         data_saving=True,

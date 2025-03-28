@@ -150,4 +150,27 @@ def process_raw(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.
 
 
 def process_lc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.Device):
-    print("I am a load cell")
+    port = row["Channel"] - 1 + 60
+    # if row["Channel"] == 1:
+    #     port = 54
+    # elif row["Channel"] == 2:
+    #     port = 61
+    # elif row["Channel"] == 3:
+    #     port = 63
+    synnax_channel = client.channels.retrieve(f"gse_lc_{row['Channel']}")
+    lc_channel = ni.AIVoltageChan(
+        channel=synnax_channel.key,
+        device=analog_card.key,
+        port=port,
+        custom_scale=ni.LinScale(
+            slope=row["Calibration Slope (mV/psig)"],
+            y_intercept=row["Calibration Offset (V)"],
+            pre_scaled_units="Volts",
+            scaled_units="Volts",
+        ),
+        terminal_config="RSE",
+        max_val=row["Max Output Voltage"],
+    )
+    analog_task.config.channels.append(lc_channel)
+    print("LC channel created.")
+
