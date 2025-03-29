@@ -42,7 +42,7 @@ for chan in channels_to_average:
     SUMS[chan] = 0
 WRITE_DATA = {}
 
-read_channels = channels_to_average + ["gse_state_time"]
+read_channels = channels_to_average + ["gse_time"]
 write_channels = list([c + "_a" for c in channels_to_average]) + ["gse_average_time"]
 # with client.open_streamer(read_channels) as streamer:
 with client.control.acquire("average script", read_channels, [], 5) as auto:
@@ -60,7 +60,7 @@ with client.control.acquire("average script", read_channels, [], 5) as auto:
                         SUMS[chan] -= AVERAGE_VALUES[chan].popleft()
                     average = SUMS[chan] / len(AVERAGE_VALUES[chan])
                     WRITE_DATA[chan + "_a"] = average
-                    WRITE_DATA["gse_average_time"] = auto["gse_state_time"]
+                    WRITE_DATA["gse_average_time"] = auto["gse_time"]
                 time.sleep(RATE)
                 writer.write(WRITE_DATA)
 

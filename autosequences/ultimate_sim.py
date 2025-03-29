@@ -200,13 +200,13 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
                 STATE["fuel_mpv"] = LOCAL[f"gse_state_{VALVES['FUEL_MPV']}"]
 
                 if STATE["ox_prepress"] == 1 and STATE["purge_bottle"] > STATE["ox_tanks"]:
-                    if STATE["ox_tanks"] < 500:
+                    if STATE["ox_tanks"] < 700:
                         coeff = math.sqrt(abs(STATE["purge_bottle"] - STATE["ox_tanks"]))
                         STATE["ox_tanks"] += 9 * RATE * coeff
                         STATE["purge_bottle"] -= 8 * RATE * coeff
 
                 if STATE["fuel_prepress"] == 1 and STATE["purge_bottle"] > STATE["fuel_tanks"]:
-                    if STATE["fuel_tanks"] < 500:
+                    if STATE["fuel_tanks"] < 700:
                         coeff = math.sqrt(abs(STATE["purge_bottle"] - STATE["fuel_tanks"]))
                         STATE["fuel_tanks"] += 10 * RATE * coeff
                         STATE["purge_bottle"] -= 8 * RATE * coeff
@@ -288,7 +288,7 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
                 if _LEAKS:
                     for pressure in ["fuel_tanks", "ox_tanks"]:
                         coeff = math.sqrt(abs(STATE[pressure]))
-                        STATE[pressure] -= 0.15 * RATE * coeff
+                        STATE[pressure] -= 0.5 * RATE * coeff
                     for pressure in ["press_bottles", "purge_bottle"]:
                         coeff = math.sqrt(abs(STATE[pressure]))
                         STATE[pressure] -= 0.02 * RATE * coeff

@@ -1,6 +1,7 @@
 from synnax.control.controller import Controller
 import math
 import time
+import colorama
 
 """
 syauto is a library intended to abstract away confusing parts of how we interface with the system.
@@ -100,19 +101,31 @@ def open_all(auto: Controller, valves: list[Valve]):
             commands[valve.cmd_chan] = 1
     auto.set(commands)
 
-def wait(wait_time: float, pretty_print: bool = True, round_to: int = 2):
-    if wait_time > 1:
-        for i in range(math.floor(wait_time)):
-            if pretty_print:
-                print(math.ceil(wait_time - i))
-            else:
-                print(round(wait_time - i, round_to))
-            time.sleep(1)
-    if pretty_print:
-        print(math.ceil(wait_time - math.floor(wait_time)))
+def wait(duration: float, increment: float = 1, offset: float = 0, precision: float = 0, message: str = None, color = None):
+    """
+    Prints the time remaining in the wait.
+        - duration: how long to wait in seconds
+        - increment: how long to wait between prints
+        - offset: added to each print statement
+        - precision: how many decimal points to print
+        - message: printed at the end
+    Will not print any increments less than `increment`
+    """
+    if color is not None:
+        prestring = color
+        poststring = colorama.Style.RESET_ALL
     else:
-        print(round(wait_time - math.floor(wait_time), round_to))
-    time.sleep(wait_time - math.floor(wait_time))
+        prestring = ""
+        poststring = ""
+    while duration >= increment:
+        print(prestring + f"{round(offset + duration, precision)}" + poststring)
+        time.sleep(increment)
+        duration -= increment
+    if duration > 0:
+        time.sleep(duration)
+    if message is not None:
+        print(message)
+
 
 # functions that we don't use but could be used as ideas for future functionality:
 
