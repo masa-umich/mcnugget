@@ -61,7 +61,7 @@ def generate_tc_data():
         retrieve_if_name_exists=True,
         is_index=True,
     )
-    for i in range(11):
+    for i in range(12):
         tc_channel = client.channels.create(
             name=f"gse_tc_{i + 1}_raw",
             data_type=sy.DataType.FLOAT32,

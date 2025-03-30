@@ -85,7 +85,7 @@ for channel, index in VALVES.items():
     REMOTE[f"gse_vlv_{index}"] = 0
 
 for channel, index in PTS.items():
-    LOCAL[f"gse_pt_{index}"] = 0
+    LOCAL[f"gse_pt_{index}_avg"] = 0
 
 for channel, index in TCS.items():
     LOCAL[f"gse_tc_{index}"] = 0
@@ -301,34 +301,34 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
 
                 # put values into LOCAL
                 LOCAL[f"gse_tc_{TCS['OX_FLOWMETER']}"] = STATE["ox_flowmeter_tc"]
-                LOCAL[f"gse_pt_{PTS['PRESS_BOTTLES']}"] = STATE["press_bottles"]
-                LOCAL[f"gse_pt_{PTS['OX_TPC_OUTLET']}"] = STATE["ox_tpc_outlet"]
-                LOCAL[f"gse_pt_{PTS['FUEL_TPC_OUTLET']}"] = STATE["fuel_tpc_outlet"]
-                LOCAL[f"gse_pt_{PTS['OX_FLOWMETER_INLET']}"] = STATE["ox_flowmeter_inlet"]
-                LOCAL[f"gse_pt_{PTS['OX_FLOWMETER_THROAT']}"] = STATE["ox_flowmeter_throat"]
-                LOCAL[f"gse_pt_{PTS['FUEL_FLOWMETER_INLET']}"] = STATE["fuel_flowmeter_inlet"]
-                LOCAL[f"gse_pt_{PTS['FUEL_FLOWMETER_THROAT']}"] = STATE["fuel_flowmeter_throat"]
-                LOCAL[f"gse_pt_{PTS['FUEL_1']}"] = STATE["fuel_tanks"]
-                LOCAL[f"gse_pt_{PTS['FUEL_2']}"] = STATE["fuel_tanks"]
-                LOCAL[f"gse_pt_{PTS['FUEL_3']}"] = STATE["fuel_tanks"]
-                LOCAL[f"gse_pt_{PTS['CHAMBER_1']}"] = 0
-                LOCAL[f"gse_pt_{PTS['CHAMBER_2']}"] = 0
-                LOCAL[f"gse_pt_{PTS['METHANE_BOTTLE']}"] = 0
-                LOCAL[f"gse_pt_{PTS['GOX_BOTTLE']}"] = 0
-                LOCAL[f"gse_pt_{PTS['TORCH_1']}"] = 0
-                LOCAL[f"gse_pt_{PTS['TORCH_2']}"] = 0
-                LOCAL[f"gse_pt_{PTS['TORCH_3']}"] = 0
-                LOCAL[f"gse_pt_{PTS['PURGE']}"] = STATE["purge_bottle"]
-                LOCAL[f"gse_pt_{PTS['OX_1']}"] = STATE["ox_tanks"]
-                LOCAL[f"gse_pt_{PTS['OX_2']}"] = STATE["ox_tanks"]
-                LOCAL[f"gse_pt_{PTS['OX_3']}"] = STATE["ox_tanks"]
+                LOCAL[f"gse_pt_{PTS['PRESS_BOTTLES']}_avg"] = STATE["press_bottles"]
+                LOCAL[f"gse_pt_{PTS['OX_TPC_OUTLET']}_avg"] = STATE["ox_tpc_outlet"]
+                LOCAL[f"gse_pt_{PTS['FUEL_TPC_OUTLET']}_avg"] = STATE["fuel_tpc_outlet"]
+                LOCAL[f"gse_pt_{PTS['OX_FLOWMETER_INLET']}_avg"] = STATE["ox_flowmeter_inlet"]
+                LOCAL[f"gse_pt_{PTS['OX_FLOWMETER_THROAT']}_avg"] = STATE["ox_flowmeter_throat"]
+                LOCAL[f"gse_pt_{PTS['FUEL_FLOWMETER_INLET']}_avg"] = STATE["fuel_flowmeter_inlet"]
+                LOCAL[f"gse_pt_{PTS['FUEL_FLOWMETER_THROAT']}_avg"] = STATE["fuel_flowmeter_throat"]
+                LOCAL[f"gse_pt_{PTS['FUEL_1']}_avg"] = STATE["fuel_tanks"]
+                LOCAL[f"gse_pt_{PTS['FUEL_2']}_avg"] = STATE["fuel_tanks"]
+                LOCAL[f"gse_pt_{PTS['FUEL_3']}_avg"] = STATE["fuel_tanks"]
+                LOCAL[f"gse_pt_{PTS['CHAMBER_1']}_avg"] = 0
+                LOCAL[f"gse_pt_{PTS['CHAMBER_2']}_avg"] = 0
+                LOCAL[f"gse_pt_{PTS['METHANE_BOTTLE']}_avg"] = 0
+                LOCAL[f"gse_pt_{PTS['GOX_BOTTLE']}_avg"] = 0
+                LOCAL[f"gse_pt_{PTS['TORCH_1']}_avg"] = 0
+                LOCAL[f"gse_pt_{PTS['TORCH_2']}_avg"] = 0
+                LOCAL[f"gse_pt_{PTS['TORCH_3']}_avg"] = 0
+                LOCAL[f"gse_pt_{PTS['PURGE']}_avg"] = STATE["purge_bottle"]
+                LOCAL[f"gse_pt_{PTS['OX_1']}_avg"] = STATE["ox_tanks"]
+                LOCAL[f"gse_pt_{PTS['OX_2']}_avg"] = STATE["ox_tanks"]
+                LOCAL[f"gse_pt_{PTS['OX_3']}_avg"] = STATE["ox_tanks"]
                 if _NOISE:
                     for pt in [PTS['PRESS_BOTTLES'], PTS['OX_TPC_OUTLET'], PTS['FUEL_TPC_OUTLET'], PTS['PURGE']]:
-                        LOCAL[f"gse_pt_{pt}"] = random.normalvariate(LOCAL[f"gse_pt_{pt}"], 10)
+                        LOCAL[f"gse_pt_{pt}_avg"] = random.normalvariate(LOCAL[f"gse_pt_{pt}_avg"], 10)
                     for pt in [PTS['OX_1'], PTS['OX_2'], PTS['OX_3'], PTS['FUEL_1'], PTS['FUEL_2'], PTS['FUEL_3']]:
-                        LOCAL[f"gse_pt_{pt}"] = random.normalvariate(LOCAL[f"gse_pt_{pt}"], 4)
+                        LOCAL[f"gse_pt_{pt}_avg"] = random.normalvariate(LOCAL[f"gse_pt_{pt}_avg"], 4)
                     for pt in [PTS['OX_FLOWMETER_INLET'], PTS['OX_FLOWMETER_THROAT'], PTS['FUEL_FLOWMETER_INLET'], PTS['FUEL_FLOWMETER_THROAT']]:
-                        LOCAL[f"gse_pt_{pt}"] = random.normalvariate(LOCAL[f"gse_pt_{pt}"], 4)
+                        LOCAL[f"gse_pt_{pt}_avg"] = random.normalvariate(LOCAL[f"gse_pt_{pt}_avg"], 4)
                     for tc in [TCS['OX_FLOWMETER']]:
                         LOCAL[f"gse_tc_{tc}"] = random.normalvariate(LOCAL[f"gse_tc_{tc}"], 2)
                 LOCAL[GSE_TIME] = sy.TimeStamp.now()

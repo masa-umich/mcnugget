@@ -10,12 +10,19 @@ import colorama
 Only change things declared in ALL_CAPS. All test parameters are referenced from here.
 """
 
+# firing sequence
+FIRST_MPV = "fuel"  # set as either "ox" or "fuel"
+OX_MPV_TIME = 0
+FUEL_MPV_TIME = 1
+MPV_DELAY = 0
+BURN_DURATION = 2
+PURGE_DURATION = 5
+
 # All of these delays should be in seconds backwards from T=0
 IGNITER_LEAD = 6
 END_PREPRESS_LEAD = 3
 OX_DOME_LEAD = 2
-FUEL_DOME_LEAD = 2
-MPV_DELAY = 0
+FUEL_DOME_LEAD = FUEL_MPV_TIME + 1
 
 # ox
 OX_PREPRESS_TARGET = 365
@@ -24,20 +31,13 @@ OX_PREPRESS_ABORT_PRESSURE = 700
 
 # fuel
 FUEL_PREPRESS_TARGET = 527
-FUEL_PREPRESS_MARGIN = 5  # +/- from the target
+FUEL_PREPRESS_MARGIN = 10  # +/- from the target
 FUEL_PREPRESS_ABORT_PRESSURE = 700
-
-# firing sequence
-FIRST_MPV = "ox"  # set as either "ox" or "fuel"
-OX_MPV_TIME = 0.200
-FUEL_MPV_TIME = 0.150
-BURN_DURATION = 22
-PURGE_DURATION = 5
 
 # channels - confirm ICD is up to date and check against the ICD
 VALVE_INDICES = {
     "ox_dome_iso": 22,
-    "ox_mpv": 11,
+    "ox_mpv": 19,
     "ox_prevalve": 3,
     "ox_vent": 23,
     # "ox_prepress": 7,
@@ -49,7 +49,7 @@ VALVE_INDICES = {
     "fuel_prepress": 6,
 
     "press_iso": 20,
-    "igniter": 19,
+    "igniter": 18,
     "mpv_purge": 8,
 }
 
@@ -72,8 +72,8 @@ NORMALLY_OPEN_VALVES = [
 
 def PT(channel: str | int) -> str:
     if type(channel) == str:
-        return f"gse_pt_{PT_INDICES[channel]}"
-    return f"gse_pt_{str(channel)}"
+        return f"gse_pt_{PT_INDICES[channel]}_avg"
+    return f"gse_pt_{str(channel)}_avg"
 
 def VALVE(channel: str | int) -> str:
     if type(channel) == str:
@@ -489,7 +489,7 @@ class Autosequence():
             syauto.wait(self.times["firstmpv_secondmpv"], offset=MPV_DELAY, increment=0.1, precision=1, color=colorama.Fore.YELLOW)
             self.second_mpv.open()
 
-            print(magenta(f"            * / //\n---IGNITION---\n            * \\ \\\\"))
+            print(magenta(f"            * / //   /\n---IGNITION---***|||||::::>>>\n            * \\ \\\\   \\"))
 
             # burn
             syauto.wait(BURN_DURATION, color=colorama.Fore.GREEN)
@@ -509,7 +509,7 @@ class Autosequence():
                 self.mpv_purge, self.ox_dome_iso, self.fuel_dome_iso,
             ])
             print(magenta("Firing sequence completed nominally."))
-            self.shutdown()
+            self.shutdown(phoenix=True)
         
         except KeyboardInterrupt:
             self.postignition_abort()
@@ -591,13 +591,17 @@ class Autosequence():
         ])
         self.shutdown()
 
-    def shutdown(self):
+    def shutdown(self, phoenix=False):
         try:
             self.controller.release()
             time.sleep(0.5)
         except AttributeError:
             pass
         print(green("Autosequence has released control."))
+        if phoenix:
+            f = open('phoenix.txt', 'r')
+            print(colorama.Fore. f.read() + colorama.Style.RESET_ALL)
+            f.close()
         exit()
 
 autosequence = Autosequence()

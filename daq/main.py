@@ -12,7 +12,7 @@ const double TC_SLOPES[14] = {
     1.749114263, // TC 3
     1.746326017, // TC 4
     1.758960807, // TC 5
-    1.723974665, // TC 6
+    1.723974665, // TC 6x
     1.703447212, // TC 7
     1.725947472, // TC 8
     1.223907933, // TC 9
@@ -90,12 +90,12 @@ def let_there_be_data():
     """
     data = []
     p_5 = [11] # 5
-    p_250 = [37] #250
-    p_500 = [22, 23, 30] # 500
+    p_250 = [29] #250
+    p_500 = [28, 30, 31, 32, 33] # 500
     p_700 = [9, 10, 12, 13] # 700
     # everything else is 1000
     p_2000 = [] # 2000
-    p_5000 = [1, 4, 5, 15, 26, 28, 34, 36] # 5000
+    p_5000 = [1, 4, 5, 15, 34, 36] # 5000
     def calculate_pt_pressure(channel):
         if channel in p_5000:
             return 5000
@@ -146,8 +146,6 @@ def let_there_be_data():
             }
         )
     # for vlv in range(26):
-    #     if vlv == 9 or vlv == 10 or vlv == 13:
-    #         continue
     #     data.append(
     #         {
     #             "Sensor Type": "VLV",
@@ -178,10 +176,10 @@ def create_tasks():
     analog_card = client.hardware.devices.retrieve(name="Analog")
     digital_card = client.hardware.devices.retrieve(name="Digital")
     analog_task = ni.AnalogReadTask(
-        name="Analog Data",
+        name="Analog Data GIGA SPEED",
         device=analog_card.key,
-        sample_rate=sy.Rate.HZ * 50,
-        stream_rate=sy.Rate.HZ * 25,
+        sample_rate=sy.Rate.HZ * 1000,
+        stream_rate=sy.Rate.HZ * 100,
         data_saving=True,
         channels=[],
     )

@@ -47,14 +47,14 @@ for i in range(42):
     c = client.channels.create(
         name=f"gse_pt_{i+1}",
         data_type=sy.DataType.FLOAT32,
-        index=gse_state_time.key,
+        index=gse_ai_time.key,
         retrieve_if_name_exists=True,
     )
     FILE_DICT[f"gse_pt_{i+1}"] = {
         "key": c.key,
         "name": f"gse_pt_{i+1}",
         "data_type": "FLOAT32",
-        "index": gse_state_time.key,
+        "index": gse_ai_time.key,
     }
 
 # thermistor signal + supply
@@ -85,18 +85,18 @@ FILE_DICT["gse_thermistor_signal"] = {
 }
 
 for i in range(12):
-    c = client.channels.create(
-        name=f"gse_tc_{i+1}",
-        data_type=sy.DataType.FLOAT32,
-        index=gse_ai_time.key,
-        retrieve_if_name_exists=True,
-    )
-    FILE_DICT[f"gse_tc_{i+1}"] = {
-        "key": c.key,
-        "name": f"gse_tc_{i+1}",
-        "data_type": "FLOAT32",
-        "index": gse_ai_time.key,
-    }
+    # c = client.channels.create(
+    #     name=f"gse_tc_{i+1}",
+    #     data_type=sy.DataType.FLOAT32,
+    #     index=gse_ai_time.key,
+    #     retrieve_if_name_exists=True,
+    # )
+    # FILE_DICT[f"gse_tc_{i+1}"] = {
+    #     "key": c.key,
+    #     "name": f"gse_tc_{i+1}",
+    #     "data_type": "FLOAT32",
+    #     "index": gse_ai_time.key,
+    # }
 
     c = client.channels.create(
         name=f"gse_tc_{i+1}_raw",
@@ -136,6 +136,20 @@ for i in range(24):
         "name": f"gse_vlv_{i+1}",
         "data_type": "UINT8",
         "index": "virtual channel",
+    }
+
+for i in range(3):
+    c = client.channels.create(
+        name=f"gse_lc_{i+1}",
+        data_type=sy.DataType.FLOAT32,
+        index=gse_ai_time.key,
+        retrieve_if_name_exists=True,
+    )
+    FILE_DICT[f"gse_lc_{i+1}"] = {
+        "key": c.key,
+        "name": f"gse_lc_{i+1}",
+        "data_type": "FLOAT32",
+        "index": gse_ai_time.key,
     }
 
 with open(channel_creation_info, "w") as f:
