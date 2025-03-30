@@ -32,15 +32,14 @@ VALVES = {
     "MPV_PURGE": 8,
     "BROKEN_1": 9,
     "BROKEN_2": 10,
-    "OX_MPV": 11,
+    "OX_MPV": 19,
     "FUEL_MPV": 12,
     "BROKEN_3": 13,
     "GOX_PILOT": 14,
     "METHANE_PILOT": 15,
     "METHANE_MPV": 16,
     "FUEL_PREVALVE": 17,
-    "GOX_MPV": 18,
-    "SPARK_PLUG": 19,
+    "IGNITER": 18,
     "K2_PRESS_ISO": 20,
     "FUEL_DOME_ISO": 21,
     "OX_DOME_ISO": 22,
@@ -80,9 +79,10 @@ LOCAL = {}
 REMOTE = {}
 STATE = {}
 
-for channel, index in VALVES.items():
-    LOCAL[f"gse_state_{index}"] = 0
-    REMOTE[f"gse_vlv_{index}"] = 0
+# for channel, index in VALVES.items():
+for index in range(24):
+    LOCAL[f"gse_state_{index + 1}"] = 0
+    REMOTE[f"gse_vlv_{index + 1}"] = 0
 
 for channel, index in PTS.items():
     LOCAL[f"gse_pt_{index}_avg"] = 0
@@ -118,13 +118,13 @@ if _NEW_CHANNELS:
         )
 
 gse_time = client.channels.retrieve(GSE_TIME)
-client.channels.create(
-    name="ox_mixage",
-    data_type=sy.DataType.FLOAT32,
-    index=gse_time.key,
-    retrieve_if_name_exists=True
-)
-LOCAL["ox_mixage"] = 0
+# client.channels.create(
+#     name="ox_mixage",
+#     data_type=sy.DataType.FLOAT32,
+#     index=gse_time.key,
+#     retrieve_if_name_exists=True
+# )
+# LOCAL["ox_mixage"] = 0
 
 try:
     chan = GSE_TIME
@@ -147,8 +147,8 @@ STATE["press_bottles"] = 2000
 STATE["purge_bottle"] = 2000
 STATE["fuel_tanks"] = 0
 STATE["ox_tanks"] = 0
-STATE["fuel_mixage"] = 0
-STATE["ox_mixage"] = 0
+# STATE["fuel_mixage"] = 0
+# STATE["ox_mixage"] = 0
 STATE["ox_flowmeter_inlet"] = 0
 STATE["ox_flowmeter_throat"] = 0
 STATE["fuel_flowmeter_inlet"] = 0
@@ -208,7 +208,7 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
                 if STATE["fuel_prepress"] == 1 and STATE["purge_bottle"] > STATE["fuel_tanks"]:
                     if STATE["fuel_tanks"] < 700:
                         coeff = math.sqrt(abs(STATE["purge_bottle"] - STATE["fuel_tanks"]))
-                        STATE["fuel_tanks"] += 10 * RATE * coeff
+                        STATE["fuel_tanks"] += 4 * RATE * coeff
                         STATE["purge_bottle"] -= 8 * RATE * coeff
 
                 if STATE["press_iso"] == 1:
@@ -219,36 +219,36 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
                             STATE["fuel_tanks"] += 2 * RATE * coeff
                             STATE["press_bottles"] -= 1 * RATE * coeff
 
-                        STATE["fuel_mixage"] += RATE / 1.8
-                        if STATE["fuel_mixage"] < 0.15:
-                            STATE["fuel_tanks"] -= 1.2 * RATE * coeff
-                        elif STATE["fuel_mixage"] < 0.5:
-                            STATE["fuel_tanks"] -= 5.8 * RATE * coeff
-                        elif STATE["fuel_mixage"] < 1:
-                            STATE["fuel_tanks"] -= 1.4 * RATE * coeff
-                        else:
-                            # STATE["fuel_tanks"] -= 0.1 * RATE * coeff
-                            pass
+                        # STATE["fuel_mixage"] += RATE / 1.8
+                        # if STATE["fuel_mixage"] < 0.15:
+                        #     STATE["fuel_tanks"] -= 1.2 * RATE * coeff
+                        # elif STATE["fuel_mixage"] < 0.5:
+                        #     STATE["fuel_tanks"] -= 5.8 * RATE * coeff
+                        # elif STATE["fuel_mixage"] < 1:
+                        #     STATE["fuel_tanks"] -= 1.4 * RATE * coeff
+                        # else:
+                        #     # STATE["fuel_tanks"] -= 0.1 * RATE * coeff
+                        #     pass
 
-                        LOCAL["ox_mixage"] = STATE["fuel_mixage"]
+                        # LOCAL["ox_mixage"] = STATE["fuel_mixage"]
 
                     if STATE["ox_dome_iso"] == 1:
                         STATE["ox_tpc_outlet"] = min(STATE["ox_reg_set_pressure"], STATE["press_bottles"])
                         coeff = math.sqrt(abs(STATE["press_bottles"] - STATE["ox_tanks"]))
                         if STATE["ox_tpc_outlet"] > STATE["ox_tanks"]:
-                            STATE["ox_tanks"] += 2 * RATE * coeff
+                            STATE["ox_tanks"] += 4 * RATE * coeff
                             STATE["press_bottles"] -= 1 * RATE * coeff
                             
-                        STATE["ox_mixage"] += RATE / 1.8
-                        if STATE["ox_mixage"] < 0.15:
-                            STATE["ox_tanks"] -= 1.3 * RATE * coeff
-                        elif STATE["ox_mixage"] < 0.4:
-                            STATE["ox_tanks"] -= 6.2 * RATE * coeff
-                        elif STATE["ox_mixage"] < 1:
-                            STATE["ox_tanks"] -= 1.4 * RATE * coeff
-                        else:
-                            # STATE["ox_tanks"] -= 0.1 * RATE * coeff
-                            pass
+                        # STATE["ox_mixage"] += RATE / 1.8
+                        # if STATE["ox_mixage"] < 0.15:
+                        #     STATE["ox_tanks"] -= 1.3 * RATE * coeff
+                        # elif STATE["ox_mixage"] < 0.4:
+                        #     STATE["ox_tanks"] -= 6.2 * RATE * coeff
+                        # elif STATE["ox_mixage"] < 1:
+                        #     STATE["ox_tanks"] -= 1.4 * RATE * coeff
+                        # else:
+                        #     # STATE["ox_tanks"] -= 0.1 * RATE * coeff
+                        #     pass
 
                 if STATE["ox_vent"] == 0:
                     coeff = math.sqrt(abs(STATE["ox_tanks"]))
@@ -261,22 +261,22 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
                 if STATE["ox_prevalve"] == 1 and STATE["ox_mpv"] == 0:
                     coeff = math.sqrt(abs(STATE["ox_tanks"]))
                     # STATE["ox_tanks"] -= 3 * RATE * coeff
-                    STATE["ox_tanks"] -= (5.9 * (1.5 - STATE["ox_mixage"])) * RATE * coeff
+                    STATE["ox_tanks"] -= 5.9 * (1.5) * RATE * coeff
 
                 if STATE["fuel_prevalve"] == 1 and STATE["fuel_mpv"] == 0:
                     coeff = math.sqrt(abs(STATE["fuel_tanks"]))
                     # STATE["fuel_tanks"] -= 3 * RATE * coeff
-                    STATE["fuel_tanks"] -= (5.8 * (1.5 - STATE["fuel_mixage"])) * RATE * coeff
+                    STATE["fuel_tanks"] -= 5.8 * (1.5) * RATE * coeff
                 
                 for pressure in ["ox_tpc_outlet", "fuel_tpc_outlet", "ox_flowmeter_inlet", "ox_flowmeter_throat", "fuel_flowmeter_inlet", "fuel_flowmeter_throat", "ox_tanks", "fuel_tanks", "press_bottles", "purge_bottle"]:
                     if STATE[pressure] < 0:
                         STATE[pressure] = 0
                 
-                for mixage in ["ox_mixage", "fuel_mixage"]:
-                    if STATE[mixage] > 1:
-                        STATE[mixage] = 1
-                    if STATE[mixage] < 0:
-                        STATE[mixage] = 0
+                # for mixage in ["ox_mixage", "fuel_mixage"]:
+                #     if STATE[mixage] > 1:
+                #         STATE[mixage] = 1
+                #     if STATE[mixage] < 0:
+                #         STATE[mixage] = 0
 
                 STATE["ox_flowmeter_inlet"] = STATE["ox_tanks"]
                 STATE["ox_flowmeter_throat"] = max(STATE["ox_tanks"] - 50, 0)
@@ -332,6 +332,8 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
                     for tc in [TCS['OX_FLOWMETER']]:
                         LOCAL[f"gse_tc_{tc}"] = random.normalvariate(LOCAL[f"gse_tc_{tc}"], 2)
                 LOCAL[GSE_TIME] = sy.TimeStamp.now()
+                
+                # print(LOCAL)
                 writer.write(LOCAL)
                 
                 if iteration % 6000 == 0:
