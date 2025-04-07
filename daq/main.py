@@ -145,13 +145,13 @@ def let_there_be_data():
                 "Max Output Voltage": 5,
             }
         )
-    # for vlv in range(26):
-    #     data.append(
-    #         {
-    #             "Sensor Type": "VLV",
-    #             "Channel": vlv + 1,
-    #         }
-    #     )
+    for vlv in range(26):
+        data.append(
+            {
+                "Sensor Type": "VLV",
+                "Channel": vlv + 1,
+            }
+        )
     return pd.DataFrame(data)
 
 def main():
@@ -178,7 +178,7 @@ def create_tasks():
     analog_task = ni.AnalogReadTask(
         name="Analog Data GIGA SPEED",
         device=analog_card.key,
-        sample_rate=sy.Rate.HZ * 1000,
+        sample_rate=sy.Rate.HZ * 500,
         stream_rate=sy.Rate.HZ * 100,
         data_saving=True,
         channels=[],
@@ -186,7 +186,7 @@ def create_tasks():
     digital_task = ni.DigitalWriteTask(
         name="New Valve Control",
         device=digital_card.key,
-        state_rate=sy.Rate.HZ * 50,
+        state_rate=sy.Rate.HZ * 100,
         data_saving=True,
         channels=[],
     )

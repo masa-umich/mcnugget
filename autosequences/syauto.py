@@ -1,7 +1,10 @@
 from synnax.control.controller import Controller
-import math
+from typing import Tuple
 import time
 import colorama
+import json
+import hashlib
+import os
 
 """
 syauto is a library intended to abstract away confusing parts of how we interface with the system.
@@ -22,7 +25,7 @@ In Synnax, valves have a command channel and an acknowledgement channel.
 
 Pulling this all together, suppose we have a valve with the following specifications:
     command channel 'valve_1_cmd'
-    acknowledgement channel 'valve_1_ack'
+    state channel 'valve_1_state'
     normally_open = false (it is not a vent)
 If we want to open the valve, we need to send a command to energize the valve. We do this with
     `auto['valve_1_cmd'] = True`
@@ -37,12 +40,12 @@ class Valve:
             self,                               # python thing
             auto: Controller,                   # the controller this valve uses to talk with system
             cmd: str,                           # command channel name
-            ack: str,                           # acknowledgement channel name
+            state: str,                         # acknowledgement channel name
             normally_open: bool = False,        # whether the valve's default state is 'open'
             wait_for_ack: bool = False
     ):
         self.cmd_chan = cmd
-        self.ack = ack
+        self.ack = state
         self.normally_open = normally_open
         self.auto = auto
         self.wait_for_ack = wait_for_ack
@@ -62,6 +65,157 @@ class Valve:
         self.auto[self.cmd_chan] = self.normally_open
         if self.wait_for_ack:
             self.auto.wait_until(self.ack_chan == self.normally_open)
+
+class Parameter:
+    def __init__(self, key: str, value, param_type: type = None, explicit: bool = False, locked: bool = False):
+        self.key = key
+        self.value = value
+        self.type = param_type
+        self.explicit = explicit
+        self.locked = locked
+        self.validated = False
+
+    def __repr__(self):
+        return f"{self.key}={self.value}"
+
+    def validate(self) -> bool:
+        if self.type is not None and not isinstance(self.value, self.type):
+            print(_yellow(f"Parameter {self.key} is not of type {self.type}"))
+        input(f"Press enter to verify that {_green(self.key)} is set to {_green(self.value)} ")
+        self.validated = True
+        return True
+        
+    def update(self, value):
+        if self.locked:
+            raise ValueError(f"Parameter {self.key} is locked and cannot be updated")
+        if self.type is not None and not isinstance(value, self.type):
+            raise ValueError(f"Parameter {self.key} is not of type {self.type}")
+        self.value = value
+        self.validated = False
+
+class Config:
+    def __init__(self):
+        self.parameter_list = []
+        self.parameters = {}
+        self.locked = False
+        self.validated = False
+
+    def __getitem__(self, key):
+        p = self.parameters.get(key)
+        if p is None:
+            raise ValueError(f"Parameter {key} not found in config file")
+        return p.value
+    
+    def __setitem__(self, key, value):
+        if self.locked:
+            raise ValueError(f"Parameter {key} is locked and cannot be updated")
+        if key not in self.parameters:
+            raise ValueError(f"Parameter {key} not found in config file")
+        self.parameters[key].update(value)
+        self.validated = False
+
+    def _load_maybe_checksum(self, config_file: str) -> Tuple[dict, str]:
+        with open(config_file, 'r') as f:
+            checksum = ""
+            readlines = f.readlines()
+            if readlines[-1].split(":")[0] == "# Checksum":
+                checksum = readlines[-1].split(":")[-1].strip()
+                readlines = readlines[:-1]
+            parameters = json.load(f.readlines())
+        return parameters, checksum
+    
+    def _check_param_list(self, enforce_types: bool = False):
+        for p in self.parameter_list:
+            if p.key not in self.parameters:
+                raise ValueError(f"Parameter {p.key} not found in config file")
+            if enforce_types and p.type is not None and not isinstance(self.parameters[p.key], p.type):
+                raise ValueError(f"Parameter {p.key} is not of type {p.type}")
+
+    def load(self, config_file: str = ""):
+        if config_file == "":
+            for p in self.parameter_list:
+                if self.parameters.get(p.key) is None:
+                    val = input(f"Enter value for {_red(p.key)}: ")
+                else:
+                    val = input(f"Enter new value for {_red(p.key)} - {_yellow(f'current value: {self.parameters[p.key]}')}: ")
+                self.parameters[p.key] = val
+        else:
+            with open(config_file, 'r') as f:
+                # extract checksum
+                checksum = f.readlines()[-1].split(":")[-1].strip()
+                self.parameters = json.load(f.readlines()[:-1])
+                # check checksum
+                if hashlib.sha256(json.dumps(self.parameters).encode('utf-8')).hexdigest() != checksum:
+                    raise ValueError(_red(f"Checksum does not match for {config_file}"))
+
+        for p in self.parameter_list:
+            if p.key not in self.parameters:
+                raise ValueError(f"Parameter {p.key} not found in config file")
+    
+    def view(self):
+        print(_blue("Parameters:"))
+        for param in self.parameter_list:
+            if param.key in self.parameters:
+                print(f"{param.key} = {self.parameters[param.key]}")
+            else:
+                print(f"{param.key} = None")
+        print(_blue("End of parameters"))
+
+    def validate(self, manual: bool = False):
+        missing = False
+        for param in self.parameter_list:
+            if self.parameters.get(param) is None:
+                print(f"Missing parameter {param} in config file")
+                missing = True
+        if missing:
+            return False
+
+        if manual:
+            sre = input(_magenta("Type `SRE` to verify there is an SRE present ")).lower()
+            tc = input(_magenta("Type `TC` to verify there is a TC present ")).lower()
+            cop = input(_magenta("Type `COP` to verify there is a COP present ")).lower()
+            if sre != "SRE" or tc != "TC" or cop != "COP":
+                print(_red("SRE, TC, and COP must all be present to validate a configuration file"))
+                return False
+            
+            for param in self.parameter_list:
+                value = self.parameters[param]
+                input(f"Press enter to verify that {_green(param)} is set to {_green(value)} ")
+            
+            print(_green(f"Parameters have been verified"))
+
+    def lock(self, filepath: str):
+        # check if something exists at filepath
+        if not self.validated:
+            input(_red("Press enter to confirm you want to lock parameters that have not been validated"))
+        if os.path.exists(filepath):
+            input(_red(f"{filepath} already exists, press enter to overwrite: "))
+        checksum = hashlib.sha256(self.parameters.encode('utf-8')).hexdigest()
+        with open(filepath, 'w') as f:
+            json.dump(self.parameters, f, indent=4)
+            f.write(f"\n# Checksum: {checksum}")
+        self.locked = True
+
+    def clear(self):
+        self.parameters = {}
+        self.locked = False
+        self.validated = False
+        self.parameter_list = []
+
+def _red(text: str):
+    return colorama.Fore.RED + text + colorama.Style.RESET_ALL
+
+def _green(text: str):
+    return colorama.Fore.GREEN + text + colorama.Style.RESET_ALL
+
+def _yellow(text: str):
+    return colorama.Fore.YELLOW + text + colorama.Style.RESET_ALL
+
+def _blue(text: str):
+    return colorama.Fore.BLUE + text + colorama.Style.RESET_ALL
+
+def _magenta(text: str):
+    return colorama.Fore.MAGENTA + text + colorama.Style.RESET_ALL
 
 def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves_to_close: list[Valve]):
     commands = {}
@@ -125,26 +279,3 @@ def wait(duration: float, increment: float = 1, offset: float = 0, precision: fl
         time.sleep(duration)
     if message is not None:
         print(message)
-
-
-# functions that we don't use but could be used as ideas for future functionality:
-
-# def purge(valves: list[Valve], duration: float = 1):
-#     prev_time = time.time()
-#     for valve in valves:
-#         while (time.time() - prev_time < duration):
-#             open_all(valve.auto, valves)
-#             time.sleep(1)
-
-
-# def compute_medians(auto_: Controller, channels: list[str], running_median_size: int = 100):
-#     # this function takes in a list of channel names and returns a list
-#     # where each channel name is replaced by its reading, averaged over RUNNING_MEDIAN_SIZE readings
-#     median_arrs = []
-#     for channel in channels:
-        
-#         if len(median_arrs) > running_median_size:
-#             median_arrs.pop(0)
-#         median_arrs.append(statistics.median(auto_[channel]))
-
-#     return median_arrs

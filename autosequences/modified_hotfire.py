@@ -5,110 +5,224 @@ import statistics
 import sys
 import threading
 import colorama
+import os
 
 """
-Only change things declared in ALL_CAPS. All test parameters are referenced from here.
+Change these parameters by running the autosequence and choosing `config` mode.
+- will attempt to load appropriate (sim/real/checkout)_config.json
+The real_config_json file which is used for tests has a corresponding real_config.json.lock file. When
+attempting to run a `real` test, if the files do not match, the program will require validation/override.
+Validation requires SRE/COP/TC to be present and confirm each test parameters.
 """
 
-# firing sequence
-FIRST_MPV = "fuel"  # set as either "ox" or "fuel"
-OX_MPV_TIME = 0
-FUEL_MPV_TIME = 1
-MPV_DELAY = 0
-BURN_DURATION = 2
-PURGE_DURATION = 5
+def determine_config(mode: str) -> syauto.Config:
+    """
+    Determines the config file to load based on the mode. Will not return the config file unless
+    - config file is valid
+    - matching lock file is valid (for mode==real)
+    """
+    c = syauto.Config()
+    if mode == "real":
+        c.load("hotfire_config.json")
+        c.validate(checksum=True)
+    elif mode == "checkout":
+        c.load("checkout_config.json")
+        c.validate()
+    elif mode == "sim":
+        c.load("sim_config.json")
+        c.validate()
+    else:
+        print(red(f"ERROR: Invalid mode {mode}"))
+        exit(1)
+    return c
 
-# All of these delays should be in seconds backwards from T=0
-IGNITER_LEAD = 6
-END_PREPRESS_LEAD = 3
+def edit_config():
+    def find_configs() -> list[str]:
+        confs = []
+        for file in os.listdir("./config/"):
+            if file.endswith(".json") and file != "lock":
+                confs.append(file)
+        return confs
+    def filepath(config: str) -> str:
+        return os.path.join(os.path.dirname(__file__), "config", config)
+    try:
+        print(green("Entering config editor..."))
+        c = syauto.Config()
+        config_list = find_configs()
+        print(green("commands: (exit, list, view, edit, validate, lock, help)"))
+        print(green(f"available configs: {config_list}"))
+        input = ""
+        while input != "exit":
+            input = input(blue("$ ")).strip().lower().split(" ")
+            command = input[0]
+            config = input[1]
 
-# ox
-OX_PREPRESS_TARGET = 365
-OX_PREPRESS_MARGIN = 5  # +/- from the target
-OX_PREPRESS_ABORT_PRESSURE = 700
+            if command == "help":
+                print("combine a command with a config name to perform an action - example:")
+                print(blue("edit sim"))
+                print("^ will allow you to edit the sim.json config file")
+                print("exit - exit the config editor")
+                print("list - list all available configs")
+                print("view - view a config")
+                print("edit - edit config values manually")
+                print("validate - validate a config (requires SRE/COP/TC)")
+                print("lock - lock a config so it cannot be edited")
+            
+            if command == "list":
+                config_list = find_configs()
+                print(green("available configs: " + str(config_list)))
+            
+            elif command == "view":
+                c.clear()
+                c.load(filepath(config))
+                c.view()
+            
+            elif command == "edit":
+                c.clear()
+                c.load(filepath(config))
+                c.view()
+                while _input != "done":
+                    _input = input(blue("enter <parameter>:<value> to set <parameter> to <value>, or done to finish editing: ")).strip().lower()
+                    if _input == "done":
+                        break
+                    try:
+                        param, value = _input.split(":")
+                        c[param] = value
+                    except ValueError as ve:
+                        print(red(f"Invalid input: {ve}"))
+                        continue
 
-# fuel
-FUEL_PREPRESS_TARGET = 527
-FUEL_PREPRESS_MARGIN = 10  # +/- from the target
-FUEL_PREPRESS_ABORT_PRESSURE = 700
+            elif command == "validate":
+                if config == "real" or config == "hotfire":
+                    c.clear()
+                    c.load(filepath(config))
+                    c.validate(checksum=True, manual=True)
+                    
 
-# leave these
-FUEL_DOME_LEAD = FUEL_MPV_TIME + 1
-RETURN_LINE_LEAD = OX_MPV_TIME + 1
-OX_DOME_LEAD = OX_MPV_TIME + 2
-FIRST_MPV_LEAD = max(FUEL_MPV_TIME, OX_MPV_TIME) - min(FUEL_MPV_TIME, OX_MPV_TIME) + MPV_DELAY
+            elif command == "lock":
+                pass
+            elif command == "exit":
+                print(green("Exiting config editor..."))
+            else:
+                print(red(f"Unknown command: {command}"))
+    except KeyboardInterrupt:
+        print(red("\nTerminating config editor..."))
+
+FIRST_MPV = "first_mpv"
+OX_PREPRESS_TARGET = "ox_prepress_target"
+OX_PREPRESS_MARGIN = "ox_prepress_margin"
+OX_PREPRESS_ABORT_PRESSURE = "ox_prepress_abort_pressure"
+FUEL_PREPRESS_TARGET = "fuel_prepress_target"
+FUEL_PREPRESS_MARGIN = "fuel_prepress_margin"
+FUEL_PREPRESS_ABORT_PRESSURE = "fuel_prepress_abort_pressure"
+BURN_DURATION = "burn_duration"
+PURGE_DURATION = "purge_duration"
+IGNITER_LEAD = "igniter_lead"
+END_PREPRESS_LEAD = "end_prepress_lead"
+OX_MPV_TIME = "ox_mpv_time"
+FUEL_MPV_TIME = "fuel_mpv_time"
+MPV_DELAY = "mpv_delay"
+FUEL_DOME_LEAD = "fuel_dome_lead"
+OX_DOME_LEAD = "ox_dome_lead"
+RETURN_LINE_LEAD = "return_line_lead"
+
+TEST_PARAMS_LIST = [
+    FIRST_MPV,                      # which MPV opens first
+    OX_PREPRESS_TARGET,             # target pressure for ox prepress
+    OX_PREPRESS_MARGIN,             # +/- to determine bang-bang bounds
+    OX_PREPRESS_ABORT_PRESSURE,     # auto-abort pressure
+    FUEL_PREPRESS_TARGET,           # target pressure for fuel prepress
+    FUEL_PREPRESS_MARGIN,           # +/- to determine bang-bang bounds
+    FUEL_PREPRESS_ABORT_PRESSURE,   # auto-abort pressure
+    BURN_DURATION,                  # how long MPVs stay open
+    PURGE_DURATION,                 # how long MPV purge stays open
+    IGNITER_LEAD,                   # T-[] to energize igniter
+    END_PREPRESS_LEAD,              # T-[] to end prepress
+    OX_MPV_TIME,                    # time between opening Ox MPV and Ox reaching the chamber
+    FUEL_MPV_TIME,                  # time between opening Fuel MPV and Fuel reaching the chamber
+    MPV_DELAY,                      # extra time between opening MPVs so one propellant reaches chamber first
+    FUEL_DOME_LEAD,                 # T-[] to open fuel dome iso
+    OX_DOME_LEAD,                   # T-[] to open ox dome iso
+    RETURN_LINE_LEAD,               # T-[] to open ox return line
+]
 
 # channels - confirm ICD is up to date and check against the ICD
-VALVE_INDICES = {
-    "ox_dome_iso": 22,
-    "ox_mpv": 19,
-    "ox_prevalve": 3,
-    "ox_vent": 23,
-    # "ox_prepress": 7,
+# these are also stored/checked in the config but are referenced from here (will warn if different)
+OX_DOME_ISO = "ox_dome_iso"
+OX_MPV = "ox_mpv"
+OX_PREVALVE = "ox_prevalve"
+OX_VENT = "ox_vent"
+FUEL_MPV = "fuel_mpv"
+FUEL_PREVALVE = "fuel_prevalve"
+FUEL_DOME_ISO = "fuel_dome_iso"
+FUEL_VENT = "fuel_vent"
+FUEL_PREPRESS = "fuel_prepress"
+PRESS_ISO = "press_iso"
+IGNITER = "igniter"
+MPV_PURGE = "mpv_purge"
+OX_RETURN_LINE = "ox_return_line"
 
-    "fuel_mpv": 12,
-    "fuel_prevalve": 17,
-    "fuel_dome_iso": 21,
-    "fuel_vent": 24,
-    "fuel_prepress": 6,
+VALVES = [
+    OX_DOME_ISO,
+    OX_MPV,
+    OX_PREVALVE,
+    OX_VENT,
+    FUEL_MPV,
+    FUEL_PREVALVE,
+    FUEL_DOME_ISO,
+    FUEL_VENT,
+    FUEL_PREPRESS,
+    PRESS_ISO,
+    IGNITER,
+    MPV_PURGE,
+    OX_RETURN_LINE,
+]
 
-    "press_iso": 20,
-    "igniter": 18,
-    "mpv_purge": 8,
-    "ox_return_line": 1,
-}
+OX_TANK_1 = "ox_tank_1"
+OX_TANK_2 = "ox_tank_2"
+OX_TANK_3 = "ox_tank_3"
+FUEL_TANK_1 = "fuel_tank_1"
+FUEL_TANK_2 = "fuel_tank_2"
+FUEL_TANK_3 = "fuel_tank_3"
 
-PT_INDICES = {
-    "ox_tank_1": 39,
-    "ox_tank_2": 40,
-    "ox_tank_3": 41,
-
-    "fuel_tank_1": 19,
-    "fuel_tank_2": 20,
-    "fuel_tank_3": 21,
-}
+PTS = [
+    OX_TANK_1,
+    OX_TANK_2,
+    OX_TANK_3,
+    FUEL_TANK_1,
+    FUEL_TANK_2,
+    FUEL_TANK_3,
+]
 
 NORMALLY_OPEN_VALVES = [
-    "ox_mpv",
-    "fuel_mpv",
-    "ox_vent",
-    "fuel_vent",
+    OX_MPV,
+    FUEL_MPV,
+    OX_VENT,
+    FUEL_VENT,
 ]
 
 def PT(channel: str | int) -> str:
     if type(channel) == str:
-        return f"gse_pt_{PT_INDICES[channel]}_avg"
+        return f"gse_pt_{PTS[channel]}_avg"
     return f"gse_pt_{str(channel)}_avg"
 
 def VALVE(channel: str | int) -> str:
     if type(channel) == str:
-        return f"gse_vlv_{VALVE_INDICES[channel]}"
+        return f"gse_vlv_{VALVES[channel]}"
     return f"gse_vlv_{str(channel)}"
 
 
 def STATE(channel: str | int) -> str:
     if type(channel) == str:
-        return f"gse_state_{VALVE_INDICES[channel]}"
+        return f"gse_state_{VALVES[channel]}"
     return f"gse_state_{str(channel)}"
 
-"""
-Change things below this comment at your own risk.
-"""
-
-def red(text: str):
-    return colorama.Fore.RED + text + colorama.Style.RESET_ALL
-
-def green(text: str):
-    return colorama.Fore.GREEN + text + colorama.Style.RESET_ALL
-
-def yellow(text: str):
-    return colorama.Fore.YELLOW + text + colorama.Style.RESET_ALL
-
-def blue(text: str):
-    return colorama.Fore.BLUE + text + colorama.Style.RESET_ALL
-
-def magenta(text: str):
-    return colorama.Fore.MAGENTA + text + colorama.Style.RESET_ALL
+# characters aint free
+red = syauto._red
+green = syauto._green
+yellow = syauto._yellow
+blue = syauto._blue
+magenta = syauto._magenta
 
 class Autosequence():
     def __init__(self):
@@ -117,34 +231,34 @@ class Autosequence():
         and initialization of Valve objects. All actual behavior is handled by other functions.
         """
         try:
-            self.mode = input(colorama.Fore.BLUE + "Enter mode (coldflow/hotfire/sim/real): " + colorama.Fore.MAGENTA).strip().lower()
-            if self.mode == "coldflow" or self.mode == "hotfire" or self.mode == "real":
+            self.mode = input(colorama.Fore.BLUE + "Enter mode (sim/real/checkout/config): " + colorama.Fore.MAGENTA).strip().lower()
+            if self.mode == "config":
+                self.configure()
+                exit(0)
+            elif self.mode == "coldflow" or self.mode == "hotfire" or self.mode == "real":
+                self.mode = "real"
                 address = "141.212.192.160"
-                self.client = synnax.Synnax(
-                    host=address,
-                    port=9090,
-                    username="synnax",
-                    password="seldon",
-                    secure=False,
-                )
-                print(green("Connected to cluster at " + address))
-
+            elif self.mode == "checkout":
+                self.mode = "checkout"
+                address = "141.212.192.160"
             elif self.mode == "sim" or self.mode == "":
                 self.mode = "sim"
                 address = "localhost"
-                self.client = synnax.Synnax(
-                    host=address,
-                    port=9090,
-                    username="synnax",
-                    password="seldon",
-                    secure=False,
-                )
-                print(green("Connected to cluster at " + address))
-
             else:
                 print(red("Bestie what are you trying to do? If it's a typo, just try again, we're gonna close to program for now though <3"))
                 # courtesy of ramona ^
                 exit()
+            
+            self.client = synnax.Synnax(
+                host=address,
+                port=9090,
+                username="synnax",
+                password="seldon",
+                secure=False,
+            )
+            print(green("Connected to cluster at " + address))
+
+            self.config = determine_config()
 
             if len(sys.argv) == 1:
                 self._using_ox = True
@@ -213,11 +327,11 @@ class Autosequence():
             else:
                 self.firing_sequence.append((cmd, self.times[i-1][1] - t_minus, t_minus))
         
-        # print(f"TIMES: {self.times}")
-        # print(f"FIRING SEQUENCE: {self.firing_sequence}")
+        print(f"TIMES: {self.times}")
+        print(f"FIRING SEQUENCE: {self.firing_sequence}")
 
         sequence_time = sum(event[1] for event in self.firing_sequence)
-        # print(f"Total time for firing sequence is {sequence_time} seconds")
+        print(f"Total time for firing sequence is {sequence_time} seconds")
         if not (abs(sequence_time - 10) < 0.0001):
             print(red(f"ERROR: Firing sequence should be 10 seconds total, not {sequence_time} seconds"))
             exit(1)
@@ -338,7 +452,6 @@ class Autosequence():
             except synnax.exceptions.NotFoundError:
                 print(red(f"ERROR: Unable to find channel {channel}"))
                 exit(1)
-        # print("Able to retrieve all channels.")
 
         time.sleep(0.25)  # for controller to wake up
         print(yellow("Checking starting state..."))
@@ -386,6 +499,45 @@ class Autosequence():
         self.fuel_prepress_thread = threading.Thread()
         self.ox_prepress_thread = threading.Thread()
 
+        print(yellow("Checking test parameters..."))
+        self.load_config()
+        # firing sequence
+
+        FIRST_MPV = self.config["FIRST_MPV"]  # set as either "ox" or "fuel"
+        OX_MPV_TIME = self.config["OX_MPV_TIME"]
+        FUEL_MPV_TIME = self.config["FUEL_MPV_TIME"]
+        MPV_DELAY = self.config["MPV_DELAY"]
+        BURN_DURATION = self.config["BURN_DURATION"]
+        PURGE_DURATION = self.config["PURGE_DURATION"]
+        FUEL_DOME_LEAD = self.config["FUEL_DOME_LEAD"]
+        OX_DOME_LEAD = self.config["OX_DOME_LEAD"]
+        RETURN_LINE_LEAD = self.config["RETURN_LINE_LEAD"]
+
+        # All of these delays should be in seconds backwards from T=0
+        IGNITER_LEAD = self.config["IGNITER_LEAD"]
+        END_PREPRESS_LEAD = self.config["END_PREPRESS_LEAD"]
+
+        # prepress
+        OX_PREPRESS_TARGET = self.config["OX_PREPRESS_TARGET"]
+        OX_PREPRESS_MARGIN = self.config["OX_PREPRESS_MARGIN"]  # +/- from the target
+        OX_PREPRESS_ABORT_PRESSURE = self.config["OX_PREPRESS_ABORT_PRESSURE"]
+        FUEL_PREPRESS_TARGET = self.config["FUEL_PREPRESS_TARGET"]
+        FUEL_PREPRESS_MARGIN = self.config["FUEL_PREPRESS_MARGIN"]  # +/- from the target
+        FUEL_PREPRESS_ABORT_PRESSURE = self.config["FUEL_PREPRESS_ABORT_PRESSURE"]
+        FIRST_MPV_LEAD = max(FUEL_MPV_TIME, OX_MPV_TIME) - min(FUEL_MPV_TIME, OX_MPV_TIME) + MPV_DELAY
+
+        invalid = False
+        for p in [FIRST_MPV, OX_PREPRESS_TARGET, OX_PREPRESS_MARGIN, OX_PREPRESS_ABORT_PRESSURE,
+                  FUEL_PREPRESS_TARGET, FUEL_PREPRESS_MARGIN, FUEL_PREPRESS_ABORT_PRESSURE,
+                  BURN_DURATION, PURGE_DURATION, IGNITER_LEAD, END_PREPRESS_LEAD,
+                  OX_MPV_TIME, FUEL_MPV_TIME, MPV_DELAY, FUEL_DOME_LEAD, OX_DOME_LEAD,
+                  RETURN_LINE_LEAD]:
+            if p is None:
+                print(red(f"ERROR: {p} was not loaded by the config file."))
+                invalid = True
+        if invalid:
+            exit(1)
+
         if self.mode == "real" or self.mode == "sim":
             print(green(f"BURN_DURATION: ") + magenta(str(BURN_DURATION)))
             print(green(f"OX_PREPRESS_TARGET: ") + magenta(str(OX_PREPRESS_TARGET)))
@@ -395,6 +547,13 @@ class Autosequence():
 
         print(green("All checks passed - initialization complete.\n"))
         return True
+
+    def configure(self):
+        """
+        Walks through the configuration file and locks once everything is confirmed.
+        """
+        print("not implemented yet")
+        exit(1)
 
     def prepress_wrapper(self, prepress, flag):
         while flag.is_set():
@@ -455,7 +614,6 @@ class Autosequence():
                 input(colorama.Fore.BLUE + f"Press enter to begin ox prepress ({prepress_delay} second countdown) " + colorama.Style.RESET_ALL)
                 syauto.wait(prepress_delay, color=colorama.Fore.BLUE)
 
-                self.ox_vent.close()
                 self.ox_prepress_running.clear()
                 self.ox_prepress_running.set()
                 self.ox_prepress_thread = threading.Thread(name="prepress_ox_thread", target=self.prepress_wrapper, args=(self.prepress_ox,self.ox_prepress_running,))
