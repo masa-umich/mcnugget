@@ -1,18 +1,11 @@
 from synnax.control.controller import Controller
-from typing import Tuple
 import time
 import colorama
 import json
 import hashlib
-import os
 
 """
-syauto is a library intended to abstract away confusing parts of how we interface with the system.
-
-Some brief background on valves, commands, and this library:
-Valves are basically 'gates for pressure'. They can be open (allowing pressure to flow through) or closed.
-Note that pressure always goes from the higher pressure to the lower pressure.
-
+# VALVES
 A valve can be 'normally open' or 'normally closed'. Usually we want this property to be 
     specified based on what the 'fail state' of the component is (whether we want it open/closed if things go wrong).
     Vents are generally 'normally open', so if we lose power, the system will automatically depressurize.
@@ -32,6 +25,13 @@ If we want to open the valve, we need to send a command to energize the valve. W
 Since `auto` is a controller which gives us access to the state of the Synnax cluster (and, by extension, the physical system),
 sending this command results in energizing valve_1, after which we will receive a `1` or `True` value on the acknowledgement channel.
 
+# COLORS
+- red: errors or abort cases
+- green: success and nominal behavior
+- yellow: warnings and off-nominal behavior
+- magenta: user input and feedback
+- blue: meta-information about the system
+- gray: debugging information
 """
 
 class Valve:
@@ -72,135 +72,167 @@ class Parameter:
         self.value = value
         self.type = param_type
         self.explicit = explicit
-        self.locked = locked
-        self.validated = False
 
     def __repr__(self):
         return f"{self.key}={self.value}"
 
-    def validate(self) -> bool:
-        if self.type is not None and not isinstance(self.value, self.type):
-            print(_yellow(f"Parameter {self.key} is not of type {self.type}"))
-        input(f"Press enter to verify that {_green(self.key)} is set to {_green(self.value)} ")
-        self.validated = True
-        return True
-        
     def update(self, value):
-        if self.locked:
-            raise ValueError(f"Parameter {self.key} is locked and cannot be updated")
         if self.type is not None and not isinstance(value, self.type):
             raise ValueError(f"Parameter {self.key} is not of type {self.type}")
         self.value = value
         self.validated = False
 
 class Config:
+    """
+    A class to manage a group of Parameters and enforce good practices for loading and validating them. Four levels of validation are possible:
+        1. List checking: checks that the the whole list of parameters is present
+        2. Type checking: checks that each parameter is of the correct type
+        3. Checksum checking: checks that the checksum of the file matches the checksum of the loaded parameters
+        4. Manual checking: explicitly validates each parameter with SRE, COP, TC
+    Default is 1 and 2 only
+    """
     def __init__(self):
-        self.parameter_list = []
-        self.parameters = {}
+        self.parameter_list = None
+        self.parameters = None
         self.locked = False
         self.validated = False
 
+    ### editing parameters below here ###
     def __getitem__(self, key):
         p = self.parameters.get(key)
         if p is None:
             raise ValueError(f"Parameter {key} not found in config file")
         return p.value
-    
-    def __setitem__(self, key, value):
-        if self.locked:
-            raise ValueError(f"Parameter {key} is locked and cannot be updated")
+
+    def __setitem__(self, key, value, override: bool = False):
+        if self.locked and not override:
+            raise ValueError(f"Config is locked and cannot be updated")
         if key not in self.parameters:
-            raise ValueError(f"Parameter {key} not found in config file")
+            if override:
+                self.parameters[key] = Parameter(key, value)
+            else:
+                raise ValueError(f"Parameter {key} not found in config file")
         self.parameters[key].update(value)
         self.validated = False
+    ### editing parameters above here ###
 
-    def _load_maybe_checksum(self, config_file: str) -> Tuple[dict, str]:
-        with open(config_file, 'r') as f:
-            checksum = ""
-            readlines = f.readlines()
-            if readlines[-1].split(":")[0] == "# Checksum":
-                checksum = readlines[-1].split(":")[-1].strip()
-                readlines = readlines[:-1]
-            parameters = json.load(f.readlines())
-        return parameters, checksum
-    
-    def _check_param_list(self, enforce_types: bool = False):
+    def _list_check(self):
+        """
+        Checks that every parameter in the parameter list is present in the parameters dictionary
+        """
         for p in self.parameter_list:
-            if p.key not in self.parameters:
-                raise ValueError(f"Parameter {p.key} not found in config file")
-            if enforce_types and p.type is not None and not isinstance(self.parameters[p.key], p.type):
+            if p not in self.parameters.keys():
+                raise ValueError(f"Parameter {p} is missing")
+
+    def _type_check(self):
+        """
+        Checks that every parameter in the parameter list is of the correct type
+        """
+        for p in self.parameters.values():
+            if p.type is not None and not isinstance(p.value, eval(p.type)):
                 raise ValueError(f"Parameter {p.key} is not of type {p.type}")
 
-    def load(self, config_file: str = ""):
-        if config_file == "":
-            for p in self.parameter_list:
-                if self.parameters.get(p.key) is None:
-                    val = input(f"Enter value for {_red(p.key)}: ")
-                else:
-                    val = input(f"Enter new value for {_red(p.key)} - {_yellow(f'current value: {self.parameters[p.key]}')}: ")
-                self.parameters[p.key] = val
-        else:
-            with open(config_file, 'r') as f:
-                # extract checksum
-                checksum = f.readlines()[-1].split(":")[-1].strip()
-                self.parameters = json.load(f.readlines()[:-1])
-                # check checksum
-                if hashlib.sha256(json.dumps(self.parameters).encode('utf-8')).hexdigest() != checksum:
-                    raise ValueError(_red(f"Checksum does not match for {config_file}"))
+    def _checksum_check(self):
+        """
+        Asserts the correct checksum for the given parameter dictionary
+        """
+        _checksum = hashlib.sha256(json.dumps(str(self.parameters)).encode()).hexdigest()
+        if self.checksum != _checksum:
+            raise ValueError(f"Checksum mismatch: {self.checksum} != {_checksum}")
 
-        for p in self.parameter_list:
-            if p.key not in self.parameters:
-                raise ValueError(f"Parameter {p.key} not found in config file")
-    
-    def view(self):
-        print(_blue("Parameters:"))
-        for param in self.parameter_list:
-            if param.key in self.parameters:
-                print(f"{param.key} = {self.parameters[param.key]}")
-            else:
-                print(f"{param.key} = None")
-        print(_blue("End of parameters"))
-
-    def validate(self, manual: bool = False):
-        missing = False
-        for param in self.parameter_list:
-            if self.parameters.get(param) is None:
-                print(f"Missing parameter {param} in config file")
-                missing = True
-        if missing:
+    def _manual_check(self):
+        try:
+            sre = input(f"{_gray('Type ')}{_magenta('sre')}{_gray(' to verify there is a Software Responsible Engineer present: ')}" + colorama.Fore.MAGENTA).strip().lower()
+            cop = input(f"{_gray('Type ')}{_magenta('cop')}{_gray(' to verify there is a Console Operator present: ')}" + colorama.Fore.MAGENTA).strip().lower()
+            tc = input(f"{_gray('Type ')}{_magenta('tc')}{_gray(' to verify there is a Test Conductor present: ')}" + colorama.Fore.MAGENTA).strip().lower()
+            if sre != "sre" or cop != "cop" or tc != "tc":
+                raise ValueError(f"Manual check failed - SRE, COP, and TC must all be present")
+            for p in self.parameters.values():
+                input(f"{_gray('Press ')}{_magenta('enter')}{_gray(' to verify that ')}{_green(p.key)}{_gray(' is set to ')}{_green(p.value)} ")
+            return True
+        except Exception as e:
+            print(_red(f"Manual check failed: {e}"))
             return False
 
-        if manual:
-            sre = input(_magenta("Type `SRE` to verify there is an SRE present ")).lower()
-            tc = input(_magenta("Type `TC` to verify there is a TC present ")).lower()
-            cop = input(_magenta("Type `COP` to verify there is a COP present ")).lower()
-            if sre != "SRE" or tc != "TC" or cop != "COP":
-                print(_red("SRE, TC, and COP must all be present to validate a configuration file"))
-                return False
-            
-            for param in self.parameter_list:
-                value = self.parameters[param]
-                input(f"Press enter to verify that {_green(param)} is set to {_green(value)} ")
-            
-            print(_green(f"Parameters have been verified"))
-
-    def lock(self, filepath: str):
-        # check if something exists at filepath
-        if not self.validated:
-            input(_red("Press enter to confirm you want to lock parameters that have not been validated"))
-        if os.path.exists(filepath):
-            input(_red(f"{filepath} already exists, press enter to overwrite: "))
-        checksum = hashlib.sha256(self.parameters.encode('utf-8')).hexdigest()
+    def export(self, filepath):
         with open(filepath, 'w') as f:
-            json.dump(self.parameters, f, indent=4)
-            f.write(f"\n# Checksum: {checksum}")
+            OUT_DICT = {}
+            OUT_DICT["checksum"] = self.checksum
+            OUT_DICT["validated"] = self.validated
+            OUT_DICT["parameter_list"] = self.parameter_list
+            OUT_DICT["parameters"] = {}
+            for p in self.parameters.values():
+                OUT_DICT["parameters"][p.key] = f"{p.value}|{"." if p.type is None else p.type.__name__}|{"." if p.explicit else True}"
+            OUT_DICT["parameters"] = json.dumps(OUT_DICT["parameters"], indent=4)
+            f.write(json.dumps(OUT_DICT, indent=4))
+
+    def load(self, filepath: str, override: bool = False):
+        """
+        Loads the config file (from filepath if specified, otherwise manually)
+        """
+        if self.parameters is not None and not override:
+            raise ValueError(f"Pass in the override=True flag if you want to overwrite an existing configuration")
+        
+        self.parameter_list = []
+        self.parameters = {}
+        self.validated = False
+        self.checksum = None
+
+        with open(filepath, 'r') as f:
+            IN_DICT = json.load(f)
+            self.checksum = IN_DICT["checksum"]
+            self.validated = IN_DICT["validated"]
+            self.parameter_list = list(IN_DICT["parameter_list"])
+            for _key, _info in IN_DICT["parameters"].items():
+                _value, _type, _explicit = _info.split("|")
+                if _type == None or _type == "None" or _type == "" or _type == ".":
+                    _type = None
+                if _explicit == False or _explicit == "False" or _explicit == "" or _explicit == ".":
+                    _explicit = False
+                self.parameters[_key] = Parameter(_key, _value, _type, _explicit)
+
+    def validate(self, type_check: bool = True, list_check: bool = True, checksum_check: bool = False, manual_check: bool = False):
+        """
+        Validates the loaded config
+        type_check: whether to check the types of the parameters
+        list_check: whether to check the parameter list
+        lock_check: whether to check the checksum of the config file
+        manual_check: whether to check the parameters manually
+        """
+        if type_check:
+            self._type_check()
+        if list_check:
+            self._list_check()
+        if checksum_check:
+            self._checksum_check()
+        if manual_check:
+            self._manual_check()
+        self.validated = True
+
+    def lock(self, filepath: str, override: bool = False):
+        """
+        Generates a checksum for the config file and saves it to the file
+        """
+        if not self.validated and not override:
+            raise ValueError(f"Cannot save a non-validated config file")
+        checksum = hashlib.sha256(json.dumps(self.parameters).encode()).hexdigest()
+        with open(filepath, 'w') as f:
+            f.write(json.dumps(self.parameters, indent=4))
+            f.write(f"# Checksum: {checksum}\n")
         self.locked = True
 
+    def view(self):
+        print(f"{_gray('Config is ')}{_red('locked') if self.locked else _green('unlocked')}")
+        print(f"{_gray("Config is ")}{_green('validated') if self.validated else _red('not validated')}")
+        print(_gray("Parameters:"))
+        for p in self.parameters.values():
+            print(f"{_green(p.key)}{_gray(": ")}{_green(p.value)}")
+
     def clear(self):
-        self.parameters = {}
-        self.locked = False
-        self.validated = False
         self.parameter_list = []
+        self.parameters = {}
+        self.validated = False
+        self.locked = False
 
 def _red(text: str):
     return colorama.Fore.RED + text + colorama.Style.RESET_ALL
@@ -216,6 +248,9 @@ def _blue(text: str):
 
 def _magenta(text: str):
     return colorama.Fore.MAGENTA + text + colorama.Style.RESET_ALL
+
+def _gray(text: str):
+    return colorama.Fore.LIGHTBLACK_EX + text + colorama.Style.RESET_ALL
 
 def open_close_many_valves(auto: Controller, valves_to_open: list[Valve], valves_to_close: list[Valve]):
     commands = {}
