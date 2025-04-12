@@ -1,0 +1,16 @@
+{
+    "checksum": "30f1ac155e60f161f8db55c0368e826aadf9785ecb94182cb9729d4353769cd9",
+    "validated": "False",
+    "parameter_list": [
+        "apple",
+        "banana",
+        "coconut",
+        "durian"
+    ],
+    "parameters": {
+        "apple": "red|str|explicit",
+        "banana": "yellow|.|.",
+        "coconut": "white|.|explicit",
+        "durian": "yellow|str|."
+    }
+}

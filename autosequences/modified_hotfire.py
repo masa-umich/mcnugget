@@ -51,11 +51,13 @@ def edit_config():
         config_list = find_configs()
         print(green("commands: (exit, list, view, edit, validate, lock, help)"))
         print(green(f"available configs: {config_list}"))
-        input = ""
-        while input != "exit":
-            input = input(blue("$ ")).strip().lower().split(" ")
-            command = input[0]
-            config = input[1]
+        usr = ""
+        while usr != "exit":
+            usr = input(blue("$ ")).strip().lower().split(" ")
+            print(usr)
+            command = usr[0]
+            if len(usr) > 1:
+                config = usr[1]
 
             if command == "help":
                 print("combine a command with a config name to perform an action - example:")
@@ -71,7 +73,7 @@ def edit_config():
             if command == "list":
                 config_list = find_configs()
                 print(green("available configs: " + str(config_list)))
-            
+
             elif command == "view":
                 c.clear()
                 c.load(filepath(config))
@@ -233,7 +235,7 @@ class Autosequence():
         try:
             self.mode = input(colorama.Fore.BLUE + "Enter mode (sim/real/checkout/config): " + colorama.Fore.MAGENTA).strip().lower()
             if self.mode == "config":
-                self.configure()
+                edit_config()
                 exit(0)
             elif self.mode == "coldflow" or self.mode == "hotfire" or self.mode == "real":
                 self.mode = "real"
