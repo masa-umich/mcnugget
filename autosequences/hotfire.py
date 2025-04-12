@@ -120,6 +120,7 @@ class Autosequence():
             self.mode = input(colorama.Fore.BLUE + "Enter mode (coldflow/hotfire/sim/real): " + colorama.Fore.MAGENTA).strip().lower()
             if self.mode == "coldflow" or self.mode == "hotfire" or self.mode == "real":
                 address = "141.212.192.160"
+                # address = "35.3.164.151"
                 self.client = synnax.Synnax(
                     host=address,
                     port=9090,
@@ -226,81 +227,81 @@ class Autosequence():
         self.ox_dome_iso = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("ox_dome_iso"),
-            ack=STATE("ox_dome_iso"),
+            state=STATE("ox_dome_iso"),
             normally_open="ox_dome_iso" in NORMALLY_OPEN_VALVES,
         )
         self.ox_mpv = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("ox_mpv"),
-            ack=STATE("ox_mpv"),
+            state=STATE("ox_mpv"),
             normally_open="ox_mpv" in NORMALLY_OPEN_VALVES,
         )
         self.ox_prevalve = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("ox_prevalve"),
-            ack=STATE("ox_prevalve"),
+            state=STATE("ox_prevalve"),
             normally_open="ox_prevalve" in NORMALLY_OPEN_VALVES,
         )
         self.ox_vent = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("ox_vent"),
-            ack=STATE("ox_vent"),
+            state=STATE("ox_vent"),
             normally_open="ox_vent" in NORMALLY_OPEN_VALVES,
         )
 
         self.fuel_mpv = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("fuel_mpv"),
-            ack=STATE("fuel_mpv"),
+            state=STATE("fuel_mpv"),
             normally_open="fuel_mpv" in NORMALLY_OPEN_VALVES,
         )
         self.fuel_prevalve = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("fuel_prevalve"),
-            ack=STATE("fuel_prevalve"),
+            state=STATE("fuel_prevalve"),
             normally_open="fuel_prevalve" in NORMALLY_OPEN_VALVES,
         )
         self.fuel_dome_iso = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("fuel_dome_iso"),
-            ack=STATE("fuel_dome_iso"),
+            state=STATE("fuel_dome_iso"),
             normally_open="fuel_dome_iso" in NORMALLY_OPEN_VALVES,
         )
         self.fuel_vent = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("fuel_vent"),
-            ack=STATE("fuel_vent"),
+            state=STATE("fuel_vent"),
             normally_open="fuel_vent" in NORMALLY_OPEN_VALVES,
         )
         self.fuel_prepress = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("fuel_prepress"),
-            ack=STATE("fuel_prepress"),
+            state=STATE("fuel_prepress"),
             normally_open="fuel_prepress" in NORMALLY_OPEN_VALVES,
         )
 
         self.press_iso = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("press_iso"),
-            ack=STATE("press_iso"),
+            state=STATE("press_iso"),
             normally_open="press_iso" in NORMALLY_OPEN_VALVES,
         )
         self.igniter = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("igniter"),
-            ack=STATE("igniter"),
+            state=STATE("igniter"),
             normally_open="igniter" in NORMALLY_OPEN_VALVES,
         )
         self.mpv_purge = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("mpv_purge"),
-            ack=STATE("mpv_purge"),
+            state=STATE("mpv_purge"),
             normally_open="mpv_purge" in NORMALLY_OPEN_VALVES,
         )
         self.ox_return_line = syauto.Valve(
             auto=self.controller,
             cmd=VALVE("ox_return_line"),
-            ack=STATE("ox_return_line"),
+            state=STATE("ox_return_line"),
             normally_open="ox_return_line" in NORMALLY_OPEN_VALVES,
         )
 
@@ -338,7 +339,6 @@ class Autosequence():
             except synnax.exceptions.NotFoundError:
                 print(red(f"ERROR: Unable to find channel {channel}"))
                 exit(1)
-        # print("Able to retrieve all channels.")
 
         time.sleep(0.25)  # for controller to wake up
         print(yellow("Checking starting state..."))

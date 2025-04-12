@@ -1,0 +1,19 @@
+{
+    "first_mpv": "fuel",
+    "ox_prepress_target": 365,
+    "ox_prepress_margin": 5,
+    "ox_prepress_abort_pressure": 700,
+    "fuel_prepress_target": 527,
+    "fuel_prepress_margin": 10,
+    "fuel_prepress_abort_pressure": 700,
+    "burn_duration": 15,
+    "purge_duration": 5,
+    "igniter_lead": 6,
+    "end_prepress_lead": 3,
+    "ox_mpv_time": 0,
+    "fuel_mpv_time": 1,
+    "mpv_delay": 0,
+    "fuel_dome_lead": 2,
+    "ox_dome_lead": 2,
+    "return_line_lead": 1
+}
