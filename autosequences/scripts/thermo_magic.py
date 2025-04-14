@@ -45,7 +45,6 @@ def generate_tc_data():
     client = sy.Synnax()
     thermocouple_channels = []
     thermocouple_write_channels = []
-    thermocouple_data = {}
     # 2 arrays and a dict because writing as a dict is synnax's favorite format
 
     # channel creation/retrieval
@@ -61,7 +60,7 @@ def generate_tc_data():
         retrieve_if_name_exists=True,
         is_index=True,
     )
-    for i in range(12):
+    for i in range(14):
         tc_channel = client.channels.create(
             name=f"gse_tc_{i + 1}_raw",
             data_type=sy.DataType.FLOAT32,
@@ -90,7 +89,6 @@ def generate_tc_data():
         retrieve_if_name_exists=True,
     )
 
-    # TODO: check that there are data points for each channel in the last 5 minutes before starting the loop
     STREAM_CHANNELS = [
         "gse_ai_time",
         thermistor_signal.name,
@@ -98,10 +96,24 @@ def generate_tc_data():
     ] + [tc.name for tc in thermocouple_channels]
     WRITE_CHANNELS = [tc.name for tc in thermocouple_write_channels] + ["gse_tc_time"]
 
+    thermocouple_data_channels = WRITE_CHANNELS
+    thermocouple_data_values = []
     # stream TC data, calculating thermistor each iteration
+
+    index = client.channels.retrieve("gse_tc_time").index
+    for c in WRITE_CHANNELS:
+        assert(client.channels.retrieve(c).index == index)
+    print(f"all WRITE_CHANNELS are indexed by gse_tc_time {index}")
+
     with client.open_streamer(channels=STREAM_CHANNELS) as streamer:
+        initial_frame = streamer.read(1)
+        if initial_frame is None:
+            print("unable to stream data")
+            exit(1)
+        initial_time = initial_frame[gse_ai_time.name][-1]
+        print("initial time: ", initial_time)
         with client.open_writer(
-            channels=WRITE_CHANNELS, start=sy.TimeStamp.now(), enable_auto_commit=True
+            channels=WRITE_CHANNELS, start=initial_time, enable_auto_commit=True
         ) as writer:
             print(
                 f"streaming from {len(STREAM_CHANNELS)} channels: ",
@@ -110,10 +122,10 @@ def generate_tc_data():
             print(f"writing to {len(WRITE_CHANNELS)} channels: ", WRITE_CHANNELS)
             iteration = 0
             while True:
-                frame = streamer.read(0)
+                frame = streamer.read(0.01)
                 if frame is None:
-                    time.sleep(0.001)
                     continue
+                thermocouple_data_values = []
                 therm_supply = frame[thermistor_supply.name][-1]
                 therm_signal = frame[thermistor_signal.name][-1]
                 therm_offset = calculate_thermistor_offset(therm_supply, therm_signal)
@@ -121,18 +133,14 @@ def generate_tc_data():
                     tc = thermocouple_channels[i]
                     tc_raw = frame[tc.name][-1]
                     tc_temp = compute_temperature_from_mv(tc_raw + therm_offset)
-                    thermocouple_data[thermocouple_write_channels[i].name] = tc_temp
-                # thermocouple_data["gse_ai_time"] = sy.TimeStamp(
-                #     frame["gse_ai_time"][-1]
-                # )
-                thermocouple_data["gse_tc_time"] = frame["gse_ai_time"][-1]
-                writer.write(thermocouple_data)
-                if iteration % 6000 == 0:
+                    thermocouple_data_values.append(tc_temp)
+                thermocouple_data_values.append(frame["gse_ai_time"][-1])
+                assert(len(thermocouple_data_channels) == len(thermocouple_data_values))
+                ok = writer.write(thermocouple_data_channels, thermocouple_data_values)
+                if not ok:
+                    break
+                if iteration % 600 == 0:
                     print(f"processed {iteration} frames")
-                    # print("example frame: ", frame)
-                    # print(
-                    #     "example data: ", len(thermocouple_data), " ", thermocouple_data
-                    # )
                 iteration += 1
 
 

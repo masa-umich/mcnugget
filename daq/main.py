@@ -55,7 +55,7 @@ TC_SLOPES = [
     1.183121251,  # TC 11
     1.255762908,  # TC 12
     1.209157541,  # TC 13
-    0,  # TC 14
+    1.154169121,  # TC 14
 ]
 
 TC_OFFSETS = [
@@ -72,7 +72,7 @@ TC_OFFSETS = [
     -2.962919485,  # TC 11
     -2.436113303,  # TC 12
     -3.018604306,  # TC 13
-    0,  # TC 14
+    -2.924291025,  # TC 14
 ]
 
 LC_SLOPE = 881.849
@@ -125,7 +125,7 @@ def let_there_be_data():
                 "Calibration Slope (mV/psig)": 4,
             }
         )
-    for tc in range(12):
+    for tc in range(14):
         data.append(
             {
                 "Sensor Type": "TC",
@@ -145,13 +145,13 @@ def let_there_be_data():
                 "Max Output Voltage": 5,
             }
         )
-    for vlv in range(26):
-        data.append(
-            {
-                "Sensor Type": "VLV",
-                "Channel": vlv + 1,
-            }
-        )
+    # for vlv in range(26):
+    #     data.append(
+    #         {
+    #             "Sensor Type": "VLV",
+    #             "Channel": vlv + 1,
+    #         }
+    #     )
     return pd.DataFrame(data)
 
 def main():
@@ -176,7 +176,7 @@ def create_tasks():
     analog_card = client.hardware.devices.retrieve(name="Analog")
     digital_card = client.hardware.devices.retrieve(name="Digital")
     analog_task = ni.AnalogReadTask(
-        name="Analog Data GIGA SPEED",
+        name="Analog Data",
         device=analog_card.key,
         sample_rate=sy.Rate.HZ * 500,
         stream_rate=sy.Rate.HZ * 100,

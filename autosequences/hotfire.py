@@ -15,8 +15,8 @@ FIRST_MPV = "fuel"  # set as either "ox" or "fuel"
 OX_MPV_TIME = 0
 FUEL_MPV_TIME = 1
 MPV_DELAY = 0
-BURN_DURATION = 2
-PURGE_DURATION = 5
+BURN_DURATION = 1
+PURGE_DURATION = 7
 
 # All of these delays should be in seconds backwards from T=0
 IGNITER_LEAD = 6
@@ -28,15 +28,15 @@ OX_PREPRESS_MARGIN = 5  # +/- from the target
 OX_PREPRESS_ABORT_PRESSURE = 700
 
 # fuel
-FUEL_PREPRESS_TARGET = 527
-FUEL_PREPRESS_MARGIN = 10  # +/- from the target
+FUEL_PREPRESS_TARGET = 515
+FUEL_PREPRESS_MARGIN = 5  # +/- from the target
 FUEL_PREPRESS_ABORT_PRESSURE = 700
 
 # leave these
-FUEL_DOME_LEAD = FUEL_MPV_TIME + 1
-RETURN_LINE_LEAD = OX_MPV_TIME + 1
-OX_DOME_LEAD = OX_MPV_TIME + 2
-FIRST_MPV_LEAD = max(FUEL_MPV_TIME, OX_MPV_TIME) - min(FUEL_MPV_TIME, OX_MPV_TIME) + MPV_DELAY
+FUEL_DOME_LEAD = FUEL_MPV_TIME  # T-1
+RETURN_LINE_LEAD = OX_MPV_TIME + 1  # T-1
+OX_DOME_LEAD = OX_MPV_TIME + 2      # T-2
+FIRST_MPV_LEAD = max(FUEL_MPV_TIME, OX_MPV_TIME) - min(FUEL_MPV_TIME, OX_MPV_TIME) + MPV_DELAY   # T-1 FUEL_MPV
 
 # channels - confirm ICD is up to date and check against the ICD
 VALVE_INDICES = {
@@ -372,7 +372,7 @@ class Autosequence():
         if self.controller[STATE("igniter")] == 1:
             input(red(f"wtf man why you got the igniter on? just abort bro just abort "))
 
-        self.fuel_upper_bound = FUEL_PREPRESS_TARGET + FUEL_PREPRESS_MARGIN
+        self.fuel_upper_bound = FUEL_PREPRESS_TARGET
         self.fuel_lower_bound = FUEL_PREPRESS_TARGET - FUEL_PREPRESS_MARGIN
         self.fuel_abort_pressure = FUEL_PREPRESS_ABORT_PRESSURE
         self.ox_upper_bound = OX_PREPRESS_TARGET + OX_PREPRESS_MARGIN
@@ -380,10 +380,12 @@ class Autosequence():
         self.ox_abort_pressure = OX_PREPRESS_ABORT_PRESSURE
 
         self.fuel_prepress_running = threading.Event()
+        self.fuel_prepress_dome_iso_running = threading.Event()
         self.ox_prepress_running = threading.Event()
         self.igniter_verified = threading.Event()
 
         self.fuel_prepress_thread = threading.Thread()
+        self.fuel_prepress_dome_iso_thread = threading.Thread()
         self.ox_prepress_thread = threading.Thread()
 
         if self.mode == "real" or self.mode == "sim":
@@ -399,7 +401,7 @@ class Autosequence():
     def prepress_wrapper(self, prepress, flag):
         while flag.is_set():
             prepress()
-            time.sleep(0.1)
+            time.sleep(0.05)
 
     def prepress_fuel(self) -> bool:
         fuel_tank_pressure = statistics.median([
@@ -415,6 +417,23 @@ class Autosequence():
         elif (not fuel_prepress_open) and (fuel_tank_pressure <= self.fuel_lower_bound):
             self.fuel_prepress.open()
 
+        elif fuel_tank_pressure >= self.fuel_abort_pressure:
+            self.prepress_abort()
+
+    def prepress_fuel_dome_iso(self) -> bool:
+        fuel_tank_pressure = statistics.median([
+            self.controller[PT("fuel_tank_1")],
+            self.controller[PT("fuel_tank_2")],
+            self.controller[PT("fuel_tank_3")]
+        ])
+        fuel_dome_iso_open = self.controller[STATE("fuel_dome_iso")]
+
+        if fuel_dome_iso_open and (fuel_tank_pressure >= self.fuel_upper_bound):
+            self.fuel_dome_iso.close()
+        
+        elif (not fuel_dome_iso_open) and (fuel_tank_pressure <= self.fuel_lower_bound):
+            self.fuel_dome_iso.open()
+        
         elif fuel_tank_pressure >= self.fuel_abort_pressure:
             self.prepress_abort()
 
@@ -443,24 +462,40 @@ class Autosequence():
         try:
             self.initialize()
             prepress_delay = 3
-            input(colorama.Fore.BLUE + f"Press enter to begin fuel prepress ({prepress_delay} second countdown) " + colorama.Style.RESET_ALL)
-            syauto.wait(prepress_delay, color=colorama.Fore.BLUE)
-            try:
-                self.fuel_prepress_running.clear()
-                self.fuel_prepress_running.set()
-                self.fuel_prepress_thread = threading.Thread(name="prepress_fuel_thread", target=self.prepress_wrapper, args=(self.prepress_fuel,self.fuel_prepress_running,))
-                print(green("Starting fuel prepress..."))
-                self.fuel_prepress_thread.start()
-
-                input(colorama.Fore.BLUE + f"Press enter to begin ox prepress ({prepress_delay} second countdown) " + colorama.Style.RESET_ALL)
+            if self._using_fuel: # outside of try to avoid triggering prepress abort
+                input(colorama.Fore.BLUE + f"Press enter to begin fuel prepress with PREPRESS valve ({prepress_delay} second countdown) " + colorama.Style.RESET_ALL)
                 syauto.wait(prepress_delay, color=colorama.Fore.BLUE)
+            try:
+                if self._using_fuel:
+                    self.fuel_prepress_running.clear()
+                    self.fuel_prepress_running.set()
+                    self.fuel_prepress_thread = threading.Thread(name="prepress_fuel_thread", target=self.prepress_wrapper, args=(self.prepress_fuel,self.fuel_prepress_running,))
+                    print(green("Starting fuel prepress..."))
+                    self.fuel_prepress_thread.start()
 
-                self.ox_vent.close()
-                self.ox_prepress_running.clear()
-                self.ox_prepress_running.set()
-                self.ox_prepress_thread = threading.Thread(name="prepress_ox_thread", target=self.prepress_wrapper, args=(self.prepress_ox,self.ox_prepress_running,))
-                print(green("Starting ox prepress..."))
-                self.ox_prepress_thread.start()
+                if self._using_fuel:
+                    input(colorama.Fore.BLUE + f"Press enter to begin fuel prepress with DOME ISO valve ({prepress_delay} second countdown) " + colorama.Style.RESET_ALL)
+                    self.fuel_prepress_running.clear()
+                    self.fuel_prepress_thread.join()
+                    self.fuel_prepress.close()
+                    
+                    syauto.wait(prepress_delay, color=colorama.Fore.BLUE)
+                    self.fuel_prepress_dome_iso_running.clear()
+                    self.fuel_prepress_dome_iso_running.set()
+                    self.fuel_prepress_dome_iso_thread = threading.Thread(name="prepress_fuel_dome_iso_thread", target=self.prepress_wrapper, args=(self.prepress_fuel_dome_iso,self.fuel_prepress_dome_iso_running,))
+                    print(green("Starting fuel prepress dome iso..."))
+                    self.fuel_prepress_dome_iso_thread.start()
+
+                if self._using_ox:
+                    input(colorama.Fore.BLUE + f"Press enter to begin ox prepress ({prepress_delay} second countdown) " + colorama.Style.RESET_ALL)
+                    syauto.wait(prepress_delay, color=colorama.Fore.BLUE)
+
+                    self.ox_vent.close()
+                    self.ox_prepress_running.clear()
+                    self.ox_prepress_running.set()
+                    self.ox_prepress_thread = threading.Thread(name="prepress_ox_thread", target=self.prepress_wrapper, args=(self.prepress_ox,self.ox_prepress_running,))
+                    print(green("Starting ox prepress..."))
+                    self.ox_prepress_thread.start()
 
                 firing = input(blue("Type `") + magenta("fire") + blue("` to begin firing sequence (10 second countdown) ") + colorama.Fore.MAGENTA).strip().lower()
                 if firing == "fire":
@@ -494,22 +529,35 @@ class Autosequence():
             elif command == "igniter_close":
                 self.igniter.close()
             elif command == "end_prepress":
-                self.fuel_prepress_running.clear()
-                self.fuel_prepress_thread.join()
+                if self.fuel_prepress_thread.is_alive():
+                    self.fuel_prepress_running.clear()
+                    self.fuel_prepress_thread.join()
                 if self.ox_prepress_thread.is_alive():
                     self.ox_prepress_running.clear()
                     self.ox_prepress_thread.join()
+                if self.fuel_prepress_dome_iso_thread.is_alive():
+                    self.fuel_prepress_dome_iso_running.clear()
+                    self.fuel_prepress_dome_iso_thread.join()
                 self.ox_dome_iso.close()  # fallback
                 self.fuel_prepress.close()  # fallback
+                self.fuel_dome_iso.close()  # fallback
             elif command == "ox_dome":
+                if not self._using_ox:
+                    continue
                 self.ox_dome_iso.open()
             elif command == "fuel_dome":
+                if not self._using_fuel:
+                    continue
                 self.fuel_dome_iso.open()
             elif command == "return_line":
+                if not self._using_ox:
+                    continue
                 self.ox_return_line.close()
             elif command == "first_mpv":
                 self.first_mpv.open()
             elif command == "second_mpv":
+                if not self._using_ox or not self._using_fuel:
+                    continue  # assumes first MPV is the one for the test
                 self.second_mpv.open()
             elif command == "start_ignition_detection":
                 self.igniter_verification_thread = threading.Thread(
@@ -539,12 +587,11 @@ class Autosequence():
         syauto.close_all(self.controller, [
             self.first_mpv, self.second_mpv, self.fuel_prevalve, self.ox_prevalve, self.press_iso,
         ])
-        # syauto.open_all(self.controller, [
-        #     self.ox_vent, self.fuel_vent, self.mpv_purge,
-        # ])
-        syauto.open_all(self.controller, [
-            self.mpv_purge,
-        ])
+        # if self._using_fuel:
+        #     self.fuel_vent.open()
+        # if self._using_ox:
+        #     self.ox_vent.open()
+        self.mpv_purge.open()
         syauto.wait(PURGE_DURATION, color=colorama.Fore.GREEN, message=green("Purge completed."))
 
         # post purge
@@ -593,9 +640,10 @@ class Autosequence():
         print(yellow("Terminating prepress..."))
         print(yellow("Closing valves..."))
         syauto.close_all(self.controller, [
-            self.ox_dome_iso, self.fuel_prepress, self.press_iso,
+            self.ox_dome_iso, self.fuel_prepress, self.press_iso, self.fuel_dome_iso,
         ])
-        self.fuel_prepress_thread.join()
+        if self.fuel_prepress_thread.is_alive():
+            self.fuel_prepress_thread.join()
         if self.ox_prepress_thread.is_alive():
             self.ox_prepress_thread.join()
         self.shutdown()
@@ -609,16 +657,19 @@ class Autosequence():
             self.fuel_prepress, self.press_iso,
         ])
         print(red("Opening vents..."))
-        syauto.open_all(self.controller, [
-            self.ox_vent, self.fuel_vent,
-        ])
+        if self._using_fuel:
+            self.fuel_vent.open()
+        if self._using_ox:
+            self.ox_vent.open()
         syauto.wait(PURGE_DURATION, color=colorama.Fore.RED)
         print(red("Closing Dome Isos..."))
         syauto.close_all(self.controller, [
             self.ox_dome_iso, self.fuel_dome_iso,
         ])
-        self.fuel_prepress_thread.join()
-        self.ox_prepress_thread.join()
+        if self.fuel_prepress_thread.is_alive():
+            self.fuel_prepress_thread.join()
+        if self.ox_prepress_thread.is_alive():
+            self.ox_prepress_thread.join()
         self.shutdown()
 
     def postignition_abort(self):
@@ -628,9 +679,10 @@ class Autosequence():
             self.press_iso, self.first_mpv, self.second_mpv, self.fuel_prevalve, self.ox_prevalve,
         ])
         print(red("Opening vents and purge..."))
-        syauto.open_all(self.controller, [
-            self.ox_vent, self.fuel_vent, self.mpv_purge,
-        ])
+        if self._using_fuel:
+            self.fuel_vent.open()
+        if self._using_ox:
+            self.ox_vent.open()
         syauto.wait(PURGE_DURATION, color=colorama.Fore.RED, message=red("Purge completed"))
         print(red("Closing MPV Purge + Dome Isos..."))
         syauto.close_all(self.controller, [

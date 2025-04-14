@@ -208,14 +208,16 @@ with client.open_streamer(list(REMOTE.keys())) as streamer:
                 if STATE["fuel_prepress"] == 1 and STATE["purge_bottle"] > STATE["fuel_tanks"]:
                     if STATE["fuel_tanks"] < 700:
                         coeff = math.sqrt(abs(STATE["purge_bottle"] - STATE["fuel_tanks"]))
-                        STATE["fuel_tanks"] += 4 * RATE * coeff
+                        # STATE["fuel_tanks"] += 4 * RATE * coeff
+                        STATE["fuel_tanks"] += 1 * RATE * coeff
                         STATE["purge_bottle"] -= 8 * RATE * coeff
 
                 if STATE["press_iso"] == 1:
                     if STATE["fuel_dome_iso"] == 1:
                         STATE["fuel_tpc_outlet"] = min(STATE["fuel_reg_set_pressure"], STATE["press_bottles"])
                         coeff = math.sqrt(abs(STATE["press_bottles"] - STATE["fuel_tanks"]))
-                        if STATE["fuel_tpc_outlet"] > STATE["fuel_tanks"]:
+                        # if STATE["fuel_tpc_outlet"] > STATE["fuel_tanks"]:
+                        if STATE["press_bottles"] > STATE["fuel_tanks"]:
                             STATE["fuel_tanks"] += 2 * RATE * coeff
                             STATE["press_bottles"] -= 1 * RATE * coeff
 

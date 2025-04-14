@@ -45,7 +45,7 @@ for lc in range(3):
 RATE = (synnax.Rate.HZ * 100).period.seconds
 print("rate: ", RATE)
 
-running_average_length = 20
+running_average_length = 25
 print(f"averaging over {running_average_length * RATE} seconds")
 
 AVERAGE_VALUES = {}
@@ -66,7 +66,7 @@ with client.open_streamer(read_channels) as streamer:
         exit(1)
     starting_time = initial_frame["gse_ai_time"][-1]
     with client.open_writer(starting_time, write_channels, 20, enable_auto_commit=True) as writer:
-        time.sleep(1)
+        # time.sleep(1)
         errors = 0
         iteration = 0
         while True:
@@ -74,29 +74,27 @@ with client.open_streamer(read_channels) as streamer:
                 frame = streamer.read()
                 if frame is None:
                     continue
+                averages = {}
                 for chan in channels_to_average:
-                    value = frame[chan][-1]
-                    AVERAGE_VALUES[chan].append(value)
-                    SUMS[chan] += value
-                    if len(AVERAGE_VALUES[chan]) > running_average_length:
-                        SUMS[chan] -= AVERAGE_VALUES[chan].popleft()
-                    average = SUMS[chan] / len(AVERAGE_VALUES[chan])
-                    WRITE_DATA[chan + "_avg"] = average
-                    WRITE_DATA["gse_average_time"] = frame["gse_ai_time"][-1]
-                time.sleep(0.0001)
-                writer.write(WRITE_DATA)
+                    averages[chan + "_avg"] = []
+                    for sample in frame[chan]:
+                        if len(AVERAGE_VALUES[chan]) >= running_average_length:
+                            SUMS[chan] -= AVERAGE_VALUES[chan].popleft()
+                        AVERAGE_VALUES[chan].append(sample)
+                        SUMS[chan] += sample
+                        averages[chan + "_avg"].append(SUMS[chan] / len(AVERAGE_VALUES[chan]))
+                averages["gse_average_time"] = []
+                for i in frame["gse_ai_time"]:
+                    averages["gse_average_time"].append(i)
 
-                if iteration % 6000 == 0:
+                writer.write(averages)
+
+                if iteration % 60 == 0:
                     print("iteration ", iteration)
                 iteration += 1
+
+                time.sleep(0.0001)
                 
             except KeyboardInterrupt:
                 print("terminating script...")
                 break
-
-            # except Exception as e:
-            #     print(f"encountered an error: {e}")
-            #     errors += 1
-            #     if errors > 5:
-            #         print("too many errors, terminating script...")
-            #         exit(1)
