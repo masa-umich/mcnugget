@@ -2,7 +2,13 @@ import synnax as sy
 from synnax.hardware import ni
 import pandas as pd
 
-client = sy.Synnax()
+client = sy.Synnax(
+    host="141.212.192.160",
+    port=9090,
+    username="synnax",
+    password="seldon",
+    secure=False,
+)
 
 
 def process_vlv(row: pd.Series, digital_task):
@@ -163,12 +169,12 @@ def process_lc(row: pd.Series, analog_task: ni.AnalogReadTask, analog_card: sy.D
         port=port,
         custom_scale=ni.LinScale(
             slope=row["Calibration Slope (mV/psig)"],
-            y_intercept=row["Calibration Offset (V)"] - (170 if row["Channel"] == 3 else 0),
+            y_intercept=row["Calibration Offset (V)"],
             pre_scaled_units="Volts",
-            scaled_units="KilogramForce",
+            scaled_units="Pounds",
         ),
         terminal_config="RSE",
-        max_val=2000,
+        max_val=4500,
     )
     analog_task.config.channels.append(lc_channel)
     print("LC channel created.")

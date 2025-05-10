@@ -3,8 +3,13 @@ import synnax
 import synnax.control
 from collections import deque
 
-client = synnax.Synnax()
-
+client = synnax.Synnax(
+    host="141.212.192.160",
+    port=9090,
+    username="synnax",
+    password="seldon",
+    secure=False,
+)
 channels_to_average = []
 
 average_time = client.channels.create(
@@ -42,6 +47,34 @@ for lc in range(3):
         print(f"unable to find gse_lc_{lc + 1}, excluding from channels to average")
         continue
 
+for tc in range(14):
+    try:
+        client.channels.retrieve(f"gse_tc_{tc + 1}_raw")
+        client.channels.create(
+            name=f"gse_tc_{tc + 1}_raw_avg",
+            data_type=synnax.DataType.FLOAT32,
+            index=average_time.key,
+            retrieve_if_name_exists=True
+        )
+        channels_to_average.append(f"gse_tc_{tc + 1}_raw")
+    except synnax.exceptions.NotFoundError:
+        print(f"unable to find gse_tc_{tc + 1}_raw, excluding from channels to average")
+        continue
+
+for special in ["gse_thermistor_supply", "gse_thermistor_signal"]:
+    try:
+        client.channels.retrieve(special)
+        client.channels.create(
+            name=f"{special}_avg",
+            data_type=synnax.DataType.FLOAT32,
+            index=average_time.key,
+            retrieve_if_name_exists=True
+        )
+        channels_to_average.append(special)
+    except synnax.exceptions.NotFoundError:
+        print(f"unable to find {special}, excluding from channels to average")
+        continue
+
 RATE = (synnax.Rate.HZ * 100).period.seconds
 print("rate: ", RATE)
 
@@ -67,7 +100,6 @@ with client.open_streamer(read_channels) as streamer:
     starting_time = initial_frame["gse_ai_time"][-1]
     with client.open_writer(starting_time, write_channels, 20, enable_auto_commit=True) as writer:
         time.sleep(1)
-        errors = 0
         iteration = 0
         while True:
             try:
@@ -86,17 +118,11 @@ with client.open_streamer(read_channels) as streamer:
                 time.sleep(0.0001)
                 writer.write(WRITE_DATA)
 
-                if iteration % 6000 == 0:
-                    print("iteration ", iteration)
-                iteration += 1
-                
             except KeyboardInterrupt:
                 print("terminating script...")
                 break
 
-            # except Exception as e:
-            #     print(f"encountered an error: {e}")
-            #     errors += 1
-            #     if errors > 5:
-            #         print("too many errors, terminating script...")
-            #         exit(1)
+            finally:
+                if iteration % 6000 == 0:
+                    print("iteration ", iteration)
+                iteration += 1

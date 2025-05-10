@@ -44,7 +44,6 @@ VALVE_INDICES = {
     "ox_mpv": 19,
     "ox_prevalve": 3,
     "ox_vent": 23,
-    # "ox_prepress": 7,
 
     "fuel_mpv": 12,
     "fuel_prevalve": 17,

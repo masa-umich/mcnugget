@@ -1,3 +1,7 @@
+"""
+simplified version of ultimate_sim
+"""
+
 import time
 import random
 import synnax as sy

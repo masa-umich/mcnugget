@@ -3,7 +3,13 @@ from synnax.hardware import ni
 import pandas as pd
 from daq.processing import process_vlv, process_pt, process_tc, process_lc, process_raw
 
-client = sy.Synnax()
+client = sy.Synnax(
+    host="141.212.192.160",
+    port=9090,
+    username="synnax",
+    password="seldon",
+    secure=False,
+)
 
 """
 const double TC_SLOPES[14] = {
@@ -90,8 +96,8 @@ def let_there_be_data():
     """
     data = []
     p_5 = [11] # 5
-    p_250 = [29] #250
-    p_500 = [28, 30, 31, 32, 33] # 500
+    p_250 = [] # 250
+    p_500 = [30, 31, 32, 33] # 500
     p_700 = [9, 10, 12, 13] # 700
     # everything else is 1000
     p_2000 = [] # 2000

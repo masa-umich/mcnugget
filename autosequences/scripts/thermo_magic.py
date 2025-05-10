@@ -42,14 +42,20 @@ SH3 = 8.563052731505164e-08  # 50 degrees celsius
 
 def generate_tc_data():
     # grab channels from synnax
-    client = sy.Synnax()
+    client = sy.Synnax(
+        host="141.212.192.160",
+        port=9090,
+        username="synnax",
+        password="seldon",
+        secure=False,
+    )
     thermocouple_channels = []
     thermocouple_write_channels = []
     # 2 arrays and a dict because writing as a dict is synnax's favorite format
 
     # channel creation/retrieval
     gse_ai_time = client.channels.create(
-        name="gse_ai_time",
+        name="gse_average_time",
         data_type=sy.DataType.TIMESTAMP,
         retrieve_if_name_exists=True,
         is_index=True,
@@ -62,7 +68,7 @@ def generate_tc_data():
     )
     for i in range(14):
         tc_channel = client.channels.create(
-            name=f"gse_tc_{i + 1}_raw",
+            name=f"gse_tc_{i + 1}_raw_avg",
             data_type=sy.DataType.FLOAT32,
             index=gse_ai_time.key,
             retrieve_if_name_exists=True,
@@ -77,20 +83,20 @@ def generate_tc_data():
         thermocouple_write_channels.append(tc_write_channel)
 
     thermistor_supply = client.channels.create(
-        name="gse_thermistor_supply",
+        name="gse_thermistor_supply_avg",
         data_type=sy.DataType.FLOAT32,
         index=gse_ai_time.key,
         retrieve_if_name_exists=True,
     )
     thermistor_signal = client.channels.create(
-        name="gse_thermistor_signal",
+        name="gse_thermistor_signal_avg",
         data_type=sy.DataType.FLOAT32,
         index=gse_ai_time.key,
         retrieve_if_name_exists=True,
     )
 
     STREAM_CHANNELS = [
-        "gse_ai_time",
+        "gse_average_time",
         thermistor_signal.name,
         thermistor_supply.name,
     ] + [tc.name for tc in thermocouple_channels]
@@ -110,6 +116,7 @@ def generate_tc_data():
         if initial_frame is None:
             print("unable to stream data")
             exit(1)
+        print(initial_frame)
         initial_time = initial_frame[gse_ai_time.name][-1]
         print("initial time: ", initial_time)
         with client.open_writer(
@@ -121,28 +128,46 @@ def generate_tc_data():
             )
             print(f"writing to {len(WRITE_CHANNELS)} channels: ", WRITE_CHANNELS)
             iteration = 0
+            errors = 0
             while True:
-                frame = streamer.read(0.01)
-                if frame is None:
-                    continue
-                thermocouple_data_values = []
-                therm_supply = frame[thermistor_supply.name][-1]
-                therm_signal = frame[thermistor_signal.name][-1]
-                therm_offset = calculate_thermistor_offset(therm_supply, therm_signal)
-                for i in range(len(thermocouple_channels)):
-                    tc = thermocouple_channels[i]
-                    tc_raw = frame[tc.name][-1]
-                    tc_temp = compute_temperature_from_mv(tc_raw + therm_offset)
-                    thermocouple_data_values.append(tc_temp)
-                thermocouple_data_values.append(frame["gse_ai_time"][-1])
-                assert(len(thermocouple_data_channels) == len(thermocouple_data_values))
-                ok = writer.write(thermocouple_data_channels, thermocouple_data_values)
-                if not ok:
+                try:
+                    frame = streamer.read(0.01)
+                    if frame is None:
+                        continue
+                    thermocouple_data_values = []
+                    therm_supply = frame[thermistor_supply.name][-1]
+                    therm_signal = frame[thermistor_signal.name][-1]
+                    therm_offset = calculate_thermistor_offset(therm_supply, therm_signal)
+                    for i in range(len(thermocouple_channels)):
+                        tc = thermocouple_channels[i]
+                        tc_raw = frame[tc.name][-1]
+                        tc_temp = compute_temperature_from_mv(tc_raw + therm_offset)
+                        thermocouple_data_values.append(tc_temp)
+                    thermocouple_data_values.append(frame["gse_average_time"][-1])
+                    assert(len(thermocouple_data_channels) == len(thermocouple_data_values))
+                    ok = writer.write(thermocouple_data_channels, thermocouple_data_values)
+                    if not ok:
+                        break
+                except KeyboardInterrupt:
+                    print('terminating')
                     break
-                if iteration % 600 == 0:
-                    print(f"processed {iteration} frames")
-                iteration += 1
-
+                except ValueError as ve:
+                    print('encountered a ValueError, continuing')
+                    print(ve)
+                    errors += 1
+                    continue
+                except Exception as e:
+                    print('encountered an unknown error')
+                    print(e)
+                    errors += 1
+                    continue
+                finally:
+                    if iteration % 600 == 0:
+                        print(f"processed {iteration} frames")
+                    iteration += 1
+                    if errors > 20:
+                        print('encountered over 20 errors, terminating')
+                        break
 
 def calculate_thermistor_offset(supply, signal):
     # voltage drop across thermistor is proportional to resistance
