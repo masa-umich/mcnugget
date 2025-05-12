@@ -130,13 +130,18 @@ STATE["fuel_flowmeter_throat"] = 0
 STATE["ox_tpc_outlet"] = 0
 STATE["fuel_tpc_outlet"] = 0
 
-STATE["ox_reg_set_pressure"] = 390
-STATE["fuel_reg_set_pressure"] = 400
+STATE["ox_reg_set_pressure"] = 620
+STATE["fuel_reg_set_pressure"] = 750
 
 REMOTE[f"gse_vlv_{VALVES['OX_VENT']}"] = 1
 REMOTE[f"gse_vlv_{VALVES['FUEL_VENT']}"] = 1
 REMOTE[f"gse_vlv_{VALVES['OX_MPV']}"] = 1
 REMOTE[f"gse_vlv_{VALVES['FUEL_MPV']}"] = 1
+
+fuel_prepress_rate = RATE * 8 # psi/sec -> psi/iteration
+# ox_prepress_rate = 0 # not used
+fuel_dome_iso_rate = RATE * 80 # psi/sec -> psi/iteration
+ox_dome_iso_rate = RATE * 80 # psi/sec -> psi/iteration
 
 print(f"reading from {len(list(REMOTE.keys()))} channels")
 print(f"writing to {len(list(LOCAL.keys()))} channels")

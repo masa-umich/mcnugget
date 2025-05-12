@@ -182,9 +182,9 @@ def create_tasks():
     analog_card = client.hardware.devices.retrieve(name="Analog")
     digital_card = client.hardware.devices.retrieve(name="Digital")
     analog_task = ni.AnalogReadTask(
-        name="Analog Data",
+        name="Sad Slow Analog Data",
         device=analog_card.key,
-        sample_rate=sy.Rate.HZ * 500,
+        sample_rate=sy.Rate.HZ * 200,
         stream_rate=sy.Rate.HZ * 100,
         data_saving=True,
         channels=[],

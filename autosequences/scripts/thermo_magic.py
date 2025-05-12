@@ -55,7 +55,7 @@ def generate_tc_data():
 
     # channel creation/retrieval
     gse_ai_time = client.channels.create(
-        name="gse_average_time",
+        name="gse_ai_time",
         data_type=sy.DataType.TIMESTAMP,
         retrieve_if_name_exists=True,
         is_index=True,
@@ -68,7 +68,7 @@ def generate_tc_data():
     )
     for i in range(14):
         tc_channel = client.channels.create(
-            name=f"gse_tc_{i + 1}_raw_avg",
+            name=f"gse_tc_{i + 1}_raw",
             data_type=sy.DataType.FLOAT32,
             index=gse_ai_time.key,
             retrieve_if_name_exists=True,
@@ -83,24 +83,24 @@ def generate_tc_data():
         thermocouple_write_channels.append(tc_write_channel)
 
     thermistor_supply = client.channels.create(
-        name="gse_thermistor_supply_avg",
+        name="gse_thermistor_supply",
         data_type=sy.DataType.FLOAT32,
         index=gse_ai_time.key,
         retrieve_if_name_exists=True,
     )
     thermistor_signal = client.channels.create(
-        name="gse_thermistor_signal_avg",
+        name="gse_thermistor_signal",
         data_type=sy.DataType.FLOAT32,
         index=gse_ai_time.key,
         retrieve_if_name_exists=True,
     )
 
     STREAM_CHANNELS = [
-        "gse_average_time",
+        "gse_ai_time",
         thermistor_signal.name,
         thermistor_supply.name,
     ] + [tc.name for tc in thermocouple_channels]
-    WRITE_CHANNELS = [tc.name for tc in thermocouple_write_channels] + ["gse_tc_time"]
+    WRITE_CHANNELS = [tc.name for tc in thermocouple_write_channels] + ["gse_tc_time"] + ["gse_thermistor_celsius"]
 
     thermocouple_data_channels = WRITE_CHANNELS
     thermocouple_data_values = []
@@ -116,34 +116,31 @@ def generate_tc_data():
         if initial_frame is None:
             print("unable to stream data")
             exit(1)
-        print(initial_frame)
         initial_time = initial_frame[gse_ai_time.name][-1]
         print("initial time: ", initial_time)
         with client.open_writer(
             channels=WRITE_CHANNELS, start=initial_time, enable_auto_commit=True
         ) as writer:
-            print(
-                f"streaming from {len(STREAM_CHANNELS)} channels: ",
-                STREAM_CHANNELS,
-            )
-            print(f"writing to {len(WRITE_CHANNELS)} channels: ", WRITE_CHANNELS)
+            print(f"streaming from {len(STREAM_CHANNELS)} channels")
+            print(f"writing to {len(WRITE_CHANNELS)} channels")
             iteration = 0
             errors = 0
             while True:
                 try:
-                    frame = streamer.read(0.01)
+                    frame = streamer.read(0.0025)
                     if frame is None:
                         continue
                     thermocouple_data_values = []
                     therm_supply = frame[thermistor_supply.name][-1]
                     therm_signal = frame[thermistor_signal.name][-1]
-                    therm_offset = calculate_thermistor_offset(therm_supply, therm_signal)
+                    therm_offset, ambient_celsius = calculate_thermistor_offset(therm_supply, therm_signal)
                     for i in range(len(thermocouple_channels)):
                         tc = thermocouple_channels[i]
                         tc_raw = frame[tc.name][-1]
                         tc_temp = compute_temperature_from_mv(tc_raw + therm_offset)
                         thermocouple_data_values.append(tc_temp)
-                    thermocouple_data_values.append(frame["gse_average_time"][-1])
+                    thermocouple_data_values.append(frame["gse_ai_time"][-1])
+                    thermocouple_data_values.append(ambient_celsius)
                     assert(len(thermocouple_data_channels) == len(thermocouple_data_values))
                     ok = writer.write(thermocouple_data_channels, thermocouple_data_values)
                     if not ok:
@@ -162,8 +159,9 @@ def generate_tc_data():
                     errors += 1
                     continue
                 finally:
-                    if iteration % 600 == 0:
+                    if iteration % 6000 == 0:
                         print(f"processed {iteration} frames")
+                        print(f"internal temperature {round(ambient_celsius, 2)} celsius")
                     iteration += 1
                     if errors > 20:
                         print('encountered over 20 errors, terminating')
@@ -177,7 +175,7 @@ def calculate_thermistor_offset(supply, signal):
     celsius = 1 / inverse_kelvin - 273.15
     # convert celsius back to mV
     offset = compute_mv_from_temperature(celsius)
-    return offset
+    return offset, celsius
 
 
 def compute_mv_from_temperature(celsius):

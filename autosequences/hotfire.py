@@ -15,7 +15,7 @@ FIRST_MPV = "fuel"  # set as either "ox" or "fuel"
 OX_MPV_TIME = 0
 FUEL_MPV_TIME = 1
 MPV_DELAY = 0
-BURN_DURATION = 1
+BURN_DURATION = 5
 PURGE_DURATION = 7
 
 # All of these delays should be in seconds backwards from T=0
@@ -23,12 +23,12 @@ IGNITER_LEAD = 6
 END_PREPRESS_LEAD = 3
 
 # ox
-OX_PREPRESS_TARGET = 365
+OX_PREPRESS_TARGET = 332  # 327 - 337
 OX_PREPRESS_MARGIN = 5  # +/- from the target
 OX_PREPRESS_ABORT_PRESSURE = 700
 
 # fuel
-FUEL_PREPRESS_TARGET = 515
+FUEL_PREPRESS_TARGET = 570  # 565 - 570
 FUEL_PREPRESS_MARGIN = 5  # +/- from the target
 FUEL_PREPRESS_ABORT_PRESSURE = 700
 
