@@ -75,11 +75,7 @@ for lc in range(3):
 #         print(f"unable to find {special}, excluding from channels to average")
 #         continue
 
-RATE = (synnax.Rate.HZ * 100).period.seconds
-print("rate: ", RATE)
-
 running_average_length = 20
-print(f"averaging over {running_average_length * RATE} seconds")
 
 AVERAGE_VALUES = {}
 for chan in channels_to_average:

@@ -1,0 +1,114 @@
+(mcnugget-py3.12) evanhekman@Evans-MacBook-Air-7 autosequences % python hotfire.py 
+Enter mode (coldflow/hotfire/sim/real): real
+Connected to cluster at 141.212.192.160
+USING FUEL
+USING OX
+FIRST MPV: FUEL
+Initializing...
+Checking for negative wait times...
+Checking valves...
+Checking for invalid channels...
+Checking starting state...
+BURN_DURATION: 22
+OX_PREPRESS_TARGET: 464
+FUEL_PREPRESS_TARGET: 545
+FIRST_MPV: fuel
+Press enter to confirm the test parameters listed above: 
+All checks passed - initialization complete.
+
+Press enter to begin fuel prepress with PREPRESS valve (3 second countdown) 
+3
+2
+1
+Starting fuel prepress...
+Press enter to begin fuel prepress with DOME ISO valve (3 second countdown) 
+3
+2
+1
+Starting fuel prepress dome iso...
+Press enter to begin ox prepress (3 second countdown) 
+3
+2
+1
+Starting ox prepress...
+Type `fire` to begin firing sequence (10 second countdown) fire
+Starting firing sequence...
+10
+9
+8
+7
+6
+Verify igniter by pressing Enter in the next 4 seconds.
+5
+4
+
+---IGNITER HAS BEEN VERIFIED---
+3
+2
+1.0
+0.9
+0.8
+0.7
+0.6
+0.5
+0.4
+0.3
+0.1
+            * / //   /
+---IGNITION---***|||||::::>>>
+            * \ \\   \
+22
+21
+20
+19
+18
+17
+16
+15
+14
+13
+12
+11
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+Purging...
+7
+6
+5
+4
+3
+2
+1
+Purge completed.
+Firing sequence completed nominally.
+Autosequence has released control.
+                            .-==========
+                         .-' *    =====
+                        /___       ===
+                           \_      |
+_____________________________)    (_____________________________
+\___________               .'      `,              ____________/
+  \__________`.     |||<   `.      .'   >|||     .'__________/
+     \_________`._  |||  <   `-..-'   >  |||  _.'_________/
+        \_________`-..|_  _ <      > _  _|..-'_________/
+           \_________   |_|  //  \\  |_|   _________/
+                      .-\   //    \\   /-.
+      ,  .         _.'.- `._        _.' -.`._         .  ,
+    <<<<>>>>     .' .'  /  '``----''`  \  `. `.     <<<<>>>>
+      '/\`         /  .' .'.'/|..|\`.`. `.  \         '/\`
+      (())        `  /  / .'| |||| |`. \  \  '        (())
+       /\          ::_.' .' /| || |\ `. `._::          /\
+      //\\           '``.' | | || | | `.''`           //\\
+      //\\             .` .` | || | '. '.             //\\
+      //\\                `  | `' |  '                //\\
+      \\//                                            \\//
+       \/                  ME-PHOENIX                  \/
+(mcnugget-py3.12) evanhekman@Evans-MacBook-Air-7 autosequences % 

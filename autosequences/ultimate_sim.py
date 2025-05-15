@@ -19,7 +19,7 @@ except:
     exit(0)
 
 GSE_TIME = "gse_time"
-RATE = (sy.Rate.HZ * 100).period.seconds
+RATE = (sy.Rate.HZ * 200).period.seconds
 
 VALVES = {
     "OX_RETURN_LINE": 1,

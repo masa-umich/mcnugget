@@ -13,9 +13,8 @@ Only change things declared in ALL_CAPS. All test parameters are referenced from
 # firing sequence
 FIRST_MPV = "fuel"  # set as either "ox" or "fuel"
 OX_MPV_TIME = 0
-FUEL_MPV_TIME = 1
-MPV_DELAY = 0
-BURN_DURATION = 5
+FUEL_MPV_TIME = 0.150
+BURN_DURATION = 22
 PURGE_DURATION = 7
 
 # All of these delays should be in seconds backwards from T=0
@@ -23,20 +22,29 @@ IGNITER_LEAD = 6
 END_PREPRESS_LEAD = 3
 
 # ox
-OX_PREPRESS_TARGET = 332  # 327 - 337
+OX_PREPRESS_TARGET = 464  # 464
 OX_PREPRESS_MARGIN = 5  # +/- from the target
 OX_PREPRESS_ABORT_PRESSURE = 700
 
 # fuel
-FUEL_PREPRESS_TARGET = 570  # 565 - 570
-FUEL_PREPRESS_MARGIN = 5  # +/- from the target
+FUEL_PREPRESS_TARGET = 545  # 600
+FUEL_PREPRESS_MARGIN = 5  # - from the target
 FUEL_PREPRESS_ABORT_PRESSURE = 700
 
 # leave these
 FUEL_DOME_LEAD = FUEL_MPV_TIME  # T-1
 RETURN_LINE_LEAD = OX_MPV_TIME + 1  # T-1
 OX_DOME_LEAD = OX_MPV_TIME + 2      # T-2
-FIRST_MPV_LEAD = max(FUEL_MPV_TIME, OX_MPV_TIME) - min(FUEL_MPV_TIME, OX_MPV_TIME) + MPV_DELAY   # T-1 FUEL_MPV
+FIRST_MPV_LEAD = max(FUEL_MPV_TIME, OX_MPV_TIME) - min(FUEL_MPV_TIME, OX_MPV_TIME)
+
+"""
+sanity testing
+39.245 fuel mpv
+39.396 ox mpv
+39.245 fuel dome iso
+37.360 ox dome iso
+38.383 ox return line
+"""
 
 # channels - confirm ICD is up to date and check against the ICD
 VALVE_INDICES = {
@@ -586,10 +594,10 @@ class Autosequence():
         syauto.close_all(self.controller, [
             self.first_mpv, self.second_mpv, self.fuel_prevalve, self.ox_prevalve, self.press_iso,
         ])
-        # if self._using_fuel:
-        #     self.fuel_vent.open()
-        # if self._using_ox:
-        #     self.ox_vent.open()
+        if self._using_fuel:
+            self.fuel_vent.open()
+        if self._using_ox:
+            self.ox_vent.open()
         self.mpv_purge.open()
         syauto.wait(PURGE_DURATION, color=colorama.Fore.GREEN, message=green("Purge completed."))
 
