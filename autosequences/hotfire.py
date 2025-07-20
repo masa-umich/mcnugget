@@ -4,6 +4,8 @@
 
 This autosequence combines the processes of pre_press.py and reg_fire.py.
 
+Software controls ground systems, avionics takes over MPVs after handoff.
+
 When pre_press is true:
     1. Set starting state
         - Energize all normally_open
@@ -51,14 +53,17 @@ When reg_fire is true:
         - OX_DOME_ISO
     - We will then wait for 25 seconds, barring an abort
 
-4. Close Valves
+    4. Handoff to avionics for MPV control
+        - Connection will be lost after MPV opening
+
+    5. Close Valves (if still connected)
     - Close all the valves opened in step 3
     - Open FUEL_VENT and OX_LOW_FLOW_VENT and PRESS_VENT
 
 X. Abort
     - The only conditions which will trigger an abort:
-        - 2/3 PTs reading above maximum pressure for OX_TANK or FUEL_TANK
-        - Manual ctrl-c
+                    - 2/3 PTs reading above maximum pressure for OX_TANK or FUEL_TANK
+            - Manual ctrl-c
 
 """
 
@@ -123,13 +128,19 @@ FUEL_FEEDLINE_PURGE_CMD = "gse_doc_7"
 FUEL_FEEDLINE_PURGE_ACK = "gse_doa_7"
 OX_FEEDLINE_PURGE_CMD = "gse_doc_8"
 OX_FEEDLINE_PURGE_ACK = "gse_doa_8"
-# TODO: Update these based on instrumentation sheet
+
+# MPV and igniter channels - controlled by avionics after handoff
 OX_MPV_CMD = "gse_doc_6"
 OX_MPV_ACK = "gse_doa_6"
-FUEL_MPV = "gse_doc_24"
+FUEL_MPV_CMD = "gse_doc_24"
 FUEL_MPV_ACK = "gse_doa_24"
 IGNITER_CMD = "gse_doc_25"
 IGNITER_ACK = "gse_doa_25"
+
+# handoff channels - avionics team needs to implement these
+AVIONICS_HANDOFF_CMD = "avionics_handoff_cmd"
+AVIONICS_HANDOFF_ACK = "avionics_handoff_ack"
+AVIONICS_STATUS_CMD = "avionics_status_cmd"
 
 # Defining PT aliases
 FUEL_PT_1 = "gse_ai_3"
@@ -142,10 +153,17 @@ OX_PT_3 = "gse_ai_8"
 PTS = [FUEL_PT_1, FUEL_PT_2, FUEL_PT_3, OX_PT_1, OX_PT_2, OX_PT_3]
 ACKS = [FUEL_PREVALVE_ACK, OX_PREVALVE_ACK, FUEL_PRESS_ISO_ACK, OX_PRESS_ISO_ACK, OX_DOME_ISO_ACK, 
         FUEL_VENT_ACK, OX_LOW_FLOW_VENT_ACK, PRESS_VENT_ACK, FUEL_PRE_PRESS_ACK, OX_PRE_PRESS_ACK,
-        FUEL_FEEDLINE_PURGE_ACK, OX_FEEDLINE_PURGE_ACK,OX_MPV_ACK, FUEL_MPV_ACK, IGNITER_ACK]
+        FUEL_FEEDLINE_PURGE_ACK, OX_FEEDLINE_PURGE_ACK]
 CMDS = [FUEL_PREVALVE_CMD, OX_PREVALVE_CMD, FUEL_PRESS_ISO_CMD, OX_PRESS_ISO_CMD, OX_DOME_ISO_CMD, 
         FUEL_VENT_CMD, OX_LOW_FLOW_VENT_CMD, PRESS_VENT_CMD, FUEL_PRE_PRESS_CMD, OX_PRE_PRESS_CMD,
-        FUEL_FEEDLINE_PURGE_CMD, OX_FEEDLINE_PURGE_CMD, OX_MPV_CMD, FUEL_MPV, IGNITER_CMD]
+        FUEL_FEEDLINE_PURGE_CMD, OX_FEEDLINE_PURGE_CMD]
+
+# monitoring channels - software reads but doesn't control
+MONITORING_CHANNELS = [OX_MPV_ACK, FUEL_MPV_ACK, IGNITER_ACK]
+
+# handoff channels for avionics communication
+HANDOFF_ACKS = [AVIONICS_HANDOFF_ACK, AVIONICS_STATUS_CMD] 
+HANDOFF_CMDS = [AVIONICS_HANDOFF_CMD]
 
 # List of channels we're going to read from and write to
 WRITE_TO = []
@@ -156,6 +174,12 @@ for ack_chan in ACKS:
     READ_FROM.append(ack_chan)
 for PT_chan in PTS:
     READ_FROM.append(PT_chan)
+for handoff_cmd in HANDOFF_CMDS:
+    WRITE_TO.append(handoff_cmd)
+for handoff_ack in HANDOFF_ACKS:
+    READ_FROM.append(handoff_ack)
+for monitor_chan in MONITORING_CHANNELS:
+    READ_FROM.append(monitor_chan)
 # print(WRITE_TO)
 # print(READ_FROM)
 
@@ -183,9 +207,14 @@ MPV_DELAY = 0.281  # seconds
 # FUEL_MPV now takes 0.276 s to reach chamber
 # This delay puts OX in the chamber 0.200 seconds before fuel
 
-# IGNITER_DELAY = 6  # seconds
+# handoff timing parameters
+HANDOFF_TIMEOUT = 5.0  # seconds
+IGNITION_DELAY = 6.0   # seconds
 ISO_DELAY = 2  # seconds
 
+# handoff status tracking
+HANDOFF_SUCCESSFUL = False
+HANDOFF_ATTEMPTED = False
 
 # Running average implementation
 FUEL_PT_1_DEQUE = deque()
@@ -236,7 +265,7 @@ def get_averages(auto: Controller, read_channels: list[str]) -> dict[str, float]
 
 
 with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as auto:
-    # creates valve objects for each valve
+    # creates valve objects for each valve (except MPV/igniter - controlled by avionics)
     fuel_prepress = syauto.Valve(auto=auto, cmd = FUEL_PRE_PRESS_CMD, ack = FUEL_PRE_PRESS_ACK, normally_open=False)
     ox_prepress = syauto.Valve(auto=auto, cmd = OX_PRE_PRESS_CMD, ack = OX_PRE_PRESS_ACK, normally_open=False)
     fuel_feedline_purge = syauto.Valve(auto=auto, cmd = FUEL_FEEDLINE_PURGE_CMD, ack = FUEL_FEEDLINE_PURGE_ACK, normally_open=False)
@@ -249,9 +278,6 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     fuel_vent = syauto.Valve(auto=auto, cmd = FUEL_VENT_CMD, ack = FUEL_VENT_ACK, normally_open=True)
     ox_low_flow_vent = syauto.Valve(auto=auto, cmd = OX_LOW_FLOW_VENT_CMD, ack = OX_LOW_FLOW_VENT_ACK, normally_open=True)
     press_vent = syauto.Valve(auto=auto, cmd = PRESS_VENT_CMD, ack = PRESS_VENT_ACK, normally_open=True)
-    fuel_mpv = syauto.Valve(auto=auto, cmd = FUEL_MPV, ack = FUEL_MPV_ACK, normally_open=True)
-    ox_mpv = syauto.Valve(auto=auto, cmd = OX_MPV_CMD, ack = OX_MPV_ACK, normally_open=True)
-    igniter = syauto.Valve(auto=auto, cmd = IGNITER_CMD, ack = IGNITER_ACK, normally_open=False)
 
     # # For determining if each valve is open 
     # fuel_prevalve_open = auto[FUEL_PREVALVE_ACK]
@@ -268,6 +294,63 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
     # ox_mpv_open = auto[OX_MPV_ACK]
     # igniter_open = auto[IGNITER_ACK]
 
+    def avionics_handoff(auto: Controller) -> bool:
+        # handoff MPV control to avionics, returns True if successful
+        global HANDOFF_SUCCESSFUL, HANDOFF_ATTEMPTED
+        
+        print("\n" + "="*60)
+        print("CRITICAL: INITIATING HANDOFF TO AVIONICS")
+        print("="*60)
+        
+        HANDOFF_ATTEMPTED = True
+        handoff_start_time = time.time()
+        
+        try:
+            # Step 1: Send handoff command to avionics
+            print("Step 1: Sending handoff command to avionics...")
+            auto[AVIONICS_HANDOFF_CMD] = 1  # Signal avionics to take control
+            print(f"Handoff command sent at {time.time():.3f}")
+            
+            # Step 2: Wait for avionics acknowledgment with timeout
+            print(f"Step 2: Waiting for avionics acknowledgment (timeout: {HANDOFF_TIMEOUT}s)...")
+            ack_received = False
+            
+            while (time.time() - handoff_start_time) < HANDOFF_TIMEOUT:
+                if auto[AVIONICS_HANDOFF_ACK] == 1:
+                    ack_received = True
+                    handoff_duration = time.time() - handoff_start_time
+                    print(f"✓ HANDOFF ACKNOWLEDGED in {handoff_duration:.3f}s")
+                    break
+                time.sleep(0.1)  # Check every 100ms
+            
+            if not ack_received:
+                print("✗ HANDOFF TIMEOUT - Avionics did not acknowledge")
+                print("ABORTING - Maintaining software control")
+                auto[AVIONICS_HANDOFF_CMD] = 0  # Cancel handoff
+                return False
+            
+            # Step 3: Verify avionics is ready
+            print("Step 3: Verifying avionics readiness...")
+            if auto[AVIONICS_STATUS_CMD] == 1:  # Avionics reports ready
+                print("✓ AVIONICS READY - Handoff complete")
+                HANDOFF_SUCCESSFUL = True
+                print("SOFTWARE PHASE COMPLETE - AVIONICS NOW IN CONTROL")
+                print("="*60)
+                return True
+            else:
+                print("✗ AVIONICS NOT READY - Handoff failed")
+                auto[AVIONICS_HANDOFF_CMD] = 0  # Cancel handoff
+                return False
+                
+        except Exception as e:
+            print(f"✗ HANDOFF ERROR: {str(e)}")
+            print("EMERGENCY: Attempting to cancel handoff...")
+            try:
+                auto[AVIONICS_HANDOFF_CMD] = 0
+            except:
+                print("CRITICAL: Cannot cancel handoff - manual intervention required")
+            return False
+    
     def fuel_ox_abort(auto: Controller, abort_fuel=False, abort_ox=False):
         valves_to_close = []
         valves_to_potentially_open = []
@@ -326,96 +409,153 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
                 fuel_ox_abort(auto, abort_fuel=False, abort_ox=True)
 
     def reg_fire():
-        opened_fuel_mpv = False
-        opened_ox_mpv = False
+        # launch sequence with handoff to avionics for MPV control
+        global HANDOFF_SUCCESSFUL
+        
         try: 
-            print("commencing fire sequence - firing in: ")
-            time.sleep(1)
-            print("10")
-            time.sleep(1)
-            print("9")
-            time.sleep(1)
-            print("8")
-            time.sleep(1)
-            print("7")
-            time.sleep(1)
-
-            print("6 energizing the igniter")
-            igniter.open()
-            time.sleep(1)
-            print("5 deenergizing the igniter")
-            igniter.close()
-            time.sleep(1)
-            print("4")
-            time.sleep(1)
+            print("\n" + "="*50)
+            print("MASA LAUNCH SEQUENCE INITIATED")
+            print("="*50)
             
-            print("3")
+            print("COUNTDOWN INITIATED - T-10 seconds")
             time.sleep(1)
-            
-            print("2 Opening Ox Dome Iso and Ox Press Iso")
+            print("T-9: Final system checks")
+            time.sleep(1)
+            print("T-8: Pressurization systems nominal")
+            time.sleep(1)
+            print("T-7: Ground support ready")
+            time.sleep(1)
+            print("T-6: Preparing for avionics handoff")
+            time.sleep(1)
+            print("T-5: Opening Ox Dome Iso and Ox Press Iso")
             syauto.open_all(auto, [ox_dome_iso, ox_press_iso])
             time.sleep(1)
-            print("1")
+            print("T-4: Opening Fuel Press Iso")
+            syauto.open_all(auto, [fuel_press_iso])
             time.sleep(1)
+            print("T-3: Ground systems ready for handoff")
+            time.sleep(1)
+            print("T-2: INITIATING AVIONICS HANDOFF")
             
-            print("0 Opening Fuel ISO and Ox MPV")
-            syauto.open_all(auto, [fuel_press_iso, ox_mpv])
-            opened_ox_mpv = True
-
-            # print(f"Opening Fuel MPV in {MPV_DELAY}")
-            time.sleep(MPV_DELAY)
-            print("Opening Fuel MPV")
-            syauto.open_all(auto, [fuel_mpv])
-            opened_fuel_mpv = True
-
-            print(f"\nTerminating fire in")
+            # CRITICAL HANDOFF POINT
+            handoff_success = avionics_handoff(auto)
+            
+            if not handoff_success:
+                print("✗ HANDOFF FAILED - ABORTING LAUNCH")
+                print("Executing emergency abort sequence...")
+                emergency_abort()
+                return False
+            
+            print("T-1: AVIONICS IN CONTROL")
+            time.sleep(1)
+            print("T-0: LAUNCH COMMITTED - AVIONICS CONTROLLING MPVs")
+            
+            # From this point, avionics controls MPVs and igniter
+            print(f"\nAVIONICS PHASE: Flight duration {FIRE_DURATION} seconds")
+            print("Software monitoring flight progress...")
+            
+            # Monitor flight progress while connection exists
+            connection_lost = False
             for i in range(FIRE_DURATION):
-                print(f"{FIRE_DURATION - i}")
+                remaining = FIRE_DURATION - i
+                try:
+                    # Monitor MPV status if connection still exists
+                    fuel_mpv_status = auto[FUEL_MPV_ACK] if not connection_lost else "UNKNOWN"
+                    ox_mpv_status = auto[OX_MPV_ACK] if not connection_lost else "UNKNOWN"
+                    print(f"T+{i}s: Flight progress - FUEL MPV: {fuel_mpv_status}, OX MPV: {ox_mpv_status}")
+                except:
+                    if not connection_lost:
+                        print(f"T+{i}s: Connection lost to rocket (expected)")
+                        connection_lost = True
+                    else:
+                        print(f"T+{i}s: Rocket in flight (no connection)")
                 time.sleep(1)
 
-            print("Terminating fire")
-            print("Opening vents and closing ISOs")
-            syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent],[fuel_press_iso, ox_press_iso])
-            if opened_fuel_mpv:
-                print("Opening fuel feedline purge")
-                fuel_feedline_purge.open()
-            if opened_ox_mpv:
-                print("Opening ox feedline purge")
-                ox_feedline_purge.open()
-            # time.sleep(0.5)
-            if opened_fuel_mpv:
-                print("Closing fuel prevalve")
-                fuel_prevalve.close()
-            if opened_ox_mpv:
-                print("Closing ox prevalve")
-                ox_prevalve.close()
-            time.sleep(5)
-            print("Closing dome ISO")
-            syauto.close_all(auto, [ox_dome_iso])
-            print("\nFiring sequence has been completed nominally")
+            print("\nEXPECTED FLIGHT DURATION COMPLETE")
+            
+            # Post-flight ground system safing (if we can still communicate)
+            if not connection_lost:
+                print("Connection maintained - executing post-flight safing...")
+                post_flight_safing()
+            else:
+                print("Connection lost - executing ground system safing only...")
+                ground_system_safing()
+                
+            print("\n" + "="*50)
+            print("LAUNCH SEQUENCE COMPLETE")
+            print("="*50)
+            
         except KeyboardInterrupt:
-            print("\nFiring sequence aborted, closing all valves and opening all vents")
-            syauto.open_close_many_valves(auto,[fuel_vent, ox_low_flow_vent, press_vent, ox_dome_iso],[fuel_press_iso, ox_press_iso])
-            time.sleep(0.5)
-            if opened_fuel_mpv:
-                print("Opening fuel feedline purge and closing fuel prevalve")
-                syauto.open_close_many_valves(auto, [fuel_feedline_purge], [fuel_prevalve])
-            if opened_ox_mpv:
-                print("Opening ox feedline purge and closing ox prevalve")
-                syauto.open_close_many_valves(auto, [ox_feedline_purge], [ox_prevalve])
-            time.sleep(5)
-            print("Closing dome ISO")
-            syauto.close_all(auto, [ox_dome_iso])
-            print("Terminating abort")
-        time.sleep(10)
-        # # this creates a range in synnax so we can view the data
-        # if real_test:
-        #     rng = client.ranges.create(
-        #         name=f"{start.__str__()[11:16]} Pre Press + Hotfire",
-        #         time_range=sy.TimeRange(start, datetime.now() + timedelta.min(2)),
-        #     )
-        #     print(f"Created range for test: {rng.name}")
-        exit()
+            print("\n✗ LAUNCH SEQUENCE ABORTED BY OPERATOR")
+            emergency_abort()
+            
+        except Exception as e:
+            print(f"\n✗ LAUNCH SEQUENCE ERROR: {str(e)}")
+            emergency_abort()
+            
+        return HANDOFF_SUCCESSFUL
+    
+    def emergency_abort():
+        # emergency abort - safes all systems immediately
+        print("\n" + "!"*50)
+        print("EMERGENCY ABORT - SAFING ALL SYSTEMS")
+        print("!"*50)
+        
+        try:
+            # Cancel any pending handoff
+            auto[AVIONICS_HANDOFF_CMD] = 0
+            
+            # Safe all ground systems immediately
+            print("Closing all press isolation valves...")
+            syauto.close_all(auto, [fuel_press_iso, ox_press_iso, ox_dome_iso])
+            
+            print("Opening all vents...")
+            syauto.open_all(auto, [fuel_vent, ox_low_flow_vent, press_vent])
+            
+            print("Closing prevalves...")
+            syauto.close_all(auto, [fuel_prevalve, ox_prevalve])
+            
+            print("Opening purge valves...")
+            syauto.open_all(auto, [fuel_feedline_purge, ox_feedline_purge])
+            
+            print("EMERGENCY ABORT COMPLETE - ALL SYSTEMS SAFED")
+            
+        except Exception as e:
+            print(f"CRITICAL ERROR DURING ABORT: {str(e)}")
+            print("MANUAL INTERVENTION REQUIRED")
+    
+    def post_flight_safing():
+        # post-flight safing when connection maintained
+        print("Post-flight safing sequence...")
+        print("Opening vents and closing ISOs")
+        syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_press_iso, ox_press_iso])
+        
+        print("Opening feedline purge valves")
+        syauto.open_all(auto, [fuel_feedline_purge, ox_feedline_purge])
+        
+        print("Closing prevalves")
+        syauto.close_all(auto, [fuel_prevalve, ox_prevalve])
+        
+        time.sleep(5)
+        print("Closing dome ISO")
+        syauto.close_all(auto, [ox_dome_iso])
+        
+        print("Post-flight safing complete")
+    
+    def ground_system_safing():
+        # ground system safing when rocket connection lost
+        print("Ground system safing sequence...")
+        print("Opening ground vents and closing ground ISOs")
+        syauto.open_close_many_valves(auto, [fuel_vent, ox_low_flow_vent, press_vent], [fuel_press_iso, ox_press_iso])
+        
+        print("Closing prevalves")
+        syauto.close_all(auto, [fuel_prevalve, ox_prevalve])
+        
+        time.sleep(5)
+        print("Closing dome ISO")
+        syauto.close_all(auto, [ox_dome_iso])
+        
+        print("Ground system safing complete")
 
     # this block runs the overall sequence
     try:
@@ -444,7 +584,7 @@ with client.control.acquire("Pre Press + Reg Fire", READ_FROM, WRITE_TO, 200) as
         syauto.close_all(auto, [fuel_press_iso, ox_press_iso, ox_dome_iso, fuel_prepress, ox_prepress])
         answer = input("\nValves are closed. Input `fire` to commence firing sequence anything else to skip:\n")
         if answer == "fire" or answer == "Fire" or answer == "FIRE":
-            reg_fire()
+            launch_success = reg_fire()
 
         ans = input("Firing sequence skipped - would you like to open vents and close prevalves? y/n ")
         if ans == "y":
