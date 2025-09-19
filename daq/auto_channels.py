@@ -1,9 +1,32 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "pandas",
+#     "synnax==0.40.0",
+#     "termcolor",
+#     "yaspin",
+#     "openpyxl"
+# ]
+# ///
+
+#
+# How do I run this script?!
+# 1. Install the program "uv" from this link:
+#    https://docs.astral.sh/uv/getting-started/installation/
+# 2. Navigate to the `mcnugget/daq/` directory
+# 3. Type `./auto_channels.py` in your terminal and press enter
+# 4. Follow the prompts and enjoy!
+# If you have any problems, report to Jack on Slack
+# 
+
 #
 # auto_channels.py
 # 
-# Created on: March 1, 2025
+# Last updated: Sep 18, 2025
 # Author: jackmh
 #
+
 from termcolor import colored
 from yaspin import yaspin
 # Adds a fun spinner :)
@@ -24,12 +47,12 @@ try:
 except:
     try:
         client = sy.Synnax(
-            host="synnax.masa.engin.umich.edu", port=9090, username="synnax", password="seldon"
+            host="35.3.136.171", port=9090, username="synnax", password="seldon"
         )
     except:
         pass
-    spinner.stop()
-    raise Exception(colored("Error initializing Synnax client, are you sure you're connected? Type `synnax login` to login", "red"))
+        spinner.stop()
+        raise Exception(colored("Error initializing Synnax client, are you sure you're connected? Type `synnax login` to login", "red"))
 
 # Configuration
 polling_rate = 50 # Hz
@@ -44,32 +67,29 @@ def main():
     analog_task, digital_task, analog_card = create_tasks()
     spinner.stop()
     sheet = get_sheet(input(colored("Path to instrumentation sheet or URL to ICD: ", "cyan")))
-    spinner.text = colored("Processing sheet...", "green")
-    spinner.start()
     channels = process_sheet(sheet)
-    selection = prompt_calibrations()
-    setup_channels(channels)
-    
-    
-    #calibrations = get_old_calibrations("PTs and TCs")
-    #setup_channels(channels, calibrations, digital_task, analog_task, analog_card)
+    # selection = prompt_calibrations()
+    # calibrations = get_old_calibrations("PTs and TCs")
+    setup_channels(channels, analog_task, digital_task, analog_card)
+    configure_tasks(analog_task, digital_task)
 
 def create_tasks():
-    spinner.text = "Scanning for cards..."
+    spinner.text = "Creating tasks..."
+    spinner.write(" > Scanning for cards...")
     time.sleep(0.1)
     try:
         analog_card = client.hardware.devices.retrieve(model=analog_card_model)
-        spinner.text = colored("Analog card " + analog_card.make + " " + analog_card.model + " found! ✅", "green")
+        spinner.write(colored(" > Analog card '" + analog_card.make + " " + analog_card.model + "' found! ✅", "green", attrs=["bold"]))
         time.sleep(0.1)
     except:
-        raise Exception(colored("Analog card " + analog_card_model + " not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red"))
+        raise Exception(colored("Analog card '" + analog_card_model + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red", attrs=["bold"]))
     
     try:
         digital_card = client.hardware.devices.retrieve(model=digital_card_model)
-        spinner.text = colored("Digital card " + digital_card.make + " " + digital_card.model + " found! ✅", "green")
+        spinner.write(colored(" > Digital card '" + digital_card.make + " " + digital_card.model + "' found! ✅", "green", attrs=["bold"]))
         time.sleep(0.1)
     except:
-        raise Exception(colored("Digital card " + digital_card_model + " not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red"))
+        raise Exception(colored("Digital card '" + digital_card_model + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red", attrs=["bold"]))
 
     analog_task = ni.AnalogReadTask(
         name=analog_task_name,
@@ -78,6 +98,7 @@ def create_tasks():
         data_saving=True,
         channels=[],
     )
+
     digital_task = ni.DigitalWriteTask(
         name=digital_task_name,
         device=digital_card.key,
@@ -85,11 +106,14 @@ def create_tasks():
         data_saving=True,
         channels=[],
     )
+
     return analog_task, digital_task, analog_card
 
 def get_sheet(sheet_path: str):
+    spinner.start()
+    spinner.text = colored("Reading sheet...", "magenta")
     if "docs.google.com" in sheet_path:
-        raise Exception("Google Sheets not supported yet, please download as Excel file")
+        raise Exception(colored("Google Sheets not supported yet, please download as Excel file and try again", "red", attrs=["bold"]))
         #SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
         #flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
         #creds = flow.run_local_server(port=0)
@@ -109,25 +133,29 @@ def get_sheet(sheet_path: str):
         except FileNotFoundError as e:
             raise Exception(colored("File not found: " + sheet_path, "red"))
         
+    spinner.write(colored(" > Successfully read sheet", "green", attrs=["bold"]))
+
     return df.head(300) # god forbid we have more than 300 channels
 
 def process_sheet(file: pd.DataFrame):
     # makes dict of channels and relevant data
     channels = []
-    spinner.text = colored("Processing sheet...", "green")
+    spinner.text = colored("Processing sheet...", "magenta")
     time.sleep(0.1)
     setup_thermistor = False
     for _, row in file.iterrows():
-        spinner.text = colored("Processing row...", "green")
-
         # handle invalid rows
         if row["Channel"] == "" or row["Name"] == "":
-            spinner.text = colored("Skipping row with no channel or name...", "yellow")
+            spinner.write(colored(" > Skipping row with no channel or name...", "yellow"))
             time.sleep(0.1)
             continue
         try:
             if "MARGIN" in row["Name"]:
-                spinner.text = colored("Skipping margin channel...", "yellow")
+                spinner.write(colored(" > Skipping margin channel...", "yellow"))
+                time.sleep(0.1)
+                continue
+            if "broken channel" in row["Name"]:
+                spinner.write(colored(" > Skipping broken valve channel...", "yellow"))
                 time.sleep(0.1)
                 continue
         except:
@@ -136,7 +164,6 @@ def process_sheet(file: pd.DataFrame):
         try:
             channel_num = int(row["Channel"])
             if row.name == "PTs" or row.name == "PT":
-                spinner.text = colored("Processing PT " + row["Name"] + "...", "green")
                 #time.sleep(0.1)
                 channel = {
                     "name": row["Name"],
@@ -147,8 +174,8 @@ def process_sheet(file: pd.DataFrame):
                     "min": 0
                 }
                 channels.append(channel)
+                spinner.write(colored(" > Found PT: " + row["Name"], "cyan"))
             elif row.name == "VLVs" or row.name == "VLV":
-                spinner.text = colored("Processing VLV " + row["Name"] + "...", "green")
                 #time.sleep(0.1)
                 if channel_num >= 17:
                     port = 6
@@ -157,7 +184,7 @@ def process_sheet(file: pd.DataFrame):
                 elif channel_num >= 0:
                     port = 4
                 else:
-                    raise Exception("Invalid channel number for valve " + row["Name"])
+                    raise Exception("Invalid channel number for valve: " + row["Name"])
                 channel = {
                     "name": row["Name"],
                     "type": "VLV",
@@ -166,39 +193,42 @@ def process_sheet(file: pd.DataFrame):
                     "line": (channel_num - 1) % 8
                 }
                 channels.append(channel)
+                spinner.write(colored(" > Found VLV: " + row["Name"], "cyan"))
             elif row.name == "TCs" or row.name == "TC":
                 if not setup_thermistor:
-                    spinner.text = colored("Setting up thermistor...", "green")
                     #time.sleep(0.1)
                     channel = {
                         "type": "Thermistor",
                         "name": "Thermistor",
-                        "port": 79,
-                        "max": 10,
-                        "min": -10
+                        "signal": 78,
+                        "supply": 79,
+                        "max": 8,
+                        "min": -8
                     }
                     setup_thermistor = True
                     channels.append(channel)
-                spinner.text = colored("Processing TC " + row["Name"] + "...", "green")
+                    spinner.write(colored(" > Found thermistor", "cyan"))
                 #time.sleep(0.1)
                 channel = {
                     "name": row["Name"],
                     "type": "TC",
                     "channel": channel_num,
                     "port": channel_num - 1 + 64,
-                    "max": 10,
-                    "min": -10
+                    "max": 8,
+                    "min": -8
                 }
                 channels.append(channel)
+                spinner.write(colored(" > Found TC: " + row["Name"], "cyan"))
             elif row.name == "LCs" or row.name == "LC":
-                spinner.text = colored("Load cells not supported yet, skipping...", "yellow")
+                spinner.write(colored(" > Load cells not supported yet, skipping...", "yellow"))
                 #time.sleep(0.1)
             else:
-                print(f"Sensor type {row.name} not recognized")
+                spinner.write(colored(f" > Sensor type {row.name} not recognized", "yellow"))
         except KeyError as e:
-            print(f"Missing column in row: {e} skipping...")
+            spinner.write(colored(f"Missing column in row: {e} skipping...", "yellow"))
         except Exception as e:
-            print(f"Error populating tasks: {e} skipping...")
+            spinner.write(colored(f"Error populating tasks: {e} skipping...", "yellow"))
+    spinner.write(colored(" > Finished parsing channels", "green", attrs=["bold"]))
     return channels
 
 def prompt_calibrations():
@@ -225,20 +255,26 @@ def prompt_calibrations():
         print(colored("Invalid selection, please try again", "red"))
         prompt_calibrations()
 
-def setup_channels(channels):
+def setup_channels(channels, analog_task, digital_task, analog_card):
+    spinner.text = "Creating channels in Synnax..."
     yes_to_all = False # create new synnax channels for all items in the sheet?
 
     for channel in channels:
-        if channel["type"] == "PT":
-            print("PT")
+        if channel["type"] == "PT":            
+            spinner.write(colored(f" > Creating PT: {channel["name"]}", "cyan"))
+            setup_pt(channel, analog_task, analog_card)
         elif channel["type"] == "VLV":
-            print("VLV")
+            spinner.write(colored(f" > Creating VLV: {channel["name"]}", "cyan"))
+            setup_vlv(channel, digital_task)
         elif channel["type"] == "TC":
-            print("LC")
+            spinner.write(colored(f" > Creating TC: {channel["name"]}", "cyan"))
+            setup_tc(channel, analog_task, analog_card)
         elif channel["type"] == "Thermistor":
-            print("Thermistor")
+            spinner.write(colored(" > Creating Thermistor", "cyan"))
+            setup_thermistor(channel, analog_task, analog_card)
         else:
             raise Exception(f"Sensor type {channel["type"]} in channels dict not recognized (issue with the script)")
+    spinner.write(colored(" > Successfully created channels in Synnax", "green", attrs=["bold"]))
 
 def get_factory_calibration(channels):
     # assume slope and offset
@@ -265,6 +301,8 @@ def get_ambient_calibration(channels):
 
     spinner.text = colored("Setting up task for ambient calibration...", "green")
 
+    # TODO: This lmao
+
 def get_old_calibrations(task_name: str):
     spinner.text = colored("Retrieving calibrations...", "green")
 
@@ -290,7 +328,165 @@ def get_old_calibrations(task_name: str):
 
     return task.key, calibrations
 
-    #client.hardware.tasks.delete(task.key)
+def setup_pt(channel, analog_task, analog_card):
+    time_channel = client.channels.create(
+        name="gse_sensor_time",
+        data_type=sy.DataType.TIMESTAMP,
+        retrieve_if_name_exists=True,
+        is_index=True,
+    )
+
+    pt_channel = client.channels.create(
+        name=f"gse_pt_{channel["channel"]}",
+        data_type=sy.DataType.FLOAT32,
+        index=time_channel.key,
+        retrieve_if_name_exists=True,
+    )
+
+    analog_task.config.channels.append(
+        ni.AIVoltageChan(
+            channel=pt_channel.key,
+            device=analog_card.key,
+            port=channel["port"],
+            custom_scale=ni.LinScale(
+                slope=(
+                    channel["max"] / 4.0 # slope is max output in psi over output range (4 volts for our PTs)
+                ),
+                y_intercept=(
+                    -(channel["max"] / 4.0) * 0.5 # y intercept is negative slope at 0.5 volts
+                ),
+                pre_scaled_units="Volts",
+                scaled_units="PoundsPerSquareInch",
+            ),
+            terminal_config="RSE",
+            max_val=channel["max"],
+            min_val=channel["min"],
+        )
+    )
+
+
+
+def setup_vlv(channel, digital_task):
+    gse_state_time = client.channels.create(
+        name="gse_state_time",
+        is_index=True,
+        data_type=sy.DataType.TIMESTAMP,
+        retrieve_if_name_exists=True,
+    )
+
+    state_chan = client.channels.create(
+        name=f"gse_state_{channel["channel"]}",
+        data_type=sy.DataType.UINT8,
+        retrieve_if_name_exists=True,
+        index=gse_state_time.key,
+    )
+
+    cmd_chan = client.channels.create(
+        name=f"gse_vlv_{channel["channel"]}",
+        data_type=sy.DataType.UINT8,
+        retrieve_if_name_exists=True,
+        virtual=True,
+    )
+
+    digital_task.config.channels.append(
+        ni.DOChan(
+            cmd_channel=cmd_chan.key,
+            state_channel=state_chan.key,
+            port=channel["port"],
+            line=channel["line"],
+        )
+    )
+
+def setup_thermistor(channel, analog_task, analog_card):
+    time_channel = client.channels.create(
+        name="gse_sensor_time",
+        data_type=sy.DataType.TIMESTAMP,
+        retrieve_if_name_exists=True,
+        is_index=True,
+    )
+
+    therm_supply = client.channels.create(
+        name="gse_thermistor_supply",
+        data_type=sy.DataType.FLOAT32,
+        index=time_channel.key,
+        retrieve_if_name_exists=True,
+    )
+
+    therm_signal = client.channels.create(
+        name="gse_thermistor_signal",
+        data_type=sy.DataType.FLOAT32,
+        index=time_channel.key,
+        retrieve_if_name_exists=True,
+    )
+
+    analog_task.config.channels.append(
+        ni.AIVoltageChan(
+            channel=therm_supply.key,
+            device=analog_card.key,
+            port=channel["supply"],
+            min_val=channel["min"],
+            max_val=channel["max"],
+            terminal_config="RSE",
+        ),
+    )
+
+    analog_task.config.channels.append(
+        ni.AIVoltageChan(
+            channel=therm_signal.key,
+            device=analog_card.key,
+            port=channel["signal"],
+            min_val=channel["min"],
+            max_val=channel["max"],
+            terminal_config="RSE",
+        ),
+    )
+
+
+def setup_tc(channel, analog_task, analog_card):
+    time_channel = client.channels.create(
+        name="gse_sensor_time",
+        data_type=sy.DataType.TIMESTAMP,
+        retrieve_if_name_exists=True,
+        is_index=True,
+    )
+
+    tc_channel = client.channels.create(
+        name=f"gse_tc_{channel["channel"]}_raw",  # TCs without any CJC, CJC happens in a seperate script in real-time
+        data_type=sy.DataType.FLOAT32,
+        index=time_channel.key,
+        retrieve_if_name_exists=True,
+    )
+
+    analog_task.config.channels.append(
+        ni.AIVoltageChan(
+            channel=tc_channel.key,
+            device=analog_card.key,
+            port=channel["port"],
+            custom_scale=ni.LinScale(
+                slope=tc_calibrations[str(channel["channel"])]["slope"],
+                y_intercept=tc_calibrations[str(channel["channel"])]["offset"],
+                pre_scaled_units="Volts",
+                scaled_units="Volts",
+            ),
+            terminal_config="RSE",
+            max_val=channel["max"],
+        )
+    )
+
+def configure_tasks(analog_task, digital_task):
+    spinner.text = "Configuring tasks... (this may take a while)"
+
+    if analog_task.config.channels != []:  # only configure if there are channels
+        spinner.write(colored(" > Attempting to configure analog task", "cyan"))
+        client.hardware.tasks.configure(
+            task=analog_task, timeout=60
+        )  # long timeout cause our NI hardware is dumb
+        spinner.write(colored(" > Successfully configured analog task!", "green"))
+    if digital_task.config.channels != []:
+        spinner.write(colored(" > Attempting to configure digital task"))
+        client.hardware.tasks.configure(task=digital_task, timeout=5)
+        spinner.write(colored(" > Successfully configured digital task!", "green"))
+    spinner.write(colored(" > All tasks have been successfully created!", "green", attrs=["bold"]))
 
 # putting this here so it doesn't take up space at the top
 # hardcoded calibration data for thermocouples, 
@@ -309,6 +505,7 @@ tc_calibrations = {
     "11": {"slope": 1.183121251, "offset": -2.962919485},
     "12": {"slope": 1.255762908, "offset": -2.436113303},
     "13": {"slope": 1.209157541, "offset": -3.018604306},
+    "14": {"slope": 1.154169121, "offset": -2.924291025},
 }
 
 if __name__ == "__main__":
