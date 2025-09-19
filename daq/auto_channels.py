@@ -15,8 +15,9 @@
 # 1. Install the program "uv" from this link:
 #    https://docs.astral.sh/uv/getting-started/installation/
 # 2. Navigate to the `mcnugget/daq/` directory
-# 3. Type `./auto_channels.py` in your terminal and press enter
-# 4. Follow the prompts and enjoy!
+# 3. Download the ICD (or another valid sheet) as a .xlsx file
+# 4. Type `./auto_channels.py` in your terminal and press enter
+# 5. Follow the prompts and enjoy!
 # If you have any problems, report to Jack on Slack
 # 
 
@@ -47,7 +48,7 @@ try:
 except:
     try:
         client = sy.Synnax(
-            host="35.3.136.171", port=9090, username="synnax", password="seldon"
+            host="synnax.masa.engin.umich.edu", port=9090, username="synnax", password="seldon"
         )
     except:
         pass
