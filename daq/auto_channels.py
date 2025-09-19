@@ -76,7 +76,7 @@ def main():
 
 def create_tasks():
     spinner.text = "Creating tasks..."
-    spinner.write(" > Scanning for cards...")
+    spinner.write(colored(" > Scanning for cards...", "cyan"))
     time.sleep(0.1)
     try:
         analog_card = client.hardware.devices.retrieve(model=analog_card_model)
@@ -484,7 +484,7 @@ def configure_tasks(analog_task, digital_task):
         )  # long timeout cause our NI hardware is dumb
         spinner.write(colored(" > Successfully configured analog task!", "green"))
     if digital_task.config.channels != []:
-        spinner.write(colored(" > Attempting to configure digital task"))
+        spinner.write(colored(" > Attempting to configure digital task", "cyan"))
         client.hardware.tasks.configure(task=digital_task, timeout=5)
         spinner.write(colored(" > Successfully configured digital task!", "green"))
     spinner.write(colored(" > All tasks have been successfully created!", "green", attrs=["bold"]))
