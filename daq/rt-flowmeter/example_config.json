@@ -1,0 +1,14 @@
+{
+  "flowmeter-1": {
+    "inlet-pt": "gse_pt_1",
+    "outlet-pt": "gse_pt_2",
+    "Cda": 0.1,
+    "fluid_density": 0.1
+  },
+  "flowmeter-2": {
+    "inlet-pt": "gse_pt_3",
+    "outlet-pt": "gse_pt_4",
+    "Cda": 0.1,
+    "fluid_density": 0.1
+  }
+}

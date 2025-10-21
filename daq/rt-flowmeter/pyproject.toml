@@ -1,0 +1,11 @@
+[project]
+name = "rt-flowmeter"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "synnax>=0.46.0",
+    "termcolor>=3.1.0",
+    "yaspin>=3.3.0",
+]
