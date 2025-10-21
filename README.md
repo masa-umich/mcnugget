@@ -1,247 +1,134 @@
 # McNugget
+"The McChicken of Data Analysis."
 
-The McChicken of Data Analysis. It's not gonna change your life, but it gets the job done.
+## Overview
+McNugget is a collection of Python (and a few MatLab) scripts which interact with our data visualization, system control, and telemetry database server, [Synnax](https://www.synnaxlabs.com/). This repository was originally made by [Emiliano Bonilla](https://www.linkedin.com/in/emiliano-bonilla-8a0a95187/) in March 2023, then maintained by the 'Software' subteam until August 2025, and is now managed by Avionics.
 
-## 0 - Overview
+## Usage
+### Step `null`: Are you on Windows? (Optional)
+If you are, download and launch/use [`WSL`](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows sub-system for Linux), which will allow you to run a virtual machine of Ubuntu (or most other Linux distributions) locally on your computer with fairly low overhead. 
 
-McNugget is an analysis toolkit that automatically reads and writes data from the MASA
-Synnax Data Processing Server (no configuration required!), which you can use to analyze
-MASA's 2023 and later data.
+This is useful because some Python behavior is dependent on your operating system such as program interrupt signals and file systems. While MacOS and Linux are "POSIX compliant" and so share many commonalities with how they interact with programs, Windows is not which causes problems. Using WSL gets around all of these headaches by literally installing another operating system inside of your existing Windows install so that you can work on stuff just like this without compatibility issues.
 
-## 1 - Installation
+### Step 0: Authenticate with Git for Development (Optional)
+If you are doing development, you probably want to push to this repository eventually, however to do this you will need to authenticate yourself and be added to this project. Assuming you have a GitHub account with your Umich email added to this repository, there are a few ways of doing this:
 
-### 1.0 - Connect to MWireless or the UofM VPN
+1. Simply use the [GitHub CLI](https://cli.github.com/) ***(reccomended)***
 
-To work with McNugget, **you'll need to be connected to the UofM VPN or MWireless.** Instructions for installing
-and using the VPN can be found [here](https://its.umich.edu/enterprise/wifi-networks/vpn/getting-started).
+    This is by far the easiest method, simply follow the download and install prompts on the link above and then run:
+    ```sh
+    gh auth login
+    ```
+    Follow the in-terminal prompts and authenticate through your browser. As long as it completes with no errors you're good!
+2. Setup SSH keys with your GitHub account
 
-### 1.1 - Install the Synnax CA Certificates
+    This is a sort of painful setup process but if you can't or don't want to use the GitHub CLI for some reason, instead of writing a couple paragraphs of instructions [these ones](https://eecs280staff.github.io/tutorials/setup_git.html#github-authentication) from the EECS 280 Git setup guide should work well.
 
-The next step is to install the Synnax encryption certificates. These allow you to communicate with the database in a
-secure manner. To install them, run the corresponding command for your operating system:
-
-#### MacOS
-
-```bash
-curl -sfL https://raw.githubusercontent.com/masa-umich/mcnugget/main/scripts/install_certs_macos.sh | sh -
-```
-
-Note that you will be prompted for your password.
-
-#### Windows
-
-```powershell
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/masa-umich/mcnugget/main/scripts/install_certs_windows.ps1 -OutFile install_certs_windows.ps1
-```
-
-Then, run the following command in **powershell**:
-
-```powershell
-.\install_certs_windows.ps1
-```
-
-### 1.2 - Install the Synnax Console
-
-The Synnax Console is the tool we use for test ops and data visualization. It's also very useful for analysis. 
-To install it, follow the instructions [here](https://docs.synnaxlabs.com/console/get-started?). Then, follow the 
-instructions [here](https://docs.synnaxlabs.com/console/connect-a-cluster?) to connect to the MASA server. Use the 
-following connection parameters: 
-
-- **Name**: `MASA Remote`
-- **Host**: `synnax.masa.engin.umich.edu`
-- **Port**: `80`
-- **Username**: `synnax`
-- **Password**: `seldon`
-- **Secure**: `true`
-
-**Please note that the console ONLY works on the latest versions of MacOS (Sonoma), Windows 10, and Windows 11**
-
-If you find that plots don't display, you may need to udate your version of MacOS **or** your version of Microsoft Edge
-on Windows.
-
-### 1.3 -  Install McNugget
-
-#### Clone the Repository
-
-To kick things off, you'll need to clone this repository using `git`. If you don't have `git` installed, you can find
-instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). Once you have `git` installed,
-create a new project/folder in your [editor](#what-editor-should-i-use). We recommend the
-directory `~/Desktop/masa-umich/`. Then, run the following command:
-
-```bash
+### 1. Download / Clone this Repository
+```sh
 git clone https://github.com/masa-umich/mcnugget.git
+cd mcnugget
+```
+### 2. Download & Install `uv`
+[`uv`](https://docs.astral.sh/uv/) is a Python package manager and project manager which all (current) McNugget projects *should* use. Install it with:
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+### 3. Run your Program!
+Hopefully what you're looking for is named as you would expect, and you can find it in either `autosequences/`, `utilities/`, or `avionics/`. Most Python scripts that are in this repository *should* be setup as [uv scripts](https://docs.astral.sh/uv/guides/scripts/), meaning they have a ["shebang"](https://en.wikipedia.org/wiki/Shebang_(Unix)) at the top of the file which tells the operating system how to run it. If so, you can simply run them as if they were executables, for instance:
+```sh
+./auto-channels.py
 ```
 
-This will download the mcnugget source code into the directory `~/Desktop/masa-umich/mcnugget/`.
+## Development
+Assuming you've already gone through the usage instructions (you have [`uv`](https://docs.astral.sh/uv/) installed and this repository cloned)
+### Step 0: Make your project (Optional)
+Go to the right directory (`autosequences/`, `utilities/`, or `avionics/`) and make a new project directory with `uv`:
+```sh
+uv init <new project name>
+```
+Enter it, if you want you can rename `main.py` to the name of the project which is usually nice, and then I also suggest you make the primary file of the script into a `uv` script so that it's easier for others to execute without activating the venv:
+```sh
+uv init --script <primary file name>
+chmod +x <primary file name> # tells the OS that this should be run as an executable
+```
+### Step 1: Activate & Sync Virtual Environment
+Once you are in the directory for the project you want to work on in your terminal, I reccomend re-focusing your (I assume) VScode window by typing:
+```sh
+code .
+```
+This will open a new VScode session inside of the directory you're in. This lets extension like the [Official VScode Python Extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python) do it's job and correctly do intellisense and stuff.
 
-#### Install Python
-
-After downloading the source, the next step is to install and set up Python. You'll need version 3.11. If you don't have
-Python installed, see the [Synnax Python Guide](https://docs.synnaxlabs.com/python-client/troubleshooting?). If you're
-still having trouble, send a message in the `#software` Slack channel.
-
-McNugget uses a virtual environment tool called `poetry` to manage its dependencies and configuration. To install poetry, 
-run the following command:
-
-```bash
-pip install poetry
+If you are editing an existing project or have just cloned the repo, you probably want to make & sync a virtual environment with:
+```sh
+uv sync
 ```
 
-Then, we need to make sure the virtual environment we use is created in the same directory as our project (if you don't
-know what a virtual environment is, don't worry).
+In the bottom right of your screen when you are editing a Python file, if you do not see the correct Python version, intellisense active, or if certain imports do not resolve correctly, you probably need to manually set your Python intepreter to the `.venv` directory in your project directory.
 
-```
-poetry config virtualenvs.in-project true
-```
-
-Now that you have poetry installed, you can install McNugget's dependencies by running
-the following command:
-
-```bash
-poetry install
+Also, activate the virtual environment in your terminal. In VS code, most terminals will do this automatically if you close them with `Ctrl-D` and re-open them, but if they don't you can also manually acitvate the virtual environment with:
+```sh
+./.venv/bin/activate
 ```
 
-## Starting a Shell and Running an Example
-
-To verify everything installed correctly, you'll want to run an example. The first step is to
-start a shell. To do this, run the following command:
-
-```bash
-poetry shell
+### Step 2: Start Writing Code!
+If you're making a script that talks with Synnax, [their guides](https://docs.synnaxlabs.com/reference/python-client/get-started) are a good place to start. Note that instead of using `pip install synnax` you should correctly add it to your `uv` project:
+```sh
+uv add synnax
 ```
-
-You'll want to be in a shell whenever you're running mcnugget scripts. Run the following example script:
-
-```bash
-python examples/simple_line_plot.py
+As well as any other external modules or libraries you want to use. Also make sure to add them to the 'script' version of the primary file as well with:
+```sh
+uv add --script <file_name> synnax
 ```
-
-A line plot containing some TPC data should show up.
-
-## How to Analysis: A detailed guide for the enlightened
-
-### Create a new script
-
-The first step is to create a new script in the `mcnugget` directory. Choose the name of this script
-to match the type of analysis you're performing. For example, if you're performing a CDA analysis,
-name the script `cda.py`.
-
-### Import a few useful tools
-
-There are a few tools we'll need for reading, cleaning, processing, and plotting data. Import them
-at the top of your file as follows (feel free to copy and paste):
-
-```python
-import matplotlib.pyplot as plt
-import synnax as sy
-from mcnugget.client import client
-
+And run your project with:
+```sh
+uv run <file_name>
 ```
+Or as a file like shown in the 'usage' instructions in this document.
 
-If you're interested in what each import does, here's a brief description:
+When developing, remember to make a new branch of this repo, make & push commits often, and make pull-requests when you're done! 
 
-- `import matplotlib.pyplot as plt` is a plotting library that we use to plot data. It's a 1-1 port of the MATLAB
-  plotting library.
-- `import synnax as sy` is a library that we use to define time ranges. We'll use this to define the range of data we
-  want to read.
+### Step 3: Install and Setup a Synnax Cluster for Testing (Optional)
+If you want to test your script with a real Synnax cluster before you push it (a GREAT idea), you can do so by following the instructions on their website [found here](https://docs.synnaxlabs.com/reference/cluster/quick-start). Make sure to change your connection settings to use `localhost` as the host in your Synnax connection settings.
+### Step 4: Install and Setup a Synnax Console (Optional)
+Install the [Synnax Console](https://docs.synnaxlabs.com/reference/console/get-started) for your operating system to view what your script is doing in real-time!
 
-### Finding the data you're interested in
+- **Host:** `localhost` or sometimes `synnax.masa.engin.umich.edu`
+- **Port:** `9090`
+- **Username:** `synnax`
+- **Password:** `seldon`
+- **Secure:** `FALSE`
 
-The best way to find the list of ranges you're interested in is by using the console and following this [guide](https://docs.synnaxlabs.com/console/querying-data).
-Once you've found it, you can bring in the range and plot some data on it like so:
+### Step 5: Install and use Ruff (Optional)
+Ruff is a great, fast, Python Linter and code formatter made by the same folk who make `uv`. I suggest most projects use it to make code in this repository consistent. You can find it [here](https://github.com/astral-sh/ruff).
 
-```py
-import matplotlib.pyplot as plt
-import synnax as sy
-from mcnugget.client import client
 
-rng = client.ranges.retrieve("My Cool Range")
+## FAQ and Common Problems
+Q: What is Synnax?\
+A: Synnax is our data visualization, system control, and telemetry database server. Basically, it takes in all of the sensor readings from our rocket or engine in real-time, stores them into a database so we can look at them later, and lets us control things on our system in real-time like valves. Synnax used to be made by MASA for MASA, but has since become a [succesful Colorado-based startup](https://www.synnaxlabs.com/company).
 
-plt.plot(sy.elapsed_seconds(rng.gse_time), rng.gse_ai_1)
-plt.show()
+Q: WHERE ARE MY FILES?!\
+A: I (Jack) did a re-organization on October 20th, 2025 -- around when Avionics took over this repository. All old files (that haven't been replaced/updated) are in `mcnugget/archive` and for even older files, look in `mcnugget/archive/old` (a fantastic name, I know)
+
+Q: How do I connect to the real DAQ PC during a test to use a script?\
+A: All scripts will prioritize the current Synnax cluster last connected to in the terminal with:
+```sh
+sy login
 ```
+When run in a project with the virtual environment activated. When connecting, these are the default connection settings for the DAQ PC:
+- **Host:** `synnax.masa.engin.umich.edu`
+- **Port:** `9090`
+- **Username:** `synnax`
+- **Password:** `seldon`
+- **Secure:** `FALSE`
 
-## Common Errors
 
-### Can't connect to the data server
-
-If you see an error like the following, screenshot it and send it in the #avionics slack channel:
-
-```bash
-Traceback (most recent call last):
-  File "/Users/emilianobonilla/Desktop/masa-umich/mcnugget/mcnugget/query/client.py", line 13, in <module>
-    CLIENT = Synnax(
-             ^^^^^^^
-  File "/Users/emilianobonilla/Desktop/synnax/client/py/synnax/synnax.py", line 75, in __init__
-    self._transport = self._configure_transport(
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/emilianobonilla/Desktop/synnax/client/py/synnax/synnax.py", line 119, in _configure_transport
-    auth.authenticate()
-  File "/Users/emilianobonilla/Desktop/synnax/client/py/synnax/auth.py", line 98, in authenticate
-    raise exc
-freighter.exceptions.Unreachable: Target http://10.0.0.15:9090/api/v1/auth/login/ unreachable
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/Users/emilianobonilla/Desktop/masa-umich/mcnugget/examples/simple_line_plot.py", line 3, in <module>
-    from mcnugget.query import read_during_state, ECStates
-  File "/Users/emilianobonilla/Desktop/masa-umich/mcnugget/mcnugget/query/__init__.py", line 1, in <module>
-    from .read import *
-  File "/Users/emilianobonilla/Desktop/masa-umich/mcnugget/mcnugget/query/read.py", line 2, in <module>
-    from mcnugget.query.client import CLIENT
-  File "/Users/emilianobonilla/Desktop/masa-umich/mcnugget/mcnugget/query/client.py", line 21, in <module>
-    raise Exception(
-Exception:
-        Failed to connect to Synnax data processing sever. Screenshot
-        this error and send it in the #software slack channel.
+Q: When I run a Synnax server on Windows but try to access it with my script in WSL, I can't connect\
+A: The IP of your Windows computer that is exposed to WSL is not `localhost` be default, but you can find it by running this command in WSL:
+```sh
+ip route show | grep -i default | awk '{ print $3}'
 ```
+You should be able to set that as the host in your Synnax scripts to be able to connect.
 
-## Updating McNugget Dependencies
-
-Sometimes we add new dependences to McNugget, to make sure all of your dependencies are up to date, run:
-
-```
-poetry install
-```
-
-in the root directory of the repository.
-
-## What Editor should I use?
-
-## The Dictionary Answer
-
-If you're moving from MATLAB or haven't used an IDE before, you may be wondering what editor to use. For the most MATLAB like experience we recommend using [DataSpell](https://www.jetbrains.com/dataspell/). The free version is fine for all of our use cases, but you can also get the pro version for free if you're a student.
-
-If you're looking for a lightweight editor, we recommend [VSCode](https://code.visualstudio.com/). It's the most widely used editor by far.
-
-## Emiliano's Opinion
-
-### 1 - Sign up for GitHub pro for students
-
-GitHub pro for students gives you access to copilot AI autocompletion and JetBrains IDEs 
-for free. You can sign up [here](https://education.github.com/pack). 
-
-### 2 - Install DataSpell
-
-While VSCode is lightweight and multi-purpose, DataSpell has much better Python syntax
-highlighting and error checking out of the box. It also gives you really nice debug
-and run buttons like MATLAB. 
-
-If you have github pro, you can get DataSpell and ALL of the JetBrains IDEs for free [here](https://www.jetbrains.com/community/education/#students).
-
-### 3 - Sign up for github copilot
-
-If you're new to Python or coming from MATLAB, github copilot is a godsend. It's an AI
-that autocompletes your code for you. You can sign up [here](https://copilot.github.com/)
-for free with your github pro account.
-
-### 4 - Install the copilot plugin for DataSpell
-
-The copilot plugin for DataSpell allows you to use copilot directly in DataSpell. You can
-install it by going to `File > Settings > Plugins` and searching for `copilot`.
-
-
-### Why is it called McNugget?
-
-I saw someone eating a chicken nugget while I was trying to come up with a name.
+Q: Why is it called McNugget?\
+A: To quote the famous Emiliano Bonilla: "I saw someone eating a chicken nugget while I was trying to come up with a name."
