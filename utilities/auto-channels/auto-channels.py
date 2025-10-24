@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas",
-#     "synnax>=0.40.0",
+#     "synnax==0.40.0",
 #     "termcolor",
 #     "yaspin",
 #     "openpyxl"
@@ -48,7 +48,7 @@ try:
 except:
     try:
         client = sy.Synnax(
-            host="172.24.160.1", port=9090, username="synnax", password="seldon"
+            host="141.212.192.160", port=9090, username="synnax", password="seldon"
         )
     except:
         pass
@@ -129,7 +129,7 @@ def get_sheet(sheet_path: str):
     else: # assume it's an excel file
         try:
             # The ICD has a goofy formatting, we start header at 1 and mappings must be in "AVI GSE Mappings" sheet
-            df = pd.read_excel(sheet_path, header=1, sheet_name="AVI GSE Mappings", index_col=[0])
+            df = pd.read_excel(sheet_path, header=1, sheet_name="OLD AVI GSE Mappings 24-25", index_col=[0])
             # we also add index_col=0 to handle the merged cells for sensor type
         except FileNotFoundError as e:
             raise Exception(colored("File not found: " + sheet_path, "red"))
@@ -480,12 +480,12 @@ def configure_tasks(analog_task, digital_task):
     if analog_task.config.channels != []:  # only configure if there are channels
         spinner.write(colored(" > Attempting to configure analog task", "cyan"))
         client.hardware.tasks.configure(
-            task=analog_task, timeout=60
+            task=analog_task, timeout=6000
         )  # long timeout cause our NI hardware is dumb
         spinner.write(colored(" > Successfully configured analog task!", "green"))
     if digital_task.config.channels != []:
         spinner.write(colored(" > Attempting to configure digital task", "cyan"))
-        client.hardware.tasks.configure(task=digital_task, timeout=5)
+        client.hardware.tasks.configure(task=digital_task, timeout=500)
         spinner.write(colored(" > Successfully configured digital task!", "green"))
     spinner.write(colored(" > All tasks have been successfully created!", "green", attrs=["bold"]))
 
