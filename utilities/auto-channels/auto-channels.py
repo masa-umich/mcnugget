@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas",
-#     "synnax==0.40.0",
+#     "synnax==0.46.0",
 #     "termcolor",
 #     "yaspin",
 #     "openpyxl"
@@ -48,7 +48,7 @@ try:
 except:
     try:
         client = sy.Synnax(
-            host="141.212.192.160", port=9090, username="synnax", password="seldon"
+            host="masasynnax.ddns.net", port=9090, username="synnax", password="seldon"
         )
     except:
         pass
