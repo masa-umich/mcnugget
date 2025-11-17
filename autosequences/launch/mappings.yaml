@@ -1,0 +1,32 @@
+ebox: # ebox / launch GSE
+  valves:
+    examples_valve: 1
+  pts:
+    example_pt: 1
+  tcs:
+    example_tc: 1
+  
+bay_board_1: # press bay board
+  valves:
+    examples_valve: 1
+  pts:
+    example_pt: 1
+  tcs:
+    example_tc: 1
+
+bay_board_2: # intertank bay board
+  valves:
+    examples_valve: 1
+  pts:
+    example_pt: 1
+  tcs:
+    example_tc: 1
+
+bay_board_3: # engine bay board
+  valves:
+    examples_valve: 1
+  pts:
+    example_pt: 1
+  tcs:
+    example_tc: 1
+
