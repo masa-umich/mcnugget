@@ -3,157 +3,104 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "synnax==0.46.0",
-#     "transitions",
 #     "yaspin",
-#     "colorama",
-#     "termcolor"
+#     "termcolor",
+#     "pyyaml",
 # ]
 # ///
-
 
 from termcolor import colored
 from yaspin import yaspin
 
-#fun spinners are mandatory as per jack jammerberg
+# fun spinner while we load packages
 spinner = yaspin()
-spinner.text = colored("Initializing...", "magenta")
+spinner.text = colored("Initializing...", "yellow")
 spinner.start()
 
-
-# import syauto 
-import time
 import synnax as sy
-import statistics
-import sys
-import threading
-from transitions.extensions import HierarchicalMachine as Machine
-import colorama
+import argparse
+import yaml
 
+# helper function to raise pretty errors
+def error_and_exit(message: str, error_code: int=1, exception=None) -> None:
+    spinner.stop() # incase it's running
+    if (exception != None): # exception is an optional argument
+        print(exception)
+    print(colored(message, "red", attrs=["bold"]))
+    print(colored("Exiting", "red", attrs=["bold"]))
+    exit(error_code)
 
+@yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
+def synnax_login(args):
+    cluster = "synnax.masa.engin.umich.edu" # default value
+    if (args.simulation):
+        if (args.verbose):
+            spinner.write(colored("Using `localhost` as the cluster for simulation", "yellow"))
+        cluster = "localhost"
+    try:
+        client = sy.Synnax(
+            host=cluster,
+            port=9090,
+            username="synnax",
+            password="seldon",
+        )
+    except Exception as e:
+        error_and_exit(f"Could not connect to Synnax at {cluster}, are you sure you're connected?")
+    return client
 
+# Allow the use to specify a mappings file which is not the default ("./mappings.yaml")
+# And if verbose output should be enabled.
+def parse_args() -> list:
+    parser = argparse.ArgumentParser(description="The autosequence for preparring Limeight for launch!")
+    parser.add_argument(
+        "--simulation", 
+        "-s",
+        help="Should the autosequence be ran as a simulation",
+        default=False,
+        action="store_true"
+    )
+    parser.add_argument(
+        "--mappings", 
+        "-m", 
+        help="The file to use for channel mappings",
+        default="mappings.yaml",
+        type=str
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        help="Shold the program output extra debugging information",
+        action="store_true"
+    ) # Positional argument
+    args = parser.parse_args()
+    # check that if there was an alternate mappings file given, that it is at least a .yaml file
+    if (args.mappings != "mappings.yaml"):
+        if (args.mappings.endswith(".yaml")):
+            if (args.verbose):
+                print(colored(f"Using mappings from file: {args.mappings}", "yellow"))
+        else:
+            error_and_exit(f"Invalid specified mappings file: {args.mappings}, must be .yaml file")
+    return args
 
-"""
-Channel indicies, need to account for different bbs
-PAIR IS DEFINED AS (INDEX, BOARD)
-0: EBOX
-1: PRESS BAY BOARD
-2: INTERTANK BAY BOARD
-3: ENGINE BAY BOARD
-"""
+def parse_mappings(file_path: str):
+    try:
+        # using with will automatically close the file when done
+        with open(file_path, "r") as file:
+            # safe_load avoids trying to parse the yaml as python code (idk why you'd ever want that)
+            return yaml.safe_load(file)
+    except FileNotFoundError as e:
+        error_and_exit(f"Error: The mappings file '{file_path}' could not be found.")
+    except IOError as e:
+        error_and_exit(f"Error: Unable to read the file '{file_path}'", exception=e)
 
-VALVE_INDICES = {
-    #ebox
-    "press_iso_1": (3,0),
-    "press_iso_2": (4,0),
-    "press_iso_3": (5,0),
-    "press_fill_iso": (6,0),
-    "press_fill_vent": (7,0),
-    "ox_prepress": (8,0),
-    "fuel_fill_purge": (11,0),
-    "ox_mpv_purge": (12,0),
-    "fuel_mpv_purge": (14,0),
+def main() -> None:
+    args = parse_args()
+    mappings = parse_mappings(args.mappings)
+    client = synnax_login(args)
 
-    #press bay board
-    "copv_vent": (1,1),
-    "fuel_dome_iso": (2,1),
-    "fuel_vent": (3,1),
-
-    #intertank bay board
-    "ox_dome_iso": (1,2),
-    "ox_custom_vent": (2,2),
-
-    #engine bay board
-    "ox_mpv": (1,3),
-    "fuel_mpv": (2,3),
-}
-
-PT_INDICES = {
-    #Press bay board 
-    "copv_1": (1,1),
-    "copv_2": (2,1),
-
-    "fuel_tank_1": (7,1),
-    "fuel_tank_2": (8,1),
-
-    #Intertank bay board
-    "ox_ullage_1": (5,2),
-    "ox_ullage_2": (6,2),
-}
-
-#make a way to take in indicies and output a channel
-
-def red(text: str):
-    return colorama.Fore.RED + text + colorama.Style.RESET_ALL
-
-def green(text: str):
-    return colorama.Fore.GREEN + text + colorama.Style.RESET_ALL
-
-def yellow(text: str):
-    return colorama.Fore.YELLOW + text + colorama.Style.RESET_ALL
-
-def blue(text: str):
-    return colorama.Fore.BLUE + text + colorama.Style.RESET_ALL
-
-def magenta(text: str):
-    return colorama.Fore.MAGENTA + text + colorama.Style.RESET_ALL
-
-class Autosequence():
-    states = ["init", "copv_press", "copv_press_check",
-              "wait_countdown","done",
-                {#countown nested state
-                  "name": "countdown",
-                  "children": ["cd_init", "qds", "qds_confirm",
-                               "igniter", "igniter_confirm",
-                               "handoff", "exit"],
-                  "initial": "cd_init"
-                }
-    ]
-
-    transitions = [
-        {'trigger': 'copv_press_confirm', 'source': 'init', 'dest': 'copv_press'},
-        {'trigger': 'copv_press_stage_complete', 'source': 'copv_press', 'dest': 'copv_press_check'},
-        {'trigger': 'copv_press_continue', 'source': 'copv_press_check', 'dest': 'copv_press'},
-        {'trigger': 'copv_press_complete', 'source': 'copv_press_check', 'dest': 'wait_countdown'},
-        {'trigger': 'confirm_countdown', 'source': 'wait_countdown', 'dest': 'countdown'},
-    ]
-    
-    def __init__(self):
-        spinner.stop()
-        machine = Machine(states = self.states, transitions = self.transitions, initial = 'init', auto_transitions=False)
-        try:
-            self.mode =  (input(colorama.Fore.BLUE + "Enter mode (sim/real): " + 
-                                colorama.Fore.MAGENTA).strip().lower())
-            if self.mode == "real":
-                    spinner.start()
-                    address = "141.212.192.160"
-                    self.client = sy.Synnax(
-                        host=address,
-                        port=9090,
-                        username="synnax",
-                        password="seldon",
-                        secure=False,
-                    )
-                    spinner.stop()
-                    print(green("Connected to cluster at " + address))
-
-            elif self.mode == "sim" or self.mode == "":
-                self.mode = "sim"
-                address = "172.22.240.1"
-                self.client = sy.Synnax(
-                    host=address,
-                    port=9090,
-                    username="synnax",
-                    password="seldon",
-                    secure=False,
-                )
-                print(green("Connected to cluster at " + address))
-            
-            else:
-                print(red("erm... try again... that wasn't an option.  Restart the program boss."))
-                exit()
-
-        except KeyboardInterrupt:
-            print(red("\nTerminating autosequence..."))
-            sys.exit(0) # CHANGE THIS TO REAL SHUTDOWN
-
-autosequence = Autosequence()
+if __name__ == "__main__":
+    spinner.stop() # stop the "initializing..." spinner since we're done loading all the imports
+    try:
+        main()
+    except Exception as e: # catch-all uncaught errors
+        error_and_exit("Uncaught exception!", exception=e)
