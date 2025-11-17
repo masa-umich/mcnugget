@@ -102,5 +102,7 @@ if __name__ == "__main__":
     spinner.stop() # stop the "initializing..." spinner since we're done loading all the imports
     try:
         main()
+    except KeyboardInterrupt: # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
+        error_and_exit("Keyboard interrupt detected")
     except Exception as e: # catch-all uncaught errors
         error_and_exit("Uncaught exception!", exception=e)
