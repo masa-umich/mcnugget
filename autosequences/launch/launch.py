@@ -17,25 +17,40 @@ spinner = yaspin()
 spinner.text = colored("Initializing...", "yellow")
 spinner.start()
 
+# 3rd party modules
 import synnax as sy
-import argparse
 import yaml
 
+# standard modules
+import argparse
+from enum import Enum
+
+
+class State(Enum):
+    START = 1
+    BOTTLE_1_EQ = 2
+    BOTTLE_2_EQ = 3
+    BOTTLE_3_EQ = 4
+
+
 # helper function to raise pretty errors
-def error_and_exit(message: str, error_code: int=1, exception=None) -> None:
-    spinner.stop() # incase it's running
-    if (exception != None): # exception is an optional argument
+def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
+    spinner.stop()  # incase it's running
+    if exception != None:  # exception is an optional argument
         print(exception)
     print(colored(message, "red", attrs=["bold"]))
     print(colored("Exiting", "red", attrs=["bold"]))
     exit(error_code)
 
+
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
 def synnax_login(args) -> sy.Synnax:
-    cluster = args.cluster # default value (synnax.masa.engin.umich.edu)
-    if (args.simulation):
-        if (args.verbose):
-            spinner.write(colored("Using `localhost` as the cluster for simulation", "yellow"))
+    cluster = args.cluster  # default value (synnax.masa.engin.umich.edu)
+    if args.simulation:
+        if args.verbose:
+            spinner.write(
+                colored("Using `localhost` as the cluster for simulation", "yellow")
+            )
         cluster = "localhost"
     try:
         client = sy.Synnax(
@@ -45,71 +60,132 @@ def synnax_login(args) -> sy.Synnax:
             password="seldon",
         )
     except Exception as e:
-        error_and_exit(f"Could not connect to Synnax at {cluster}, are you sure you're connected?")
+        error_and_exit(
+            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
+        )
     return client
 
-# Allow the use to specify a mappings file which is not the default ("./mappings.yaml")
+
+# Allow the use to specify a config file which is not the default ("./config.yaml")
 # And if verbose output should be enabled.
 def parse_args() -> list:
-    parser = argparse.ArgumentParser(description="The autosequence for preparring Limeight for launch!")
+    parser = argparse.ArgumentParser(
+        description="The autosequence for preparring Limeight for launch!"
+    )
     parser.add_argument(
-        "--simulation", 
         "-s",
+        "--simulation",
         help="Should the autosequence be ran as a simulation",
         default=False,
-        action="store_true"
+        action="store_true",
     )
     parser.add_argument(
-        "--mappings", 
-        "-m", 
-        help="The file to use for channel mappings",
-        default="mappings.yaml",
-        type=str
+        "-m",
+        "--config",
+        help="The file to use for channel config",
+        default="config.yaml",
+        type=str,
     )
     parser.add_argument(
-        "--cluster", 
-        "-c", 
+        "-c",
+        "--cluster",
         help="Specify a Synnax cluster to connect to",
         default="synnax.masa.engin.umich.edu",
-        type=str
+        type=str,
     )
     parser.add_argument(
-        "--verbose",
         "-v",
+        "--verbose",
         help="Shold the program output extra debugging information",
-        action="store_true"
-    ) # Positional argument
+        action="store_true",
+    )  # Positional argument
     args = parser.parse_args()
-    # check that if there was an alternate mappings file given, that it is at least a .yaml file
-    if (args.mappings != "mappings.yaml"):
-        if (args.mappings.endswith(".yaml")):
-            if (args.verbose):
-                print(colored(f"Using mappings from file: {args.mappings}", "yellow"))
+    # check that if there was an alternate config file given, that it is at least a .yaml file
+    if args.config != "config.yaml":
+        if args.config.endswith(".yaml"):
+            if args.verbose:
+                print(colored(f"Using config from file: {args.config}", "yellow"))
         else:
-            error_and_exit(f"Invalid specified mappings file: {args.mappings}, must be .yaml file")
+            error_and_exit(
+                f"Invalid specified config file: {args.config}, must be .yaml file"
+            )
     return args
 
-def parse_mappings(file_path: str):
+
+def parse_config(file_path: str):
     try:
         # using with will automatically close the file when done
         with open(file_path, "r") as file:
             # safe_load avoids trying to parse the yaml as python code (idk why you'd ever want that)
             return yaml.safe_load(file)
     except FileNotFoundError as e:
-        error_and_exit(f"Error: The mappings file '{file_path}' could not be found.")
+        error_and_exit(f"Error: The config file '{file_path}' could not be found.")
     except IOError as e:
         error_and_exit(f"Error: Unable to read the file '{file_path}'", exception=e)
 
+
+def state_machine(args, config, client: sy.Synnax) -> None:
+    state = State.START
+    while True:
+        match state:
+            case (
+                State.START
+            ):  # Prompt for state to jump to (bottle 1 default, or skip to 2 or 3)
+                pass
+            case State.BOTTLE_1_EQ:
+                # Open Press Fill Iso
+                # Open Press Iso 1 for press rate #1, then close
+                # [MANUAL FOR NOW] During press, close Press Iso 1 if COPV temp exceeds the upper bound
+                # Wait for the remainder of the 1 minute
+                # Repeat with press rate #1 for 4 iterations
+                # Open Press Iso 1 for press rate #2
+                # [MANUAL FOR NOW] During press, close Press Iso 1 if COPV temp exceeds the upper bound
+                # Wait for the remainder of the 1 minute
+                # Repeat until the COPV pressure is within x psi (equalization threshold) of the 6k Bottle PT 1, close Press Iso 1 and continue to next section
+                pass
+            case State.BOTTLE_2_EQ:
+                # First check that the 6k Bottle PT 2 is greater than the COPV pressure
+                # Open Press Fill Iso
+                # Then, open Press Iso 2 for press rate #1, then close
+                # [MANUAL FOR NOW] During press, close Press Iso 2 if COPV temp exceeds the upper bound
+                # Wait for the remainder of the 1 minute
+                # Repeat with press rate #1 for 4 iterations
+                # Open Press Iso 2 for press rate #2
+                # [MANUAL FOR NOW] During press, close Press Iso 2 if COPV temp exceeds the upper bound
+                # Wait for the remainder of the 1 minute
+                # Repeat until the COPV pressure is within x psi (equalization threshold) of 6k Bottle PT 2, close Press Iso 2 and continue to next section
+                pass
+            case State.BOTTLE_3_EQ:
+                # First check that the 6k Bottle PT 3 is greater than the COPV pressure
+                # Open Press Fill Iso
+                # Then, open Press Iso 3 for press rate #1, then close
+                # [MANUAL FOR NOW] During press, close Press Iso 3 if COPV temp exceeds the upper bound
+                # Wait for the remainder of the 1 minute
+                # Repeat with press rate #1 for 4 iterations
+                # Open Press Iso 3 for press rate #2
+                # [MANUAL FOR NOW] During press, close Press Iso 3 if COPV temp exceeds the upper bound
+                # Wait for the remainder of the 1 minute
+                # Repeat until the COPV pressure is within x psi (equalization threshold) of 6k Bottle PT 3 OR at with the COPV target pressure bounds, then close Press Iso 3
+                # If target pressure achieved and the 6k Bottle PT 3 is x psig greater than the COPV pressure, continuously monitor the COPV pressure, and cycle Press Iso 3 to TPC the COPV within the target pressure bounds
+                pass
+            case (
+                _
+            ):  # Default case, in our case we should never reach this and its invalid
+                pass
+
+
 def main() -> None:
     args = parse_args()
-    mappings = parse_mappings(args.mappings)
+    config = parse_config(args.config)
     client = synnax_login(args)
+    state_machine(args, config, client)
+
 
 if __name__ == "__main__":
-    spinner.stop() # stop the "initializing..." spinner since we're done loading all the imports
+    spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports
     try:
         main()
-    except KeyboardInterrupt: # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
+    except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    except Exception as e: # catch-all uncaught errors
+    except Exception as e:  # catch-all uncaught errors
         error_and_exit("Uncaught exception!", exception=e)
