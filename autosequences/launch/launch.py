@@ -31,8 +31,8 @@ def error_and_exit(message: str, error_code: int=1, exception=None) -> None:
     exit(error_code)
 
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
-def synnax_login(args):
-    cluster = "synnax.masa.engin.umich.edu" # default value
+def synnax_login(args) -> sy.Synnax:
+    cluster = args.cluster # default value (synnax.masa.engin.umich.edu)
     if (args.simulation):
         if (args.verbose):
             spinner.write(colored("Using `localhost` as the cluster for simulation", "yellow"))
@@ -64,6 +64,13 @@ def parse_args() -> list:
         "-m", 
         help="The file to use for channel mappings",
         default="mappings.yaml",
+        type=str
+    )
+    parser.add_argument(
+        "--cluster", 
+        "-c", 
+        help="Specify a Synnax cluster to connect to",
+        default="synnax.masa.engin.umich.edu",
         type=str
     )
     parser.add_argument(
