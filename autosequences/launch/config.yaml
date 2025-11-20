@@ -1,6 +1,6 @@
 variables:
   press_rate_1: 20 # psi/min
-  press_rate_1_ittrs: 3 # number of iterations at press_rate_1 for all bottles
+  press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
   press_rate_2: 40 # psi/min
   copv_upper_bound_temp: -1 # (TBD) degrees celsius
   copv_lower_bound_temp: -1 # (TBD) degrees celsius
@@ -55,11 +55,21 @@ flight_computer:
 
 bay_board_1: # press bay board
   valves:
-    examples_valve: 1
+    COPV_Vent: 1
+    Fuel_Dome_Iso: 2
+    Fuel_Vent: 3
   pts:
-    example_pt: 1
+    COPV_PT_1: 1
+    COPV_PT_2: 2
+    Fuel_TPC_Inlet_PT: 3
+    Fuel_TPC_Outlet_PT: 4
+    Fuel_Pilot_Outlet_PT: 5
+    Fuel_Dome_PT: 6
+    Fuel_Tank_PT_1: 7
+    Fuel_Tank_PT_2: 8
   tcs:
-    example_tc: 1
+    COPV_TC_1: 1
+    COPV_TC_2: 2
 
 bay_board_2: # intertank bay board
   valves:

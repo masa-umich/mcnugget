@@ -211,9 +211,28 @@ def get_channel_name(config, channel_name: str) -> str:
 def get_sy_channel(config, client: sy.Synnax, channel_name: str) -> sy.Channel:
     return client.channels.retrieve(get_channel_name(config, channel_name))
 
+# TODO: Add check for COPV temperature
+def press_ittr(config, ctrl: Controller, copv_ch_1, copv_ch_2, press_iso_ch, press_rate):
+    start_time = time.monotonic()
+    end_time = start_time + 60 # one minute after start
+    start_pres = (ctrl[copv_ch_1] + ctrl[copv_ch_2]) / 2
+    target_pres = start_pres + press_rate
+    ctrl[press_iso_ch] = True # open press iso
+    while (True):
+        now = time.monotonic()
+        copv_pres = ((ctrl[copv_ch_1] + ctrl[copv_ch_2]) / 2)
+        if ((copv_pres < target_pres) or (now >= end_time)):
+            ctrl[press_iso_ch] = False # close press iso
+            return
+
 @yaspin(text=colored("Running Autosequence...", "light_blue"))
 def state_machine(ctrl: Controller, config, client: sy.Synnax) -> None:
     state = State.START
+    COPV_1 = get_channel_name(config, "copv_pt_1")
+    COPV_2 = get_channel_name(config, "copv_pt_2")
+    OX_PRESS_ISO_1 = get_channel_name(config, "ox_press_iso_1")
+    OX_PRESS_ISO_2 = get_channel_name(config, "ox_press_iso_2")
+    OX_PRESS_ISO_3 = get_channel_name(config, "ox_press_iso_3")
     try:
         while True:
             match state:
@@ -227,6 +246,14 @@ def state_machine(ctrl: Controller, config, client: sy.Synnax) -> None:
                     #   [MANUAL FOR NOW] During press, close Press Iso 1 if COPV temp exceeds the upper bound
                     # Wait for the remainder of the 1 minute
                     # Repeat with press rate #1 for 4 iterations
+                    press_rate_2 = config["variables"]["press_rate_1"]
+                    press_rate_1 = config["variables"]["press_rate_1"]
+                    press_rate_1_ittrs = config["variables"]["press_rate_1_ittrs"]
+                    # copv_pressure = (ctrl[COPV_1] + ctrl[COPV_2]) / 2
+                    for i in range(press_rate_1_ittrs):
+                        press_ittr(config, ctrl, COPV_1, COPV_2, OX_PRESS_ISO_1, press_rate_1)
+
+                    # TODO:
                     # Open Press Iso 1 for press rate #2
                     #   [MANUAL FOR NOW] During press, close Press Iso 1 if COPV temp exceeds the upper bound
                     # Wait for the remainder of the 1 minute
