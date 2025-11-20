@@ -1,11 +1,50 @@
+variables:
+  press_rate_1: 20 # psi/min
+  press_rate_1_ittrs: 3 # number of iterations at press_rate_1 for all bottles
+  press_rate_2: 40 # psi/min
+  copv_upper_bound_temp: -1 # (TBD) degrees celsius
+  copv_lower_bound_temp: -1 # (TBD) degrees celsius
+  copv_minimum_temp: -1 # (TBD) degrees celsius
+  copv_pressure_target: 5000 # psi
+  copv_pressure_margin: 100 # (TBD) psi (+ or - from target)
+  copv_pressure_max: 5200 # (TBD) psi
+  bottle_equalization_threshold: 50 # (TBD) psi
+
+ # Synnax channel for handoff system (probably static) (also TBD)
+handoff: "limewire_handoff"
+
 ebox: # ebox / launch GSE
-  valves:
-    examples_valve: 1
-  pts:
-    example_pt: 1
-  tcs:
-    example_tc: 1
-  
+  # alias: channel number
+  valves: # ex: `Ox_Fill_Valve: 1` -> `gse_vlv_1`
+    Ox_Fill_Valve: 1
+    Ox_Drain_Valve: 2
+    Press_Iso_1: 3
+    Press_Iso_2: 4
+    Press_Iso_3: 5
+    Press_Fill_Iso: 6
+    Press_Fill_Vent: 7
+    Ox_Pre_Press: 8
+    Fuel_Fill_Purge: 11
+    Ox_MPV_Purge: 12
+    Fuel_MPV_Purge: 14
+  pts: # ex: `Ox_Fill_PT: 1` -> `gse_pt_1`
+    Ox_Fill_PT: 1
+    Pneumatics_2k_Bottle_PT: 2
+    Engine_Pneumatics_PT: 3
+    Trailer_Pneumatics_PT: 4
+    Purge_2k_Bottle_PT: 5
+    Purge_Post_Reg_PT: 6
+    Trickle_Purge_PT: 7
+    6k_Bottle_1_PT: 8
+    6k_Bottle_2_PT: 9
+    6k_Bottle_3_PT: 10
+    Post_Press_Fill_PT: 11
+    Reg_Set_PT: 12
+  tcs: # ex: `6k_Bottle_1_Skin_TC: 1` -> `gse_tc_1`
+    6k_Bottle_1_Skin_TC: 1
+    6k_Bottle_2_Skin_TC: 2
+    6k_Bottle_3_Skin_TC: 3
+
 flight_computer:
   valves:
     examples_valve: 1
@@ -37,5 +76,3 @@ bay_board_3: # engine bay board
     example_pt: 1
   tcs:
     example_tc: 1
-
-handoff: "limewire_handoff" # Synnax channel for handoff system (probably static) (also TBD)
