@@ -1,0 +1,119 @@
+from termcolor import colored
+import yaspin
+
+from configuration import Configuration
+
+# fun spinner while we load packages
+spinner = yaspin()
+spinner.text = colored("Initializing...", "yellow")
+spinner.start()
+
+import argparse
+import synnax as sy
+
+
+# helper function to raise pretty errors
+def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
+    spinner.stop()  # incase it's running
+    if exception != None:  # exception is an optional argument
+        print(exception)
+    print(colored(message, "red", attrs=["bold"]))
+    print(colored("Exiting", "red", attrs=["bold"]))
+    exit(error_code)
+
+
+def parse_args() -> list:
+    parser = argparse.ArgumentParser(
+        description="The autosequence for preparring Limeight for launch!"
+    )
+
+    parser.add_argument(
+        "-m",
+        "--config",
+        help="The file to use for channel config",
+        default="config.yaml",
+        type=str,
+    )
+    parser.add_argument(
+        "-c",
+        "--cluster",
+        help="Specify a Synnax cluster to connect to",
+        default="synnax.masa.engin.umich.edu",
+        type=str,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Shold the program output extra debugging information",
+        action="store_true",
+    )  # Positional argument
+    args = parser.parse_args()
+    # check that if there was an alternate config file given, that it is at least a .yaml file
+    if args.config != "config.yaml":
+        if args.config.endswith(".yaml"):
+            if args.verbose:
+                print(colored(f"Using config from file: {args.config}", "yellow"))
+        else:
+            error_and_exit(
+                f"Invalid specified config file: {args.config}, must be .yaml file"
+            )
+    return args
+
+
+@yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
+def synnax_login(args) -> sy.Synnax:
+    cluster = args.cluster  # default value (synnax.masa.engin.umich.edu)
+    if args.simulation:
+        if args.verbose:
+            spinner.write(
+                colored("Using `localhost` as the cluster for simulation", "yellow")
+            )
+        cluster = "localhost"
+    try:
+        client = sy.Synnax(
+            host=cluster,
+            port=9090,
+            username="synnax",
+            password="seldon",
+        )
+    except Exception as e:
+        error_and_exit(
+            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
+        )
+    return client
+
+
+def get_channels(client: sy.Synnax, config: Configuration):
+    channels = []
+    for channel_name in config.channels:
+        datatype: sy.DataType
+        virtual: bool
+        if "vlv" in channel_name:
+            datatype = sy.DataType.INT8
+            virtual = True
+        elif "state" in channel_name:
+            pass
+        channel = client.channels.create(
+            retrieve_if_name_exists=True,
+            name=channel_name,
+            data_type=datatype,
+            virtual=virtual
+        )
+        channels.append(channel)
+
+
+def main():
+    args = parse_args()
+    client = synnax_login(args.config)
+    config = Configuration.load(args.config)
+    channels = get_channels(client, config)
+
+
+if __name__ == "__main__":
+    spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports
+    try:
+        main()
+    except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
+        error_and_exit("Keyboard interrupt detected")
+    except Exception as e:  # catch-all uncaught errors
+        error_and_exit("Uncaught exception!", exception=e)
