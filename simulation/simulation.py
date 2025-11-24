@@ -13,6 +13,7 @@ from termcolor import colored
 from yaspin import yaspin 
 
 from configuration import Configuration
+from system import State, System
 
 # fun spinner while we load packages
 spinner = yaspin()
@@ -22,7 +23,11 @@ spinner.start()
 import argparse
 import synnax as sy
 
-global time_channel
+global time_channel # We use one global timestamp channel to simplify the simulation
+# In reality, there are lots of timestamp channels since data 
+# can arrive asyncronously from lots of different sources via limewire
+# But this isn't useful to simulate the behavior of for the purposes of an autosequence
+
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -34,7 +39,7 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
     exit(error_code)
 
 
-def parse_args() -> list:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="The autosequence for preparring Limeight for launch!"
     )
@@ -86,9 +91,10 @@ def synnax_login(args) -> sy.Synnax:
         error_and_exit(
             f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
         )
-    return client
+    return client # type: ignore
 
 
+# Makes or gets all the channels we care about into Synnax
 def get_channels(client: sy.Synnax, config: Configuration):
     global time_channel
     time_channel =  client.channels.create(
@@ -98,8 +104,7 @@ def get_channels(client: sy.Synnax, config: Configuration):
         virtual=False,
         is_index=True
     )
-    channels = config.valves + config.pts + config.states + config.tcs + "time"
-    print(channels)
+    channels = config.valves + config.pts + config.states + config.tcs + ["time"]
     for channel_name in channels:
         if "vlv" in channel_name:
             client.channels.create(
@@ -127,18 +132,59 @@ def get_channels(client: sy.Synnax, config: Configuration):
 
 
 # A fake driver that writes data to all channels according to the simulation
-def driver(client: sy.Synnax, config: Configuration):
+@yaspin(text=colored("Running Simulation...", "green"))
+def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System):
     global time_channel
+    channels = config.states + config.pts + config.tcs
     while True:
-        pass
+        system.update(config)
+        # TODO: Generate data for all instruments
+        timestamp = [("time", sy.TimeStamp.now())]
+        sensor_data = []
+        state_data = []
+
+        # Check for incoming valve commands
+        fr = streamer.read(timeout=0)
+        if fr is not None:
+            for channel in fr.channels:
+                system.toggle_valve(str(channel))
+        
+        for channel in channels:
+            if "state" in channel:
+                vlv = channel.replace("state", "vlv")
+                state = system.get_valve_state(vlv)
+                if state == State.OPEN:
+                    state_data.append((channel, 1))
+                else:
+                    state_data.append((channel, 0))
+            if "pt" in channel:
+                pressure = system.get_pressure(channel) # TODO: add noise
+                sensor_data.append((channel, pressure))
+            else:
+                sensor_data.append((channel, 0.0))
+
+        write_data = dict(timestamp + sensor_data + state_data)
+        writer.write(write_data) # type: ignore
+
+        sy.sleep(0.02) # TODO: make this a proper busy wait
 
 
 def main():
     args = parse_args()
     client = synnax_login(args)
     config = Configuration.load(args.config)
+    system = System(config)
     get_channels(client, config)
-    driver(client, config)
+    # Open streamer for valve commands
+    with client.open_streamer(
+        channels=config.valves
+    ) as streamer:
+        # Open writer for everything else
+        with client.open_writer(
+            start=sy.TimeStamp.now(),
+            channels=config.states + config.pts + config.tcs + ["time"]
+        ) as writer:
+            driver(config, streamer, writer, system) # Run the fake driver
 
 
 if __name__ == "__main__":
@@ -148,4 +194,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
     except Exception as e:  # catch-all uncaught errors
-        error_and_exit("Uncaught exception!", exception=e)
+       error_and_exit("Uncaught exception!", exception=e)

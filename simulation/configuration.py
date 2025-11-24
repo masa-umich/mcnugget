@@ -129,6 +129,14 @@ class Configuration:
     pts: List[str]
     tcs: List[str]
 
+    # Reverse lookup, useful sometimes
+    def get_name(self, channel: str) -> str:
+        for field in fields(self.channels):
+            value = getattr(self.channels, field.name)
+            if value == channel:
+                return field.name
+        return ""
+
     @classmethod
     def load(cls, filepath: str):
         with open(filepath, 'r') as f:
