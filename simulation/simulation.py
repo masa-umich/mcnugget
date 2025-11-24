@@ -1,5 +1,16 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "synnax==0.46.0",
+#     "yaspin",
+#     "termcolor",
+#     "pyyaml",
+# ]
+# ///
+
 from termcolor import colored
-import yaspin
+from yaspin import yaspin 
 
 from configuration import Configuration
 
@@ -11,6 +22,7 @@ spinner.start()
 import argparse
 import synnax as sy
 
+global time_channel
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -38,7 +50,7 @@ def parse_args() -> list:
         "-c",
         "--cluster",
         help="Specify a Synnax cluster to connect to",
-        default="synnax.masa.engin.umich.edu",
+        default="localhost",
         type=str,
     )
     parser.add_argument(
@@ -62,13 +74,7 @@ def parse_args() -> list:
 
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
 def synnax_login(args) -> sy.Synnax:
-    cluster = args.cluster  # default value (synnax.masa.engin.umich.edu)
-    if args.simulation:
-        if args.verbose:
-            spinner.write(
-                colored("Using `localhost` as the cluster for simulation", "yellow")
-            )
-        cluster = "localhost"
+    cluster = args.cluster
     try:
         client = sy.Synnax(
             host=cluster,
@@ -84,29 +90,55 @@ def synnax_login(args) -> sy.Synnax:
 
 
 def get_channels(client: sy.Synnax, config: Configuration):
-    channels = []
-    for channel_name in config.channels:
-        datatype: sy.DataType
-        virtual: bool
+    global time_channel
+    time_channel =  client.channels.create(
+        retrieve_if_name_exists=True,
+        name="time",
+        data_type=sy.DataType.TIMESTAMP,
+        virtual=False,
+        is_index=True
+    )
+    channels = config.valves + config.pts + config.states + config.tcs + "time"
+    print(channels)
+    for channel_name in channels:
         if "vlv" in channel_name:
-            datatype = sy.DataType.INT8
-            virtual = True
+            client.channels.create(
+                retrieve_if_name_exists=True,
+                name=channel_name,
+                data_type=sy.DataType.INT8,
+                virtual=True
+            )
         elif "state" in channel_name:
-            pass
-        channel = client.channels.create(
-            retrieve_if_name_exists=True,
-            name=channel_name,
-            data_type=datatype,
-            virtual=virtual
-        )
-        channels.append(channel)
+            client.channels.create(
+                retrieve_if_name_exists=True,
+                name=channel_name,
+                data_type=sy.DataType.INT8,
+                virtual=False,
+                index=time_channel.key
+            )
+        else:
+            client.channels.create(
+                retrieve_if_name_exists=True,
+                name=channel_name,
+                data_type=sy.DataType.FLOAT32,
+                virtual=False,
+                index=time_channel.key
+            )
+
+
+# A fake driver that writes data to all channels according to the simulation
+def driver(client: sy.Synnax, config: Configuration):
+    global time_channel
+    while True:
+        pass
 
 
 def main():
     args = parse_args()
-    client = synnax_login(args.config)
+    client = synnax_login(args)
     config = Configuration.load(args.config)
-    channels = get_channels(client, config)
+    get_channels(client, config)
+    driver(client, config)
 
 
 if __name__ == "__main__":
