@@ -21,6 +21,7 @@ spinner.text = colored("Initializing...", "yellow")
 spinner.start()
 
 import argparse
+import random
 import synnax as sy
 
 global time_channel # We use one global timestamp channel to simplify the simulation
@@ -158,7 +159,8 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
                 else:
                     state_data.append((channel, 0))
             if "pt" in channel:
-                pressure = system.get_pressure(channel) # TODO: add noise
+                noise = random.gauss(0, 30)
+                pressure = system.get_pressure(channel) + noise
                 sensor_data.append((channel, pressure))
             else:
                 sensor_data.append((channel, 0.0))
@@ -166,7 +168,7 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
         write_data = dict(timestamp + sensor_data + state_data)
         writer.write(write_data) # type: ignore
 
-        sy.sleep(0.02) # TODO: make this a proper busy wait
+        sy.sleep(0.05) # TODO: make this a proper busy wait
 
 
 def main():

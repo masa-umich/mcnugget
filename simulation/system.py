@@ -4,6 +4,9 @@ from configuration import Configuration, ChannelMap
 from dataclasses import fields
 
 AMBIENT_TEMP: float = 26.0 # degrees celsius
+FLOW_COEFFICIENT: float = 0.1 # Cv constant - in the real world this is different for each part of the system
+STD_BOTTLE_VOLUME: float = 42.2 # Liters
+COPV_VOLUME: float = 31.3 # Liters
 
 class State(Enum):
     OPEN = auto()
@@ -83,23 +86,28 @@ class System:
             Bottle(
                 name="Bottle 1",
                 channels=[config.channels.Bottle_1_PT],
-                volume=20,
+                volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             ),
             Bottle(
                 name="Bottle 2",
                 channels=[config.channels.Bottle_2_PT],
-                volume=20,
+                volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             ),
             Bottle(
                 name="Bottle 3",
                 channels=[config.channels.Bottle_3_PT],
-                volume=20,
+                volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             )
         ]
-            
+
+    def get_bottle_obj(self, name: str) -> Bottle:
+        for bottle in self.bottles:
+            if bottle.name.lower() == name.lower():
+                return bottle
+        return None            
 
     def get_pressure(self, channel_name: str) -> float:
         channel_name = channel_name.lower()
@@ -107,14 +115,13 @@ class System:
             for channel in bottle.channels:
                 if channel_name == channel:
                     return bottle.pressure
-        return 0.0
+        return 0.0 # for invalid or non-existant names
 
     def change_pressure(self, bottle_name: str, delta: float):
         bottle_name = bottle_name.lower()
         for bottle in self.bottles:
             if bottle.name.lower() == bottle_name:
                 bottle.pressure += delta
-
                 
     def get_valve_state(self, valve_name: str) -> State:
         valve_name = valve_name.lower()
@@ -141,47 +148,46 @@ class System:
             if valve.name == valve_name.lower():
                 valve.de_energize()
 
+    def transfer_fluid(self, source_name: str, dest_name: str):
+        source = self.get_bottle_obj(source_name)
+        dest = self.get_bottle_obj(dest_name)
+
+        if not source or not dest:
+            return
+
+        p_diff = source.pressure - dest.pressure
+        
+        # If pressure is equal or negative (dest higher than source), no flow
+        if p_diff <= 0:
+            return
+
+        PV_transfer = p_diff * FLOW_COEFFICIENT
+
+        source_drop = PV_transfer / source.volume
+        source.pressure -= source_drop
+        dest_rise = PV_transfer / dest.volume
+        dest.pressure += dest_rise
+
+
+    def vent_to_atmosphere(self, source_name: str):
+        source = self.get_bottle_obj(source_name)
+        if not source: return
+
+        p_diff = source.pressure - 0 
+        if p_diff <= 0: return
+        loss = p_diff * FLOW_COEFFICIENT
+        source.pressure -= loss
+
+
     def update(self, config: Configuration):
-        COPV_Vent_State: State = self.get_valve_state(config.channels.COPV_Vent)
-        if COPV_Vent_State == State.OPEN:
-            rate = 20
-            pressure = self.get_pressure(config.channels.COPV_PT_1)
-            if (pressure >= rate):
-                amount = rate
-            else:
-                amount = pressure
-            self.change_pressure("COPV", -amount)
+        if self.get_valve_state(config.channels.COPV_Vent) == State.OPEN:
+            self.vent_to_atmosphere("COPV")
             
-        Press_Iso_1_State: State = self.get_valve_state(config.channels.Press_Iso_1)
-        if Press_Iso_1_State == State.OPEN:
-            rate = 1
-            bottle_pressure = self.get_pressure(config.channels.Bottle_1_PT)
-            if (bottle_pressure >= rate):
-                amount = rate
-            else:
-                amount = bottle_pressure
-            self.change_pressure("Bottle 1", -amount)
-            self.change_pressure("COPV", amount)
+        if self.get_valve_state(config.channels.Press_Iso_1) == State.OPEN:
+            self.transfer_fluid("Bottle 1", "COPV")
 
+        if self.get_valve_state(config.channels.Press_Iso_2) == State.OPEN:
+            self.transfer_fluid("Bottle 2", "COPV")
 
-        Press_Iso_2_State: State = self.get_valve_state(config.channels.Press_Iso_2)
-        if Press_Iso_2_State == State.OPEN:
-            rate = 1
-            bottle_pressure = self.get_pressure(config.channels.Bottle_2_PT)
-            if (bottle_pressure >= rate):
-                amount = rate
-            else:
-                amount = bottle_pressure
-            self.change_pressure("Bottle 2", -amount)
-            self.change_pressure("COPV", amount)
-
-        Press_Iso_3_State: State = self.get_valve_state(config.channels.Press_Iso_3)
-        if Press_Iso_3_State == State.OPEN:
-            rate = 1
-            bottle_pressure = self.get_pressure(config.channels.Bottle_3_PT)
-            if (bottle_pressure >= rate):
-                amount = rate
-            else:
-                amount = bottle_pressure
-            self.change_pressure("Bottle 3", -amount)
-            self.change_pressure("COPV", amount)
+        if self.get_valve_state(config.channels.Press_Iso_3) == State.OPEN:
+            self.transfer_fluid("Bottle 3", "COPV")
