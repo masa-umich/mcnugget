@@ -1,7 +1,7 @@
 variables:
-  press_rate_1: 20 # psi/min
+  press_rate_1: 200 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
-  press_rate_2: 40 # psi/min
+  press_rate_2: 400 # psi/min
   copv_upper_bound_temp: -1 # (TBD) degrees celsius
   copv_lower_bound_temp: -1 # (TBD) degrees celsius
   copv_minimum_temp: -1 # (TBD) degrees celsius

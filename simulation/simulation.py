@@ -141,7 +141,6 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
     channels = config.states + config.pts + config.tcs
     while True:
         system.update(config)
-        # TODO: Generate data for all instruments
         timestamp = [("time", sy.TimeStamp.now())]
         sensor_data = []
         state_data = []
@@ -163,7 +162,7 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
             if "pt" in channel:
                 noise = random.gauss(0, 250) # instrument noise is approximately gaussian
                 # TODO: add different noise for different instruments with some sort of lookup table
-                pressure = system.get_pressure(channel) + noise
+                pressure = system.get_pressure(channel) #+ noise
                 sensor_data.append((channel, pressure))
             else:
                 sensor_data.append((channel, 0.0))
