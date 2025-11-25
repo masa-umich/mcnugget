@@ -24,7 +24,8 @@ import argparse
 import random
 import synnax as sy
 
-global time_channel # We use one global timestamp channel to simplify the simulation
+global time_channel 
+# We use one global timestamp channel to simplify the simulation
 # In reality, there are lots of timestamp channels since data 
 # can arrive asyncronously from lots of different sources via limewire
 # But this isn't useful to simulate the behavior of for the purposes of an autosequence
@@ -96,6 +97,7 @@ def synnax_login(args) -> sy.Synnax:
 
 
 # Makes or gets all the channels we care about into Synnax
+@yaspin(text=colored("Setting up channels...", "yellow"))
 def get_channels(client: sy.Synnax, config: Configuration):
     global time_channel
     time_channel =  client.channels.create(
@@ -159,7 +161,8 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
                 else:
                     state_data.append((channel, 0))
             if "pt" in channel:
-                noise = random.gauss(0, 30)
+                noise = random.gauss(0, 250) # instrument noise is approximately gaussian
+                # TODO: add different noise for different instruments with some sort of lookup table
                 pressure = system.get_pressure(channel) + noise
                 sensor_data.append((channel, pressure))
             else:
@@ -168,7 +171,7 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
         write_data = dict(timestamp + sensor_data + state_data)
         writer.write(write_data) # type: ignore
 
-        sy.sleep(0.05) # TODO: make this a proper busy wait
+        sy.sleep(sy.Rate(50)) # 50 Hz
 
 
 def main():

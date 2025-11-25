@@ -4,7 +4,7 @@ from configuration import Configuration, ChannelMap
 from dataclasses import fields
 
 AMBIENT_TEMP: float = 26.0 # degrees celsius
-FLOW_COEFFICIENT: float = 0.1 # Cv constant - in the real world this is different for each part of the system
+FLOW_COEFFICIENT: float = 0.05 # Cv constant - in the real world this is different for each part of the system
 STD_BOTTLE_VOLUME: float = 42.2 # Liters
 COPV_VOLUME: float = 31.3 # Liters
 
@@ -80,7 +80,7 @@ class System:
                     config.channels.COPV_PT_2,
                     config.channels.Fuel_TPC_Inlet_PT
                 ],
-                volume=20,
+                volume=COPV_VOLUME,
                 pressure=0
             ),
             Bottle(
