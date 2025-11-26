@@ -62,8 +62,11 @@ class Valve:
 class System:
     valves = []
     bottles = []
+    config: Configuration
 
     def __init__(self, config: Configuration):
+        self.config = config
+
         for valve in config.valves:
             self.valves.append(
                 Valve(
@@ -103,11 +106,11 @@ class System:
             )
         ]
 
-    def get_bottle_obj(self, name: str) -> Bottle:
+    def get_bottle_obj(self, name: str) -> Bottle | None:
         for bottle in self.bottles:
             if bottle.name.lower() == name.lower():
                 return bottle
-        return None            
+        return None
 
     def get_pressure(self, channel_name: str) -> float:
         channel_name = channel_name.lower()
@@ -179,15 +182,15 @@ class System:
         source.pressure -= loss
 
 
-    def update(self, config: Configuration):
-        if self.get_valve_state(config.channels.COPV_Vent) == State.OPEN:
+    def update(self):
+        if self.get_valve_state(self.config.channels.COPV_Vent) == State.OPEN:
             self.vent_to_atmosphere("COPV")
             
-        if self.get_valve_state(config.channels.Press_Iso_1) == State.OPEN:
+        if self.get_valve_state(self.config.channels.Press_Iso_1) == State.OPEN:
             self.transfer_fluid("Bottle 1", "COPV")
 
-        if self.get_valve_state(config.channels.Press_Iso_2) == State.OPEN:
+        if self.get_valve_state(self.config.channels.Press_Iso_2) == State.OPEN:
             self.transfer_fluid("Bottle 2", "COPV")
 
-        if self.get_valve_state(config.channels.Press_Iso_3) == State.OPEN:
+        if self.get_valve_state(self.config.channels.Press_Iso_3) == State.OPEN:
             self.transfer_fluid("Bottle 3", "COPV")

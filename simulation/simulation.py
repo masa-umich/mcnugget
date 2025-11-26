@@ -22,6 +22,7 @@ spinner.start()
 
 import argparse
 import random
+import time
 import synnax as sy
 
 global time_channel 
@@ -138,9 +139,11 @@ def get_channels(client: sy.Synnax, config: Configuration):
 @yaspin(text=colored("Running Simulation...", "green"))
 def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System):
     global time_channel
+    driver_frequency = 20 # Hz
+    driver_period = driver_frequency**(-1) # seconds
     channels = config.states + config.pts + config.tcs
     while True:
-        system.update(config)
+        start_time = time.time()
         timestamp = [("time", sy.TimeStamp.now())]
         sensor_data = []
         state_data = []
@@ -160,9 +163,9 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
                 else:
                     state_data.append((channel, 0))
             if "pt" in channel:
-                noise = random.gauss(0, 250) # instrument noise is approximately gaussian
+                noise = random.gauss(0, 150) # instrument noise is approximately gaussian
                 # TODO: add different noise for different instruments with some sort of lookup table
-                pressure = system.get_pressure(channel) #+ noise
+                pressure = system.get_pressure(channel) + noise
                 sensor_data.append((channel, pressure))
             else:
                 sensor_data.append((channel, 0.0))
@@ -170,8 +173,12 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
         write_data = dict(timestamp + sensor_data + state_data)
         writer.write(write_data) # type: ignore
 
-        sy.sleep(sy.Rate(50)) # 50 Hz
+        system.update()
 
+        wakeup_time = start_time + driver_period
+        while wakeup_time > time.time():
+            sy.sleep(0)
+        
 
 def main():
     args = parse_args()
