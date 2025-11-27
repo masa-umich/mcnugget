@@ -297,7 +297,7 @@ def compute_temperature_from_mv(mv):
     return T0 + (numerator / denominator)
 
 
-#@yaspin(text=colored("Converting values...", "green"))
+@yaspin(text=colored("Converting values...", "green"))
 def driver(tc_channels: TC_Channels, streamer: sy.Streamer, writer: sy.Writer, frequency: int) -> None:
     loop = sy.Loop(sy.Rate.HZ * frequency)
     while loop.wait():
@@ -352,5 +352,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    # except Exception as e:  # catch-all uncaught errors
-        # error_and_exit("Uncaught exception!", exception=e)
+    except Exception as e:  # catch-all uncaught errors
+        error_and_exit("Uncaught exception!", exception=e)
