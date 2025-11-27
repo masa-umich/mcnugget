@@ -29,7 +29,7 @@ import time
 from configuration import Configuration
 
 REFRESH_RATE = 50 # Hz
-loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE)
+loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE) # Standard refresh rate for all checks
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -174,5 +174,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    # except Exception as e:  # catch-all uncaught errors
-    #     error_and_exit("Uncaught exception!", exception=e)
+    except Exception as e:  # catch-all uncaught errors
+        error_and_exit("Uncaught exception!", exception=e)

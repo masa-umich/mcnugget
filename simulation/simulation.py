@@ -10,7 +10,7 @@
 # ///
 
 from termcolor import colored
-from yaspin import yaspin 
+from yaspin import yaspin
 
 from configuration import Configuration
 from system import State, System
@@ -23,6 +23,7 @@ spinner.start()
 import argparse
 import random
 import synnax as sy
+
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -85,7 +86,7 @@ def synnax_login(cluster: str) -> sy.Synnax:
         error_and_exit(
             f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
         )
-    return client # type: ignore
+    return client  # type: ignore
 
 
 # Makes or gets all the channels we care about into Synnax
@@ -96,12 +97,12 @@ def get_channels(client: sy.Synnax, config: Configuration):
     pts = config.get_pts()
     tcs = config.get_tcs()
 
-    time_channel =  client.channels.create(
+    time_channel = client.channels.create(
         retrieve_if_name_exists=True,
         name="time",
         data_type=sy.DataType.TIMESTAMP,
         virtual=False,
-        is_index=True
+        is_index=True,
     )
 
     for valve in valves:
@@ -109,7 +110,7 @@ def get_channels(client: sy.Synnax, config: Configuration):
             retrieve_if_name_exists=True,
             name=valve,
             data_type=sy.DataType.INT8,
-            virtual=True
+            virtual=True,
         )
 
     for state in states:
@@ -118,26 +119,25 @@ def get_channels(client: sy.Synnax, config: Configuration):
             name=state,
             data_type=sy.DataType.INT8,
             virtual=False,
-            index=time_channel.key
+            index=time_channel.key,
         )
 
-    for sensor in pts and tcs:
+    for sensor in pts + tcs:
         client.channels.create(
             retrieve_if_name_exists=True,
             name=sensor,
             data_type=sy.DataType.FLOAT32,
             virtual=False,
-            index=time_channel.key
+            index=time_channel.key,
         )
 
 
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
 def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System):
-
-    driver_frequency = 20 # Hz
+    driver_frequency = 20  # Hz
     loop = sy.Loop(sy.Rate.HZ * driver_frequency)
-    
+
     while loop.wait():
         write_data: dict = {}
         write_data["time"] = sy.TimeStamp.now()
@@ -155,21 +155,21 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
                 write_data[state_ch] = 1
             else:
                 write_data[state_ch] = 0
-        
+
         for pt_ch in config.get_pts():
-            noise = random.gauss(0, 150) # instrument noise is approximately gaussian
+            noise = random.gauss(0, 150)  # instrument noise is approximately gaussian
             # TODO: add different noise for different instruments with some sort of lookup table
             pressure = system.get_pressure(pt_ch) + noise
             write_data[pt_ch] = pressure
         for tc_ch in config.get_tcs():
-            noise = random.gauss(0, 2) # instrument noise is approximately gaussian
+            noise = random.gauss(0, 2)  # instrument noise is approximately gaussian
             # TODO: Implement TCs and other instruments
             temperature = system.get_temperature(tc_ch) + noise
             write_data[tc_ch] = temperature
 
-        writer.write(write_data) # type: ignore
+        writer.write(write_data)  # type: ignore
         system.update()
-        
+
 
 def main():
     args = parse_args()
@@ -182,15 +182,10 @@ def main():
     write_chs = config.get_valves()
     read_chs = config.get_states() + config.get_pts() + config.get_tcs() + ["time"]
 
-    with client.open_streamer(
-        channels=write_chs
-    ) as streamer:
+    with client.open_streamer(channels=write_chs) as streamer:
         # Open writer for everything else
-        with client.open_writer(
-            start=sy.TimeStamp.now(),
-            channels=read_chs
-        ) as writer:
-            driver(config, streamer, writer, system) # Run the fake driver
+        with client.open_writer(start=sy.TimeStamp.now(), channels=read_chs) as writer:
+            driver(config, streamer, writer, system)  # Run the fake driver
 
 
 if __name__ == "__main__":
@@ -200,4 +195,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
     except Exception as e:  # catch-all uncaught errors
-       error_and_exit("Uncaught exception!", exception=e)
+        error_and_exit("Uncaught exception!", exception=e)
