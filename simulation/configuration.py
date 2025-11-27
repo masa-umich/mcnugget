@@ -5,7 +5,6 @@ from dataclasses import dataclass, fields
 
 @dataclass
 class Settings:
-    """Holds the test parameters defined in the 'variables' section of the YAML."""
     press_rate_1: float
     press_rate_1_ittrs: int
     press_rate_2: float
@@ -119,26 +118,43 @@ class ChannelMap:
     Regen_Manifold_TC_1: str
     Regen_Manifold_TC_2: str
 
-@dataclass
 class Configuration:
-    """The main configuration object containing both variables and channels."""
     variables: Settings
-    channels: ChannelMap
-    valves: List[str]
-    states: List[str]
-    pts: List[str]
-    tcs: List[str]
+    mappings: ChannelMap
+    channels: dict
 
-    # Reverse lookup, useful sometimes
-    def get_name(self, channel: str) -> str:
-        for field in fields(self.channels):
-            value = getattr(self.channels, field.name)
-            if value == channel:
-                return field.name
-        return ""
+    def get_valves(self) -> list:
+        valves: list = []
+        for channel in self.channels.values():
+            if "vlv" in channel: 
+                valves.append(channel)
+        return valves
 
-    @classmethod
-    def load(cls, filepath: str):
+    def get_states(self) -> list:
+        states: list = []
+        for channel in self.channels.values():
+            if "vlv" in channel:
+                state_channel_name = channel.replace("vlv", "state")
+                states.append(state_channel_name)
+        return states
+
+    def get_pts(self) -> list:
+        pts: list = []
+        for channel in self.channels.values():
+            if "pt" in channel: 
+                pts.append(channel)
+        return pts
+
+    def get_tcs(self) -> list:
+        tcs: list = []
+        for channel in self.channels.values():
+            if "tc" in channel: 
+                tcs.append(channel)
+        return tcs
+
+    def __init__(self, filepath: str):
+        self.channels = {} # initialize the channels flat map
+
         with open(filepath, 'r') as f:
             yaml_data = yaml.safe_load(f)
         
@@ -146,14 +162,13 @@ class Configuration:
         vars_data = yaml_data.get("variables", {})
         valid_var_keys = {f.name for f in fields(Settings)}
         filtered_vars = {k: v for k, v in vars_data.items() if k in valid_var_keys}
-        variables = Settings(**filtered_vars)
+        self.variables = Settings(**filtered_vars)
 
         # Populate ChannelMap from "channel_mappings"
-        mappings = yaml_data.get("channel_mappings", {})
-        flat_map = {} # Flatten the YAML into a dict: {"Real_Name": "synnax_name"}
+        mappings_data = yaml_data.get("channel_mappings", {})
         # Add the handoff channel manually
-        if "handoff" in mappings:
-            flat_map["handoff"] = mappings["handoff"]
+        if "handoff" in mappings_data:
+            self.channels["handoff"] = mappings_data["handoff"]
         
         prefix_map = {
             "ebox": "gse",
@@ -169,13 +184,8 @@ class Configuration:
             "tcs": "tc"
         }
 
-        valves = []
-        states = []
-        pts = []
-        tcs = []
-
         for controller_key, prefix in prefix_map.items():
-            controller_data = mappings.get(controller_key)
+            controller_data = mappings_data.get(controller_key)
             if not controller_data:
                 continue
 
@@ -187,32 +197,17 @@ class Configuration:
                 for real_name, index in items.items():
                     # Construct Synnax Name: prefix_suffix_index (e.g., gse_pt_1)
                     synnax_name = f"{prefix}_{suffix}_{index}"
-                    flat_map[real_name] = synnax_name
-                    if type_key == "valves":
-                        valves.append(synnax_name)
-                        states.append(f"{prefix}_state_{index}")
-                    elif type_key == "pts":
-                        pts.append(synnax_name)
-                    elif type_key == "tcs":
-                        tcs.append(synnax_name)
+                    self.channels[real_name] = synnax_name
 
         # 3. Instantiate ChannelMap
         # We iterate over the fields in ChannelMap to find the matching name in our flat_map
         channel_args = {}
         for field in fields(ChannelMap):
             # We match strictly by name (YAML key must match Dataclass field name)
-            if field.name in flat_map:
-                channel_args[field.name] = flat_map[field.name]
+            if field.name in self.channels:
+                channel_args[field.name] = self.channels[field.name]
             else:
                 print(f"Warning: Channel '{field.name}' defined in Python but not found in YAML config.")
                 channel_args[field.name] = "MISSING_CONFIG"
-
-        channels = ChannelMap(**channel_args)
-
-        return cls(variables=variables, 
-                   channels=channels,
-                   valves=valves,
-                   states=states,
-                   pts=pts,
-                   tcs=tcs
-                   )
+        
+        self.mappings = ChannelMap(**channel_args)

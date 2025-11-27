@@ -81,8 +81,7 @@ def parse_args() -> argparse.Namespace:
 
 
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
-def synnax_login(args) -> sy.Synnax:
-    cluster = args.cluster
+def synnax_login(cluster: str) -> sy.Synnax:
     try:
         client = sy.Synnax(
             host=cluster,
@@ -101,6 +100,12 @@ def synnax_login(args) -> sy.Synnax:
 @yaspin(text=colored("Setting up channels...", "yellow"))
 def get_channels(client: sy.Synnax, config: Configuration):
     global time_channel
+
+    valves = config.get_valves()
+    states = config.get_states()
+    pts = config.get_pts()
+    tcs = config.get_tcs()
+
     time_channel =  client.channels.create(
         retrieve_if_name_exists=True,
         name="time",
@@ -108,92 +113,91 @@ def get_channels(client: sy.Synnax, config: Configuration):
         virtual=False,
         is_index=True
     )
-    channels = config.valves + config.pts + config.states + config.tcs + ["time"]
-    for channel_name in channels:
-        if "vlv" in channel_name:
-            client.channels.create(
-                retrieve_if_name_exists=True,
-                name=channel_name,
-                data_type=sy.DataType.INT8,
-                virtual=True
-            )
-        elif "state" in channel_name:
-            client.channels.create(
-                retrieve_if_name_exists=True,
-                name=channel_name,
-                data_type=sy.DataType.INT8,
-                virtual=False,
-                index=time_channel.key
-            )
-        else:
-            client.channels.create(
-                retrieve_if_name_exists=True,
-                name=channel_name,
-                data_type=sy.DataType.FLOAT32,
-                virtual=False,
-                index=time_channel.key
-            )
+
+    for valve in valves:
+        client.channels.create(
+            retrieve_if_name_exists=True,
+            name=valve,
+            data_type=sy.DataType.INT8,
+            virtual=True
+        )
+
+    for state in states:
+        client.channels.create(
+            retrieve_if_name_exists=True,
+            name=state,
+            data_type=sy.DataType.INT8,
+            virtual=False,
+            index=time_channel.key
+        )
+
+    for sensor in pts and tcs:
+        client.channels.create(
+            retrieve_if_name_exists=True,
+            name=sensor,
+            data_type=sy.DataType.FLOAT32,
+            virtual=False,
+            index=time_channel.key
+        )
 
 
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
 def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System):
-    global time_channel
+
     driver_frequency = 20 # Hz
-    driver_period = driver_frequency**(-1) # seconds
-    channels = config.states + config.pts + config.tcs
-    while True:
-        start_time = time.time()
-        timestamp = [("time", sy.TimeStamp.now())]
-        sensor_data = []
-        state_data = []
+    loop = sy.Loop(sy.Rate.HZ * driver_frequency)
+    
+    while loop.wait():
+        write_data: dict = {}
+        write_data["time"] = sy.TimeStamp.now()
 
         # Check for incoming valve commands
         fr = streamer.read(timeout=0)
         if fr is not None:
             for channel in fr.channels:
                 system.toggle_valve(str(channel))
-        
-        for channel in channels:
-            if "state" in channel:
-                vlv = channel.replace("state", "vlv")
-                state = system.get_valve_state(vlv)
-                if state == State.OPEN:
-                    state_data.append((channel, 1))
-                else:
-                    state_data.append((channel, 0))
-            if "pt" in channel:
-                noise = random.gauss(0, 150) # instrument noise is approximately gaussian
-                # TODO: add different noise for different instruments with some sort of lookup table
-                pressure = system.get_pressure(channel) + noise
-                sensor_data.append((channel, pressure))
+
+        for state_ch in config.get_states():
+            vlv_ch = state_ch.replace("state", "vlv")
+            state = system.get_valve_state(vlv_ch)
+            if state == State.OPEN:
+                write_data[state_ch] = 1
             else:
-                sensor_data.append((channel, 0.0))
+                write_data[state_ch] = 0
+        
+        for pt_ch in config.get_pts():
+            noise = random.gauss(0, 5) # instrument noise is approximately gaussian
+            # TODO: add different noise for different instruments with some sort of lookup table
+            pressure = system.get_pressure(pt_ch) + noise
+            write_data[pt_ch] = pressure
+        for tc_ch in config.get_tcs():
+            noise = random.gauss(0, 5) # instrument noise is approximately gaussian
+            # TODO: Implement TCs and other instruments
+            write_data[tc_ch] = 0.0 + noise
 
-        write_data = dict(timestamp + sensor_data + state_data)
         writer.write(write_data) # type: ignore
-
         system.update()
-
-        wakeup_time = start_time + driver_period
-        while wakeup_time > time.time():
-            sy.sleep(0)
         
 
 def main():
     args = parse_args()
-    client = synnax_login(args)
-    config = Configuration.load(args.config)
+    client = synnax_login(args.cluster)
+    config = Configuration(args.config)
     system = System(config)
     get_channels(client, config)
     # Open streamer for valve commands
+
+    write_chs = config.get_valves()
+    read_chs = config.get_states() + config.get_pts() + config.get_tcs() + ["time"]
+
     with client.open_streamer(
-        channels=config.valves
+        channels=write_chs
     ) as streamer:
         # Open writer for everything else
         with client.open_writer(
             start=sy.TimeStamp.now(),
-            channels=config.states + config.pts + config.tcs + ["time"]
+            channels=read_chs
         ) as writer:
             driver(config, streamer, writer, system) # Run the fake driver
 

@@ -67,7 +67,7 @@ class System:
     def __init__(self, config: Configuration):
         self.config = config
 
-        for valve in config.valves:
+        for valve in config.get_valves():
             self.valves.append(
                 Valve(
                     name=valve,
@@ -79,28 +79,28 @@ class System:
             Bottle(
                 name="COPV",
                 channels=[
-                    config.channels.COPV_PT_1,
-                    config.channels.COPV_PT_2,
-                    config.channels.Fuel_TPC_Inlet_PT
+                    config.mappings.COPV_PT_1,
+                    config.mappings.COPV_PT_2,
+                    config.mappings.Fuel_TPC_Inlet_PT
                 ],
                 volume=COPV_VOLUME,
                 pressure=0
             ),
             Bottle(
                 name="Bottle 1",
-                channels=[config.channels.Bottle_1_PT],
+                channels=[config.mappings.Bottle_1_PT],
                 volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             ),
             Bottle(
                 name="Bottle 2",
-                channels=[config.channels.Bottle_2_PT],
+                channels=[config.mappings.Bottle_2_PT],
                 volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             ),
             Bottle(
                 name="Bottle 3",
-                channels=[config.channels.Bottle_3_PT],
+                channels=[config.mappings.Bottle_3_PT],
                 volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             )
@@ -183,14 +183,14 @@ class System:
 
 
     def update(self):
-        if self.get_valve_state(self.config.channels.COPV_Vent) == State.OPEN:
+        if self.get_valve_state(self.config.mappings.COPV_Vent) == State.OPEN:
             self.vent_to_atmosphere("COPV")
             
-        if self.get_valve_state(self.config.channels.Press_Iso_1) == State.OPEN:
+        if self.get_valve_state(self.config.mappings.Press_Iso_1) == State.OPEN:
             self.transfer_fluid("Bottle 1", "COPV")
 
-        if self.get_valve_state(self.config.channels.Press_Iso_2) == State.OPEN:
+        if self.get_valve_state(self.config.mappings.Press_Iso_2) == State.OPEN:
             self.transfer_fluid("Bottle 2", "COPV")
 
-        if self.get_valve_state(self.config.channels.Press_Iso_3) == State.OPEN:
+        if self.get_valve_state(self.config.mappings.Press_Iso_3) == State.OPEN:
             self.transfer_fluid("Bottle 3", "COPV")

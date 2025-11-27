@@ -28,6 +28,9 @@ import time
 # our modules
 from configuration import Configuration
 
+REFRESH_RATE = 50 # Hz
+loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE)
+
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
     # TODO: close all valves and possibly open vents. Basically an "abort"
@@ -40,14 +43,7 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
 
 
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
-def synnax_login(args) -> sy.Synnax:
-    cluster = args.cluster  # default value (synnax.masa.engin.umich.edu)
-    if args.simulation:
-        if args.verbose:
-            spinner.write(
-                colored("Using `localhost` as the cluster for simulation", "yellow")
-            )
-        cluster = "localhost"
+def synnax_login(cluster: str) -> sy.Synnax:
     try:
         client = sy.Synnax(
             host=cluster,
@@ -67,13 +63,6 @@ def synnax_login(args) -> sy.Synnax:
 def parse_args() -> list:
     parser = argparse.ArgumentParser(
         description="The autosequence for preparring Limeight for launch!"
-    )
-    parser.add_argument(
-        "-s",
-        "--simulation",
-        help="Should the autosequence be ran as a simulation",
-        default=False,
-        action="store_true",
     )
     parser.add_argument(
         "-m",
@@ -114,24 +103,24 @@ def press_ittr(ctrl: Controller, copv_ch_1, copv_ch_2, copv_ch_3, press_iso_ch, 
     start_pres = (ctrl[copv_ch_1] + ctrl[copv_ch_2] + ctrl[copv_ch_3]) / 3 # average channels
     target_pres = start_pres + press_rate
     ctrl[press_iso_ch] = True
-    while (True):
+
+    while loop.wait():
         now = time.monotonic()
         copv_pres = (ctrl[copv_ch_1] + ctrl[copv_ch_2] + ctrl[copv_ch_3]) / 3
         if ((copv_pres >= target_pres) or (now >= end_time)) and (ctrl[press_iso_ch] == True):
             ctrl[press_iso_ch] = False # close press iso
         if (now >= end_time):
             return
-        sy.sleep(0.01)
 
 
 def press_sequence(ctrl: Controller, config: Configuration) -> None:
     for i in range(config.variables.press_rate_1_ittrs):
         press_ittr(
             ctrl, 
-            config.channels.COPV_PT_1,
-            config.channels.COPV_PT_2,
-            config.channels.Fuel_TPC_Inlet_PT,
-            config.channels.Press_Iso_1,
+            config.mappings.COPV_PT_1,
+            config.mappings.COPV_PT_2,
+            config.mappings.Fuel_TPC_Inlet_PT,
+            config.mappings.Press_Iso_1,
             config.variables.press_rate_1
         )
 
@@ -145,30 +134,33 @@ def command_interface(ctrl: Controller, config: Configuration) -> None:
         # TODO: add a wait until defined check on all channels
         # and abort if any aren't
         command = input(colored("> ", "green"))
-        parse_command(ctrl, config, command)
+        match command:
+            case "press":
+                print(colored("Starting press sequence 1", "green"))
+                press_sequence(ctrl, config)
+            case "ox fill":
+                pass
+            case "quit":
+                exit(0)
 
-def parse_command(ctrl: Controller, config: Configuration, input: str):
-    match input:
-        case "press":
-            print(colored("Starting press sequence 1", "green"))
-            press_sequence(ctrl, config)
-        case "ox fill":
-            pass
-        case "quit":
-            exit(0)
 
 def main() -> None:
     args = parse_args()
-    config = Configuration.load(args.config)
-    client = synnax_login(args)
+    config = Configuration(args.config)
+    client = synnax_login(args.cluster)
     print(colored("Initialization Complete!", "green"))
+
+    write_chs = config.get_valves()
+    read_chs = config.get_valves() + config.get_pts() + config.get_tcs()
+
     with client.control.acquire(
         name="Launch Autosequence",
         write_authorities=1, # 1 is the default console authority
-        write=config.valves,
-        read=config.valves + config.pts + config.tcs
+        write=write_chs,
+        read=read_chs
     ) as ctrl:
         command_interface(ctrl, config)
+        
     print(colored("Autosequence complete! have a nice day :)", "green"))
     exit(0)
 
