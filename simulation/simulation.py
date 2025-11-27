@@ -22,15 +22,7 @@ spinner.start()
 
 import argparse
 import random
-import time
 import synnax as sy
-
-global time_channel 
-# We use one global timestamp channel to simplify the simulation
-# In reality, there are lots of timestamp channels since data 
-# can arrive asyncronously from lots of different sources via limewire
-# But this isn't useful to simulate the behavior of for the purposes of an autosequence
-
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -99,8 +91,6 @@ def synnax_login(cluster: str) -> sy.Synnax:
 # Makes or gets all the channels we care about into Synnax
 @yaspin(text=colored("Setting up channels...", "yellow"))
 def get_channels(client: sy.Synnax, config: Configuration):
-    global time_channel
-
     valves = config.get_valves()
     states = config.get_states()
     pts = config.get_pts()
@@ -167,14 +157,14 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
                 write_data[state_ch] = 0
         
         for pt_ch in config.get_pts():
-            noise = random.gauss(0, 5) # instrument noise is approximately gaussian
+            noise = random.gauss(0, 150) # instrument noise is approximately gaussian
             # TODO: add different noise for different instruments with some sort of lookup table
-            pressure = system.get_pressure(pt_ch) # + noise
+            pressure = system.get_pressure(pt_ch) + noise
             write_data[pt_ch] = pressure
         for tc_ch in config.get_tcs():
-            noise = random.gauss(0, 5) # instrument noise is approximately gaussian
+            noise = random.gauss(0, 2) # instrument noise is approximately gaussian
             # TODO: Implement TCs and other instruments
-            temperature = system.get_temperature(tc_ch) # + noise
+            temperature = system.get_temperature(tc_ch) + noise
             write_data[tc_ch] = temperature
 
         writer.write(write_data) # type: ignore

@@ -4,9 +4,10 @@ from configuration import Configuration, ChannelMap
 from dataclasses import fields
 
 AMBIENT_TEMP: float = 26.0 # degrees celsius
-FLOW_COEFFICIENT: float = 0.05 # Cv constant - in the real world this is different for each part of the system
 STD_BOTTLE_VOLUME: float = 42.2 # Liters
 COPV_VOLUME: float = 31.3 # Liters
+GAMMA: float = 1.4 # Ratio of specific heats (1.4 for diatomic gases like N2/Air)
+THERMAL_RELAXATION_RATE: float = 0.01 # How fast temp returns to ambient (0.0 to 1.0)
 
 class State(Enum):
     OPEN = auto()
@@ -26,6 +27,10 @@ class Node:
         self.pressure = pressure
         self.temperature = AMBIENT_TEMP
         self.volume = volume
+
+    def thermal_relax(self):
+        diff = AMBIENT_TEMP - self.temperature
+        self.temperature += diff * THERMAL_RELAXATION_RATE
 
 class Valve:
     name: str
@@ -49,17 +54,11 @@ class Valve:
         else:
             return State.OPEN
 
-    def energize(self):
-        self.energized = True
-
-    def de_energize(self):
-        self.energized = False
-
     def toggle(self):
         if (self.energized):
-            self.de_energize()
+            self.energized = False
         else:
-            self.energize()
+            self.energized = True
 
 class System:
     valves = []
@@ -74,14 +73,14 @@ class System:
                 Valve(
                     name=valve,
                     normally_closed=True,
-                    cv=FLOW_COEFFICIENT
+                    cv=0.05 # Default value
                 )
             )
 
         # Manually set cv of some valves
         self.get_valve_obj(config.mappings.COPV_Vent).cv = 0.05
         self.get_valve_obj(config.mappings.Press_Fill_Iso).cv = 0.20
-        self.get_valve_obj(config.mappings.Press_Fill_Vent).cv = 0.05
+        self.get_valve_obj(config.mappings.Press_Fill_Vent).cv = 1
 
         self.nodes = [
             Node(
@@ -126,7 +125,7 @@ class System:
             Node(
                 name="press_node",
                 channels=[None],
-                volume=1, # idk what a good value should be
+                volume=0.1, # idk what a good value should be
                 pressure=0
             )
         ]
@@ -156,18 +155,6 @@ class System:
             if valve.name == valve_name.lower():
                 return valve.toggle()
 
-    def energize_valve(self, valve_name: str):
-        valve_name = valve_name.lower()
-        for valve in self.valves:
-            if valve.name == valve_name.lower():
-                valve.energize()
-    
-    def de_energize_valve(self, valve_name: str):
-        valve_name = valve_name.lower()
-        for valve in self.valves:
-            if valve.name == valve_name.lower():
-                valve.de_energize()
-
     def get_temperature(self, channel_name: str) -> float:
         channel_name = channel_name.lower()
         for node in self.nodes:
@@ -183,6 +170,18 @@ class System:
                 if channel_name == channel:
                     return node.pressure
         return 0.0 # for invalid or non-existant names
+    
+    def _apply_adiabatic_temp_change(self, node: Node, old_pressure: float, new_pressure: float):
+        # T2 = T1 * (P2 / P1) ^ ((gamma - 1) / gamma)
+
+        if old_pressure <= 0.1 or new_pressure <= 0.1:
+            return # Avoid division by zero or vacuum math issues
+
+        pressure_ratio = new_pressure / old_pressure
+        exponent = (GAMMA - 1) / GAMMA
+        
+        # Calculate new temp
+        node.temperature = node.temperature * (pressure_ratio ** exponent)
 
     def transfer_fluid(self, source_name: str, dest_name: str, cv: float):
         source = self.get_node_obj(source_name)
@@ -199,10 +198,16 @@ class System:
 
         PV_transfer = p_diff * cv
 
+        src_p_old = source.pressure
+        dest_p_old = dest.pressure
+
         source_drop = PV_transfer / source.volume
         source.pressure -= source_drop
         dest_rise = PV_transfer / dest.volume
         dest.pressure += dest_rise
+
+        self._apply_adiabatic_temp_change(source, src_p_old, source.pressure)
+        self._apply_adiabatic_temp_change(dest, dest_p_old, dest.pressure)
 
 
     def vent_to_atmosphere(self, source_name: str, cv: float):
@@ -212,10 +217,18 @@ class System:
         p_diff = source.pressure - 0 
         if p_diff <= 0: return
         loss = p_diff * cv
+
+        src_p_old = source.pressure
+
         source.pressure -= loss
+
+        self._apply_adiabatic_temp_change(source, src_p_old, source.pressure)
 
 
     def update(self):
+        for node in self.nodes:
+            node.thermal_relax()
+
         press_fill_iso = self.get_valve_obj(self.config.mappings.Press_Fill_Iso)
         press_fill_vent = self.get_valve_obj(self.config.mappings.Press_Fill_Vent)
         copv_vent = self.get_valve_obj(self.config.mappings.COPV_Vent)
