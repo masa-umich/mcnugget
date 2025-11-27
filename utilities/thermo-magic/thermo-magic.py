@@ -3,7 +3,6 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "synnax==0.46.0",
-#     "pandas",
 #     "termcolor",
 #     "yaspin",
 # ]
@@ -43,13 +42,11 @@ spinner = yaspin()
 spinner.text = colored("Initializing...", "yellow")
 spinner.start()
 
-import argparse
-import synnax as sy
 from synnax.hardware import ni
-import pandas as pd
-import datetime
 from typing import List
-import time
+import synnax as sy
+import argparse
+import datetime
 import math
 
 THERM_R2 = 10000
@@ -59,6 +56,7 @@ SH1 = 0.001125256672107591  # 0 degrees celsius
 SH2 = 0.0002347204472978222  # 25 degrees celsius
 SH3 = 8.563052731505164e-08  # 50 degrees celsius
 
+global verbose
 verbose: bool = False # global setting (default = False)
 
 class TC_Channels:
@@ -73,6 +71,7 @@ class TC_Channels:
 
     @yaspin(text=colored("Setting up channels...", "yellow"))
     def __init__(self, client: sy.Synnax) -> None:
+        global verbose
         # initialize lists
         self.tc_raw_chs = []
         self.tc_chs = []
@@ -86,7 +85,7 @@ class TC_Channels:
                 tc_raw_ch = client.channels.retrieve(f"gse_tc_{i + 1}_raw")
             except:
                 if (verbose):
-                    print(colored(f"Raw TC Channel {i} not found, skipping.", "yellow"))
+                    spinner.write(colored(f"Raw TC Channel {i} not found, skipping.", "yellow"))
                 continue # skip invalid TC channels
             self.tc_raw_chs.append(tc_raw_ch)
 
@@ -139,6 +138,7 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    global verbose
     parser = argparse.ArgumentParser(
         description="The autosequence for preparring Limeight for launch!"
     )
@@ -170,6 +170,7 @@ def parse_args() -> argparse.Namespace:
 
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
 def synnax_login(cluster: str) -> sy.Synnax:
+    global verbose
     try:
         client = sy.Synnax(
             host=cluster,
@@ -181,9 +182,12 @@ def synnax_login(cluster: str) -> sy.Synnax:
         error_and_exit(
             f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
         )
+    if (verbose):
+        spinner.write(colored(f"Successfully logged into {cluster}!", "green"))
     return client  # type: ignore
                         
 def calculate_thermistor_offset(supply, signal):
+    global verbose
     try:
         # voltage drop across thermistor is proportional to resistance
         # convert mV to celsius
@@ -194,7 +198,8 @@ def calculate_thermistor_offset(supply, signal):
         offset = compute_mv_from_temperature(celsius)
         return offset, celsius
     except ValueError:
-        print("Thermistor had a math domain error")
+        if verbose:
+            spinner.write(colored("Thermistor had a math domain error", "red"))
         return 0.0, 0.0
 
 
@@ -299,12 +304,14 @@ def compute_temperature_from_mv(mv):
 
 @yaspin(text=colored("Converting values...", "green"))
 def driver(tc_channels: TC_Channels, streamer: sy.Streamer, writer: sy.Writer, frequency: int) -> None:
+    global verbose
     loop = sy.Loop(sy.Rate.HZ * frequency)
     while loop.wait():
-        frame = streamer.read()
+        frame = streamer.read(0.1)
         if frame is None:
             if verbose:
-                print(colored("Getting frame timed out"))
+                now = datetime.datetime.now()
+                spinner.write(colored(f"Getting frame timed out at {now}", "red"))
             continue
 
         # Get raw data
