@@ -7,4 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "pandas>=2.3.3",
     "synnax>=0.46.0",
+    "termcolor>=3.2.0",
+    "yaspin>=3.3.0",
 ]

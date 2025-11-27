@@ -24,10 +24,11 @@
 #
 # auto-channels.py
 # 
-# Last updated: Sep 18, 2025
+# Last updated: Nov 27, 2025
 # Author: jackmh
 #
 
+import argparse
 from termcolor import colored
 from yaspin import yaspin
 # Adds a fun spinner :)
@@ -42,39 +43,80 @@ import json
 import time
 from synnax.hardware import ni
 
-# hello, I know this is stupid but I don't know how else for there to be like a fail-over from the client details and the EBox :)
-try:
-    client = sy.Synnax()
-except:
+verbose: bool = False # global setting (default = False)
+analog_task_name: str = "Sensors"
+analog_card_model: str = "PCI-6225"
+
+digital_task_name: str = "Valves"
+digital_card_model: str = "PCI-6514"
+
+@yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
+def synnax_login(cluster: str) -> sy.Synnax:
     try:
         client = sy.Synnax(
-            host="masasynnax.ddns.net", port=9090, username="synnax", password="seldon"
+            host=cluster,
+            port=9090,
+            username="synnax",
+            password="seldon",
         )
-    except:
-        pass
-        spinner.stop()
-        raise Exception(colored("Error initializing Synnax client, are you sure you're connected? Type `synnax login` to login", "red"))
+    except Exception as e:
+        raise(
+            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
+        )
+    return client  # type: ignore
 
-# Configuration
-polling_rate = 50 # Hz
-
-analog_task_name = "Sensors"
-analog_card_model = "PCI-6225"
-
-digital_task_name = "Valves"
-digital_card_model = "PCI-6514"
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="The autosequence for preparring Limeight for launch!"
+    )
+    parser.add_argument(
+        "-c",
+        "--cluster",
+        help="Specify a Synnax cluster to connect to",
+        type=str,
+        default="synnax.masa.engin.umich.edu"
+    )
+    parser.add_argument(
+        "-i",
+        "--icd",
+        help="Specify an ICD or instrumentation file to use",
+        type=str,
+        default=""
+    )
+    parser.add_argument(
+        "-f",
+        "--frequency",
+        help="Specify a frequency to read & write data at (Hertz)",
+        type=int,
+        default=50
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Shold the program output extra debugging information",
+        action="store_true"
+    )  # Positional argument
+    args = parser.parse_args()
+    if (args.verbose):
+        verbose = True # set global
+    return args
 
 def main():
-    analog_task, digital_task, analog_card = create_tasks()
-    spinner.stop()
-    sheet = get_sheet(input(colored("Path to instrumentation sheet or URL to ICD: ", "cyan")))
+    args = parse_args()
+    client = synnax_login(args.cluster)
+    analog_task, digital_task, analog_card = create_tasks(client, args.frequency)
+    if (args.icd == ""):
+        file_path = input(colored("Path to instrumentation sheet or URL to ICD: ", "cyan"))
+    else:
+        file_path = args.icd
+    sheet = get_sheet(file_path)
     channels = process_sheet(sheet)
     # selection = prompt_calibrations()
     # calibrations = get_old_calibrations("PTs and TCs")
-    setup_channels(channels, analog_task, digital_task, analog_card)
-    configure_tasks(analog_task, digital_task)
+    setup_channels(client, channels, analog_task, digital_task, analog_card)
+    configure_tasks(client, analog_task, digital_task)
 
-def create_tasks():
+def create_tasks(client: sy.Synnax, frequency: int):
     spinner.text = "Creating tasks..."
     spinner.write(colored(" > Scanning for cards...", "cyan"))
     time.sleep(0.1)
@@ -94,8 +136,8 @@ def create_tasks():
 
     analog_task = ni.AnalogReadTask(
         name=analog_task_name,
-        sample_rate=sy.Rate.HZ * polling_rate,
-        stream_rate=sy.Rate.HZ * polling_rate/2,
+        sample_rate=sy.Rate.HZ * frequency,
+        stream_rate=sy.Rate.HZ * frequency/2,
         data_saving=True,
         channels=[],
     )
@@ -103,7 +145,7 @@ def create_tasks():
     digital_task = ni.DigitalWriteTask(
         name=digital_task_name,
         device=digital_card.key,
-        state_rate=sy.Rate.HZ * polling_rate,
+        state_rate=sy.Rate.HZ * frequency,
         data_saving=True,
         channels=[],
     )
@@ -232,7 +274,7 @@ def process_sheet(file: pd.DataFrame):
     spinner.write(colored(" > Finished parsing channels", "green", attrs=["bold"]))
     return channels
 
-def prompt_calibrations():
+def prompt_calibrations(client: sy.Synnax):
     try:
         old_analog_task = client.hardware.tasks.retrieve(name=analog_task_name)
     except:
@@ -256,23 +298,23 @@ def prompt_calibrations():
         print(colored("Invalid selection, please try again", "red"))
         prompt_calibrations()
 
-def setup_channels(channels, analog_task, digital_task, analog_card):
+def setup_channels(client: sy.Synnax, channels, analog_task, digital_task, analog_card):
     spinner.text = "Creating channels in Synnax..."
     yes_to_all = False # create new synnax channels for all items in the sheet?
 
     for channel in channels:
         if channel["type"] == "PT":            
             spinner.write(colored(f" > Creating PT: {channel["name"]}", "cyan"))
-            setup_pt(channel, analog_task, analog_card)
+            setup_pt(client, channel, analog_task, analog_card)
         elif channel["type"] == "VLV":
             spinner.write(colored(f" > Creating VLV: {channel["name"]}", "cyan"))
-            setup_vlv(channel, digital_task)
+            setup_vlv(client, channel, digital_task)
         elif channel["type"] == "TC":
             spinner.write(colored(f" > Creating TC: {channel["name"]}", "cyan"))
-            setup_tc(channel, analog_task, analog_card)
+            setup_tc(client, channel, analog_task, analog_card)
         elif channel["type"] == "Thermistor":
             spinner.write(colored(" > Creating Thermistor", "cyan"))
-            setup_thermistor(channel, analog_task, analog_card)
+            setup_thermistor(client, channel, analog_task, analog_card)
         else:
             raise Exception(f"Sensor type {channel["type"]} in channels dict not recognized (issue with the script)")
     spinner.write(colored(" > Successfully created channels in Synnax", "green", attrs=["bold"]))
@@ -304,7 +346,7 @@ def get_ambient_calibration(channels):
 
     # TODO: This lmao
 
-def get_old_calibrations(task_name: str):
+def get_old_calibrations(client: sy.Synnax, task_name: str):
     spinner.text = colored("Retrieving calibrations...", "green")
 
     try:
@@ -329,7 +371,7 @@ def get_old_calibrations(task_name: str):
 
     return task.key, calibrations
 
-def setup_pt(channel, analog_task, analog_card):
+def setup_pt(client: sy.Synnax, channel, analog_task, analog_card):
     time_channel = client.channels.create(
         name="gse_sensor_time",
         data_type=sy.DataType.TIMESTAMP,
@@ -367,7 +409,7 @@ def setup_pt(channel, analog_task, analog_card):
 
 
 
-def setup_vlv(channel, digital_task):
+def setup_vlv(client: sy.Synnax, channel, digital_task):
     gse_state_time = client.channels.create(
         name="gse_state_time",
         is_index=True,
@@ -398,7 +440,7 @@ def setup_vlv(channel, digital_task):
         )
     )
 
-def setup_thermistor(channel, analog_task, analog_card):
+def setup_thermistor(client: sy.Synnax, channel, analog_task, analog_card):
     time_channel = client.channels.create(
         name="gse_sensor_time",
         data_type=sy.DataType.TIMESTAMP,
@@ -443,7 +485,7 @@ def setup_thermistor(channel, analog_task, analog_card):
     )
 
 
-def setup_tc(channel, analog_task, analog_card):
+def setup_tc(client: sy.Synnax, channel, analog_task, analog_card):
     time_channel = client.channels.create(
         name="gse_sensor_time",
         data_type=sy.DataType.TIMESTAMP,
@@ -474,7 +516,7 @@ def setup_tc(channel, analog_task, analog_card):
         )
     )
 
-def configure_tasks(analog_task, digital_task):
+def configure_tasks(client: sy.Synnax, analog_task, digital_task):
     spinner.text = "Configuring tasks... (this may take a while)"
 
     if analog_task.config.channels != []:  # only configure if there are channels
@@ -510,6 +552,7 @@ tc_calibrations = {
 }
 
 if __name__ == "__main__":
+    spinner.stop()
     try:
         main()
     except KeyboardInterrupt:

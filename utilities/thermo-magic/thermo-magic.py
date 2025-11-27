@@ -2,8 +2,10 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "synnax>=0.40.0",
+#     "synnax==0.46.0",
 #     "pandas",
+#     "termcolor",
+#     "yaspin",
 # ]
 # ///
 
@@ -33,13 +35,22 @@ Actual Script
 
 """
 
+from termcolor import colored
+from yaspin import yaspin
+
+# fun spinner while we load packages
+spinner = yaspin()
+spinner.text = colored("Initializing...", "yellow")
+spinner.start()
+
+import argparse
 import synnax as sy
 from synnax.hardware import ni
 import pandas as pd
 import datetime
+from typing import List
 import time
 import math
-
 
 THERM_R2 = 10000
 
@@ -48,143 +59,143 @@ SH1 = 0.001125256672107591  # 0 degrees celsius
 SH2 = 0.0002347204472978222  # 25 degrees celsius
 SH3 = 8.563052731505164e-08  # 50 degrees celsius
 
+verbose: bool = False # global setting (default = False)
 
-def generate_tc_data():
-    # grab channels from synnax
-    client = sy.Synnax(
-        host="141.212.192.160",
-        port=9090,
-        username="synnax",
-        password="seldon",
-        secure=False,
-    )
-    thermocouple_channels = []
-    thermocouple_write_channels = []
-    # 2 arrays and a dict because writing as a dict is synnax's favorite format
+class TC_Channels:
+    # Retrieved channels (read from)
+    gse_sensor_time: sy.Channel
+    tc_raw_chs: List[sy.Channel]
+    thermistor_supply_ch: sy.Channel
+    thermistor_signal_ch: sy.Channel
+    # Created channels (written to)
+    gse_tc_time: sy.Channel
+    tc_chs: List[sy.Channel]
 
-    # channel creation/retrieval
-    gse_ai_time = client.channels.create(
-        name="gse_ai_time",
-        data_type=sy.DataType.TIMESTAMP,
-        retrieve_if_name_exists=True,
-        is_index=True,
-    )
-    gse_tc_time = client.channels.create(
-        name="gse_tc_time",
-        data_type=sy.DataType.TIMESTAMP,
-        retrieve_if_name_exists=True,
-        is_index=True,
-    )
-    for i in range(14):
-        tc_channel = client.channels.create(
-            name=f"gse_tc_{i + 1}_raw",
-            data_type=sy.DataType.FLOAT32,
-            index=gse_ai_time.key,
+    @yaspin(text=colored("Setting up channels...", "yellow"))
+    def __init__(self, client: sy.Synnax) -> None:
+        # initialize lists
+        self.tc_raw_chs = []
+        self.tc_chs = []
+        # retrieve channels (we should never have to make these)
+        self.gse_sensor_time = client.channels.retrieve("gse_sensor_time")
+        self.thermistor_signal_ch = client.channels.retrieve("gse_thermistor_signal")
+        self.thermistor_supply_ch = client.channels.retrieve("gse_thermistor_supply")
+
+        for i in range(14):
+            try:
+                tc_raw_ch = client.channels.retrieve(f"gse_tc_{i + 1}_raw")
+            except:
+                if (verbose):
+                    print(colored(f"Raw TC Channel {i} not found, skipping.", "yellow"))
+                continue # skip invalid TC channels
+            self.tc_raw_chs.append(tc_raw_ch)
+
+        # create channels if they don't already exist
+        self.gse_tc_time = client.channels.create(
+            name="gse_tc_time",
+            data_type=sy.DataType.TIMESTAMP,
             retrieve_if_name_exists=True,
+            is_index=True,
         )
-        thermocouple_channels.append(tc_channel)
-        tc_write_channel = client.channels.create(
-            name=f"gse_tc_{i + 1}",
-            data_type=sy.DataType.FLOAT32,
-            index=gse_tc_time.key,
-            retrieve_if_name_exists=True,
+
+        # only make channels for the raw channels we retrieved
+        for i in range(len(self.tc_raw_chs)):
+            tc_raw_ch_name = self.tc_raw_chs[i].name
+            tc_ch_name = tc_raw_ch_name.replace("_raw", "")
+            tc_ch = client.channels.create(
+                name=tc_ch_name,
+                data_type=sy.DataType.FLOAT32,
+                retrieve_if_name_exists=True,
+                index=self.gse_tc_time.key,
+            )
+            self.tc_chs.append(tc_ch)
+    
+    def get_read_channels(self) -> List[str]:
+        read_channels: List[str] = [
+            self.gse_sensor_time.name,
+            self.thermistor_signal_ch.name,
+            self.thermistor_supply_ch.name
+        ]
+        for tc_raw_ch in self.tc_raw_chs:
+            read_channels.append(tc_raw_ch.name)
+        return read_channels
+        
+    def get_write_channels(self) -> List[str]:
+        write_channels: List[str] = [self.gse_tc_time.name]
+        
+        for tc_ch in self.tc_chs:
+            write_channels.append(tc_ch.name)
+        return write_channels
+
+
+# helper function to raise pretty errors
+def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
+    spinner.stop()  # incase it's running
+    if exception != None:  # exception is an optional argument
+        print(exception)
+    print(colored(message, "red", attrs=["bold"]))
+    print(colored("Exiting", "red", attrs=["bold"]))
+    exit(error_code)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="The autosequence for preparring Limeight for launch!"
+    )
+    parser.add_argument(
+        "-c",
+        "--cluster",
+        help="Specify a Synnax cluster to connect to",
+        type=str,
+        default="synnax.masa.engin.umich.edu"
+    )
+    parser.add_argument(
+        "-f",
+        "--frequency",
+        help="Specify a frequency to read & write data at (Hertz)",
+        type=int,
+        default=50
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Shold the program output extra debugging information",
+        action="store_true"
+    )  # Positional argument
+    args = parser.parse_args()
+    if (args.verbose):
+        verbose = True # set global
+    return args
+
+
+@yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
+def synnax_login(cluster: str) -> sy.Synnax:
+    try:
+        client = sy.Synnax(
+            host=cluster,
+            port=9090,
+            username="synnax",
+            password="seldon",
         )
-        thermocouple_write_channels.append(tc_write_channel)
-
-    thermistor_supply = client.channels.create(
-        name="gse_thermistor_supply",
-        data_type=sy.DataType.FLOAT32,
-        index=gse_ai_time.key,
-        retrieve_if_name_exists=True,
-    )
-    thermistor_signal = client.channels.create(
-        name="gse_thermistor_signal",
-        data_type=sy.DataType.FLOAT32,
-        index=gse_ai_time.key,
-        retrieve_if_name_exists=True,
-    )
-
-    STREAM_CHANNELS = [
-        "gse_ai_time",
-        thermistor_signal.name,
-        thermistor_supply.name,
-    ] + [tc.name for tc in thermocouple_channels]
-    WRITE_CHANNELS = [tc.name for tc in thermocouple_write_channels] + ["gse_tc_time"] + ["gse_thermistor_celsius"]
-
-    thermocouple_data_channels = WRITE_CHANNELS
-    thermocouple_data_values = []
-    # stream TC data, calculating thermistor each iteration
-
-    index = client.channels.retrieve("gse_tc_time").index
-    for c in WRITE_CHANNELS:
-        assert(client.channels.retrieve(c).index == index)
-    print(f"all WRITE_CHANNELS are indexed by gse_tc_time {index}")
-
-    with client.open_streamer(channels=STREAM_CHANNELS) as streamer:
-        initial_frame = streamer.read(1)
-        if initial_frame is None:
-            print("unable to stream data")
-            exit(1)
-        initial_time = initial_frame[gse_ai_time.name][-1]
-        print("initial time: ", initial_time)
-        with client.open_writer(
-            channels=WRITE_CHANNELS, start=initial_time, enable_auto_commit=True
-        ) as writer:
-            print(f"streaming from {len(STREAM_CHANNELS)} channels")
-            print(f"writing to {len(WRITE_CHANNELS)} channels")
-            iteration = 0
-            errors = 0
-            while True:
-                try:
-                    frame = streamer.read(0.0025)
-                    if frame is None:
-                        continue
-                    thermocouple_data_values = []
-                    therm_supply = frame[thermistor_supply.name][-1]
-                    therm_signal = frame[thermistor_signal.name][-1]
-                    therm_offset, ambient_celsius = calculate_thermistor_offset(therm_supply, therm_signal)
-                    for i in range(len(thermocouple_channels)):
-                        tc = thermocouple_channels[i]
-                        tc_raw = frame[tc.name][-1]
-                        tc_temp = compute_temperature_from_mv(tc_raw + therm_offset)
-                        thermocouple_data_values.append(tc_temp)
-                    thermocouple_data_values.append(frame["gse_ai_time"][-1])
-                    thermocouple_data_values.append(ambient_celsius)
-                    assert(len(thermocouple_data_channels) == len(thermocouple_data_values))
-                    ok = writer.write(thermocouple_data_channels, thermocouple_data_values)
-                    if not ok:
-                        break
-                except KeyboardInterrupt:
-                    print('terminating')
-                    break
-                except ValueError as ve:
-                    print('encountered a ValueError, continuing')
-                    print(ve)
-                    errors += 1
-                    continue
-                except Exception as e:
-                    print('encountered an unknown error')
-                    print(e)
-                    errors += 1
-                    continue
-                finally:
-                    if iteration % 6000 == 0:
-                        print(f"processed {iteration} frames")
-                        print(f"internal temperature {round(ambient_celsius, 2)} celsius")
-                    iteration += 1
-                    if errors > 20:
-                        print('encountered over 20 errors, terminating')
-                        break
-
+    except Exception as e:
+        error_and_exit(
+            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
+        )
+    return client  # type: ignore
+                        
 def calculate_thermistor_offset(supply, signal):
-    # voltage drop across thermistor is proportional to resistance
-    # convert mV to celsius
-    resistance = ((supply - signal) * THERM_R2) / signal
-    inverse_kelvin = SH1 + SH2 * math.log(resistance) + SH3 * math.log(resistance) ** 3
-    celsius = 1 / inverse_kelvin - 273.15
-    # convert celsius back to mV
-    offset = compute_mv_from_temperature(celsius)
-    return offset, celsius
+    try:
+        # voltage drop across thermistor is proportional to resistance
+        # convert mV to celsius
+        resistance = ((supply - signal) * THERM_R2) / signal
+        inverse_kelvin = SH1 + SH2 * math.log(resistance) + SH3 * math.log(resistance) ** 3
+        celsius = 1 / inverse_kelvin - 273.15
+        # convert celsius back to mV
+        offset = compute_mv_from_temperature(celsius)
+        return offset, celsius
+    except ValueError:
+        print("Thermistor had a math domain error")
+        return 0.0, 0.0
 
 
 def compute_mv_from_temperature(celsius):
@@ -286,4 +297,60 @@ def compute_temperature_from_mv(mv):
     return T0 + (numerator / denominator)
 
 
-generate_tc_data()
+#@yaspin(text=colored("Converting values...", "green"))
+def driver(tc_channels: TC_Channels, streamer: sy.Streamer, writer: sy.Writer, frequency: int) -> None:
+    loop = sy.Loop(sy.Rate.HZ * frequency)
+    while loop.wait():
+        frame = streamer.read()
+        if frame is None:
+            if verbose:
+                print(colored("Getting frame timed out"))
+            continue
+
+        # Get raw data
+        therm_supply_value = frame[tc_channels.thermistor_supply_ch.name][-1]
+        therm_signal_value = frame[tc_channels.thermistor_signal_ch.name][-1]
+        gse_sensor_time = frame[tc_channels.gse_sensor_time.name][-1]
+        tc_raw_values = {}
+
+        for i in range(len(tc_channels.tc_raw_chs)):
+            tc_raw_values[tc_channels.tc_raw_chs[i].name] = frame[tc_channels.tc_raw_chs[i].name][-1]
+
+        # Calculate thermistor offset for CJC
+        therm_offset, _ = calculate_thermistor_offset(therm_supply_value, therm_signal_value)
+
+        # Prepare values to write
+        write_data = {}
+        # Convert TC values
+        for i in range(len(tc_raw_values)):
+            raw_tc_value = tc_raw_values[tc_channels.tc_raw_chs[i].name]
+            tc_temp = compute_temperature_from_mv(raw_tc_value + therm_offset)
+            write_data[tc_channels.tc_chs[i].name] = tc_temp
+        
+        write_data[tc_channels.gse_tc_time.name] = gse_sensor_time # Get the time we're writing at
+        writer.write(write_data)
+
+
+def main() -> None:
+    args = parse_args()
+    client = synnax_login(args.cluster)
+    tc_channels = TC_Channels(client)
+    write_chs = tc_channels.get_write_channels()
+    read_chs = tc_channels.get_read_channels()
+    if verbose:
+        print(colored(f"Write channels: {write_chs}", "light_blue"))
+        print(colored(f"Read channels: {read_chs}", "light_blue"))
+    with client.open_streamer(channels=read_chs) as streamer:
+        with client.open_writer(start=sy.TimeStamp.now(), channels=write_chs) as writer:
+            driver(tc_channels, streamer, writer, args.frequency)
+    print(colored("Thermo-magic script ended. Have a great day!"))
+
+
+if __name__ == "__main__":
+    spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports
+    try:
+        main()
+    except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
+        error_and_exit("Keyboard interrupt detected")
+    # except Exception as e:  # catch-all uncaught errors
+        # error_and_exit("Uncaught exception!", exception=e)
