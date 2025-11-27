@@ -169,12 +169,13 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
         for pt_ch in config.get_pts():
             noise = random.gauss(0, 5) # instrument noise is approximately gaussian
             # TODO: add different noise for different instruments with some sort of lookup table
-            pressure = system.get_pressure(pt_ch) + noise
+            pressure = system.get_pressure(pt_ch) # + noise
             write_data[pt_ch] = pressure
         for tc_ch in config.get_tcs():
             noise = random.gauss(0, 5) # instrument noise is approximately gaussian
             # TODO: Implement TCs and other instruments
-            write_data[tc_ch] = 0.0 + noise
+            temperature = system.get_temperature(tc_ch) # + noise
+            write_data[tc_ch] = temperature
 
         writer.write(write_data) # type: ignore
         system.update()

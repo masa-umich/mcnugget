@@ -114,15 +114,18 @@ def press_ittr(ctrl: Controller, copv_ch_1, copv_ch_2, copv_ch_3, press_iso_ch, 
 
 
 def press_sequence(ctrl: Controller, config: Configuration) -> None:
-    for i in range(config.variables.press_rate_1_ittrs):
-        press_ittr(
-            ctrl, 
-            config.mappings.COPV_PT_1,
-            config.mappings.COPV_PT_2,
-            config.mappings.Fuel_TPC_Inlet_PT,
-            config.mappings.Press_Iso_1,
-            config.variables.press_rate_1
-        )
+    copv_1 = config.mappings.COPV_PT_1
+    copv_2 = config.mappings.COPV_PT_2
+    copv_3 = config.mappings.Fuel_TPC_Inlet_PT
+    press_iso_1 = config.mappings.Press_Iso_1
+    press_iso_2 = config.mappings.Press_Iso_2
+    press_iso_3 = config.mappings.Press_Iso_3
+    rate_1 = config.variables.press_rate_1
+    rate_2 = config.variables.press_rate_2
+    ittrs = config.variables.press_rate_1_ittrs
+
+    for i in range(ittrs):
+        press_ittr(ctrl, copv_1, copv_2, copv_3, press_iso_1, rate_1)
 
 def command_interface(ctrl: Controller, config: Configuration) -> None:
     print(colored(

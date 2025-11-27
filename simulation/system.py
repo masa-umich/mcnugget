@@ -12,11 +12,12 @@ class State(Enum):
     OPEN = auto()
     CLOSED = auto()
 
-class Bottle:
+class Node:
     name: str
     channels: list
     pressure: float
     temperature: float
+    cv: float
     volume: float
 
     def __init__(self, name: str, channels: list, volume: float, pressure: float):
@@ -26,16 +27,17 @@ class Bottle:
         self.temperature = AMBIENT_TEMP
         self.volume = volume
 
-
 class Valve:
     name: str
     normally_closed: bool
     energized: bool
+    cv: float
 
-    def __init__(self, name: str, normally_closed: bool):
+    def __init__(self, name: str, normally_closed: bool, cv: float):
         self.name = name
         self.normally_closed = normally_closed
         self.energized = False
+        self.cv = cv
 
     def get_state(self):
         if (self.energized) and (self.normally_closed):
@@ -61,7 +63,7 @@ class Valve:
 
 class System:
     valves = []
-    bottles = []
+    nodes = []
     config: Configuration
 
     def __init__(self, config: Configuration):
@@ -71,60 +73,75 @@ class System:
             self.valves.append(
                 Valve(
                     name=valve,
-                    normally_closed=True
+                    normally_closed=True,
+                    cv=FLOW_COEFFICIENT
                 )
             )
 
-        self.bottles = [
-            Bottle(
+        # Manually set cv of some valves
+        self.get_valve_obj(config.mappings.COPV_Vent).cv = 0.05
+        self.get_valve_obj(config.mappings.Press_Fill_Iso).cv = 0.20
+        self.get_valve_obj(config.mappings.Press_Fill_Vent).cv = 0.05
+
+        self.nodes = [
+            Node(
                 name="COPV",
                 channels=[
                     config.mappings.COPV_PT_1,
                     config.mappings.COPV_PT_2,
-                    config.mappings.Fuel_TPC_Inlet_PT
+                    config.mappings.Fuel_TPC_Inlet_PT,
+                    config.mappings.COPV_TC_1,
+                    config.mappings.COPV_TC_2
                 ],
                 volume=COPV_VOLUME,
                 pressure=0
             ),
-            Bottle(
+            Node(
                 name="Bottle 1",
-                channels=[config.mappings.Bottle_1_PT],
+                channels=[
+                    config.mappings.Bottle_1_PT,
+                    config.mappings.Bottle_1_Skin_TC
+                ],
                 volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             ),
-            Bottle(
+            Node(
                 name="Bottle 2",
-                channels=[config.mappings.Bottle_2_PT],
+                channels=[
+                    config.mappings.Bottle_2_PT,
+                    config.mappings.Bottle_2_Skin_TC
+                ],
                 volume=STD_BOTTLE_VOLUME,
                 pressure=6000
             ),
-            Bottle(
+            Node(
                 name="Bottle 3",
-                channels=[config.mappings.Bottle_3_PT],
+                channels=[
+                    config.mappings.Bottle_3_PT,
+                    config.mappings.Bottle_3_Skin_TC
+                ],
                 volume=STD_BOTTLE_VOLUME,
                 pressure=6000
+            ),
+            Node(
+                name="press_node",
+                channels=[None],
+                volume=1, # idk what a good value should be
+                pressure=0
             )
         ]
 
-    def get_bottle_obj(self, name: str) -> Bottle | None:
-        for bottle in self.bottles:
-            if bottle.name.lower() == name.lower():
-                return bottle
-        return None
+    def get_valve_obj(self, name: str) -> Valve:
+        for valve in self.valves:
+            if valve.name.lower() == name.lower():
+                return valve
+        raise Exception(f"Couldn't find valve {name}")
 
-    def get_pressure(self, channel_name: str) -> float:
-        channel_name = channel_name.lower()
-        for bottle in self.bottles:
-            for channel in bottle.channels:
-                if channel_name == channel:
-                    return bottle.pressure
-        return 0.0 # for invalid or non-existant names
-
-    def change_pressure(self, bottle_name: str, delta: float):
-        bottle_name = bottle_name.lower()
-        for bottle in self.bottles:
-            if bottle.name.lower() == bottle_name:
-                bottle.pressure += delta
+    def get_node_obj(self, name: str) -> Node:
+        for node in self.nodes:
+            if node.name.lower() == name.lower():
+                return node
+        raise Exception(f"Couldn't find node {name}")
                 
     def get_valve_state(self, valve_name: str) -> State:
         valve_name = valve_name.lower()
@@ -151,9 +168,25 @@ class System:
             if valve.name == valve_name.lower():
                 valve.de_energize()
 
-    def transfer_fluid(self, source_name: str, dest_name: str):
-        source = self.get_bottle_obj(source_name)
-        dest = self.get_bottle_obj(dest_name)
+    def get_temperature(self, channel_name: str) -> float:
+        channel_name = channel_name.lower()
+        for node in self.nodes:
+            for channel in node.channels:
+                if channel_name == channel:
+                    return node.temperature
+        return 0.0 # for invalid or non-existant names        
+
+    def get_pressure(self, channel_name: str) -> float:
+        channel_name = channel_name.lower()
+        for node in self.nodes:
+            for channel in node.channels:
+                if channel_name == channel:
+                    return node.pressure
+        return 0.0 # for invalid or non-existant names
+
+    def transfer_fluid(self, source_name: str, dest_name: str, cv: float):
+        source = self.get_node_obj(source_name)
+        dest = self.get_node_obj(dest_name)
 
         if not source or not dest:
             return
@@ -164,7 +197,7 @@ class System:
         if p_diff <= 0:
             return
 
-        PV_transfer = p_diff * FLOW_COEFFICIENT
+        PV_transfer = p_diff * cv
 
         source_drop = PV_transfer / source.volume
         source.pressure -= source_drop
@@ -172,25 +205,39 @@ class System:
         dest.pressure += dest_rise
 
 
-    def vent_to_atmosphere(self, source_name: str):
-        source = self.get_bottle_obj(source_name)
+    def vent_to_atmosphere(self, source_name: str, cv: float):
+        source = self.get_node_obj(source_name)
         if not source: return
 
         p_diff = source.pressure - 0 
         if p_diff <= 0: return
-        loss = p_diff * FLOW_COEFFICIENT
+        loss = p_diff * cv
         source.pressure -= loss
 
 
     def update(self):
-        if self.get_valve_state(self.config.mappings.COPV_Vent) == State.OPEN:
-            self.vent_to_atmosphere("COPV")
-            
-        if self.get_valve_state(self.config.mappings.Press_Iso_1) == State.OPEN:
-            self.transfer_fluid("Bottle 1", "COPV")
+        press_fill_iso = self.get_valve_obj(self.config.mappings.Press_Fill_Iso)
+        press_fill_vent = self.get_valve_obj(self.config.mappings.Press_Fill_Vent)
+        copv_vent = self.get_valve_obj(self.config.mappings.COPV_Vent)
+        press_iso_1 = self.get_valve_obj(self.config.mappings.Press_Iso_1)
+        press_iso_2 = self.get_valve_obj(self.config.mappings.Press_Iso_2)
+        press_iso_3 = self.get_valve_obj(self.config.mappings.Press_Iso_3)
 
-        if self.get_valve_state(self.config.mappings.Press_Iso_2) == State.OPEN:
-            self.transfer_fluid("Bottle 2", "COPV")
 
-        if self.get_valve_state(self.config.mappings.Press_Iso_3) == State.OPEN:
-            self.transfer_fluid("Bottle 3", "COPV")
+        if copv_vent.get_state() == State.OPEN:
+            self.vent_to_atmosphere("COPV", copv_vent.cv)
+        
+        if press_iso_1.get_state() == State.OPEN:
+            self.transfer_fluid("Bottle 1", "press_node", press_iso_1.cv)
+
+        if press_iso_2.get_state() == State.OPEN:
+            self.transfer_fluid("Bottle 2", "press_node", press_iso_2.cv)
+
+        if press_iso_3.get_state() == State.OPEN:
+            self.transfer_fluid("Bottle 3", "press_node", press_iso_3.cv)
+
+        if press_fill_iso.get_state() == State.OPEN:
+            self.transfer_fluid("press_node", "COPV", press_fill_iso.cv)
+        
+        if press_fill_vent.get_state() == State.OPEN:
+            self.vent_to_atmosphere("press_node", press_fill_vent.cv)
