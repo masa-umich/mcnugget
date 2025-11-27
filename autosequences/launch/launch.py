@@ -23,13 +23,41 @@ from synnax.control.controller import Controller
 
 # standard modules
 import argparse
+from typing import List
+import statistics
 import time
 
 # our modules
 from configuration import Configuration
 
 REFRESH_RATE = 50 # Hz
-loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE) # Standard refresh rate for all checks
+loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE) 
+# Standard refresh rate for all checks (doubled because of shannon sampling thereom)
+
+# Helper function to vote & average multiple sensor readings
+def sensor_vote_values(input: List[float], threshold: float) -> float:
+    if not input:
+        return None
+    if len(input) == 1:
+        return input[0]
+    
+    median_val = statistics.median(input)
+
+    trusted_sensors = [x for x in input if abs(x - median_val) <= threshold]
+
+    if not trusted_sensors:
+        return median_val
+    
+    return sum(trusted_sensors) / len(trusted_sensors)
+
+
+def sensor_vote(ctrl: Controller, channels: List[str], threshold: float) -> float:
+    ctrl.wait_until_defined(channels)
+    values: List[float] = []
+    for ch in channels:
+        values.append(ctrl.get(ch))
+    return sensor_vote_values(values, threshold)
+
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -97,19 +125,23 @@ def parse_args() -> list:
     return args
 
 # TODO: Add check for COPV temperature
-def press_ittr(ctrl: Controller, copv_ch_1, copv_ch_2, copv_ch_3, press_iso_ch, press_rate):
+def press_ittr(ctrl: Controller, copv_1, copv_2, copv_3, press_iso_X, press_fill_iso, press_rate):
     start_time = time.monotonic()
     end_time = start_time + 60 # one minute after start
-    start_pres = (ctrl[copv_ch_1] + ctrl[copv_ch_2] + ctrl[copv_ch_3]) / 3 # average channels
+    start_pres = sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40)
+    
     target_pres = start_pres + press_rate
-    ctrl[press_iso_ch] = True
+
+    ctrl[press_fill_iso] = True
+    ctrl[press_iso_X] = True
 
     while loop.wait():
         now = time.monotonic()
-        copv_pres = (ctrl[copv_ch_1] + ctrl[copv_ch_2] + ctrl[copv_ch_3]) / 3
-        if ((copv_pres >= target_pres) or (now >= end_time)) and (ctrl[press_iso_ch] == True):
-            ctrl[press_iso_ch] = False # close press iso
+        copv_pres = sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40)
+        if ((copv_pres >= target_pres) or (now >= end_time)) and (ctrl[press_iso_X] == True):
+            ctrl[press_iso_X] = False # close press iso
         if (now >= end_time):
+            ctrl[press_fill_iso] = False
             return
 
 
@@ -120,12 +152,13 @@ def press_sequence(ctrl: Controller, config: Configuration) -> None:
     press_iso_1 = config.mappings.Press_Iso_1
     press_iso_2 = config.mappings.Press_Iso_2
     press_iso_3 = config.mappings.Press_Iso_3
+    press_fill_iso = config.mappings.Press_Fill_Iso
     rate_1 = config.variables.press_rate_1
     rate_2 = config.variables.press_rate_2
     ittrs = config.variables.press_rate_1_ittrs
 
     for i in range(ittrs):
-        press_ittr(ctrl, copv_1, copv_2, copv_3, press_iso_1, rate_1)
+        press_ittr(ctrl, copv_1, copv_2, copv_3, press_iso_1, press_fill_iso, rate_1)
 
 def command_interface(ctrl: Controller, config: Configuration) -> None:
     print(colored(
@@ -133,6 +166,15 @@ def command_interface(ctrl: Controller, config: Configuration) -> None:
         Welcome to the Limelight Autosequence!
         """
     ))
+
+    # while True:
+    #     copv_1 = config.mappings.COPV_PT_1
+    #     copv_2 = config.mappings.COPV_PT_2
+    #     copv_3 = config.mappings.Fuel_TPC_Inlet_PT
+    #     copv_pres = sensor_vote(ctrl, [copv_1, copv_2, copv_3], 0)
+    #     print(copv_pres, end="\r")
+    #     ctrl.sleep(0.01)
+
     while (True):
         # TODO: add a wait until defined check on all channels
         # and abort if any aren't
@@ -174,5 +216,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    except Exception as e:  # catch-all uncaught errors
-        error_and_exit("Uncaught exception!", exception=e)
+    # except Exception as e:  # catch-all uncaught errors
+        # error_and_exit("Uncaught exception!", exception=e)
