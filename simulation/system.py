@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from configuration import Configuration
 
-AMBIENT_TEMP: float = 26.0  # degrees celsius
+AMBIENT_TEMP: float = 22.0  # degrees celsius
 STD_BOTTLE_VOLUME: float = 42.2  # Liters
 COPV_VOLUME: float = 31.3  # Liters
 GAMMA: float = 1.4  # Ratio of specific heats (1.4 for diatomic gases like N2/Air)
@@ -20,12 +20,13 @@ class Node:
     temperature: float
     volume: float
 
-    def __init__(self, name: str, channels: list, volume: float, pressure: float):
+    def __init__(self, name: str, channels: list, volume: float, pressure: float, temperature: float = AMBIENT_TEMP):
         self.name = name
         self.channels = channels
         self.pressure = pressure
         self.temperature = AMBIENT_TEMP
         self.volume = volume
+        self.temperature = temperature
 
     def thermal_relax(self):
         diff = AMBIENT_TEMP - self.temperature
@@ -97,7 +98,7 @@ class System:
                     config.mappings.Bottle_1_Skin_TC,
                 ],
                 volume=STD_BOTTLE_VOLUME,
-                pressure=6000,
+                pressure=5600,
             ),
             Node(
                 name="Bottle 2",
@@ -106,7 +107,7 @@ class System:
                     config.mappings.Bottle_2_Skin_TC,
                 ],
                 volume=STD_BOTTLE_VOLUME,
-                pressure=6000,
+                pressure=5600,
             ),
             Node(
                 name="Bottle 3",
@@ -115,7 +116,7 @@ class System:
                     config.mappings.Bottle_3_Skin_TC,
                 ],
                 volume=STD_BOTTLE_VOLUME,
-                pressure=6000,
+                pressure=5600,
             ),
             Node(
                 name="press_node",

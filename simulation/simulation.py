@@ -163,7 +163,6 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
             write_data[pt_ch] = pressure
         for tc_ch in config.get_tcs():
             noise = random.gauss(0, 2)  # instrument noise is approximately gaussian
-            # TODO: Implement TCs and other instruments
             temperature = system.get_temperature(tc_ch) + noise
             write_data[tc_ch] = temperature
 
