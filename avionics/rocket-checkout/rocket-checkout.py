@@ -145,11 +145,15 @@ def parse_args() -> list:
 def checkout_sequence(ctrl: Controller, config: Configuration) -> None:
     rocket_valves = config.get_rocket_valves()
     while True:
+        sy.sleep(5)
+        for valve in rocket_valves:
+            ctrl[valve] = False
+            sy.sleep(0.25)
+        sy.sleep(5)
         for valve in rocket_valves:
             ctrl[valve] = True
-            sy.sleep(0.05)
-            ctrl[valve] = False
-            sy.sleep(0.05)
+            sy.sleep(0.25)
+
 
 def command_interface(ctrl: Controller, config: Configuration) -> None:
     print(colored(
@@ -178,12 +182,16 @@ def main() -> None:
     print(colored("Initialization Complete!", "green"))
 
     write_chs = config.get_rocket_valves()
+    state_chs = []
+    for ch in write_chs:
+        state_ch = ch.replace("vlv", "state")
+        state_chs.append(state_ch)
 
     with client.control.acquire(
         name="Rocket Checkouts",
         write_authorities=2, # 1 is the default console authority
-        write=write_chs,
-        read=write_chs
+        write=write_chs + state_chs,
+        read=write_chs + state_chs
     ) as ctrl:
         command_interface(ctrl, config)
         

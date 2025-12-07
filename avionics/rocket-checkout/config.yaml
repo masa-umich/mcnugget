@@ -45,9 +45,9 @@ channel_mappings:
     pts: # PTs
       Recovery_Bottle_PT: 1
     valves: # Valves
-      Recovery_Piston_Pilot: 1
-      Drogue_Parachute_TD: 2
-      Main_Parachute_TD: 3
+      # Recovery_Piston_Pilot: 1
+      # Drogue_Parachute_TD: 2
+      # Main_Parachute_TD: 3
     # TCs (N/A)
 
   bay_board_1:  # Press Bay Board
@@ -64,7 +64,7 @@ channel_mappings:
       COPV_Vent: 1
       Fuel_Dome_Iso: 2
       Fuel_Vent: 3
-      dummy_1: 4
+      #dummy_1: 4
       dummy_2: 5
     tcs: # TCs
       COPV_TC_1: 1
@@ -83,9 +83,9 @@ channel_mappings:
     valves:
       Ox_Dome_Iso: 1
       Ox_Vent: 2
-      dummy_3: 3
-      dummy_4: 4
-      dummy_5: 5
+      # dummy_3: 3
+      # dummy_4: 4
+      # dummy_5: 5
     tcs: # TCs
       Ox_Ullage_TC: 1
 
@@ -104,9 +104,9 @@ channel_mappings:
     valves:
       Ox_MPV: 1
       Fuel_MPV: 2
-      dummy_6: 3
-      dummy_7: 4
-      dummy_8: 5
+      # dummy_6: 3
+      # dummy_7: 4
+      # dummy_8: 5
     tcs: # TCs
       Ox_Level_Sensor_TC: 1
       Fuel_Manifold_TC_1: 2
