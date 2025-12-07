@@ -31,9 +31,10 @@ class Configuration:
 
     def get_rocket_valves(self):
         rocket_valves = []
-        for channel in self.channels:
+        for channel in self.channels.values():
             if ("vlv" in channel) and ("gse" not in channel):
                 rocket_valves.append(channel)
+        return rocket_valves
 
     def __init__(self, filepath: str):
         self.channels = {} # initialize the channels flat map
@@ -143,11 +144,12 @@ def parse_args() -> list:
 
 def checkout_sequence(ctrl: Controller, config: Configuration) -> None:
     rocket_valves = config.get_rocket_valves()
-    for valve in rocket_valves:
-        ctrl[valve] = True
-        sy.sleep(0.5)
-        ctrl[valve] = False
-        sy.sleep(0.5)
+    while True:
+        for valve in rocket_valves:
+            ctrl[valve] = True
+            sy.sleep(0.05)
+            ctrl[valve] = False
+            sy.sleep(0.05)
 
 def command_interface(ctrl: Controller, config: Configuration) -> None:
     print(colored(
@@ -175,14 +177,13 @@ def main() -> None:
     client = synnax_login(args.cluster)
     print(colored("Initialization Complete!", "green"))
 
-    write_chs = config.get_valves()
-    read_chs = config.get_valves() + config.get_pts() + config.get_tcs()
+    write_chs = config.get_rocket_valves()
 
     with client.control.acquire(
         name="Rocket Checkouts",
-        write_authorities=1, # 1 is the default console authority
+        write_authorities=2, # 1 is the default console authority
         write=write_chs,
-        read=read_chs
+        read=write_chs
     ) as ctrl:
         command_interface(ctrl, config)
         
