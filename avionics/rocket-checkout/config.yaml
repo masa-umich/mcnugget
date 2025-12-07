@@ -1,0 +1,107 @@
+# Channel Mappings
+channel_mappings:
+  # Synnax channel for handoff system (probably static) (also TBD)
+  handoff: "limewire_handoff"
+  # Device mappings
+  ebox: # EBox / Launch GSE
+    pts: # PTs
+      Ox_Fill_PT: 1
+      Pneumatics_2k_Bottle_PT: 2
+      Engine_Pneumatics_PT: 3
+      Trailer_Pneumatics_PT: 4
+      Purge_2k_Bottle_PT: 5
+      Purge_Post_Reg_PT: 6
+      Trickle_Purge_PT: 7
+      # 8 through 12 are 12 volt (skipped)
+      Bottle_1_PT: 13
+      Bottle_2_PT: 14
+      Bottle_3_PT: 15
+      Post_Press_Fill_PT: 16
+      Reg_Set_PT: 17
+      Fuel_Level_Sensing_PT: 18
+    valves: # Valves
+      Ox_Fill_Valve: 1
+      Ox_Drain_Valve: 2
+      Press_Iso_1: 3
+      Press_Iso_2: 4
+      Press_Iso_3: 5
+      Press_Fill_Iso: 6
+      Press_Fill_Vent: 7
+      Ox_Pre_Press: 8
+      # 9 and 10 are broken
+      Fuel_Fill_Purge: 11
+      Ox_MPV_Purge: 12
+      # 13 is broken
+      Fuel_MPV_Purge: 14
+      Ox_Fill_QD_Pilot: 15
+      Ox_Pre_Press_QD_Pilot: 16
+      COPV_Fill_QD_Pilot: 17
+    tcs: # TCs
+      Bottle_1_Skin_TC: 1
+      Bottle_2_Skin_TC: 2
+      Bottle_3_Skin_TC: 3
+
+  flight_computer: # Flight Computer
+    pts: # PTs
+      Recovery_Bottle_PT: 1
+    valves: # Valves
+      Recovery_Piston_Pilot: 1
+      Drogue_Parachute_TD: 2
+      Main_Parachute_TD: 3
+    # TCs (N/A)
+
+  bay_board_1:  # Press Bay Board
+    pts:
+      COPV_PT_1: 1
+      COPV_PT_2: 2
+      Fuel_TPC_Inlet_PT: 3
+      Fuel_TPC_Outlet_PT: 4
+      Fuel_Pilot_Outlet_PT: 5
+      Fuel_Dome_PT: 6
+      Fuel_Tank_PT_1: 7
+      Fuel_Tank_PT_2: 8
+    valves:
+      COPV_Vent: 1
+      Fuel_Dome_Iso: 2
+      Fuel_Vent: 3
+    tcs: # TCs
+      COPV_TC_1: 1
+      COPV_TC_2: 2
+
+  bay_board_2: # Intertank Bay Board
+    pts: # PTs
+      Ox_TPC_Inlet_PT: 1
+      Ox_Pilot_Outlet_PT: 2
+      Ox_Dome_PT: 3
+      Ox_TPC_Outlet_PT: 4
+      Ox_Tank_PT_1: 5
+      Ox_Tank_PT_2: 6
+      Fuel_Manifold_PT_2: 7
+      Regen_Manifold_PT_2: 8
+    valves:
+      Ox_Dome_Iso: 1
+      Ox_Vent: 2
+    tcs: # TCs
+      Ox_Ullage_TC: 1
+
+  bay_board_3: # Engine Bay Board
+    pts: # PTs
+      Ox_MPV_Inlet_PT: 1
+      Ox_MPV_Throat_PT: 2
+      Ox_Level_Sensor: 3
+      Fuel_Flowmeter_Inlet_PT: 4
+      Fuel_Flowmeter_Throat_PT: 5
+      Chamber_PT_1: 6
+      Chamber_PT_2: 7
+      Chamber_PT_3: 8
+      Fuel_Manifold_PT_1: 9
+      Regen_Manifold_PT_1: 10
+    valves:
+      Ox_MPV: 1
+      Fuel_MPV: 2
+    tcs: # TCs
+      Ox_Level_Sensor_TC: 1
+      Fuel_Manifold_TC_1: 2
+      Fuel_Manifold_TC_2: 3
+      Regen_Manifold_TC_1: 4
+      Regen_Manifold_TC_2: 5

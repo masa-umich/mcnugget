@@ -192,7 +192,9 @@ def calculate_thermistor_offset(supply, signal):
         # voltage drop across thermistor is proportional to resistance
         # convert mV to celsius
         resistance = ((supply - signal) * THERM_R2) / signal
+        spinner.write(f"signal: {signal}, supply: {supply}")
         inverse_kelvin = SH1 + SH2 * math.log(resistance) + SH3 * math.log(resistance) ** 3
+        spinner.write(f"resistance log: {math.log(resistance)}, inverse_kelvin: {inverse_kelvin}")
         celsius = 1 / inverse_kelvin - 273.15
         # convert celsius back to mV
         offset = compute_mv_from_temperature(celsius)
