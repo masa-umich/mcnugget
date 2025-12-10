@@ -177,9 +177,12 @@ def driver(client: sy.Synnax, streamer: sy.Streamer, writer: sy.Writer, read_chs
     for channel in read_chs:
         avg_channels.append(average_ch(channel, window_size))
     
-    # while True:
-        # frame = streamer.read()
-    for frame in streamer:
+    # for frame in streamer:
+    while True:
+        frame = streamer.read(0.01)
+        if frame is None:
+            spinner.write("timeout")
+            continue
         write_data = {}
         
         for channel in avg_channels:
@@ -187,7 +190,7 @@ def driver(client: sy.Synnax, streamer: sy.Streamer, writer: sy.Writer, read_chs
             channel.add(value)
             write_data[channel.name + "_avg"] = channel.get()
         
-        write_data["avg_time"] = sy.TimeStamp.now() # frame["time"] # write to time of frame
+        write_data["avg_time"] = frame["time"] # sy.TimeStamp.now()  # write to time of frame
         writer.write(write_data)
 
 def main():
@@ -196,8 +199,8 @@ def main():
     write_chs, read_chs = setup_channels(client)
 
     # Streamer for sesnor values
-    # with client.open_streamer(channels=read_chs + ["time"]) as streamer: # include sensor time channel to show streamer lagging
-    with client.open_streamer(channels=read_chs) as streamer:
+    with client.open_streamer(channels=read_chs + ["time"]) as streamer: # include sensor time channel to show streamer lagging
+    # with client.open_streamer(channels=read_chs) as streamer:
         # Open writer for everything else
         with client.open_writer(start=sy.TimeStamp.now(), channels=write_chs) as writer:
             driver(client, streamer, writer, read_chs, args)
