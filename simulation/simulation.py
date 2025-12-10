@@ -55,6 +55,13 @@ def parse_args() -> argparse.Namespace:
         type=str,
     )
     parser.add_argument(
+        "-f",
+        "--frequency",
+        help="Specify a frequency to push data into Synnax at",
+        default=50,
+        type=int,
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         help="Shold the program output extra debugging information",
@@ -134,8 +141,8 @@ def get_channels(client: sy.Synnax, config: Configuration):
 
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
-def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System):
-    driver_frequency = 20  # Hz
+def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System, args):
+    driver_frequency = args.frequency # Hz
     loop = sy.Loop(sy.Rate.HZ * driver_frequency)
 
     while loop.wait():
@@ -184,7 +191,7 @@ def main():
     with client.open_streamer(channels=write_chs) as streamer:
         # Open writer for everything else
         with client.open_writer(start=sy.TimeStamp.now(), channels=read_chs) as writer:
-            driver(config, streamer, writer, system)  # Run the fake driver
+            driver(config, streamer, writer, system, args)  # Run the fake driver
 
 
 if __name__ == "__main__":
