@@ -25,34 +25,25 @@ import synnax as sy
 from collections import deque
 
 class average_ch:
-    name: str
-    window: int # num samples
-    
-    _prev_values: deque[float] # internal tracker of previous values
+    __slots__ = ('name', 'alpha', '_avg', '_initialized')
 
     def __init__(self, name: str, window: int):
         self.name = name
-        self.window = window
-        self._prev_values = deque(maxlen=window)
+        # Alpha approximates a window of N items: alpha = 2 / (N + 1)
+        self.alpha = 2.0 / (window + 1)
+        self._avg = 0.0
+        self._initialized = False
 
-    # Add a value to the averaging
     def add(self, value: float) -> None:
-        self._prev_values.append(value)
+        if not self._initialized:
+            self._avg = value
+            self._initialized = True
+        else:
+            # Standard EWMA formula
+            self._avg = (value * self.alpha) + (self._avg * (1 - self.alpha))
 
-    # Get the weighted average value of the channel
     def get(self) -> float:
-        if not self._prev_values:
-            return 0.0
-        
-        numerator = 0.0
-        denominator = 0.0
-
-        # Linear Weighting
-        for i, value in enumerate(self._prev_values, start=1):
-            numerator += value * i
-            denominator += i
-        
-        return numerator / denominator
+        return self._avg
 
 
 # helper function to raise pretty errors
@@ -170,27 +161,23 @@ def setup_channels(client: sy.Synnax) -> tuple[list[str], list[str]]:
 
 # A driver to write average values to the server
 @yaspin(text=colored("Running Averaging...", "green"))
-def driver(client: sy.Synnax, streamer: sy.Streamer, writer: sy.Writer, read_chs: list[str], args):
+def driver(streamer: sy.Streamer, writer: sy.Writer, read_chs: list[str], args):
     window_size = args.window # TODO: add to config
 
     avg_channels = []
     for channel in read_chs:
         avg_channels.append(average_ch(channel, window_size))
     
-    # for frame in streamer:
-    while True:
-        frame = streamer.read(0.01)
-        if frame is None:
-            spinner.write("timeout")
-            continue
+    # TODO: Fix streamer buffering under bad script performance or at least report significant timestamp mistmatches
+    for frame in streamer:
         write_data = {}
         
         for channel in avg_channels:
             value = frame[channel.name]
             channel.add(value)
             write_data[channel.name + "_avg"] = channel.get()
-        
-        write_data["avg_time"] = frame["time"] # sy.TimeStamp.now()  # write to time of frame
+
+        write_data["avg_time"] = frame["time"] # TODO: make this not the simulation time
         writer.write(write_data)
 
 def main():
@@ -199,11 +186,11 @@ def main():
     write_chs, read_chs = setup_channels(client)
 
     # Streamer for sesnor values
-    with client.open_streamer(channels=read_chs + ["time"]) as streamer: # include sensor time channel to show streamer lagging
-    # with client.open_streamer(channels=read_chs) as streamer:
+    # with client.open_streamer(channels=read_chs + ["time"]) as streamer: # include sensor time channel to show streamer lagging
+    with client.open_streamer(channels=read_chs + ["time"]) as streamer:
         # Open writer for everything else
         with client.open_writer(start=sy.TimeStamp.now(), channels=write_chs) as writer:
-            driver(client, streamer, writer, read_chs, args)
+            driver(streamer, writer, read_chs, args)
 
 
 if __name__ == "__main__":
