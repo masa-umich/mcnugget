@@ -24,6 +24,7 @@ from synnax.control.controller import Controller
 # standard modules
 import argparse
 from typing import List
+from collections import deque
 import statistics
 import time
 
@@ -33,6 +34,37 @@ from configuration import Configuration
 REFRESH_RATE = 50 # Hz
 loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE) 
 # Standard refresh rate for all checks (doubled because of shannon sampling thereom)
+
+# Mutli-state enum
+class State:
+    INIT: bool = False
+    PRESS_FILL: bool = False
+    OX_FILL: bool = False
+    PRE_PRESS: bool = False
+    QDS: bool = False
+
+# Weighted running average
+class average_ch:
+    avg: float
+    initialized: bool
+    alpha: float
+
+    def __init__(self, window: int):
+        # Alpha approximates a window of N items: alpha = 2 / (N + 1)
+        self.alpha = 2.0 / (window + 1)
+        self.avg = 0.0
+        self.initialized = False
+
+    def add(self, value: float) -> None:
+        if not self.initialized:
+            self.avg = value
+            self.initialized = True
+        else:
+            # Standard EWMA formula
+            self.avg = (value * self.alpha) + (self.avg * (1 - self.alpha))
+
+    def get(self) -> float:
+        return self.avg
 
 # Helper function to vote & average multiple sensor readings
 def sensor_vote_values(input: List[float], threshold: float) -> float:
@@ -68,6 +100,11 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
     print(colored(message, "red", attrs=["bold"]))
     print(colored("Exiting", "red", attrs=["bold"]))
     exit(error_code)
+
+
+# Helper function to handle all abort cases
+def abort(ctrl: Controller, state: State):
+    pass
 
 
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
@@ -144,52 +181,42 @@ def press_ittr(ctrl: Controller, copv_1, copv_2, copv_3, press_iso_X, press_fill
             ctrl[press_fill_iso] = False
             return
 
-
-def press_sequence(ctrl: Controller, config: Configuration) -> None:
-    copv_1 = config.mappings.COPV_PT_1
-    copv_2 = config.mappings.COPV_PT_2
-    copv_3 = config.mappings.Fuel_TPC_Inlet_PT
-    press_iso_1 = config.mappings.Press_Iso_1
-    press_iso_2 = config.mappings.Press_Iso_2
-    press_iso_3 = config.mappings.Press_Iso_3
-    press_fill_iso = config.mappings.Press_Fill_Iso
-    rate_1 = config.variables.press_rate_1
-    rate_2 = config.variables.press_rate_2
-    ittrs = config.variables.press_rate_1_ittrs
-
-    for i in range(ittrs):
-        press_ittr(ctrl, copv_1, copv_2, copv_3, press_iso_1, press_fill_iso, rate_1)
-
-def command_interface(ctrl: Controller, config: Configuration) -> None:
+def command_interface(ctrl: Controller, auto_state: State, config: Configuration) -> None:
     print(colored(
         """
         Welcome to the Limelight Autosequence!
         """
     ))
 
-    # while True:
-    #     copv_1 = config.mappings.COPV_PT_1
-    #     copv_2 = config.mappings.COPV_PT_2
-    #     copv_3 = config.mappings.Fuel_TPC_Inlet_PT
-    #     copv_pres = sensor_vote(ctrl, [copv_1, copv_2, copv_3], 0)
-    #     print(copv_pres, end="\r")
-    #     ctrl.sleep(0.01)
-
-    while (True):
-        # TODO: add a wait until defined check on all channels
-        # and abort if any aren't
-        command = input(colored("> ", "green"))
-        match command:
-            case "press":
-                print(colored("Starting press sequence 1", "green"))
-                press_sequence(ctrl, config)
-            case "ox fill":
-                pass
-            case "quit":
-                exit(0)
+    try:
+        while (True):
+            # TODO: add a wait until defined check on all channels
+            # and abort if any aren't
+            command = input(colored("> ", "green"))
+            match command:
+                case "press fill":
+                    auto_state.PRESS_FILL = True
+                    pass
+                case "ox fill":
+                    auto_state.OX_FILL = True
+                    pass
+                case "pre press":
+                    auto_state.PRE_PRESS = True
+                    pass
+                case "qds":
+                    auto_state.QDS = True
+                    pass
+                case "quit":
+                    pass
+    except KeyboardInterrupt:
+        print(colored("Keyboard interrupt detected, aborting!", "red", attrs=["bold"]))
+        abort(ctrl, auto_state)
 
 
 def main() -> None:
+    auto_state = State()
+    auto_state.INIT = True
+
     args = parse_args()
     config = Configuration(args.config)
     client = synnax_login(args.cluster)
@@ -204,7 +231,7 @@ def main() -> None:
         write=write_chs,
         read=read_chs
     ) as ctrl:
-        command_interface(ctrl, config)
+        command_interface(ctrl, auto_state, config)
         
     print(colored("Autosequence complete! have a nice day :)", "green"))
     exit(0)
