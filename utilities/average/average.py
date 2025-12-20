@@ -5,11 +5,12 @@
 #     "synnax==0.46.0",
 #     "yaspin",
 #     "termcolor",
-#     "pyyaml",
 # ]
 # ///
 
-import datetime
+SENSOR_TIME_CHANNEL = "gse_sensor_time"
+AVG_TIME_CHANNEL = "avg_time"
+
 from termcolor import colored
 from yaspin import yaspin
 
@@ -19,31 +20,29 @@ spinner.text = colored("Initializing...", "yellow")
 spinner.start()
 
 import argparse
-from collections import deque
 import synnax as sy
 
-from collections import deque
-
 class average_ch:
-    __slots__ = ('name', 'alpha', '_avg', '_initialized')
+    avg: float
+    initialized: bool
+    alpha: float
 
-    def __init__(self, name: str, window: int):
-        self.name = name
+    def __init__(self, window: int):
         # Alpha approximates a window of N items: alpha = 2 / (N + 1)
         self.alpha = 2.0 / (window + 1)
-        self._avg = 0.0
-        self._initialized = False
+        self.avg = 0.0
+        self.initialized = False
 
     def add(self, value: float) -> None:
-        if not self._initialized:
-            self._avg = value
-            self._initialized = True
+        if not self.initialized:
+            self.avg = value
+            self.initialized = True
         else:
             # Standard EWMA formula
-            self._avg = (value * self.alpha) + (self._avg * (1 - self.alpha))
+            self.avg = (value * self.alpha) + (self.avg * (1 - self.alpha))
 
     def get(self) -> float:
-        return self._avg
+        return self.avg
 
 
 # helper function to raise pretty errors
@@ -57,8 +56,10 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    global SENSOR_TIME_CHANNEL
+
     parser = argparse.ArgumentParser(
-        description="The autosequence for preparring Limeight for launch!"
+        description="A script to run a weighted rolling average on sensor data in Synnax"
     )
 
     parser.add_argument(
@@ -67,6 +68,12 @@ def parse_args() -> argparse.Namespace:
         help="The file to use for channel config",
         default="config.yaml",
         type=str,
+    )
+    parser.add_argument(
+        "-s",
+        "--simulation",
+        help="Should the script use the simulated time channel?",
+        action="store_true"
     )
     parser.add_argument(
         "-c",
@@ -79,7 +86,7 @@ def parse_args() -> argparse.Namespace:
         "-w",
         "--window",
         help="Specify the amount of samples to average per channel",
-        default=50,
+        default=50, # At 50Hz this is a 1 second winodw
         type=int,
     )
     parser.add_argument(
@@ -91,7 +98,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-a",
         "--all",
-        help="Shold the program average all channels?",
+        help="Shold the program average all PT channels?",
         action="store_true",
     )  # Positional argument
     args = parser.parse_args()
@@ -108,6 +115,9 @@ def parse_args() -> argparse.Namespace:
         error_and_exit(
             f"Averaging for specific channels not yet supported, please use the flag `-a` to average all channels\n Example: ./average -a"
         )
+    if args.simulation:
+        SENSOR_TIME_CHANNEL = "time"
+
     return args
 
 
@@ -131,7 +141,7 @@ def synnax_login(cluster: str) -> sy.Synnax:
 @yaspin(text=colored("Setting up channels...", "yellow"))
 def setup_channels(client: sy.Synnax) -> tuple[list[str], list[str]]:
     avg_time = client.channels.create(
-        name="avg_time",
+        name=AVG_TIME_CHANNEL,
         data_type=sy.DataType.TIMESTAMP,
         is_index=True,
         retrieve_if_name_exists=True,
@@ -155,7 +165,13 @@ def setup_channels(client: sy.Synnax) -> tuple[list[str], list[str]]:
         )
         write_channels.append(avg_name)
     
-    write_channels += ["avg_time"] # add time channel
+    try: # Check if the sensor time channel specified exists
+        client.channels.retrieve(SENSOR_TIME_CHANNEL)
+        read_channels.append(SENSOR_TIME_CHANNEL) # add time channel to read from
+    except sy.QueryError:
+        error_and_exit(f"Could not find channel '{SENSOR_TIME_CHANNEL}' in Synnax, are you sure it exists?\nTry changing 'SENSOR_TIME_CHANNEL' at the top of the script.")
+
+    write_channels.append(avg_time.name) # add time channel to write to
 
     return write_channels, read_channels
 
@@ -164,20 +180,29 @@ def setup_channels(client: sy.Synnax) -> tuple[list[str], list[str]]:
 def driver(streamer: sy.Streamer, writer: sy.Writer, read_chs: list[str], args):
     window_size = args.window # TODO: add to config
 
-    avg_channels = []
-    for channel in read_chs:
-        avg_channels.append(average_ch(channel, window_size))
+    # Create an average channel for each channel we're reading from
+    avg_channels = {}
+    for channel_name in read_chs:
+        if "pt" not in channel_name:
+            continue # Skip non-PT channels like time channels
+        avg_channels[channel_name] = average_ch(window_size)
     
-    # TODO: Fix streamer buffering under bad script performance or at least report significant timestamp mistmatches
     for frame in streamer:
         write_data = {}
         
-        for channel in avg_channels:
-            value = frame[channel.name]
-            channel.add(value)
-            write_data[channel.name + "_avg"] = channel.get()
+        for channel_name in read_chs:
+            if "pt" not in channel_name:
+                continue # Skip non-PT channels like time channels
+            raw_value = frame[channel_name]
+            avg_channels[channel_name].add(raw_value)
+            write_data[channel_name + "_avg"] = avg_channels[channel_name].get()
 
-        write_data["avg_time"] = frame["time"] # TODO: make this not the simulation time
+        write_data["avg_time"] = frame[SENSOR_TIME_CHANNEL] # Write to the same time the frame was from
+
+        # Warning if we're writing data that is more than 1 second in the past
+        if (sy.TimeStamp.since(frame[SENSOR_TIME_CHANNEL][0]) > sy.TimeSpan.from_seconds(1)):
+            spinner.write(colored("Warning! Averaged values are more than 1 second behind reality!", "red", attrs=["bold"]))
+
         writer.write(write_data)
 
 def main():
@@ -185,9 +210,8 @@ def main():
     client = synnax_login(args.cluster)
     write_chs, read_chs = setup_channels(client)
 
-    # Streamer for sesnor values
-    # with client.open_streamer(channels=read_chs + ["time"]) as streamer: # include sensor time channel to show streamer lagging
-    with client.open_streamer(channels=read_chs + ["time"]) as streamer:
+    # Streamer for sensor values
+    with client.open_streamer(channels=read_chs) as streamer:
         # Open writer for everything else
         with client.open_writer(start=sy.TimeStamp.now(), channels=write_chs) as writer:
             driver(streamer, writer, read_chs, args)
@@ -197,7 +221,7 @@ if __name__ == "__main__":
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports
     try:
         main()
-    except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
+    except KeyboardInterrupt:
         error_and_exit("Keyboard interrupt detected")
-    # except Exception as e:  # catch-all uncaught errors
-        # error_and_exit("Uncaught exception!", exception=e)
+    except Exception as e:  # catch-all uncaught errors
+        error_and_exit("Uncaught exception!", exception=e)
