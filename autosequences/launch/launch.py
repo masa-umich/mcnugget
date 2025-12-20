@@ -102,11 +102,6 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
     exit(error_code)
 
 
-# Helper function to handle all abort cases
-def abort(ctrl: Controller, state: State):
-    pass
-
-
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
 def synnax_login(cluster: str) -> sy.Synnax:
     try:
@@ -161,11 +156,22 @@ def parse_args() -> list:
             )
     return args
 
+# Helper function to handle all abort cases
+def abort(ctrl: Controller, state: State):
+    # TODO: aborting lol
+    ctrl.release()
+    print(colored("Autosequence has released control.", "green"))
+
 # TODO: Add check for COPV temperature
 def press_ittr(ctrl: Controller, copv_1, copv_2, copv_3, press_iso_X, press_fill_iso, press_rate):
     start_time = time.monotonic()
     end_time = start_time + 60 # one minute after start
-    start_pres = sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40)
+    copv_pres = average_ch(50) # 50 sample standard window
+
+    # Average over 1 second to get the starting pressure
+    for i in range(50):
+        copv_pres.add(sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40))
+    start_pres = copv_pres.get()
     
     target_pres = start_pres + press_rate
 
@@ -174,18 +180,43 @@ def press_ittr(ctrl: Controller, copv_1, copv_2, copv_3, press_iso_X, press_fill
 
     while loop.wait():
         now = time.monotonic()
-        copv_pres = sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40)
-        if ((copv_pres >= target_pres) or (now >= end_time)) and (ctrl[press_iso_X] == True):
+        copv_pres.add(sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40))
+        if ((copv_pres.get() >= target_pres) or (now >= end_time)) and (ctrl[press_iso_X] == True):
             ctrl[press_iso_X] = False # close press iso
         if (now >= end_time):
             ctrl[press_fill_iso] = False
             return
 
+def press_fill(ctrl: Controller, config: Configuration) -> None:
+    copv_1 = config.mappings.COPV_PT_1
+    copv_2 = config.mappings.COPV_PT_2
+    copv_3 = config.mappings.Fuel_Manifold_PT_1
+
+    copv_pres = average_ch(100) # 50 sample standard window
+    while True:
+        copv_pres.add(sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40))
+        print(copv_pres.get())
+
+def ox_fill(ctrl: Controller, config: Configuration) -> None:
+    pass
+
+def pre_press(ctrl: Controller, config: Configuration) -> None:
+    pass
+
+def qds(ctrl: Controller, config: Configuration) -> None:
+    pass
+
 def command_interface(ctrl: Controller, auto_state: State, config: Configuration) -> None:
     print(colored(
-        """
-        Welcome to the Limelight Autosequence!
-        """
+    """
+    Welcome to the Limelight Autosequence!
+    Commands:
+        - press fill
+        - ox fill
+        - pre press
+        - qds
+        - quit
+    """
     ))
 
     try:
@@ -196,18 +227,19 @@ def command_interface(ctrl: Controller, auto_state: State, config: Configuration
             match command:
                 case "press fill":
                     auto_state.PRESS_FILL = True
-                    pass
+                    press_fill(ctrl, config)
                 case "ox fill":
                     auto_state.OX_FILL = True
-                    pass
+                    ox_fill(ctrl, config)
                 case "pre press":
                     auto_state.PRE_PRESS = True
-                    pass
+                    pre_press(ctrl, config)
                 case "qds":
                     auto_state.QDS = True
-                    pass
+                    qds(ctrl, config)
                 case "quit":
-                    pass
+                    abort(ctrl, auto_state)
+                    break
     except KeyboardInterrupt:
         print(colored("Keyboard interrupt detected, aborting!", "red", attrs=["bold"]))
         abort(ctrl, auto_state)
