@@ -197,7 +197,7 @@ def driver(streamer: sy.Streamer, writer: sy.Writer, read_chs: list[str], args):
             avg_channels[channel_name].add(raw_value)
             write_data[channel_name + "_avg"] = avg_channels[channel_name].get()
 
-        write_data["avg_time"] = frame[SENSOR_TIME_CHANNEL] # Write to the same time the frame was from
+        write_data[AVG_TIME_CHANNEL] = frame[SENSOR_TIME_CHANNEL] # Write to the same time the frame was from
 
         # Warning if we're writing data that is more than 1 second in the past
         if (sy.TimeStamp.since(frame[SENSOR_TIME_CHANNEL][0]) > sy.TimeSpan.from_seconds(1)):
