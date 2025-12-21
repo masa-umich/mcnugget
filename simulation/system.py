@@ -45,6 +45,12 @@ class Valve:
         self.energized = False
         self.cv = cv
 
+    def set_state(self, cmd: int):
+        if (cmd == 0):
+            self.energized = False
+        else:
+            self.energized = True
+
     def get_state(self):
         if (self.energized) and (self.normally_closed):
             return State.OPEN
@@ -150,6 +156,12 @@ class System:
         for valve in self.valves:
             if valve.name == valve_name.lower():
                 return valve.toggle()
+    
+    def set_valve(self, valve_name: str, cmd: int):
+        valve_name = valve_name.lower()
+        for valve in self.valves:
+            if valve.name == valve_name.lower():
+                valve.set_state(cmd)
 
     def get_temperature(self, channel_name: str) -> float:
         channel_name = channel_name.lower()

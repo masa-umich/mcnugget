@@ -24,6 +24,8 @@ import argparse
 import random
 import synnax as sy
 
+global do_noise
+do_noise = True
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -36,10 +38,18 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    global do_noise
     parser = argparse.ArgumentParser(
         description="The autosequence for preparring Limeight for launch!"
     )
 
+    parser.add_argument(
+        "-n",
+        "--noise",
+        help="Should the simulation include simulated sensor noise?",
+        default="True",
+        type=str,
+    )
     parser.add_argument(
         "-m",
         "--config",
@@ -77,6 +87,12 @@ def parse_args() -> argparse.Namespace:
             error_and_exit(
                 f"Invalid specified config file: {args.config}, must be .yaml file"
             )
+    if (args.noise.lower() == "true"):
+        do_noise = True
+    elif (args.noise.lower() == "false"):
+        do_noise = False
+    else:
+        error_and_exit("Argument --noise must be followed by either 'true' or 'false'")
     return args
 
 
@@ -142,6 +158,7 @@ def get_channels(client: sy.Synnax, config: Configuration):
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
 def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System, args):
+    global do_noise
     driver_frequency = args.frequency # Hz
     loop = sy.Loop(sy.Rate.HZ * driver_frequency)
 
@@ -153,7 +170,8 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
         fr = streamer.read(timeout=0)
         if fr is not None:
             for channel in fr.channels:
-                system.toggle_valve(str(channel))
+                cmd = fr[channel][0]
+                system.set_valve(channel, cmd)
 
         for state_ch in config.get_states():
             vlv_ch = state_ch.replace("state", "vlv")
@@ -164,12 +182,12 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
                 write_data[state_ch] = 0
 
         for pt_ch in config.get_pts():
-            noise = random.gauss(0, 150)  # instrument noise is approximately gaussian
+            noise = (random.gauss(0, 150)) if (do_noise) else (0) # instrument noise is approximately gaussian
             # TODO: add different noise for different instruments with some sort of lookup table
             pressure = system.get_pressure(pt_ch) + noise
             write_data[pt_ch] = pressure
         for tc_ch in config.get_tcs():
-            noise = random.gauss(0, 2)  # instrument noise is approximately gaussian
+            noise = (random.gauss(0, 2)) if (do_noise) else (0) # instrument noise is approximately gaussian
             temperature = system.get_temperature(tc_ch) + noise
             write_data[tc_ch] = temperature
 
