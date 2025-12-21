@@ -156,6 +156,15 @@ def parse_args() -> list:
             )
     return args
 
+
+# helper function that gets the "state" equivelant to a valve channel
+def STATE(input: str) -> str:
+    if "vlv" in input:
+        return input.replace("vlv", "state")
+    else:
+        error_and_exit("Input to STATE() conversion function is not valid valve!")
+
+
 # Helper function to handle all abort cases
 def abort(ctrl: Controller, state: State):
     # TODO: aborting lol
@@ -181,7 +190,7 @@ def press_ittr(ctrl: Controller, copv_1, copv_2, copv_3, press_iso_X, press_fill
     while loop.wait():
         now = time.monotonic()
         copv_pres.add(sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40))
-        if ((copv_pres.get() >= target_pres) or (now >= end_time)) and (ctrl[press_iso_X] == True):
+        if ((copv_pres.get() >= target_pres) or (now >= end_time)) and (ctrl[STATE(press_iso_X)] == True):
             ctrl[press_iso_X] = False # close press iso
         if (now >= end_time):
             ctrl[press_fill_iso] = False
@@ -191,11 +200,9 @@ def press_fill(ctrl: Controller, config: Configuration) -> None:
     copv_1 = config.mappings.COPV_PT_1
     copv_2 = config.mappings.COPV_PT_2
     copv_3 = config.mappings.Fuel_Manifold_PT_1
-
-    copv_pres = average_ch(100) # 50 sample standard window
-    while True:
-        copv_pres.add(sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40))
-        print(copv_pres.get())
+    press_fill_iso = config.mappings.Press_Fill_Iso
+    pass
+    
 
 def ox_fill(ctrl: Controller, config: Configuration) -> None:
     pass
@@ -255,7 +262,7 @@ def main() -> None:
     print(colored("Initialization Complete!", "green"))
 
     write_chs = config.get_valves()
-    read_chs = config.get_valves() + config.get_pts() + config.get_tcs()
+    read_chs = config.get_states() + config.get_pts() + config.get_tcs()
 
     with client.control.acquire(
         name="Launch Autosequence",
