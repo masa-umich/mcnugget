@@ -5,16 +5,18 @@ from dataclasses import dataclass, fields
 
 @dataclass
 class Settings:
-    press_rate_1: float
-    press_rate_1_ittrs: int
-    press_rate_2: float
-    copv_upper_bound_temp: float
-    copv_lower_bound_temp: float
-    copv_minimum_temp: float
-    copv_pressure_target: float
-    copv_pressure_margin: float
-    copv_pressure_max: float
-    bottle_equalization_threshold: float
+    press_rate_1: float # PSI/minute
+    press_rate_1_ittrs: int # Scalar
+    press_rate_2: float # PSI/minute
+    copv_cooldown_time: int # Seconds
+    copv_upper_bound_temp: float # Degrees Celsius
+    copv_lower_bound_temp: float # Degrees Celsius 
+    copv_minimum_temp: float # Degrees Celsius
+    copv_pressure_target: float # PSI
+    copv_pressure_margin: float # PSI
+    copv_pressure_max: float # PSI
+    bottle_equalization_threshold: float # PSI
+    averaging_time: float # Seconds
 
 @dataclass
 class ChannelMap:

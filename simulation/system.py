@@ -80,9 +80,9 @@ class System:
             self.valves.append(Valve(valve, True, 0.05))  # "default" valve
 
         # Manually set cv of some valves
-        self.get_valve_obj(config.mappings.COPV_Vent).cv = 0.05
-        self.get_valve_obj(config.mappings.Press_Fill_Iso).cv = 0.20
-        self.get_valve_obj(config.mappings.Press_Fill_Vent).cv = 1
+        self.get_valve_obj(config.mappings.COPV_Vent).cv = 0.01
+        self.get_valve_obj(config.mappings.Press_Fill_Iso).cv = 0.01
+        self.get_valve_obj(config.mappings.Press_Fill_Vent).cv = 0.01
 
         self.nodes = [
             Node(

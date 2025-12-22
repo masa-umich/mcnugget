@@ -9,6 +9,7 @@
 # ]
 # ///
 
+import threading
 from termcolor import colored
 from yaspin import yaspin
 
@@ -20,28 +21,63 @@ spinner.start()
 # 3rd party modules
 import synnax as sy
 from synnax.control.controller import Controller
+from prompt_toolkit import PromptSession, print_formatted_text
+from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.formatted_text import ANSI
 
 # standard modules
 import argparse
 from typing import List
-from collections import deque
 import statistics
 import time
+import builtins
 
 # our modules
 from configuration import Configuration
 
-REFRESH_RATE = 50 # Hz
-loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE) 
+REFRESH_RATE = 50  # Hz
+loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE)
 # Standard refresh rate for all checks (doubled because of shannon sampling thereom)
 
-# Mutli-state enum
+# override the print function because ansi codes are dumb
+def print(*args, **kwargs):
+    # Convert all arguments to strings and join them
+    msg = " ".join(map(str, args))
+    # Wrap in ANSI so prompt_toolkit parses termcolor codes correctly
+    print_formatted_text(ANSI(msg), **kwargs)
+
 class State:
     INIT: bool = False
     PRESS_FILL: bool = False
     OX_FILL: bool = False
     PRE_PRESS: bool = False
     QDS: bool = False
+
+class Threads:
+    press_fill_thread = threading.Thread()
+    press_fill_thread_running = threading.Event()
+
+    ox_fill_thread = threading.Thread()
+    ox_fill_thread_running = threading.Event()
+
+    pre_press_thread = threading.Thread()
+    pre_press_thread_running = threading.Event()
+
+    qds_thread = threading.Thread()
+    qds_thread_running = threading.Event()
+
+# Class to hold all useful autosequence objects
+class Auto:
+    ctrl: Controller
+    config: Configuration
+    state: State
+    threads: Threads
+
+    def __init__(self):
+        self.ctrl = None
+        self.config = None
+        self.state = State()
+        self.threads = Threads()
 
 # Weighted running average
 class average_ch:
@@ -63,8 +99,12 @@ class average_ch:
             # Standard EWMA formula
             self.avg = (value * self.alpha) + (self.avg * (1 - self.alpha))
 
+    def set_avg(self, input: float) -> None:
+        self.avg = input
+
     def get(self) -> float:
         return self.avg
+
 
 # Helper function to vote & average multiple sensor readings
 def sensor_vote_values(input: List[float], threshold: float) -> float:
@@ -72,27 +112,35 @@ def sensor_vote_values(input: List[float], threshold: float) -> float:
         return None
     if len(input) == 1:
         return input[0]
-    
+
     median_val = statistics.median(input)
 
     trusted_sensors = [x for x in input if abs(x - median_val) <= threshold]
 
     if not trusted_sensors:
         return median_val
-    
+
     return sum(trusted_sensors) / len(trusted_sensors)
 
 
 def sensor_vote(ctrl: Controller, channels: List[str], threshold: float) -> float:
-    ctrl.wait_until_defined(channels)
+    # ctrl.wait_until_defined(channels)
     values: List[float] = []
     for ch in channels:
         values.append(ctrl.get(ch))
     return sensor_vote_values(values, threshold)
 
 
+# Helper function to average and sensor vote multiple channels for a specified amount of time in seconds
+def avg_and_vote_for(ctrl: Controller, channels: List[str], threshold: float, averaging_time: float) -> float:
+    value = average_ch(round(REFRESH_RATE * averaging_time))
+    end_time = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(averaging_time)
+    while (sy.TimeStamp.now() < end_time):
+        value.add(sensor_vote(ctrl, channels, threshold))
+    return value.get()
+
 # helper function to raise pretty errors
-def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
+def error_and_exit(message: str, error_code: int = 1, exception = None) -> None:
     # TODO: close all valves and possibly open vents. Basically an "abort"
     spinner.stop()  # incase it's running
     if exception != None:  # exception is an optional argument
@@ -111,10 +159,8 @@ def synnax_login(cluster: str) -> sy.Synnax:
             username="synnax",
             password="seldon",
         )
-    except Exception as e:
-        error_and_exit(
-            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
-        )
+    except Exception:
+        error_and_exit(f"Could not connect to Synnax at {cluster}, are you sure you're connected?")
     return client
 
 
@@ -151,9 +197,7 @@ def parse_args() -> list:
             if args.verbose:
                 print(colored(f"Using config from file: {args.config}", "yellow"))
         else:
-            error_and_exit(
-                f"Invalid specified config file: {args.config}, must be .yaml file"
-            )
+            error_and_exit(f"Invalid specified config file: {args.config}, must be .yaml file")
     return args
 
 
@@ -166,54 +210,180 @@ def STATE(input: str) -> str:
 
 
 # Helper function to handle all abort cases
-def abort(ctrl: Controller, state: State):
+def abort(auto: Auto) -> None:
     # TODO: aborting lol
-    ctrl.release()
+    auto.threads.press_fill_thread_running.clear()
+    auto.threads.ox_fill_thread_running.clear()
+    auto.threads.pre_press_thread_running.clear()
+    auto.threads.qds_thread_running.clear()
+    print(colored("Threads killed.", "green"))
+    auto.ctrl.release()
     print(colored("Autosequence has released control.", "green"))
+    time.sleep(0.5) # time for everything to stop
+    if auto.threads.press_fill_thread.is_alive():
+        auto.threads.press_fill_thread.join()
+    if auto.threads.ox_fill_thread.is_alive():
+        auto.threads.ox_fill_thread.join()
+    if auto.threads.pre_press_thread.is_alive():
+        auto.threads.pre_press_thread.join()
+    if auto.threads.qds_thread.is_alive():
+        auto.threads.qds_thread.join()
+    return
 
-# TODO: Add check for COPV temperature
-def press_ittr(ctrl: Controller, copv_1, copv_2, copv_3, press_iso_X, press_fill_iso, press_rate):
-    start_time = time.monotonic()
-    end_time = start_time + 60 # one minute after start
-    copv_pres = average_ch(50) # 50 sample standard window
 
-    # Average over 1 second to get the starting pressure
-    for i in range(50):
-        copv_pres.add(sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40))
-    start_pres = copv_pres.get()
-    
-    target_pres = start_pres + press_rate
+def press_fill(auto: Auto) -> None:
+    press_fill_iso = auto.config.mappings.Press_Fill_Iso
+    press_iso_1 = auto.config.mappings.Press_Iso_1
+    press_iso_2 = auto.config.mappings.Press_Iso_2
+    press_iso_3 = auto.config.mappings.Press_Iso_3
 
-    ctrl[press_fill_iso] = True
-    ctrl[press_iso_X] = True
+    copv_pts = [
+        auto.config.mappings.COPV_PT_1,
+        auto.config.mappings.COPV_PT_2,
+        auto.config.mappings.Fuel_TPC_Inlet_PT,
+    ]
 
-    while loop.wait():
-        now = time.monotonic()
-        copv_pres.add(sensor_vote(ctrl, [copv_1, copv_2, copv_3], 40))
-        if ((copv_pres.get() >= target_pres) or (now >= end_time)) and (ctrl[STATE(press_iso_X)] == True):
-            ctrl[press_iso_X] = False # close press iso
-        if (now >= end_time):
-            ctrl[press_fill_iso] = False
-            return
+    bottle_1_pt = auto.config.mappings.Bottle_1_PT
+    bottle_2_pt = auto.config.mappings.Bottle_2_PT
+    bottle_3_pt = auto.config.mappings.Bottle_3_PT
 
-def press_fill(ctrl: Controller, config: Configuration) -> None:
-    copv_1 = config.mappings.COPV_PT_1
-    copv_2 = config.mappings.COPV_PT_2
-    copv_3 = config.mappings.Fuel_Manifold_PT_1
-    press_fill_iso = config.mappings.Press_Fill_Iso
-    pass
-    
+    avging_time = auto.config.variables.averaging_time 
+    press_rate_1 = auto.config.variables.press_rate_1
+    press_rate_2 = auto.config.variables.press_rate_2
+    press_rate_ittrs = auto.config.variables.press_rate_1_ittrs
+    ittr_time = auto.config.variables.copv_cooldown_time
 
-def ox_fill(ctrl: Controller, config: Configuration) -> None:
-    pass
+    bottle_eq_threshold = auto.config.variables.bottle_equalization_threshold
 
-def pre_press(ctrl: Controller, config: Configuration) -> None:
-    pass
+    copv_press = average_ch(round(REFRESH_RATE * avging_time)) # Average COPV pressure
 
-def qds(ctrl: Controller, config: Configuration) -> None:
-    pass
+    # Bottle 1 equalization
 
-def command_interface(ctrl: Controller, auto_state: State, config: Configuration) -> None:
+    auto.ctrl[press_fill_iso] = True # Open press fill iso
+    auto.ctrl[press_iso_1] = False # Make sure press iso 1 starts closed TODO: put starting valve states somewhere else
+
+    # Press rate 1
+    for i in range(press_rate_ittrs):
+        print(f"Starting Bottle 1 Equalization Itteration: {i+1}") # TODO: Make only in verbose output
+        end_time = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(ittr_time) # Each itteration lasts for exactly 1 minute
+
+        # Get starting pressure by averaging for 1 second
+        start_press = avg_and_vote_for(auto.ctrl, copv_pts, press_rate_1, avging_time)
+        copv_press.set_avg(start_press)
+        target_press = start_press + press_rate_1
+
+        auto.ctrl[press_iso_1] = True # Open press iso 1
+        while (sy.TimeStamp.now() < end_time): # Wait until 1 minute has elapsed
+            copv_press.add(sensor_vote(auto.ctrl, copv_pts, press_rate_1))
+            value = copv_press.get()
+            if ((value >= target_press) and (auto.ctrl[STATE(press_iso_1)] == True)):
+                auto.ctrl.set(press_iso_1, False) # Close press iso 1
+            time.sleep(0) # allow thread to yield
+        auto.ctrl[press_iso_1] = False # Make sure press iso 1 is closed
+        print(f"Finished Bottle 1 Equalization Itteration: {i+1}") # TODO: Make only in verbose output
+
+    print("Bottle 1 completed press rate 1") # TODO: Make only in verbose output
+
+    # Press rate 2
+    while True: # Repeat until equalized
+        end_time = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(ittr_time) # Each itteration lasts for exactly 1 minute
+        # Get starting pressure of the COPV and Bottle
+        # NOTE: this will need to be adjusted since the Bottle PT will be waaay noiser than the COPV and so will probably need more averaging
+        bottle_start_press = avg_and_vote_for(auto.ctrl, [bottle_1_pt], press_rate_2, avging_time)
+        copv_start_press = avg_and_vote_for(auto.ctrl, copv_pts, press_rate_2, avging_time)
+        copv_press.set_avg(start_press)
+        pressure_delta = abs(bottle_start_press - copv_start_press)
+        copv_target_press = copv_start_press + press_rate_2
+
+        if (pressure_delta <= bottle_eq_threshold): # If we've reached the equalization threshold, stop
+            break
+
+        auto.ctrl[press_iso_1] = True # Open press iso 1
+        while (sy.TimeStamp.now() < end_time): # Wait until 1 minute has elapsed
+            copv_press.add(sensor_vote(auto.ctrl, copv_pts, press_rate_2))
+            value = copv_press.get() 
+            if ((value >= copv_target_press) and (auto.ctrl[STATE(press_iso_1)] == True)):
+                auto.ctrl[press_iso_1] = False # Close press iso 1
+            time.sleep(0) # allow thread to yield
+        auto.ctrl[press_iso_1] = False # Make sure press iso 1 is closed
+    auto.ctrl[press_iso_1] = False # Really make sure press iso 1 is closed
+
+    auto.ctrl[press_fill_iso] = False # Close press fill iso
+
+    print("Bottle 1 completed press rate 2")
+
+    # Bottle 2 equalization
+
+    # Bottle 3 equalization
+
+    return 
+
+def press_fill_wrapper(auto: Auto) -> None:
+    try:
+        auto.threads.press_fill_thread_running.set()
+        auto.state.PRESS_FILL = True
+        print(colored("Press Fill now running", "light_blue"))
+        while (auto.threads.press_fill_thread_running.is_set()):
+            press_fill(auto)
+            time.sleep(0)
+        auto.state.PRESS_FILL = False
+        return
+    except:
+        return
+
+def ox_fill(auto: Auto) -> None:
+    auto.state.OX_FILL = False
+    return
+
+def ox_fill_wrapper(auto: Auto) -> None:
+    try:
+        auto.threads.ox_fill_thread_running.set()
+        auto.state.OX_FILL = True
+        print(colored("Ox Fill now running", "light_blue"))
+        while (auto.threads.ox_fill_thread_running.is_set()):
+            ox_fill(auto)
+            time.sleep(0)
+        auto.state.OX_FILL = False
+        return
+    except:
+        return
+
+def pre_press(auto: Auto) -> None:
+    auto.state.PRE_PRESS = False
+    return
+
+def pre_press_wrapper(auto: Auto) -> None:
+    try:
+        auto.threads.pre_press_thread_running.set()
+        auto.state.PRE_PRESS = True
+        print(colored("Pre-Press now running", "light_blue"))
+        while (auto.threads.pre_press_thread_running.is_set()):
+            ox_fill(auto)
+            time.sleep(0)
+        auto.state.PRE_PRESS = False
+        return
+    except:
+        return
+
+def qds(auto: Auto) -> None:
+    auto.state.QDS = False
+    return
+
+def qds_wrapper(auto: Auto) -> None:
+    try:
+        auto.threads.qds_thread_running.set()
+        auto.state.QDS = True
+        print(colored("QDs now running", "light_blue"))
+        while (auto.threads.qds_thread_running.is_set()):
+            ox_fill(auto)
+            time.sleep(0)
+        auto.state.QDS = False
+        return
+    except:
+        return
+
+
+def command_interface(auto: Auto) -> None:
     print(colored(
     """
     Welcome to the Limelight Autosequence!
@@ -223,57 +393,76 @@ def command_interface(ctrl: Controller, auto_state: State, config: Configuration
         - pre press
         - qds
         - quit
-    """
+    """, "green"
     ))
 
     try:
-        while (True):
-            # TODO: add a wait until defined check on all channels
-            # and abort if any aren't
-            command = input(colored("> ", "green"))
+        session = PromptSession()
+        while True:
+            # TODO: add a wait until defined check on all channels and abort if any aren't
+            # TODO: only allow some state transitions
+            # TODO: add safe pausing of threads 
+            command = session.prompt(" > ")
             match command:
                 case "press fill":
-                    auto_state.PRESS_FILL = True
-                    press_fill(ctrl, config)
+                    auto.threads.press_fill_thread.start()
                 case "ox fill":
-                    auto_state.OX_FILL = True
-                    ox_fill(ctrl, config)
+                    auto.threads.ox_fill_thread.start()
                 case "pre press":
-                    auto_state.PRE_PRESS = True
-                    pre_press(ctrl, config)
+                    auto.threads.pre_press_thread.start()
                 case "qds":
-                    auto_state.QDS = True
-                    qds(ctrl, config)
+                    auto.threads.qds_thread.start()
                 case "quit":
-                    abort(ctrl, auto_state)
+                    abort(auto)
                     break
     except KeyboardInterrupt:
         print(colored("Keyboard interrupt detected, aborting!", "red", attrs=["bold"]))
-        abort(ctrl, auto_state)
+        abort(auto)
+    return
 
 
 def main() -> None:
-    auto_state = State()
-    auto_state.INIT = True
+    auto = Auto()
+    auto.state.INIT = True
 
     args = parse_args()
     config = Configuration(args.config)
+    auto.config = config
+
     client = synnax_login(args.cluster)
     print(colored("Initialization Complete!", "green"))
 
     write_chs = config.get_valves()
     read_chs = config.get_states() + config.get_pts() + config.get_tcs()
 
-    with client.control.acquire(
+    # Create thread objects
+    press_fill_thread = threading.Thread(name="press_fill_thread", target=press_fill_wrapper, args=(auto,))
+    auto.threads.press_fill_thread = press_fill_thread
+    auto.threads.press_fill_thread_running = threading.Event()
+
+    ox_fill_thread = threading.Thread(name="ox_fill_thread", target=ox_fill_wrapper, args=(auto,))
+    auto.threads.ox_fill_thread = ox_fill_thread
+    auto.threads.ox_fill_thread_running = threading.Event()
+
+    pre_press_thread = threading.Thread(name="pre_press_thread", target=pre_press_wrapper, args=(auto,))
+    auto.threads.pre_press_thread = pre_press_thread
+    auto.threads.pre_press_thread_running = threading.Event()
+
+    qds_thread = threading.Thread(name="qds_thread", target=qds_wrapper, args=(auto,))
+    auto.threads.qds_thread = qds_thread
+    auto.threads.qds_thread_running = threading.Event()
+
+    ctrl = client.control.acquire(
         name="Launch Autosequence",
-        write_authorities=1, # 1 is the default console authority
+        write_authorities=1,  # 1 is the default console authority
         write=write_chs,
-        read=read_chs
-    ) as ctrl:
-        command_interface(ctrl, auto_state, config)
-        
-    print(colored("Autosequence complete! have a nice day :)", "green"))
-    exit(0)
+        read=read_chs,
+    )
+    with patch_stdout():
+        auto.ctrl = ctrl
+        command_interface(auto)
+        print(colored("Autosequence complete! have a nice day :)", "green"))
+        exit(0)
 
 
 if __name__ == "__main__":
@@ -282,5 +471,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    # except Exception as e:  # catch-all uncaught errors
-        # error_and_exit("Uncaught exception!", exception=e)
+    except Exception as e:  # catch-all uncaught errors
+        error_and_exit("Uncaught exception!", exception=e)
