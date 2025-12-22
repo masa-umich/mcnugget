@@ -208,25 +208,29 @@ def STATE(input: str) -> str:
         error_and_exit("Input to STATE() conversion function is not valid valve!")
 
 
-# Helper function to handle all abort cases
-def abort(auto: Auto) -> None:
-    # TODO: aborting lol
+# Helper to safely shutdown threads
+def shutdown_threads(auto: Auto) -> None:
     auto.threads.press_fill_thread_running.clear()
     auto.threads.ox_fill_thread_running.clear()
     auto.threads.pre_press_thread_running.clear()
     auto.threads.qds_thread_running.clear()
+    # time.sleep(0.5) # time for everything to stop
+    # if auto.threads.press_fill_thread.is_alive():
+    #     auto.threads.press_fill_thread.join()
+    # if auto.threads.ox_fill_thread.is_alive():
+    #     auto.threads.ox_fill_thread.join()
+    # if auto.threads.pre_press_thread.is_alive():
+    #     auto.threads.pre_press_thread.join()
+    # if auto.threads.qds_thread.is_alive():
+    #     auto.threads.qds_thread.join()
+
+# Helper function to handle all abort cases
+def abort(auto: Auto) -> None:
+    # TODO: aborting lol
+    shutdown_threads(auto)
     log(colored("Threads killed.", "green"))
     auto.ctrl.release()
     log(colored("Autosequence has released control.", "green"))
-    time.sleep(0.5) # time for everything to stop
-    if auto.threads.press_fill_thread.is_alive():
-        auto.threads.press_fill_thread.join()
-    if auto.threads.ox_fill_thread.is_alive():
-        auto.threads.ox_fill_thread.join()
-    if auto.threads.pre_press_thread.is_alive():
-        auto.threads.pre_press_thread.join()
-    if auto.threads.qds_thread.is_alive():
-        auto.threads.qds_thread.join()
     return
 
 
@@ -398,7 +402,6 @@ def command_interface(auto: Auto) -> None:
     try:
         session = PromptSession()
         while True:
-            # TODO: add a wait until defined check on all channels and abort if any aren't
             # TODO: only allow some state transitions
             # TODO: add safe pausing of threads 
             command = session.prompt(" > ")
@@ -434,6 +437,20 @@ def main() -> None:
     write_chs = config.get_valves()
     read_chs = config.get_states() + config.get_pts() + config.get_tcs()
 
+    ctrl = client.control.acquire(
+        name="Launch Autosequence",
+        write_authorities=1,  # 1 is the default console authority
+        write=write_chs,
+        read=read_chs,
+    )
+    auto.ctrl = ctrl
+    chs_defined = auto.ctrl.wait_until_defined(
+        auto.config.get_pts() + auto.config.get_tcs() + auto.config.get_states(),
+        timeout=5
+    )
+    if (chs_defined == False):
+        error_and_exit("Some channels in the config are not defined (are all drivers running?)")
+
     # Create thread objects
     press_fill_thread = threading.Thread(name="press_fill_thread", target=press_fill_wrapper, args=(auto,))
     auto.threads.press_fill_thread = press_fill_thread
@@ -451,14 +468,7 @@ def main() -> None:
     auto.threads.qds_thread = qds_thread
     auto.threads.qds_thread_running = threading.Event()
 
-    ctrl = client.control.acquire(
-        name="Launch Autosequence",
-        write_authorities=1,  # 1 is the default console authority
-        write=write_chs,
-        read=read_chs,
-    )
     with patch_stdout():
-        auto.ctrl = ctrl
         command_interface(auto)
         log(colored("Autosequence complete! have a nice day :)", "green"))
         exit(0)

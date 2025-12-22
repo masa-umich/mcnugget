@@ -127,7 +127,7 @@ class System:
             Node(
                 name="press_node",
                 channels=[config.mappings.Post_Press_Fill_PT],
-                volume=0.1,  # idk what a good value should be
+                volume=0.01,  # idk what a good value should be
                 pressure=0,
             ),
         ]
