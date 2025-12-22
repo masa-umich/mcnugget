@@ -6,6 +6,7 @@
 #     "yaspin",
 #     "termcolor",
 #     "pyyaml",
+#     "prompt-toolkit",
 # ]
 # ///
 
