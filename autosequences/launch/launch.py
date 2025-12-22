@@ -31,7 +31,6 @@ import argparse
 from typing import List
 import statistics
 import time
-import builtins
 
 # our modules
 from configuration import Configuration
@@ -40,8 +39,7 @@ REFRESH_RATE = 50  # Hz
 loop = sy.Loop(sy.Rate.HZ * 2 * REFRESH_RATE)
 # Standard refresh rate for all checks (doubled because of shannon sampling thereom)
 
-# override the print function because ansi codes are dumb
-def print(*args, **kwargs):
+def log(*args, **kwargs):
     # Convert all arguments to strings and join them
     msg = " ".join(map(str, args))
     # Wrap in ANSI so prompt_toolkit parses termcolor codes correctly
@@ -145,9 +143,9 @@ def error_and_exit(message: str, error_code: int = 1, exception = None) -> None:
     # TODO: close all valves and possibly open vents. Basically an "abort"
     spinner.stop()  # incase it's running
     if exception != None:  # exception is an optional argument
-        print(exception)
-    print(colored(message, "red", attrs=["bold"]))
-    print(colored("Exiting", "red", attrs=["bold"]))
+        log(exception)
+    log(colored(message, "red", attrs=["bold"]))
+    log(colored("Exiting", "red", attrs=["bold"]))
     exit(error_code)
 
 
@@ -196,7 +194,7 @@ def parse_args() -> list:
     if args.config != "config.yaml":
         if args.config.endswith(".yaml"):
             if args.verbose:
-                print(colored(f"Using config from file: {args.config}", "yellow"))
+                log(colored(f"Using config from file: {args.config}", "yellow"))
         else:
             error_and_exit(f"Invalid specified config file: {args.config}, must be .yaml file")
     return args
@@ -217,9 +215,9 @@ def abort(auto: Auto) -> None:
     auto.threads.ox_fill_thread_running.clear()
     auto.threads.pre_press_thread_running.clear()
     auto.threads.qds_thread_running.clear()
-    print(colored("Threads killed.", "green"))
+    log(colored("Threads killed.", "green"))
     auto.ctrl.release()
-    print(colored("Autosequence has released control.", "green"))
+    log(colored("Autosequence has released control.", "green"))
     time.sleep(0.5) # time for everything to stop
     if auto.threads.press_fill_thread.is_alive():
         auto.threads.press_fill_thread.join()
@@ -265,7 +263,7 @@ def press_fill(auto: Auto) -> None:
 
     # Press rate 1
     for i in range(press_rate_ittrs):
-        print(f"Starting Bottle 1 Equalization Itteration: {i+1}") # TODO: Make only in verbose output
+        log(f"Starting Bottle 1 Equalization Itteration: {i+1}") # TODO: Make only in verbose output
         end_time = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(ittr_time) # Each itteration lasts for exactly 1 minute
 
         # Get starting pressure by averaging for 1 second
@@ -281,9 +279,9 @@ def press_fill(auto: Auto) -> None:
                 auto.ctrl.set(press_iso_1, False) # Close press iso 1
             time.sleep(0) # allow thread to yield
         auto.ctrl[press_iso_1] = False # Make sure press iso 1 is closed
-        print(f"Finished Bottle 1 Equalization Itteration: {i+1}") # TODO: Make only in verbose output
+        log(f"Finished Bottle 1 Equalization Itteration: {i+1}") # TODO: Make only in verbose output
 
-    print("Bottle 1 completed press rate 1") # TODO: Make only in verbose output
+    log("Bottle 1 completed press rate 1") # TODO: Make only in verbose output
 
     # Press rate 2
     while True: # Repeat until equalized
@@ -311,7 +309,7 @@ def press_fill(auto: Auto) -> None:
 
     auto.ctrl[press_fill_iso] = False # Close press fill iso
 
-    print("Bottle 1 completed press rate 2")
+    log("Bottle 1 completed press rate 2")
 
     # Bottle 2 equalization
 
@@ -323,7 +321,7 @@ def press_fill_wrapper(auto: Auto) -> None:
     try:
         auto.threads.press_fill_thread_running.set()
         auto.state.PRESS_FILL = True
-        print(colored("Press Fill now running", "light_blue"))
+        log(colored("Press Fill now running", "light_blue"))
         while (auto.threads.press_fill_thread_running.is_set()):
             press_fill(auto)
             time.sleep(0)
@@ -340,7 +338,7 @@ def ox_fill_wrapper(auto: Auto) -> None:
     try:
         auto.threads.ox_fill_thread_running.set()
         auto.state.OX_FILL = True
-        print(colored("Ox Fill now running", "light_blue"))
+        log(colored("Ox Fill now running", "light_blue"))
         while (auto.threads.ox_fill_thread_running.is_set()):
             ox_fill(auto)
             time.sleep(0)
@@ -357,7 +355,7 @@ def pre_press_wrapper(auto: Auto) -> None:
     try:
         auto.threads.pre_press_thread_running.set()
         auto.state.PRE_PRESS = True
-        print(colored("Pre-Press now running", "light_blue"))
+        log(colored("Pre-Press now running", "light_blue"))
         while (auto.threads.pre_press_thread_running.is_set()):
             ox_fill(auto)
             time.sleep(0)
@@ -374,7 +372,7 @@ def qds_wrapper(auto: Auto) -> None:
     try:
         auto.threads.qds_thread_running.set()
         auto.state.QDS = True
-        print(colored("QDs now running", "light_blue"))
+        log(colored("QDs now running", "light_blue"))
         while (auto.threads.qds_thread_running.is_set()):
             ox_fill(auto)
             time.sleep(0)
@@ -385,7 +383,7 @@ def qds_wrapper(auto: Auto) -> None:
 
 
 def command_interface(auto: Auto) -> None:
-    print(colored(
+    log(colored(
     """
     Welcome to the Limelight Autosequence!
     Commands:
@@ -417,7 +415,7 @@ def command_interface(auto: Auto) -> None:
                     abort(auto)
                     break
     except KeyboardInterrupt:
-        print(colored("Keyboard interrupt detected, aborting!", "red", attrs=["bold"]))
+        log(colored("Keyboard interrupt detected, aborting!", "red", attrs=["bold"]))
         abort(auto)
     return
 
@@ -431,7 +429,7 @@ def main() -> None:
     auto.config = config
 
     client = synnax_login(args.cluster)
-    print(colored("Initialization Complete!", "green"))
+    log(colored("Initialization Complete!", "green"))
 
     write_chs = config.get_valves()
     read_chs = config.get_states() + config.get_pts() + config.get_tcs()
@@ -462,7 +460,7 @@ def main() -> None:
     with patch_stdout():
         auto.ctrl = ctrl
         command_interface(auto)
-        print(colored("Autosequence complete! have a nice day :)", "green"))
+        log(colored("Autosequence complete! have a nice day :)", "green"))
         exit(0)
 
 
