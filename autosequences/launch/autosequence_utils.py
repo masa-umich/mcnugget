@@ -17,6 +17,7 @@ class Config:
     Use get_var(name) or get_vlv(name) to get objects from the config file
     Also checks that the requested field exists, throws an error if it doesn't
     """
+
     _yaml_data: dict
 
     vars: dict[str, Any]
@@ -126,12 +127,12 @@ class Config:
         return all_sensors
 
 
-
 class average_ch:
     """
     Uses EWMA to run a weighted running average on data in a performant way
     https://en.wikipedia.org/wiki/EWMA_chart
     """
+
     avg: float
     initialized: bool
     alpha: float
@@ -186,7 +187,9 @@ def sensor_vote_values(input: list[float], threshold: float) -> float | None:
     return sum(trusted_sensors) / len(trusted_sensors)
 
 
-def sensor_vote(ctrl: Controller, channels: list[str], threshold: float) -> float | None:
+def sensor_vote(
+    ctrl: Controller, channels: list[str], threshold: float
+) -> float | None:
     """
     Wrapper of sensor_vote_values which gets skips the step of getting the values from the controller
     """
@@ -209,26 +212,26 @@ def log(*args, **kwargs):
     print_formatted_text(ANSI(msg), **kwargs)
 
 
-
 class SequenceAborted(Exception):
     """
     Exceptions are used for abort logic, under an abort case this exception is raised
     which can then be caught in a try except block inside of the phase
     """
-    pass
 
+    pass
 
 
 class Phase:
     """
     A phase which is a function wrapper for a portion of Autosequence logic.
-    A "phase" also associates a thread with the function and allows 
+    A "phase" also associates a thread with the function and allows
     for an abort case to run when closing the thread with a try except block
-    
+
     Underlying function for each phase's logic should be defined in another file.
     Every function passed to the constructor must take a Phase object as its only argument.
     The Synnax controller and config objects can be taken from that Phase object
     """
+
     name: str
 
     ctrl: Controller
@@ -261,7 +264,7 @@ class Phase:
         self.config: Config = config
 
         self._refresh_rate: int = refresh_rate
-        self._refresh_period: float = (1.0 / (2.0 * self._refresh_rate))
+        self._refresh_period: float = 1.0 / (2.0 * self._refresh_rate)
 
         self._func_thread = threading.Thread(
             name=self.name,
@@ -318,15 +321,23 @@ class Phase:
             if self.ctrl.wait_until(cond, timeout=slice_time):
                 return True
 
-    def avg_and_vote_for(self, ctrl: Controller, channels: list[str], threshold: float, averaging_time: float) -> float:
+    def avg_and_vote_for(
+        self,
+        ctrl: Controller,
+        channels: list[str],
+        threshold: float,
+        averaging_time: float,
+    ) -> float:
         """
         Helper function to both average and vote on a set of channels over a given time period, useful for getting a baseline reading
         """
-        value = average_ch(round(self._refresh_rate * averaging_time)) # would be better to base off real refresh rate
+        value = average_ch(
+            round(self._refresh_rate * averaging_time)
+        )  # would be better to base off real refresh rate
         end_time = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(averaging_time)
-        while (sy.TimeStamp.now() < end_time):
+        while sy.TimeStamp.now() < end_time:
             value.add(sensor_vote(ctrl, channels, threshold))
-            self.sleep(self._refresh_period) # allow time to yield
+            self.sleep(self._refresh_period)  # allow time to yield
         return value.get()
 
     # A function wrapper to be able to do threading stuff (might not be necessary)
@@ -354,6 +365,7 @@ class Autosequence:
     An autosequence which is a wrapper of phases and a way to run them
     Also contains the configuration, channel mappings, and optional command terminal
     """
+
     name: str
     client: sy.Synnax  # Synnax connection
     ctrl: Controller
@@ -381,11 +393,23 @@ class Autosequence:
         )
         self._has_released = False
 
+        # Error if not all channels were found / defined
+        channels: list[str | int] = self.config.get_sensors() + self.config.get_states()  # ty:ignore[invalid-assignment]
+        defined: bool = self.ctrl.wait_until_defined(
+            channels=channels,
+            timeout=5,
+        )
+        if not defined:
+            self.release()
+            raise Exception(
+                "Some channels defined in the autosequence config are not defined in Synnax, are all drivers running?"
+            )
+
     # Destructor, make sure to release control!
     def __del__(self):
         if not self._has_released:
             self.release()
-            self._has_released = True # Object should be deleted atp but just in case
+            self._has_released = True  # Object should be deleted atp but just in case
 
     def synnax_login(self, cluster: str) -> sy.Synnax:
         try:
@@ -443,7 +467,7 @@ class Autosequence:
                     user_input.strip().lower().split(maxsplit=1)
                 )  # Get command and phase
                 command: str = parts[0]
-                if ((command == "quit") or (command == "exit")):
+                if (command == "quit") or (command == "exit"):
                     print("Exiting autosequence interface...")
                     self.abort_all()
                     self.release()

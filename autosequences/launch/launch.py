@@ -23,12 +23,20 @@ from synnax.control.controller import Controller
 import synnax as sy
 
 # our modules
-from autosequence_utils import Phase, Autosequence, Config, average_ch, SequenceAborted, sensor_vote
+from autosequence_utils import (
+    Phase,
+    Autosequence,
+    Config,
+    average_ch,
+    SequenceAborted,
+    sensor_vote,
+)
 
 # standard modules
 import argparse
 
 REFRESH_RATE: int = 50  # Hz
+
 
 # CLI argument parser
 def parse_args() -> argparse.Namespace:
@@ -87,7 +95,9 @@ def press_fill(phase: Phase) -> None:
         config.get_pt("Fuel_TPC_Inlet_PT"),
     ]
 
-    copv_pressure = average_ch(window=REFRESH_RATE) # 1 second window (NOTE: adjust as needed)
+    copv_pressure = average_ch(
+        window=REFRESH_RATE
+    )  # 1 second window (NOTE: adjust as needed)
 
     bottle_pts: str[list] = [
         config.get_pt("Bottle_1_PT"),
@@ -102,44 +112,43 @@ def press_fill(phase: Phase) -> None:
 
     # TODO: Make most prints in verbose output mode only
 
-    try: # Normal operation
+    try:  # Normal operation
         print("Starting press fill phase...")
         ctrl[press_fill_iso] = True
 
         # For each bottle
         for i in range(len(bottle_pts)):
-            print(f"Filling from bottle {i+1}")
+            print(f"Filling from bottle {i + 1}")
 
             # Press rate 1 fill
             for j in range(press_rate_1_ittrs):
-                print(f"  Pressurizing at rate 1, itteration {j+1}...")
+                print(f"  Pressurizing at rate 1, itteration {j + 1}...")
 
                 starting_pressure: float = phase.avg_and_vote_for(
-                    ctrl, copv_pts, threshold=5.0, averaging_time=2.0
+                    ctrl=ctrl, channels=copv_pts, threshold=5.0, averaging_time=2.0
                 )
                 target_pressure: float = starting_pressure + press_rate_1
                 print(f"    Starting pressure: {starting_pressure:.2f} psi")
                 print(f"    Target pressure: {target_pressure:.2f} psi")
 
-                ctrl[press_isos[i]] = True # open bottle iso
+                ctrl[press_isos[i]] = True  # open bottle iso
 
-                target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(copv_cooldown_time) # 1 minute timeout
+                target_time: sy.TimeStamp = (
+                    sy.TimeStamp.now() + sy.TimeSpan.from_seconds(copv_cooldown_time)
+                )  # 1 minute timeout
 
                 # Wait until the averaged COPV pressure reaches the target pressure OR it has been more than 1 minute
                 phase.wait_until(
-                    cond=lambda c: 
-                    copv_pressure.add_and_get(
+                    cond=lambda c: copv_pressure.add_and_get(
                         value=sensor_vote(
-                            ctrl=c, 
-                            channels=copv_pts, 
-                            threshold=press_rate_1
+                            ctrl=c, channels=copv_pts, threshold=press_rate_1
                         )
-                    ) >= target_pressure 
-                    or 
-                    sy.TimeStamp.now() >= target_time
+                    )
+                    >= target_pressure
+                    or sy.TimeStamp.now() >= target_time
                 )
 
-                ctrl[press_isos[i]] = False # close bottle iso
+                ctrl[press_isos[i]] = False  # close bottle iso
 
                 # Make sure that 1 minute has elapsed before starting the next itteration
                 phase.wait_until(cond=lambda c: sy.TimeStamp.now() >= target_time)
@@ -150,13 +159,13 @@ def press_fill(phase: Phase) -> None:
                 phase.sleep(1)
                 pass
 
-    except SequenceAborted: # Abort case
+    except:  # Abort case
         print("Press fill phase aborted, closing valves and opening vents...")
         # TODO: Make sure this is right according to the doc
-        ctrl[press_fill_iso] = False # close fill iso
-        for press_iso in press_isos: # close all bottles
+        ctrl[press_fill_iso] = False  # close fill iso
+        for press_iso in press_isos:  # close all bottles
             ctrl[press_iso] = False
-        ctrl[copv_vent] = True # open vent
+        ctrl[copv_vent] = True  # open vent
     return
 
 
@@ -166,11 +175,13 @@ def main() -> None:
     cluster: str = args.cluster
 
     # Make Autosequence object, also connects to Synnax & other checks
-    auto: Autosequence = Autosequence(name="Limelight Launch Autosequence", cluster=cluster, config=config)
+    auto: Autosequence = Autosequence(
+        name="Limelight Launch Autosequence", cluster=cluster, config=config
+    )
 
     # Define and add each phase to the autosequence
     press_fill_phase: Phase = Phase(
-        name="Press Fill", func=press_fill, ctrl=auto.ctrl, config=config, refresh_rate=100
+        name="Press Fill", func=press_fill, ctrl=auto.ctrl, config=config
     )
 
     auto.add_phase(press_fill_phase)
@@ -185,4 +196,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # make sure we stop the spinner on any exception (it prevents the program from exiting cleanly)
+        spinner.stop()
+        raise (e)
