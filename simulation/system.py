@@ -77,11 +77,11 @@ class System:
         self.config = config
 
         for valve in config.get_valves():
-            self.valves.append(Valve(valve, True, 0.05))  # "default" valve
+            self.valves.append(Valve(valve, True, 0.005))  # "default" valve
 
         # Manually set cv of some valves
         self.get_valve_obj(config.mappings.COPV_Vent).cv = 0.01
-        self.get_valve_obj(config.mappings.Press_Fill_Iso).cv = 0.01
+        self.get_valve_obj(config.mappings.Press_Fill_Iso).cv = 0.005
         self.get_valve_obj(config.mappings.Press_Fill_Vent).cv = 0.01
 
         self.nodes = [
