@@ -96,7 +96,7 @@ def press_fill(phase: Phase) -> None:
     ]
 
     copv_pressure = average_ch(
-        window=REFRESH_RATE
+        window=REFRESH_RATE/2
     )  # 1 second window (NOTE: adjust as needed)
 
     bottle_pts: str[list] = [
@@ -125,17 +125,17 @@ def press_fill(phase: Phase) -> None:
                 print(f"  Pressurizing at rate 1, itteration {j + 1}...")
 
                 starting_pressure: float = phase.avg_and_vote_for(
-                    ctrl=ctrl, channels=copv_pts, threshold=5.0, averaging_time=2.0
+                    ctrl=ctrl, channels=copv_pts, threshold=press_rate_1, averaging_time=1.0
                 )
                 target_pressure: float = starting_pressure + press_rate_1
                 print(f"    Starting pressure: {starting_pressure:.2f} psi")
                 print(f"    Target pressure: {target_pressure:.2f} psi")
 
-                ctrl[press_isos[i]] = True  # open bottle iso
-
                 target_time: sy.TimeStamp = (
                     sy.TimeStamp.now() + sy.TimeSpan.from_seconds(copv_cooldown_time)
                 )  # 1 minute timeout
+
+                ctrl[press_isos[i]] = True  # open bottle iso
 
                 # Wait until the averaged COPV pressure reaches the target pressure OR it has been more than 1 minute
                 phase.wait_until(
@@ -158,6 +158,8 @@ def press_fill(phase: Phase) -> None:
                 print("TBD")
                 phase.sleep(1)
                 pass
+
+        ctrl[press_fill_iso] = False # close fill iso
 
     except:  # Abort case
         print("Press fill phase aborted, closing valves and opening vents...")

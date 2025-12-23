@@ -137,7 +137,7 @@ class average_ch:
     initialized: bool
     alpha: float
 
-    def __init__(self, window: int):
+    def __init__(self, window: float | int):
         # Alpha approximates a window of N items: alpha = 2 / (N + 1)
         self.alpha: float = 2.0 / (window + 1)
         self.avg = 0.0
@@ -461,32 +461,33 @@ class Autosequence:
                 print(f" - {phase.name}")
 
             session = PromptSession()
-            while True:  # Parse input
-                user_input: str = session.prompt(" > ")
-                parts: list[str] = (
-                    user_input.strip().lower().split(maxsplit=1)
-                )  # Get command and phase
-                command: str = parts[0]
-                if (command == "quit") or (command == "exit"):
-                    print("Exiting autosequence interface...")
-                    self.abort_all()
-                    self.release()
-                    return
-                phase: Phase | None = self.get_phase(phase_name=parts[1])
-                if phase is None:
-                    print("Phase not recognized, please try again")
-                    continue
-                match command:
-                    case "start":
-                        phase.start()
-                    case "abort":
-                        phase.abort()
-                    case "pause":
-                        phase.pause()
-                    case "unpause":
-                        phase.unpause()
-                    case _:
-                        print("Unrecognized input, please try again")
+            with patch_stdout():
+                while True:  # Parse input
+                    user_input: str = session.prompt(" > ")
+                    parts: list[str] = (
+                        user_input.strip().lower().split(maxsplit=1)
+                    )  # Get command and phase
+                    command: str = parts[0]
+                    if (command == "quit") or (command == "exit"):
+                        print("Exiting autosequence interface...")
+                        self.abort_all()
+                        self.release()
+                        return
+                    phase: Phase | None = self.get_phase(phase_name=parts[1])
+                    if phase is None:
+                        print("Phase not recognized, please try again")
+                        continue
+                    match command:
+                        case "start":
+                            phase.start()
+                        case "abort":
+                            phase.abort()
+                        case "pause":
+                            phase.pause()
+                        case "unpause":
+                            phase.unpause()
+                        case _:
+                            print("Unrecognized input, please try again")
 
         except KeyboardInterrupt:
             print("Keyboard interrupt detected, aborting!")
