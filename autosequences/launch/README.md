@@ -1,10 +1,10 @@
 # Launch Autosequene
-Authors: Ryan Dunlap (radunlap), Jack Hammerberg (jackmh)
+Authors: Jack Hammerberg (jackmh)
 
-Documentation Last Updated: 11-17-2025
+Documentation Last Updated: 12-23-2025
 
 ## Usage:
-1. Ensure mappings are correct in `mappings.yaml`
+1. Ensure channel mappings & variables are correct in `config.yaml`
 2. Launch script:
 ```sh
 ./launch.py
@@ -14,6 +14,11 @@ or
 uv run launch.py
 ```
 3. Follow the in-terminal prompts
+
+## CLI Options
+`-c | --cluster <host>`
+`-m | --config <config.yaml>`
+`-v | --verbose`
 
 ## TODO (for developers):
 1. Replace FSM package with a standard switch statement inside a loop

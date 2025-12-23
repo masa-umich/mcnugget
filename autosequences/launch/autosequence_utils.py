@@ -1,0 +1,471 @@
+# A helper file & classses for common autosequence utilties
+import statistics
+import time
+import yaml
+import synnax as sy
+from synnax.control.controller import Controller
+from typing import Any, Callable
+import threading
+from prompt_toolkit import PromptSession, print_formatted_text
+from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.formatted_text import ANSI
+
+
+class Config:
+    """
+    Parses a config.yaml file for channel mappings and autosequence variables.
+    Use get_var(name) or get_vlv(name) to get objects from the config file
+    Also checks that the requested field exists, throws an error if it doesn't
+    """
+    _yaml_data: dict
+
+    vars: dict[str, Any]
+    vlvs: dict[str, str]
+    pts: dict[str, str]
+    tcs: dict[str, str]
+
+    def __init__(self, filepath: str):
+        self.vlvs: dict[str, str] = {}
+        self.pts: dict[str, str] = {}
+        self.tcs: dict[str, str] = {}
+        self.vars: dict[str, Any] = {}
+
+        prefix_map: dict[str, str] = {
+            "ebox": "gse",
+            "flight_computer": "fc",
+            "bay_board_1": "bb1",
+            "bay_board_2": "bb2",
+            "bay_board_3": "bb3",
+        }
+
+        type_suffix_map: dict[str, str] = {"pts": "pt", "valves": "vlv", "tcs": "tc"}
+
+        with open(filepath, "r") as f:
+            self._yaml_data: dict = yaml.safe_load(f)
+
+        self.vars: dict[str, Any] = self._yaml_data.get("variables", {})
+        mappings_data: dict[Any, Any] = self._yaml_data.get("channel_mappings", {})
+
+        for controller_key, prefix in prefix_map.items():
+            controller_data = mappings_data.get(controller_key)
+            if not controller_data:
+                continue
+
+            for type_key, suffix in type_suffix_map.items():
+                items = controller_data.get(type_key)
+                if not items:
+                    continue  # Skip if this controller doesn't have TCs (e.g. Flight Computer)
+
+                for config_ch_name, index in items.items():
+                    # Construct Synnax Name: prefix_suffix_index (e.g., gse_pt_1)
+                    synnax_name = f"{prefix}_{suffix}_{index}"
+                    real_name: str = config_ch_name.lower()
+
+                    if suffix == "pt":
+                        self.pts[real_name] = synnax_name
+                    elif suffix == "tc":
+                        self.tcs[real_name] = synnax_name
+                    elif suffix == "vlv":
+                        self.vlvs[real_name] = synnax_name
+                    else:
+                        raise Exception("Bad entry in mappings part of config")
+
+    def get_var(self, name: str) -> Any:
+        var: Any | None = self.vars.get(name.lower())
+        if var is not None:
+            return var
+        else:
+            raise Exception(f"Could not find variable with name: '{name}' in config")
+
+    def get_vlv(self, name: str) -> str:
+        vlv: str | None = self.vlvs.get(name.lower())
+        if vlv is not None:
+            return vlv
+        else:
+            raise Exception(f"Could not find valve with name: '{name}' in config")
+
+    def get_state(self, name: str) -> str:
+        vlv: str | None = self.vlvs.get(name.lower())
+        if vlv is not None:
+            return vlv.replace("vlv", "state")
+        else:
+            raise Exception(f"Could not find valve with name: '{name}' in config")
+
+    def get_pt(self, name: str) -> str:
+        pt: str | None = self.pts.get(name.lower())
+        if pt is not None:
+            return pt
+        else:
+            raise Exception(f"Could not find pt with name: '{name}' in config")
+
+    def get_tc(self, name: str) -> str:
+        tc: str | None = self.tcs.get(name.lower())
+        if tc is not None:
+            return tc
+        else:
+            raise Exception(f"Could not find tc with name: '{name}' in config")
+
+    def get_vlvs(self) -> list[str]:
+        all_vlvs: list[str] = []
+        for vlv in self.vlvs.values():
+            all_vlvs.append(vlv)
+        return all_vlvs
+
+    def get_states(self) -> list[str]:
+        all_states: list[str] = []
+        for vlv in self.vlvs.values():
+            all_states.append(vlv.replace("vlv", "state"))
+        return all_states
+
+    def get_sensors(self) -> list[str]:
+        all_sensors: list[str] = []
+        for pt in self.pts.values():
+            all_sensors.append(pt)
+        for tc in self.tcs.values():
+            all_sensors.append(tc)
+        return all_sensors
+
+
+
+class average_ch:
+    """
+    Uses EWMA to run a weighted running average on data in a performant way
+    https://en.wikipedia.org/wiki/EWMA_chart
+    """
+    avg: float
+    initialized: bool
+    alpha: float
+
+    def __init__(self, window: int):
+        # Alpha approximates a window of N items: alpha = 2 / (N + 1)
+        self.alpha: float = 2.0 / (window + 1)
+        self.avg = 0.0
+        self.initialized = False
+
+    def add(self, value: float | None) -> None:
+        if not self.initialized:
+            self.avg: float = value
+            self.initialized = True
+        else:
+            if value is None:
+                return
+            # Standard EWMA formula
+            self.avg: float = (value * self.alpha) + (self.avg * (1 - self.alpha))
+
+    def set_avg(self, input: float) -> None:
+        self.avg: float = input
+
+    def get(self) -> float:
+        return self.avg
+
+    def add_and_get(self, value: float | None) -> float:
+        self.add(value)
+        return self.get()
+
+
+def sensor_vote_values(input: list[float], threshold: float) -> float | None:
+    """
+    Helper function to vote between a list of values.
+    For the values agree within the given threshold, the median is returned
+    Values that don't agree inside of the threshold are discarded
+    """
+    if not input:
+        return None
+    if len(input) == 1:
+        return input[0]
+
+    median_val: float = statistics.median(input)
+
+    trusted_sensors: list[float] = [
+        x for x in input if abs(x - median_val) <= threshold
+    ]
+
+    if not trusted_sensors:
+        return median_val
+
+    return sum(trusted_sensors) / len(trusted_sensors)
+
+
+def sensor_vote(ctrl: Controller, channels: list[str], threshold: float) -> float | None:
+    """
+    Wrapper of sensor_vote_values which gets skips the step of getting the values from the controller
+    """
+    values: list[float] = []
+    for ch in channels:
+        value: float | None = ctrl.get(ch)
+        if value is not None:
+            values.append(value)
+    return sensor_vote_values(values, threshold)
+
+
+def log(*args, **kwargs):
+    """
+    Helper function to get around prompt_toolkit printing issues w/ termcolor
+    """
+
+    # Convert all arguments to strings and join them
+    msg: str = " ".join(map(str, args))
+    # Wrap in ANSI so prompt_toolkit parses termcolor codes correctly
+    print_formatted_text(ANSI(msg), **kwargs)
+
+
+
+class SequenceAborted(Exception):
+    """
+    Exceptions are used for abort logic, under an abort case this exception is raised
+    which can then be caught in a try except block inside of the phase
+    """
+    pass
+
+
+
+class Phase:
+    """
+    A phase which is a function wrapper for a portion of Autosequence logic.
+    A "phase" also associates a thread with the function and allows 
+    for an abort case to run when closing the thread with a try except block
+    
+    Underlying function for each phase's logic should be defined in another file.
+    Every function passed to the constructor must take a Phase object as its only argument.
+    The Synnax controller and config objects can be taken from that Phase object
+    """
+    name: str
+
+    ctrl: Controller
+    config: Config
+
+    _abort: threading.Event  # Thread-safe flag
+    _pause: threading.Event  # Thread-safe flag
+
+    _func_thread: threading.Thread  # Thread wrapper
+
+    _refresh_rate: int  # Hz
+    # The minimum amount of time (in seconds) the thread should be spent sleeping / yielding
+    # Large values (0.1+) result in an unresponsive autosequence
+    # Small values (0.01-) may use more system resources and overhead
+    # A good value should be half the time of your system's refresh rate (50Hz -> 0.01s)
+    _refresh_period: float
+
+    # Constructor
+    def __init__(
+        self,
+        name: str,
+        func: Callable,
+        ctrl: Controller,
+        config: Config,
+        refresh_rate: int = 50,
+    ):
+        self.name: str = name
+
+        self.ctrl: Controller = ctrl
+        self.config: Config = config
+
+        self._refresh_rate: int = refresh_rate
+        self._refresh_period: float = (1.0 / (2.0 * self._refresh_rate))
+
+        self._func_thread = threading.Thread(
+            name=self.name,
+            target=self._func_wrapper,
+            args=(func,),
+        )
+
+        self._pause = threading.Event()
+        self._pause.clear()  # Make sure flag is cleared initially
+
+        self._abort = threading.Event()
+        self._abort.clear()  # Make sure flag is cleared initially
+
+    # Checks for abort or pause signals. Blocks if paused
+    def _check_signals(self):
+        if self._abort.is_set():
+            raise SequenceAborted("Sequence Aborted")
+
+        while self._pause.is_set():
+            if self._abort.is_set():
+                raise SequenceAborted("Sequence Aborted during pause")
+            time.sleep(self._refresh_period)  # Sleep and yield thread
+
+    # Sleep function that should be used inside of the control sequence
+    # Allows for thread aborting and pausing with _check_signals
+    # This should be used instead of time.sleep() at all times when thread yielding is safe
+    def sleep(self, duration: float):
+        end_time: float = time.time() + duration
+        while True:
+            self._check_signals()
+            remaining: float = end_time - time.time()
+            if remaining <= 0:
+                return
+            time.sleep(min(self._refresh_period, remaining))  # Sleep and yield thread
+
+    # Similar to ctrl.wait_until() but allows yielding, similar to phase.sleep()
+    def wait_until(
+        self, cond: Callable[[Controller], bool], timeout: float | None = None
+    ) -> bool:
+        start_time: float = time.time()
+        while True:
+            self._check_signals()
+
+            # Calculate slice timeout
+            slice_time: float = self._refresh_period
+            if timeout is not None:
+                elapsed: float = time.time() - start_time
+                remaining: float = timeout - elapsed
+                if remaining <= 0:
+                    return False
+                slice_time: float = min(slice_time, remaining)
+
+            # Use the synnax controller to wait for this slice
+            if self.ctrl.wait_until(cond, timeout=slice_time):
+                return True
+
+    def avg_and_vote_for(self, ctrl: Controller, channels: list[str], threshold: float, averaging_time: float) -> float:
+        """
+        Helper function to both average and vote on a set of channels over a given time period, useful for getting a baseline reading
+        """
+        value = average_ch(round(self._refresh_rate * averaging_time)) # would be better to base off real refresh rate
+        end_time = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(averaging_time)
+        while (sy.TimeStamp.now() < end_time):
+            value.add(sensor_vote(ctrl, channels, threshold))
+            self.sleep(self._refresh_period) # allow time to yield
+        return value.get()
+
+    # A function wrapper to be able to do threading stuff (might not be necessary)
+    def _func_wrapper(self, func: Callable):
+        func(self)
+
+    def start(self):
+        self._func_thread.start()
+
+    def join(self):
+        self._func_thread.join()
+
+    def abort(self):
+        self._abort.set()
+
+    def pause(self):
+        self._pause.set()
+
+    def unpause(self):
+        self._pause.clear()
+
+
+class Autosequence:
+    """
+    An autosequence which is a wrapper of phases and a way to run them
+    Also contains the configuration, channel mappings, and optional command terminal
+    """
+    name: str
+    client: sy.Synnax  # Synnax connection
+    ctrl: Controller
+
+    phases: list[Phase]
+    config: Config
+
+    _has_released: bool
+
+    # Constuctor
+    def __init__(self, name: str, cluster: str, config: Config):
+        self.name: str = name
+        self.config: Config = config
+        self.phases: list[Phase] = []
+
+        # Try to login
+        self.client: sy.Synnax = self.synnax_login(cluster)
+
+        # Take control with autosequence
+        self.ctrl: Controller = self.client.control.acquire(
+            name=name,
+            write_authorities=1,  # 1 is the default console authority (NOTE: This might/should be higher)
+            write=self.config.get_vlvs(),
+            read=self.config.get_sensors() + self.config.get_states(),
+        )
+        self._has_released = False
+
+    # Destructor, make sure to release control!
+    def __del__(self):
+        if not self._has_released:
+            self.release()
+            self._has_released = True # Object should be deleted atp but just in case
+
+    def synnax_login(self, cluster: str) -> sy.Synnax:
+        try:
+            client = sy.Synnax(
+                host=cluster,
+                port=9090,
+                username="synnax",
+                password="seldon",
+            )
+        except Exception:
+            raise Exception(
+                f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
+            )
+        return client
+
+    def add_phase(self, phase: Phase):
+        self.phases.append(phase)
+
+    def abort_all(self):
+        for phase in self.phases:
+            phase.abort()
+            if phase._func_thread.is_alive():
+                phase.join()
+
+    def release(self):
+        if not self._has_released:
+            self.ctrl.release()
+            print("Autosequence has released control")
+            self._has_released = True
+
+    def get_phase(self, phase_name: str) -> Phase | None:
+        for phase in self.phases:
+            if phase_name == phase.name.lower():
+                return phase
+        return None
+
+    def interface(self):
+        # TODO: only allow some state / phase transitions
+        try:
+            print("Welcome to the Limelight Autosequence!")
+            print("Valid commands:")
+            print(" > start <phase>")
+            print(" > abort <phase>")
+            print(" > pause <phase>")
+            print(" > unpause <phase>")
+            print(" > quit")
+            print("Valid phases:")
+            for phase in self.phases:
+                print(f" - {phase.name}")
+
+            session = PromptSession()
+            while True:  # Parse input
+                user_input: str = session.prompt(" > ")
+                parts: list[str] = (
+                    user_input.strip().lower().split(maxsplit=1)
+                )  # Get command and phase
+                command: str = parts[0]
+                if ((command == "quit") or (command == "exit")):
+                    print("Exiting autosequence interface...")
+                    self.abort_all()
+                    self.release()
+                    return
+                phase: Phase | None = self.get_phase(phase_name=parts[1])
+                if phase is None:
+                    print("Phase not recognized, please try again")
+                    continue
+                match command:
+                    case "start":
+                        phase.start()
+                    case "abort":
+                        phase.abort()
+                    case "pause":
+                        phase.pause()
+                    case "unpause":
+                        phase.unpause()
+                    case _:
+                        print("Unrecognized input, please try again")
+
+        except KeyboardInterrupt:
+            print("Keyboard interrupt detected, aborting!")
+            self.abort_all()
+            self.release()
+        return
