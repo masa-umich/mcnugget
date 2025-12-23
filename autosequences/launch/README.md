@@ -16,28 +16,19 @@ uv run launch.py
 3. Follow the in-terminal prompts
 
 ## CLI Options
-`-c | --cluster <host>`
-`-m | --config <config.yaml>`
-`-v | --verbose`
+```sh
+-c | --cluster <host>
+```
 
-## TODO (for developers):
-1. Replace FSM package with a standard switch statement inside a loop
-2. Replace hard-coded channels dict with importing `mappings.yaml` 
-3. Make script to create `mappings.yaml` from `icd.xlsx`
-4. Implement the autosequence logic... [link to document](https://docs.google.com/document/d/1rgJRN3EEq3BMmNyXFKvW-fIrCa0_asf7RmsacfWU8j4/edit?usp=sharing)
+```sh
+-m | --config <config.yaml>
+```
 
+```sh
+-v | --verbose
+```
 
-## `Mappings.yaml` required fields:
-- Press Iso 1 (NC)
-- Press Iso 2  (NC)
-- Press Iso 3  (NC)
-- Press Fill Iso  (NC)
-- Press Fill Vent (NO)
-- COPV Vent (NC)
-
-- COPV PT 1
-- COPV PT 2
-- Fuel Tank 1
-- Fuel Tank 2
-- Ox Ullage 1
-- Ox Ullage 2
+## TODO (for developers in no particular order):
+- Add pretty colors to print statements
+- Rest of press fill sequence
+- Abort cases with SRE prompt for venting
