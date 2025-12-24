@@ -191,7 +191,7 @@ def sensor_vote(
     ctrl: Controller, channels: list[str], threshold: float
 ) -> float | None:
     """
-    Wrapper of sensor_vote_values which gets skips the step of getting the values from the controller
+    Wrapper of sensor_vote_values which skips the step of getting the values from the controller
     """
     values: list[float] = []
     for ch in channels:
@@ -487,7 +487,7 @@ class Autosequence:
                         case "unpause":
                             phase.unpause()
                         case _:
-                            print("Unrecognized input, please try again")
+                            print("Unrecognized command, please try again")
 
         except KeyboardInterrupt:
             print("Keyboard interrupt detected, aborting!")

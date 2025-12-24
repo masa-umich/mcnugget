@@ -32,3 +32,4 @@ uv run launch.py
 - Add pretty colors to print statements
 - Rest of press fill sequence
 - Abort cases with SRE prompt for venting
+- Automatic phase transitions & only allow for certain phase transitions

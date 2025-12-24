@@ -97,7 +97,7 @@ def press_fill(phase: Phase) -> None:
 
     copv_pressure = average_ch(
         window=REFRESH_RATE/2
-    )  # 1 second window (NOTE: adjust as needed)
+    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
 
     bottle_pts: str[list] = [
         config.get_pt("Bottle_1_PT"),
@@ -133,7 +133,7 @@ def press_fill(phase: Phase) -> None:
 
                 target_time: sy.TimeStamp = (
                     sy.TimeStamp.now() + sy.TimeSpan.from_seconds(copv_cooldown_time)
-                )  # 1 minute timeout
+                )
 
                 ctrl[press_isos[i]] = True  # open bottle iso
 
@@ -150,7 +150,7 @@ def press_fill(phase: Phase) -> None:
 
                 ctrl[press_isos[i]] = False  # close bottle iso
 
-                # Make sure that 1 minute has elapsed before starting the next itteration
+                # Make sure that any remaining time has elapsed before starting the next itteration
                 phase.wait_until(cond=lambda c: sy.TimeStamp.now() >= target_time)
 
             # Until bottle equalization
