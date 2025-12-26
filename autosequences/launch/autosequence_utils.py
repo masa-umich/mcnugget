@@ -203,7 +203,7 @@ def sensor_vote(
     return sensor_vote_values(values, threshold)
 
 
-def log(*args, **kwargs):
+def log(*args, **kwargs) -> None:
     """
     Helper function to get around prompt_toolkit printing issues w/ termcolor
     """
@@ -248,7 +248,7 @@ class Phase:
     # The minimum amount of time (in seconds) the thread should be spent sleeping / yielding
     # Large values (0.1+) result in an unresponsive autosequence
     # Small values (0.01-) may use more system resources and overhead
-    # A good value should be half the time of your system's refresh rate (50Hz -> 0.01s)
+    # A good value should be twice the time of your system's refresh rate (50Hz -> 0.01s)
     _refresh_period: float
 
     # Constructor
@@ -336,7 +336,7 @@ class Phase:
         value = average_ch(
             round(self._refresh_rate * averaging_time)
         )  # would be better to base off real refresh rate
-        end_time = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(averaging_time)
+        end_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(averaging_time)
         while sy.TimeStamp.now() < end_time:
             value.add(sensor_vote(ctrl, channels, threshold))
             self.sleep(self._refresh_period)  # allow time to yield
@@ -346,19 +346,19 @@ class Phase:
     def _func_wrapper(self, func: Callable):
         func(self)
 
-    def start(self):
+    def start(self) -> None:
         self._func_thread.start()
 
-    def join(self):
+    def join(self) -> None:
         self._func_thread.join()
 
-    def abort(self):
+    def abort(self) -> None:
         self._abort.set()
 
-    def pause(self):
+    def pause(self) -> None:
         self._pause.set()
 
-    def unpause(self):
+    def unpause(self) -> None:
         self._pause.clear()
 
 
@@ -368,6 +368,7 @@ class Autosequence:
     Also contains the configuration, channel mappings, and optional command terminal
     """
 
+    # Public members
     name: str
     client: sy.Synnax  # Synnax connection
     ctrl: Controller
@@ -375,15 +376,22 @@ class Autosequence:
     phases: list[Phase]
     config: Config
     global_abort: Callable | None
+    abort_flag: threading.Event # Thread-safe flag
 
+    # Private members
     _has_released: bool
+    _background_thread: threading.Thread | None = None
+    _interface_thread: threading.Thread | None = None
+    _prompt_session: PromptSession | None = None
 
     # Constuctor
-    def __init__(self, name: str, cluster: str, config: Config, global_abort: Callable | None = None):
+    def __init__(self, name: str, cluster: str, config: Config, global_abort: Callable | None = None, background_thread: Callable | None = None):
         self.name: str = name
         self.config: Config = config
         self.phases: list[Phase] = []
         self.global_abort: Callable | None = global_abort
+        self.abort_flag: threading.Event = threading.Event()
+        self.abort_flag.clear() # Make sure flag is cleared initially
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
@@ -408,9 +416,17 @@ class Autosequence:
             raise Exception(
                 "Some channels defined in the autosequence config are not defined in Synnax, are all drivers running?"
             )
-
+        
+        # Setup background thread if provided
+        if background_thread is not None:
+            self._background_thread = threading.Thread(
+                name="Autosequence Background",
+                target=background_thread,
+                args=(self,),
+            )
+    
     # Destructor, make sure to release control!
-    def __del__(self):
+    def __del__(self) -> None:
         if not self._has_released:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
@@ -432,14 +448,10 @@ class Autosequence:
     def add_phase(self, phase: Phase) -> None:
         self.phases.append(phase)
 
-    def abort_all(self) -> None:
-        for phase in self.phases:
-            phase.abort()
-            if phase._func_thread.is_alive():
-                phase.join()
-        if self.global_abort: self.global_abort(self.ctrl, self.config)
+    def raise_abort(self) -> None:
+        self.abort_flag.set()
 
-    def release(self):
+    def release(self) -> None:
         if not self._has_released:
             self.ctrl.release()
             print(" > Autosequence has released control")
@@ -451,7 +463,42 @@ class Autosequence:
                 return phase
         return None
 
-    def interface(self) -> None:
+    # Run command interface thread & main listener thread
+    def run(self) -> None:
+        with patch_stdout(): # Fix print statements with command interface
+            # Run background thread if provided
+            if self._background_thread is not None:
+                self._background_thread.start()
+            # Run command interface thread
+            self._interface_thread = threading.Thread(
+                name="Autosequence Interface",
+                target=self._interface_func,
+            )
+            self._interface_thread.start()
+            while True:
+                # Listen for abort signal
+                if self.abort_flag.is_set():
+                    # Kill the command interface thread
+                    if (self._prompt_session is not None) and (self._prompt_session.app.is_running):
+                        self._prompt_session.app.exit()
+                    if self._interface_thread is not None and self._interface_thread.is_alive():
+                        self._interface_thread.join()
+                    time.sleep(0.1) # give a small amount of time for thread to close
+                    for phase in self.phases:
+                        phase.abort()
+                        if phase._func_thread.is_alive():
+                            phase.join()
+                    time.sleep(0.1)
+                    if self.global_abort: self.global_abort(self.ctrl, self.config)
+                    # Kill the background thread if it exists
+                    if self._background_thread is not None and self._background_thread.is_alive():
+                        self._background_thread.join()
+                    self.release()
+                    print(" > Autosequence aborted successfully")
+                    return
+                time.sleep(0.01)  # Yield thread
+
+    def _interface_func(self) -> None:
         # TODO: only allow some state / phase transitions
         try:
             print("Welcome to the Limelight Autosequence!")
@@ -465,38 +512,42 @@ class Autosequence:
             for phase_name in self.phases:
                 print(f" - {phase_name.name}")
 
-            session: PromptSession = PromptSession()
-            with patch_stdout():
-                while True:  # Parse input
-                    user_input: str = session.prompt(" ) ")
-                    parts: list[str] = (
-                        user_input.strip().lower().split(maxsplit=1)
-                    )  # Get command and phase
-                    command: str = parts[0]
-                    if (command == "quit") or (command == "exit"):
-                        print(" > Exiting autosequence interface...")
-                        self.abort_all()
-                        self.release()
-                        return
-                    phase: Phase | None = self.get_phase(phase_name=parts[1])
-                    if phase is None:
-                        print(" > Phase not recognized, please try again")
+            self._prompt_session = PromptSession()
+            while not self.abort_flag.is_set():  # Parse input
+                user_input: str = self._prompt_session.prompt(" ) ")
+                if self.abort_flag.is_set():
+                    return # exit if abort flag set during prompt
+                parts: list[str] = (
+                    user_input.strip().lower().split(maxsplit=1)
+                )  # Get command and phase
+                if len(parts) < 2 and (parts[0] != "quit" and parts[0] != "exit"):
+                    print(" > Please provide a phase name")
+                    continue
+                command: str = parts[0]
+                if (command == "quit") or (command == "exit"):
+                    print(" > Exiting autosequence interface...")
+                    self.raise_abort()
+                    return
+                phase: Phase | None = self.get_phase(phase_name=parts[1])
+                if phase is None:
+                    print(" > Phase not recognized, please try again")
+                    continue
+                match command:
+                    case "start":
+                        phase.start()
+                    case "abort":
+                        phase.abort()
+                    case "pause":
+                        phase.pause()
+                    case "unpause":
+                        phase.unpause()
+                    case _:
+                        print(" > Unrecognized command, please try again")
                         continue
-                    match command:
-                        case "start":
-                            phase.start()
-                        case "abort":
-                            phase.abort()
-                        case "pause":
-                            phase.pause()
-                        case "unpause":
-                            phase.unpause()
-                        case _:
-                            print(" > Unrecognized command, please try again")
-                            continue
-
         except KeyboardInterrupt:
             print(" > Keyboard interrupt detected, aborting!")
-            self.abort_all()
-            self.release()
+            self.raise_abort()
+        except EOFError:
+            print(" > Keyboard interrupt detected, aborting!")
+            self.raise_abort()
         return

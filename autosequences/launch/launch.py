@@ -34,6 +34,7 @@ from autosequence_utils import (
 
 # standard modules
 import argparse
+import time
 
 REFRESH_RATE: int = 50  # Hz
 
@@ -76,6 +77,48 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
+# Background task to always check for certain abort cases
+def background_thread(auto: Autosequence) -> None:
+    print(" > Background task started...")
+    ctrl: Controller = auto.ctrl
+    config: Config = auto.config
+
+    copv_pts: list[str] = [
+        config.get_pt("COPV_PT_1"),
+        config.get_pt("COPV_PT_2"),
+        config.get_pt("Fuel_TPC_Inlet_PT"),
+    ]
+
+    press_fill_iso: str = config.get_vlv("Press_Fill_Iso")
+    press_isos: list[str] = [
+        config.get_vlv("Press_Iso_1"),
+        config.get_vlv("Press_Iso_2"),
+        config.get_vlv("Press_Iso_3"),
+    ]
+
+    copv_abort_threshold: float = config.get_var("copv_pressure_max")
+
+    copv_pressure = average_ch(
+        window=REFRESH_RATE / 2
+    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
+
+    while not auto.abort_flag.is_set():
+        time.sleep(0.1) # yeild thread (using time.sleep() is fine because we have no conditions to check like in phases)
+        copv_pressure.add(
+            value=sensor_vote(
+                ctrl=ctrl, channels=copv_pts, threshold=50 # arbitrary threshold for voting
+            )
+        )
+        if copv_pressure.get() >= copv_abort_threshold:
+            print("COPV Exceeding max pressure! Aborting...")
+            auto.raise_abort()
+            # Some of these conditions may already happen in the phase aborts, but just to be safe
+            ctrl[press_fill_iso] = False  # close fill iso
+            for press_iso in press_isos:  # close all bottles
+                ctrl[press_iso] = False
+            return
+
+
 # Press fill phase
 def press_fill(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -87,7 +130,6 @@ def press_fill(phase: Phase) -> None:
         config.get_vlv("Press_Iso_2"),
         config.get_vlv("Press_Iso_3"),
     ]
-    copv_vent: str = config.get_vlv("COPV_Vent")
 
     copv_pts: list[str] = [
         config.get_pt("COPV_PT_1"),
@@ -163,11 +205,35 @@ def press_fill(phase: Phase) -> None:
 
     except Exception as e:  # Abort case
         print("\n > Aborting press fill phase due to exception:", e)
-        # TODO: Make sure this is right according to the doc
         ctrl[press_fill_iso] = False  # close fill iso
         for press_iso in press_isos:  # close all bottles
             ctrl[press_iso] = False
     return
+
+
+# Example used for automated abort cases, obviously don't include in final release
+def bad_press_fill(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    press_fill_iso: str = config.get_vlv("Press_Fill_Iso")
+    press_isos: list[str] = [
+        config.get_vlv("Press_Iso_1"),
+        config.get_vlv("Press_Iso_2"),
+        config.get_vlv("Press_Iso_3"),
+    ]
+
+    try:  # Normal operation
+        while True:
+            phase.sleep(0.1)
+            ctrl[press_fill_iso] = True
+            for i in range(len(press_isos)):
+                ctrl[press_isos[i]] = True  # open bottle iso
+    except Exception as e:  # Abort case
+        print(" > Aborting press fill phase due to exception:", e)
+        ctrl[press_fill_iso] = False  # close fill iso
+        for press_iso in press_isos:  # close all bottles
+            ctrl[press_iso] = False
 
 
 # Abort case which is ran under any abort - is the last thing ran under Ctrl+C
@@ -180,9 +246,6 @@ def global_abort(ctrl: Controller, config: Config) -> None:
         confirm = input("Vent? Y/N: ").lower()
     except KeyboardInterrupt:
         print("\n > Taking Ctrl+C as confirmation to vent")
-        confirm = "y"
-    except Exception as e:
-        print("\n > Exception during vent confirmation input: ", e)
         confirm = "y"
     finally: # in any case
         if confirm == "y" or confirm == "yes":
@@ -202,7 +265,8 @@ def main() -> None:
         name="Limelight Launch Autosequence", 
         cluster=cluster, 
         config=config, 
-        global_abort=global_abort
+        global_abort=global_abort,
+        background_thread=background_thread,
     )
 
     # Define and add each phase to the autosequence
@@ -212,10 +276,16 @@ def main() -> None:
 
     auto.add_phase(press_fill_phase)
 
+    bad_press_fill_phase: Phase = Phase(
+        name="Bad Press Fill", func=bad_press_fill, ctrl=auto.ctrl, config=config
+    )
+    
+    auto.add_phase(bad_press_fill_phase)
+
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports and setup
 
-    # Run the command interface for the autosequence
-    auto.interface()
+    # Run the autosequence
+    auto.run()
 
     print(" > Autosequence has terminated, have a great flight!")
     return
