@@ -216,8 +216,8 @@ class System:
         dest_rise = PV_transfer / dest.volume
         dest.pressure += dest_rise
 
-        self._apply_adiabatic_temp_change(source, src_p_old, source.pressure)
-        self._apply_adiabatic_temp_change(dest, dest_p_old, dest.pressure)
+        # self._apply_adiabatic_temp_change(source, src_p_old, source.pressure)
+        # self._apply_adiabatic_temp_change(dest, dest_p_old, dest.pressure)
 
     def vent_to_atmosphere(self, source_name: str, cv: float):
         source = self.get_node_obj(source_name)
@@ -233,11 +233,11 @@ class System:
 
         source.pressure -= loss
 
-        self._apply_adiabatic_temp_change(source, src_p_old, source.pressure)
+        # self._apply_adiabatic_temp_change(source, src_p_old, source.pressure)
 
     def update(self):
-        for node in self.nodes:
-            node.thermal_relax()
+        # for node in self.nodes:
+        #     node.thermal_relax()
 
         press_fill_iso = self.get_valve_obj(self.config.mappings.Press_Fill_Iso)
         press_fill_vent = self.get_valve_obj(self.config.mappings.Press_Fill_Vent)
