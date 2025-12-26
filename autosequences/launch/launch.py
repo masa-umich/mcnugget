@@ -82,14 +82,14 @@ def press_fill(phase: Phase) -> None:
     config: Config = phase.config
 
     press_fill_iso: str = config.get_vlv("Press_Fill_Iso")
-    press_isos: str[list] = [
+    press_isos: list[str] = [
         config.get_vlv("Press_Iso_1"),
         config.get_vlv("Press_Iso_2"),
         config.get_vlv("Press_Iso_3"),
     ]
     copv_vent: str = config.get_vlv("COPV_Vent")
 
-    copv_pts: str[list] = [
+    copv_pts: list[str] = [
         config.get_pt("COPV_PT_1"),
         config.get_pt("COPV_PT_2"),
         config.get_pt("Fuel_TPC_Inlet_PT"),
@@ -99,7 +99,7 @@ def press_fill(phase: Phase) -> None:
         window=REFRESH_RATE/2
     )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
 
-    bottle_pts: str[list] = [
+    bottle_pts: list[str] = [
         config.get_pt("Bottle_1_PT"),
         config.get_pt("Bottle_2_PT"),
         config.get_pt("Bottle_3_PT"),
@@ -113,23 +113,23 @@ def press_fill(phase: Phase) -> None:
     # TODO: Make most prints in verbose output mode only
 
     try:  # Normal operation
-        print("Starting press fill phase...")
+        print(" > Starting press fill phase...")
         ctrl[press_fill_iso] = True
 
         # For each bottle
         for i in range(len(bottle_pts)):
-            print(f"Filling from bottle {i + 1}")
+            print(f"  > Filling from bottle {i + 1}")
 
             # Press rate 1 fill
             for j in range(press_rate_1_ittrs):
-                print(f"  Pressurizing at rate 1, itteration {j + 1}...")
+                print(f"   > Pressurizing at rate 1, itteration {j + 1}...")
 
                 starting_pressure: float = phase.avg_and_vote_for(
                     ctrl=ctrl, channels=copv_pts, threshold=press_rate_1, averaging_time=1.0
                 )
                 target_pressure: float = starting_pressure + press_rate_1
-                print(f"    Starting pressure: {starting_pressure:.2f} psi")
-                print(f"    Target pressure: {target_pressure:.2f} psi")
+                print(f"    > Starting pressure: {starting_pressure:.2f} psi")
+                print(f"    > Target pressure: {target_pressure:.2f} psi")
 
                 target_time: sy.TimeStamp = (
                     sy.TimeStamp.now() + sy.TimeSpan.from_seconds(copv_cooldown_time)
@@ -161,13 +161,34 @@ def press_fill(phase: Phase) -> None:
 
         ctrl[press_fill_iso] = False # close fill iso
 
-    except:  # Abort case
-        print("Press fill phase aborted, closing valves and opening vents...")
+    except Exception as e:  # Abort case
+        print("\n > Aborting press fill phase due to exception:", e)
         # TODO: Make sure this is right according to the doc
         ctrl[press_fill_iso] = False  # close fill iso
         for press_iso in press_isos:  # close all bottles
             ctrl[press_iso] = False
-        ctrl[copv_vent] = True  # open vent
+    return
+
+
+# Abort case which is ran under any abort - is the last thing ran under Ctrl+C
+def global_abort(ctrl: Controller, config: Config) -> None:
+    copv_vent: str = config.get_vlv("COPV_Vent")
+    press_fill_vent: str = config.get_vlv("Press_Fill_Vent")
+
+    confirm: str = ""
+    try:
+        confirm = input("Vent? Y/N: ").lower()
+    except KeyboardInterrupt:
+        print("\n > Taking Ctrl+C as confirmation to vent")
+        confirm = "y"
+    except Exception as e:
+        print("\n > Exception during vent confirmation input: ", e)
+        confirm = "y"
+    finally: # in any case
+        if confirm == "y" or confirm == "yes":
+            print(" > Venting...")
+            ctrl[copv_vent] = True  # open vent
+            ctrl[press_fill_vent] = True  # open vent
     return
 
 
@@ -178,7 +199,10 @@ def main() -> None:
 
     # Make Autosequence object, also connects to Synnax & other checks
     auto: Autosequence = Autosequence(
-        name="Limelight Launch Autosequence", cluster=cluster, config=config
+        name="Limelight Launch Autosequence", 
+        cluster=cluster, 
+        config=config, 
+        global_abort=global_abort
     )
 
     # Define and add each phase to the autosequence
@@ -193,7 +217,7 @@ def main() -> None:
     # Run the command interface for the autosequence
     auto.interface()
 
-    print("Autosequence has terminated, have a great flight!")
+    print(" > Autosequence has terminated, have a great flight!")
     return
 
 

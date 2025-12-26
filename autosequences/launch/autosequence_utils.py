@@ -145,6 +145,8 @@ class average_ch:
 
     def add(self, value: float | None) -> None:
         if not self.initialized:
+            if value is None:
+                raise Exception("Cannot add None value to uninitialized average_ch")
             self.avg: float = value
             self.initialized = True
         else:
@@ -372,14 +374,16 @@ class Autosequence:
 
     phases: list[Phase]
     config: Config
+    global_abort: Callable | None
 
     _has_released: bool
 
     # Constuctor
-    def __init__(self, name: str, cluster: str, config: Config):
+    def __init__(self, name: str, cluster: str, config: Config, global_abort: Callable | None = None):
         self.name: str = name
         self.config: Config = config
         self.phases: list[Phase] = []
+        self.global_abort: Callable | None = global_abort
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
@@ -394,9 +398,9 @@ class Autosequence:
         self._has_released = False
 
         # Error if not all channels were found / defined
-        channels: list[str | int] = self.config.get_sensors() + self.config.get_states()  # ty:ignore[invalid-assignment]
+        channels: list[str] = self.config.get_sensors() + self.config.get_states()
         defined: bool = self.ctrl.wait_until_defined(
-            channels=channels,
+            channels=channels, # type: ignore
             timeout=5,
         )
         if not defined:
@@ -425,19 +429,20 @@ class Autosequence:
             )
         return client
 
-    def add_phase(self, phase: Phase):
+    def add_phase(self, phase: Phase) -> None:
         self.phases.append(phase)
 
-    def abort_all(self):
+    def abort_all(self) -> None:
         for phase in self.phases:
             phase.abort()
             if phase._func_thread.is_alive():
                 phase.join()
+        if self.global_abort: self.global_abort(self.ctrl, self.config)
 
     def release(self):
         if not self._has_released:
             self.ctrl.release()
-            print("Autosequence has released control")
+            print(" > Autosequence has released control")
             self._has_released = True
 
     def get_phase(self, phase_name: str) -> Phase | None:
@@ -446,36 +451,36 @@ class Autosequence:
                 return phase
         return None
 
-    def interface(self):
+    def interface(self) -> None:
         # TODO: only allow some state / phase transitions
         try:
             print("Welcome to the Limelight Autosequence!")
             print("Valid commands:")
-            print(" > start <phase>")
-            print(" > abort <phase>")
-            print(" > pause <phase>")
-            print(" > unpause <phase>")
-            print(" > quit")
+            print(" ) start <phase>")
+            print(" ) abort <phase>")
+            print(" ) pause <phase>")
+            print(" ) unpause <phase>")
+            print(" ) quit")
             print("Valid phases:")
-            for phase in self.phases:
-                print(f" - {phase.name}")
+            for phase_name in self.phases:
+                print(f" - {phase_name.name}")
 
-            session = PromptSession()
+            session: PromptSession = PromptSession()
             with patch_stdout():
                 while True:  # Parse input
-                    user_input: str = session.prompt(" > ")
+                    user_input: str = session.prompt(" ) ")
                     parts: list[str] = (
                         user_input.strip().lower().split(maxsplit=1)
                     )  # Get command and phase
                     command: str = parts[0]
                     if (command == "quit") or (command == "exit"):
-                        print("Exiting autosequence interface...")
+                        print(" > Exiting autosequence interface...")
                         self.abort_all()
                         self.release()
                         return
                     phase: Phase | None = self.get_phase(phase_name=parts[1])
                     if phase is None:
-                        print("Phase not recognized, please try again")
+                        print(" > Phase not recognized, please try again")
                         continue
                     match command:
                         case "start":
@@ -487,10 +492,11 @@ class Autosequence:
                         case "unpause":
                             phase.unpause()
                         case _:
-                            print("Unrecognized command, please try again")
+                            print(" > Unrecognized command, please try again")
+                            continue
 
         except KeyboardInterrupt:
-            print("Keyboard interrupt detected, aborting!")
+            print(" > Keyboard interrupt detected, aborting!")
             self.abort_all()
             self.release()
         return
