@@ -28,9 +28,9 @@ from autosequence_utils import (
     Autosequence,
     Config,
     average_ch,
-    SequenceAborted,
-    sensor_vote,
     log,
+    sensor_vote,
+    write_logs_to_file,
 )
 
 # standard modules
@@ -57,6 +57,13 @@ def parse_args() -> argparse.Namespace:
         "--cluster",
         help="Specify a Synnax cluster to connect to",
         default="synnax.masa.engin.umich.edu",
+        type=str,
+    )
+    parser.add_argument(
+        "-l",
+        "--log",
+        help="Specify a log file to write logs to at the end of the autosequence",
+        default="",
         type=str,
     )
     parser.add_argument(
@@ -219,7 +226,7 @@ def press_fill(phase: Phase) -> None:
 
 
 # Example used for automated abort cases, obviously don't include in final release
-def bad_press_fill(phase: Phase) -> None:
+def evil_press_fill(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
 
@@ -286,11 +293,11 @@ def main() -> None:
 
     auto.add_phase(press_fill_phase)
 
-    bad_press_fill_phase: Phase = Phase(
-        name="Bad Press Fill", func=bad_press_fill, ctrl=auto.ctrl, config=config
+    evil_press_fill_phase: Phase = Phase(
+        name="Evil Press Fill", func=evil_press_fill, ctrl=auto.ctrl, config=config
     )
 
-    auto.add_phase(bad_press_fill_phase)
+    auto.add_phase(evil_press_fill_phase)
 
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports and setup
 
@@ -298,6 +305,9 @@ def main() -> None:
     auto.run()
 
     log("Autosequence has terminated, have a great flight!")
+
+    if args.log != "":
+        write_logs_to_file(filepath=args.log)
     return
 
 

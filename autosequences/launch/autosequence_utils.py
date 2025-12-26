@@ -204,6 +204,7 @@ def sensor_vote(
             values.append(value)
     return sensor_vote_values(values, threshold)
 
+logs: list[str] = []  # Global log list for storing logs if needed
 
 def log(msg: str, color: str = "white", bold: bool = False) -> None:
     """
@@ -218,7 +219,18 @@ def log(msg: str, color: str = "white", bold: bool = False) -> None:
     else:
         final_msg = prefix + colored(msg, color=color, attrs=["bold"])
     
+    logs.append(now + " > " + msg)  # Store log without ANSI codes
     print_formatted_text(ANSI(final_msg))
+
+
+def write_logs_to_file(filepath: str) -> None:
+    """
+    Helper function to write the current logs to a file
+    """
+    with open(filepath, "w") as f:
+        for log_entry in logs:
+            # Strip ANSI codes for file writing
+            f.write(log_entry + "\n")
 
 
 def printf(msg: str, color: str = "white", bold: bool = False) -> None:
