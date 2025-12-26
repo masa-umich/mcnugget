@@ -30,6 +30,7 @@ from autosequence_utils import (
     average_ch,
     SequenceAborted,
     sensor_vote,
+    log,
 )
 
 # standard modules
@@ -79,7 +80,7 @@ def parse_args() -> argparse.Namespace:
 
 # Background task to always check for certain abort cases
 def background_thread(auto: Autosequence) -> None:
-    print(" > Background task started...")
+    log("Background task started")
     ctrl: Controller = auto.ctrl
     config: Config = auto.config
 
@@ -113,7 +114,7 @@ def background_thread(auto: Autosequence) -> None:
             )
         )
         if copv_pressure.get() >= copv_abort_threshold:
-            print(" > COPV Exceeding max pressure! Aborting...")
+            log("COPV Exceeding max pressure! Aborting...")
             auto.raise_abort()
             # Some of these conditions may already happen in the phase aborts, but just to be safe
             ctrl[press_fill_iso] = False  # close fill iso
@@ -158,16 +159,16 @@ def press_fill(phase: Phase) -> None:
     # TODO: Make most prints in verbose output mode only
 
     try:  # Normal operation
-        print(" > Starting press fill phase...")
+        log("Starting press fill phase...")
         ctrl[press_fill_iso] = True
 
         # For each bottle
         for i in range(len(bottle_pts)):
-            print(f"  > Filling from bottle {i + 1}")
+            log(f" Filling from bottle {i + 1}")
 
             # Press rate 1 fill
             for j in range(press_rate_1_ittrs):
-                print(f"   > Pressurizing at rate 1, itteration {j + 1}...")
+                log(f"  Pressurizing at rate 1, itteration {j + 1}...")
 
                 starting_pressure: float = phase.avg_and_vote_for(
                     ctrl=ctrl,
@@ -176,8 +177,8 @@ def press_fill(phase: Phase) -> None:
                     averaging_time=1.0,
                 )
                 target_pressure: float = starting_pressure + press_rate_1
-                print(f"    > Starting pressure: {starting_pressure:.2f} psi")
-                print(f"    > Target pressure: {target_pressure:.2f} psi")
+                log(f"   Starting pressure: {starting_pressure:.2f} psi")
+                log(f"   Target pressure: {target_pressure:.2f} psi")
 
                 target_time: sy.TimeStamp = (
                     sy.TimeStamp.now() + sy.TimeSpan.from_seconds(copv_cooldown_time)
@@ -203,14 +204,14 @@ def press_fill(phase: Phase) -> None:
 
             # Until bottle equalization
             while True:
-                print("TBD")
+                log("TBD")
                 phase.sleep(1)
                 pass
 
         ctrl[press_fill_iso] = False  # close fill iso
 
     except Exception as e:  # Abort case
-        print("\n > Aborting press fill phase due to exception:", e)
+        log(f"Aborting press fill phase due to exception: {e}")
         ctrl[press_fill_iso] = False  # close fill iso
         for press_iso in press_isos:  # close all bottles
             ctrl[press_iso] = False
@@ -236,7 +237,7 @@ def bad_press_fill(phase: Phase) -> None:
             for i in range(len(press_isos)):
                 ctrl[press_isos[i]] = True  # open bottle iso
     except Exception as e:  # Abort case
-        print(" > Aborting press fill phase due to exception:", e)
+        log(f"Aborting press fill phase due to exception: {e}")
         ctrl[press_fill_iso] = False  # close fill iso
         for press_iso in press_isos:  # close all bottles
             ctrl[press_iso] = False
@@ -254,11 +255,11 @@ def global_abort(auto: Autosequence) -> None:
     try:
         confirm = input("Vent? Y/N: ").lower()
     except KeyboardInterrupt:
-        print("\n > Taking Ctrl+C as confirmation to vent")
+        log("Taking Ctrl+C as confirmation to vent")
         confirm = "y"
     finally:  # in any case
         if confirm == "y" or confirm == "yes":
-            print(" > Venting...")
+            log("Venting...")
             ctrl[copv_vent] = True  # open vent
             ctrl[press_fill_vent] = True  # open vent
     return
@@ -296,7 +297,7 @@ def main() -> None:
     # Run the autosequence
     auto.run()
 
-    print(" > Autosequence has terminated, have a great flight!")
+    log("Autosequence has terminated, have a great flight!")
     return
 
 

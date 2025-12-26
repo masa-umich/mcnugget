@@ -36,15 +36,15 @@ synnax start --listen localhost:9090 -vmi
 2. Start the simulation
 ```sh
 cd mcnugget/simulation
-./simulation --cluster <localhost or WSL IP>
+./simulation.py --cluster <localhost or WSL IP>
 ```
 3. Start the launch Autosequence
 ```sh
 cd mcnugget/autosequences/launch
-./launch --cluster <localhost or WSL IP>
+./launch.py --cluster <localhost or WSL IP>
 ```
 
 ## TODO (for developers in no particular order):
-- Add pretty colors to print statements
+- CLI Option to log to file
 - Rest of press fill sequence
 - Automatic phase transitions & only allow for certain phase transitions

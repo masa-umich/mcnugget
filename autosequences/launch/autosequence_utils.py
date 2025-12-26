@@ -1,6 +1,8 @@
 # A helper file & classses for common autosequence utilties
+from datetime import datetime
 import statistics
 import time
+from termcolor import colored
 import yaml
 import synnax as sy
 from synnax.control.controller import Controller
@@ -203,15 +205,30 @@ def sensor_vote(
     return sensor_vote_values(values, threshold)
 
 
-def log(*args, **kwargs) -> None:
+def log(msg: str, color: str = "white", bold: bool = False) -> None:
     """
     Helper function to get around prompt_toolkit printing issues w/ termcolor
     """
+    now: str = datetime.now().isoformat()
+    prefix: str = now + colored(" > ", color="dark_grey")
+    final_msg = ""
 
-    # Convert all arguments to strings and join them
-    msg: str = " ".join(map(str, args))
-    # Wrap in ANSI so prompt_toolkit parses termcolor codes correctly
-    print_formatted_text(ANSI(msg), **kwargs)
+    if bold == False:
+        final_msg = prefix + colored(msg, color=color)
+    else:
+        final_msg = prefix + colored(msg, color=color, attrs=["bold"])
+    
+    print_formatted_text(ANSI(final_msg))
+
+
+def printf(msg: str, color: str = "white", bold: bool = False) -> None:
+    """
+    Helper function to get around prompt_toolkit printing issues w/ termcolor
+    """
+    if bold == False:
+        print_formatted_text(ANSI(colored(msg, color=color)))
+    else:
+        print_formatted_text(ANSI(colored(msg, color=color, attrs=["bold"])))
 
 
 class SequenceAborted(Exception):
@@ -463,7 +480,7 @@ class Autosequence:
     def release(self) -> None:
         if not self._has_released:
             self.ctrl.release()
-            print(" > Autosequence has released control")
+            log("Autosequence has released control")
             self._has_released = True
 
     def get_phase(self, phase_name: str) -> Phase | None:
@@ -498,33 +515,33 @@ class Autosequence:
                         if phase._func_thread.is_alive():
                             phase.join()
                     time.sleep(0.1)
-                    if self.global_abort:
+                    if self.global_abort is not None:
                         self.global_abort(self)
                     # Kill the background thread if it exists
                     if (self._background_thread is not None) and (self._background_thread.is_alive()):
                         self._background_thread.join()
                     self.release()
-                    print(" > Autosequence aborted successfully")
+                    log("Autosequence aborted successfully")
                     return
                 time.sleep(0.01)  # Yield thread
 
     def _interface_func(self) -> None:
         # TODO: only allow some state / phase transitions
         try:
-            print("Welcome to the Limelight Autosequence!")
-            print("Valid commands:")
-            print(" ) start <phase>")
-            print(" ) abort <phase>")
-            print(" ) pause <phase>")
-            print(" ) unpause <phase>")
-            print(" ) quit")
-            print("Valid phases:")
+            printf(f"Welcome to the {self.name}!", color="green", bold=True)
+            printf("Valid commands:", color="green", bold=True)
+            printf(" > start <phase>", color="light_green")
+            printf(" > abort <phase>", color="light_green")
+            printf(" > pause <phase>", color="light_green")
+            printf(" > unpause <phase>", color="light_green")
+            printf(" > quit", color="light_green")
+            printf("Valid phases:", color="green", bold=True)
             for phase_name in self.phases:
-                print(f" - {phase_name.name}")
+                printf(f" - {phase_name.name}", color="light_green")
 
             self._prompt_session = PromptSession()
             while not self.abort_flag.is_set():  # Parse input
-                user_input: str = self._prompt_session.prompt(" ) ")
+                user_input: str = self._prompt_session.prompt(" > ")
                 if self.abort_flag.is_set():
                     return  # exit if abort flag set during prompt
                 parts: list[str] = (
@@ -555,9 +572,9 @@ class Autosequence:
                         print(" > Unrecognized command, please try again")
                         continue
         except KeyboardInterrupt:
-            print(" > Keyboard interrupt detected, aborting!")
+            log("Keyboard interrupt detected, aborting!")
             self.raise_abort()
         except EOFError:
-            print(" > Keyboard interrupt detected, aborting!")
+            log("Keyboard interrupt detected, aborting!")
             self.raise_abort()
         return
