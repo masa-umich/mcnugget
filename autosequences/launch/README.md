@@ -1,7 +1,7 @@
 # Launch Autosequene
 Authors: Jack Hammerberg (jackmh)
 
-Documentation Last Updated: 12-23-2025
+Documentation Last Updated: 12-26-2025
 
 ## Usage:
 1. Ensure channel mappings & variables are correct in `config.yaml`
@@ -28,8 +28,23 @@ uv run launch.py
 -v | --verbose
 ```
 
+## Testing:
+1. Start your local Synnax cluster
+```sh
+synnax start --listen localhost:9090 -vmi
+```
+2. Start the simulation
+```sh
+cd mcnugget/simulation
+./simulation --cluster <localhost or WSL IP>
+```
+3. Start the launch Autosequence
+```sh
+cd mcnugget/autosequences/launch
+./launch --cluster <localhost or WSL IP>
+```
+
 ## TODO (for developers in no particular order):
 - Add pretty colors to print statements
 - Rest of press fill sequence
-- Abort cases with SRE prompt for venting
 - Automatic phase transitions & only allow for certain phase transitions

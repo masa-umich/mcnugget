@@ -336,7 +336,9 @@ class Phase:
         value = average_ch(
             round(self._refresh_rate * averaging_time)
         )  # would be better to base off real refresh rate
-        end_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(averaging_time)
+        end_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
+            averaging_time
+        )
         while sy.TimeStamp.now() < end_time:
             value.add(sensor_vote(ctrl, channels, threshold))
             self.sleep(self._refresh_period)  # allow time to yield
@@ -376,7 +378,7 @@ class Autosequence:
     phases: list[Phase]
     config: Config
     global_abort: Callable | None
-    abort_flag: threading.Event # Thread-safe flag
+    abort_flag: threading.Event  # Thread-safe flag
 
     # Private members
     _has_released: bool
@@ -385,13 +387,20 @@ class Autosequence:
     _prompt_session: PromptSession | None = None
 
     # Constuctor
-    def __init__(self, name: str, cluster: str, config: Config, global_abort: Callable | None = None, background_thread: Callable | None = None):
+    def __init__(
+        self,
+        name: str,
+        cluster: str,
+        config: Config,
+        global_abort: Callable | None = None,
+        background_thread: Callable | None = None,
+    ):
         self.name: str = name
         self.config: Config = config
         self.phases: list[Phase] = []
         self.global_abort: Callable | None = global_abort
         self.abort_flag: threading.Event = threading.Event()
-        self.abort_flag.clear() # Make sure flag is cleared initially
+        self.abort_flag.clear()  # Make sure flag is cleared initially
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
@@ -408,7 +417,7 @@ class Autosequence:
         # Error if not all channels were found / defined
         channels: list[str] = self.config.get_sensors() + self.config.get_states()
         defined: bool = self.ctrl.wait_until_defined(
-            channels=channels, # type: ignore
+            channels=channels,  # type: ignore
             timeout=5,
         )
         if not defined:
@@ -416,7 +425,7 @@ class Autosequence:
             raise Exception(
                 "Some channels defined in the autosequence config are not defined in Synnax, are all drivers running?"
             )
-        
+
         # Setup background thread if provided
         if background_thread is not None:
             self._background_thread = threading.Thread(
@@ -424,7 +433,7 @@ class Autosequence:
                 target=background_thread,
                 args=(self,),
             )
-    
+
     # Destructor, make sure to release control!
     def __del__(self) -> None:
         if not self._has_released:
@@ -465,7 +474,7 @@ class Autosequence:
 
     # Run command interface thread & main listener thread
     def run(self) -> None:
-        with patch_stdout(): # Fix print statements with command interface
+        with patch_stdout():  # Fix print statements with command interface
             # Run background thread if provided
             if self._background_thread is not None:
                 self._background_thread.start()
@@ -481,17 +490,18 @@ class Autosequence:
                     # Kill the command interface thread
                     if (self._prompt_session is not None) and (self._prompt_session.app.is_running):
                         self._prompt_session.app.exit()
-                    if self._interface_thread is not None and self._interface_thread.is_alive():
+                    if (self._interface_thread is not None) and (self._interface_thread.is_alive()):
                         self._interface_thread.join()
-                    time.sleep(0.1) # give a small amount of time for thread to close
+                    time.sleep(0.1)  # give a small amount of time for thread to close
                     for phase in self.phases:
                         phase.abort()
                         if phase._func_thread.is_alive():
                             phase.join()
                     time.sleep(0.1)
-                    if self.global_abort: self.global_abort(self.ctrl, self.config)
+                    if self.global_abort:
+                        self.global_abort(self)
                     # Kill the background thread if it exists
-                    if self._background_thread is not None and self._background_thread.is_alive():
+                    if (self._background_thread is not None) and (self._background_thread.is_alive()):
                         self._background_thread.join()
                     self.release()
                     print(" > Autosequence aborted successfully")
@@ -516,7 +526,7 @@ class Autosequence:
             while not self.abort_flag.is_set():  # Parse input
                 user_input: str = self._prompt_session.prompt(" ) ")
                 if self.abort_flag.is_set():
-                    return # exit if abort flag set during prompt
+                    return  # exit if abort flag set during prompt
                 parts: list[str] = (
                     user_input.strip().lower().split(maxsplit=1)
                 )  # Get command and phase
