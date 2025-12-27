@@ -1,7 +1,9 @@
 variables:
+  averaging_time: 1 # seconds to average over for pressure readings
   press_rate_1: 20 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
   press_rate_2: 40 # psi/min
+  copv_cooldown_time: 5 # seconds to wait every pressurization cycle (the denominator of pressurization rate)
   copv_upper_bound_temp: -1 # (TBD) degrees celsius
   copv_lower_bound_temp: -1 # (TBD) degrees celsius
   copv_minimum_temp: -1 # (TBD) degrees celsius
@@ -39,7 +41,9 @@ channel_mappings:
       Press_Iso_2: 4
       Press_Iso_3: 5
       Press_Fill_Iso: 6
-      Press_Fill_Vent: 7
+      Press_Fill_Vent:
+        id: 7
+        normally_open: true
       Ox_Pre_Press: 8
       # 9 and 10 are broken
       Fuel_Fill_Purge: 11
@@ -110,8 +114,12 @@ channel_mappings:
       Fuel_Manifold_PT_1: 9
       Regen_Manifold_PT_1: 10
     valves:
-      Ox_MPV: 1
-      Fuel_MPV: 2
+      Ox_MPV:
+        id: 1
+        normally_open: true
+      Fuel_MPV:
+        id: 2
+        normally_open: true
     tcs: # TCs
       Ox_Level_Sensor_TC: 1
       Fuel_Manifold_TC_1: 2

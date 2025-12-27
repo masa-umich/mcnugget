@@ -11,9 +11,7 @@
 
 from termcolor import colored
 from yaspin import yaspin
-
-from configuration import Configuration
-from system import State, System
+from simulation_utils import State, System, Config
 
 # fun spinner while we load packages
 spinner = yaspin()
@@ -24,7 +22,6 @@ import argparse
 import random
 import synnax as sy
 
-global do_noise
 do_noise = True
 
 # helper function to raise pretty errors
@@ -114,11 +111,10 @@ def synnax_login(cluster: str) -> sy.Synnax:
 
 # Makes or gets all the channels we care about into Synnax
 @yaspin(text=colored("Setting up channels...", "yellow"))
-def get_channels(client: sy.Synnax, config: Configuration):
-    valves = config.get_valves()
+def get_channels(client: sy.Synnax, config: Config):
+    valves = config.get_vlvs()
     states = config.get_states()
-    pts = config.get_pts()
-    tcs = config.get_tcs()
+    sensors = config.get_sensors()
 
     time_channel = client.channels.create(
         retrieve_if_name_exists=True,
@@ -145,7 +141,7 @@ def get_channels(client: sy.Synnax, config: Configuration):
             index=time_channel.key,
         )
 
-    for sensor in pts + tcs:
+    for sensor in sensors:
         client.channels.create(
             retrieve_if_name_exists=True,
             name=sensor,
@@ -157,7 +153,7 @@ def get_channels(client: sy.Synnax, config: Configuration):
 
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
-def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, system: System, args):
+def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: System, args):
     global do_noise
     driver_frequency = args.frequency # Hz
     loop = sy.Loop(sy.Rate.HZ * driver_frequency)
@@ -171,7 +167,9 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
         if fr is not None:
             for channel in fr.channels:
                 cmd = fr[channel][0]
-                system.set_valve(channel, cmd)
+                if not config.is_vlv_nc(channel): # type: ignore
+                    cmd = not cmd
+                system.set_valve(channel, cmd) # type: ignore
 
         for state_ch in config.get_states():
             vlv_ch = state_ch.replace("state", "vlv")
@@ -198,13 +196,13 @@ def driver(config: Configuration, streamer: sy.Streamer, writer: sy.Writer, syst
 def main():
     args = parse_args()
     client = synnax_login(args.cluster)
-    config = Configuration(args.config)
+    config = Config(args.config)
     system = System(config)
     get_channels(client, config)
     # Open streamer for valve commands
 
-    write_chs = config.get_valves()
-    read_chs = config.get_states() + config.get_pts() + config.get_tcs() + ["time"]
+    write_chs = config.get_vlvs()
+    read_chs = config.get_states() + config.get_sensors() + ["time"]
 
     with client.open_streamer(channels=write_chs) as streamer:
         # Open writer for everything else
@@ -218,5 +216,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    except Exception as e:  # catch-all uncaught errors
-        error_and_exit("Uncaught exception!", exception=e)
+    # except Exception as e:  # catch-all uncaught errors
+        # error_and_exit("Uncaught exception!", exception=e)
