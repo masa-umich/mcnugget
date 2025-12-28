@@ -29,6 +29,7 @@ class Config:
 
     def __init__(self, filepath: str):
         self.vlvs: dict[str, str] = {}
+        self.normally_open_vlvs: dict[str, bool] = {}
         self.pts: dict[str, str] = {}
         self.tcs: dict[str, str] = {}
         self.vars: dict[str, Any] = {}
@@ -59,9 +60,19 @@ class Config:
                 if not items:
                     continue  # Skip if this controller doesn't have TCs (e.g. Flight Computer)
 
-                for config_ch_name, index in items.items():
+                for config_ch_name, value in items.items():
                     # Construct Synnax Name: prefix_suffix_index (e.g., gse_pt_1)
-                    synnax_name = f"{prefix}_{suffix}_{index}"
+                    ch_index = value
+                    is_normally_open = False # Default assumption
+
+                    # If the entry has extra information
+                    if isinstance(value, dict):
+                        ch_index = value.get("id")
+                        # We use .get(key, default) so it still works if 'normally_open' is omitted
+                        is_normally_open = value.get("normally_open", False)
+                    
+                    # Construct Synnax Name
+                    synnax_name = f"{prefix}_{suffix}_{ch_index}"
                     real_name: str = config_ch_name.lower()
 
                     if suffix == "pt":
@@ -70,6 +81,8 @@ class Config:
                         self.tcs[real_name] = synnax_name
                     elif suffix == "vlv":
                         self.vlvs[real_name] = synnax_name
+                        self.normally_open_vlvs[real_name] = is_normally_open
+                        self.normally_open_vlvs[synnax_name] = is_normally_open # add both name styles
                     else:
                         raise Exception("Bad entry in mappings part of config")
 
@@ -84,6 +97,13 @@ class Config:
         vlv: str | None = self.vlvs.get(name.lower())
         if vlv is not None:
             return vlv
+        else:
+            raise Exception(f"Could not find valve with name: '{name}' in config")
+
+    def is_vlv_nc(self, name: str) -> bool:
+        nc: bool | None = self.normally_open_vlvs.get(name.lower())
+        if nc is not None:
+            return not nc
         else:
             raise Exception(f"Could not find valve with name: '{name}' in config")
 
@@ -204,23 +224,61 @@ def sensor_vote(
             values.append(value)
     return sensor_vote_values(values, threshold)
 
+
+def open_vlv(ctrl: Controller, vlv_name: str) -> None:
+    """
+    Helper function to open a valve only if not already open
+    """
+    state_name: str = vlv_name.replace("vlv", "state")
+    state = ctrl.get(state_name)
+    if state is None:
+        raise Exception(f"Could not get state of valve: {vlv_name}, is the valve defined?")
+    if state == True:
+        return
+    ctrl[vlv_name] = True
+
+
+def close_vlv(ctrl: Controller, vlv_name: str) -> None:
+    """
+    Helper function to close a valve only if not already closed
+    """
+    state_name: str = vlv_name.replace("vlv", "state")
+    state = ctrl.get(state_name)
+    if state is None:
+        raise Exception(f"Could not get state of valve: {vlv_name}, is the valve defined?")
+    if state == False:
+        return
+    ctrl[vlv_name] = False
+
+
 logs: list[str] = []  # Global log list for storing logs if needed
 
-def log(msg: str, color: str = "white", bold: bool = False) -> None:
+def log(msg: str, color: str = "white", bold: bool = False, phase_name: str | None = None) -> None:
     """
     Helper function to get around prompt_toolkit printing issues w/ termcolor
+    Also adds ISO 8601 timestamp and phase name if provided
+    Also can be written to a log file later with `write_logs_to_file()`
     """
     now: str = datetime.now().isoformat()
-    prefix: str = now + colored(" > ", color="dark_grey")
-    final_msg = ""
+    entry: str = now
 
-    if bold == False:
-        final_msg = prefix + colored(msg, color=color)
+    if phase_name != None: # Add phase name if provided
+        entry += colored(f" [{phase_name}]", color="yellow")
+    entry += colored(" > ", color="dark_grey")
+
+    if bold == False: # Add message with color / bolding
+        entry += colored(msg, color=color)
     else:
-        final_msg = prefix + colored(msg, color=color, attrs=["bold"])
+        entry += colored(msg, color=color, attrs=["bold"])
     
-    logs.append(now + " > " + msg)  # Store log without ANSI codes
-    print_formatted_text(ANSI(final_msg))
+    # Store log without ANSI codes
+    raw_entry: str = now
+    if phase_name != None:
+        raw_entry += f" [{phase_name}]"
+    raw_entry += " > " + msg
+    logs.append(raw_entry)
+
+    print_formatted_text(ANSI(entry))
 
 
 def write_logs_to_file(filepath: str) -> None:
@@ -310,7 +368,7 @@ class Phase:
         self._abort.clear()  # Make sure flag is cleared initially
 
     # Checks for abort or pause signals. Blocks if paused
-    def _check_signals(self):
+    def _check_signals(self) -> None:
         if self._abort.is_set():
             raise SequenceAborted("Sequence Aborted")
 
@@ -322,7 +380,7 @@ class Phase:
     # Sleep function that should be used inside of the control sequence
     # Allows for thread aborting and pausing with _check_signals
     # This should be used instead of time.sleep() at all times when thread yielding is safe
-    def sleep(self, duration: float):
+    def sleep(self, duration: float) -> None:
         end_time: float = time.time() + duration
         while True:
             self._check_signals()
@@ -372,6 +430,12 @@ class Phase:
             value.add(sensor_vote(ctrl, channels, threshold))
             self.sleep(self._refresh_period)  # allow time to yield
         return value.get()
+
+    def log(self, msg: str, color: str = "white", bold: bool = False) -> None:
+        """
+        Log wrapper that inserts the phase name responsible for the log entry
+        """
+        log(msg=msg, color=color, bold=bold, phase_name=self.name)
 
     # A function wrapper to be able to do threading stuff (might not be necessary)
     def _func_wrapper(self, func: Callable):
@@ -469,6 +533,25 @@ class Autosequence:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
 
+    def init_valves(self) -> None:
+        # Set every valve to closed state initially
+        for vlv in self.config.get_vlvs():
+            is_nc: bool = self.config.is_vlv_nc(vlv)
+            state = self.ctrl.get(vlv.replace("vlv", "state"))
+            confirm = "y"
+            if state == True:
+                if is_nc:
+                    confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
+                    if confirm.lower() == "y" or confirm.lower() == "yes":
+                        log(f"Closing valve {vlv} on autosequence start")
+                        close_vlv(self.ctrl, vlv)
+            else:
+                if not is_nc:
+                    confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
+                    if confirm.lower() == "y" or confirm.lower() == "yes":
+                        log(f"Closing valve {vlv} on autosequence start")
+                        open_vlv(self.ctrl, vlv) # "open" is actually closing for NO valves
+
     def synnax_login(self, cluster: str) -> sy.Synnax:
         try:
             client = sy.Synnax(
@@ -559,10 +642,13 @@ class Autosequence:
                 parts: list[str] = (
                     user_input.strip().lower().split(maxsplit=1)
                 )  # Get command and phase
-                if len(parts) < 2 and (parts[0] != "quit" and parts[0] != "exit"):
-                    print(" > Please provide a phase name")
+                if len(parts) == 0:
+                    print(" > Please input a command")
                     continue
                 command: str = parts[0]
+                if (len(parts) == 1) and (parts[0] != "quit") and (parts[0] != "exit"):
+                    print(" > Please specify a phase name")
+                    continue
                 if (command == "quit") or (command == "exit"):
                     print(" > Exiting autosequence interface...")
                     self.raise_abort()

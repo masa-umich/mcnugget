@@ -49,5 +49,4 @@ cd mcnugget/autosequences/launch
 ```
 
 ## TODO (for developers in no particular order):
-- Rest of press fill sequence
 - Automatic phase transitions & only allow for certain phase transitions

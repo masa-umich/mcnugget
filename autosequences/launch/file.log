@@ -1,0 +1,24 @@
+2025-12-27T20:25:18.876669 > Closing valve gse_vlv_7 on autosequence start
+2025-12-27T20:25:20.001346 > Closing valve bb3_vlv_1 on autosequence start
+2025-12-27T20:25:20.392843 > Closing valve bb3_vlv_2 on autosequence start
+2025-12-27T20:25:20.397104 > Background task started
+2025-12-27T20:25:28.093219 [Press Fill 1] > Starting press fill for bottle 1
+2025-12-27T20:25:28.094687 [Press Fill 1] > Opening press fill iso
+2025-12-27T20:25:28.097675 [Press Fill 1] >  Pressurizing at rate 1 (itteration 1)
+2025-12-27T20:25:28.097819 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:25:29.104828 [Press Fill 1] >   Starting pressure: 0.00 psi
+2025-12-27T20:25:29.105214 [Press Fill 1] >   Target pressure: 20.00 psi
+2025-12-27T20:25:29.110794 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:25:29.551578 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 20.02 psi
+2025-12-27T20:25:29.553842 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:25:34.110127 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:25:34.110597 [Press Fill 1] >  Pressurizing at rate 1 (itteration 2)
+2025-12-27T20:25:34.110831 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:25:34.215208 > Keyboard interrupt detected, aborting!
+2025-12-27T20:25:34.333229 [Press Fill 1] > Aborting due to exception: Sequence Aborted
+2025-12-27T20:25:34.335015 [Press Fill 1] > Aborting press fill, closing all relevant valves
+2025-12-27T20:25:40.293055 > Venting...
+2025-12-27T20:25:40.296034 > Vents opened
+2025-12-27T20:25:40.306224 > Autosequence has released control
+2025-12-27T20:25:40.307584 > Autosequence aborted successfully
+2025-12-27T20:25:40.309452 > Autosequence has terminated, have a great flight!
