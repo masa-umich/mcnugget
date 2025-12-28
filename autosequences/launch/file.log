@@ -1,24 +1,382 @@
-2025-12-27T20:25:18.876669 > Closing valve gse_vlv_7 on autosequence start
-2025-12-27T20:25:20.001346 > Closing valve bb3_vlv_1 on autosequence start
-2025-12-27T20:25:20.392843 > Closing valve bb3_vlv_2 on autosequence start
-2025-12-27T20:25:20.397104 > Background task started
-2025-12-27T20:25:28.093219 [Press Fill 1] > Starting press fill for bottle 1
-2025-12-27T20:25:28.094687 [Press Fill 1] > Opening press fill iso
-2025-12-27T20:25:28.097675 [Press Fill 1] >  Pressurizing at rate 1 (itteration 1)
-2025-12-27T20:25:28.097819 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
-2025-12-27T20:25:29.104828 [Press Fill 1] >   Starting pressure: 0.00 psi
-2025-12-27T20:25:29.105214 [Press Fill 1] >   Target pressure: 20.00 psi
-2025-12-27T20:25:29.110794 [Press Fill 1] >   Opened gse_vlv_3
-2025-12-27T20:25:29.551578 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 20.02 psi
-2025-12-27T20:25:29.553842 [Press Fill 1] >   Closed gse_vlv_3
-2025-12-27T20:25:34.110127 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
-2025-12-27T20:25:34.110597 [Press Fill 1] >  Pressurizing at rate 1 (itteration 2)
-2025-12-27T20:25:34.110831 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
-2025-12-27T20:25:34.215208 > Keyboard interrupt detected, aborting!
-2025-12-27T20:25:34.333229 [Press Fill 1] > Aborting due to exception: Sequence Aborted
-2025-12-27T20:25:34.335015 [Press Fill 1] > Aborting press fill, closing all relevant valves
-2025-12-27T20:25:40.293055 > Venting...
-2025-12-27T20:25:40.296034 > Vents opened
-2025-12-27T20:25:40.306224 > Autosequence has released control
-2025-12-27T20:25:40.307584 > Autosequence aborted successfully
-2025-12-27T20:25:40.309452 > Autosequence has terminated, have a great flight!
+2025-12-27T20:29:56.335258 > Closing valve gse_vlv_7 on autosequence start
+2025-12-27T20:30:03.080519 > Closing valve bb1_vlv_1 on autosequence start
+2025-12-27T20:30:03.083947 > Background task started
+2025-12-27T20:30:06.682732 [Press Fill 1] > Starting press fill for bottle 1
+2025-12-27T20:30:06.684222 [Press Fill 1] > Opening press fill iso
+2025-12-27T20:30:06.687935 [Press Fill 1] >  Pressurizing at rate 1 (itteration 1)
+2025-12-27T20:30:06.688120 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:07.688487 [Press Fill 1] >   Starting pressure: 0.00 psi
+2025-12-27T20:30:07.690318 [Press Fill 1] >   Target pressure: 20.00 psi
+2025-12-27T20:30:07.698683 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:08.171469 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 21.37 psi
+2025-12-27T20:30:08.173991 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:12.699269 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:12.699738 [Press Fill 1] >  Pressurizing at rate 1 (itteration 2)
+2025-12-27T20:30:12.699936 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:13.712308 [Press Fill 1] >   Starting pressure: 40.69 psi
+2025-12-27T20:30:13.712492 [Press Fill 1] >   Target pressure: 60.69 psi
+2025-12-27T20:30:13.715622 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:14.212155 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 62.13 psi
+2025-12-27T20:30:14.215344 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:18.720219 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:18.720592 [Press Fill 1] >  Pressurizing at rate 1 (itteration 3)
+2025-12-27T20:30:18.720743 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:19.726905 [Press Fill 1] >   Starting pressure: 84.33 psi
+2025-12-27T20:30:19.727286 [Press Fill 1] >   Target pressure: 104.33 psi
+2025-12-27T20:30:19.728924 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:20.239135 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 105.28 psi
+2025-12-27T20:30:20.244495 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:24.737164 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:24.737756 [Press Fill 1] >  Pressurizing at rate 1 (itteration 4)
+2025-12-27T20:30:24.738021 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:25.743642 [Press Fill 1] >   Starting pressure: 129.07 psi
+2025-12-27T20:30:25.744036 [Press Fill 1] >   Target pressure: 149.07 psi
+2025-12-27T20:30:25.748631 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:26.256788 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 149.24 psi
+2025-12-27T20:30:26.259440 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:30.760841 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:30.761241 [Press Fill 1] > Completed first pressurization stage, moving to rate 2
+2025-12-27T20:30:30.761386 [Press Fill 1] >  Pressurizing at rate 2 (itteration 1)
+2025-12-27T20:30:30.761703 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:33.700710 [Press Fill 1] >   Starting pressure: 173.17 psi
+2025-12-27T20:30:33.702029 [Press Fill 1] >   Target pressure: 213.17 psi
+2025-12-27T20:30:33.707846 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:34.467740 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 213.24 psi
+2025-12-27T20:30:34.469065 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:38.714640 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:38.715717 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:30:39.722290 [Press Fill 1] >   Bottle pressure: 5396.73 psi
+2025-12-27T20:30:39.722622 [Press Fill 1] >   COPV pressure: 213.24
+2025-12-27T20:30:39.724198 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:30:39.724820 [Press Fill 1] >  Pressurizing at rate 2 (itteration 2)
+2025-12-27T20:30:39.725091 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:40.734540 [Press Fill 1] >   Starting pressure: 234.84 psi
+2025-12-27T20:30:40.734703 [Press Fill 1] >   Target pressure: 274.84 psi
+2025-12-27T20:30:40.736334 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:41.500035 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 275.72 psi
+2025-12-27T20:30:41.502402 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:45.743790 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:45.744135 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:30:46.750734 [Press Fill 1] >   Bottle pressure: 5350.71 psi
+2025-12-27T20:30:46.751134 [Press Fill 1] >   COPV pressure: 275.72
+2025-12-27T20:30:46.751289 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:30:46.751458 [Press Fill 1] >  Pressurizing at rate 2 (itteration 3)
+2025-12-27T20:30:46.751676 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:47.760534 [Press Fill 1] >   Starting pressure: 296.87 psi
+2025-12-27T20:30:47.760958 [Press Fill 1] >   Target pressure: 336.87 psi
+2025-12-27T20:30:47.762947 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:48.528682 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 336.90 psi
+2025-12-27T20:30:48.531120 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:52.778058 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:52.778567 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:30:53.780331 [Press Fill 1] >   Bottle pressure: 5305.65 psi
+2025-12-27T20:30:53.780779 [Press Fill 1] >   COPV pressure: 336.90
+2025-12-27T20:30:53.780994 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:30:53.781223 [Press Fill 1] >  Pressurizing at rate 2 (itteration 4)
+2025-12-27T20:30:53.781510 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:30:54.782571 [Press Fill 1] >   Starting pressure: 357.60 psi
+2025-12-27T20:30:54.783161 [Press Fill 1] >   Target pressure: 397.60 psi
+2025-12-27T20:30:54.787137 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:30:55.586269 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 398.42 psi
+2025-12-27T20:30:55.587628 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:30:59.805152 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:30:59.805825 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:00.807486 [Press Fill 1] >   Bottle pressure: 5260.39 psi
+2025-12-27T20:31:00.808158 [Press Fill 1] >   COPV pressure: 398.42
+2025-12-27T20:31:00.808397 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:00.808698 [Press Fill 1] >  Pressurizing at rate 2 (itteration 5)
+2025-12-27T20:31:00.808913 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:01.815518 [Press Fill 1] >   Starting pressure: 418.60 psi
+2025-12-27T20:31:01.816807 [Press Fill 1] >   Target pressure: 458.60 psi
+2025-12-27T20:31:01.822407 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:02.641176 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 460.07 psi
+2025-12-27T20:31:02.643013 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:07.969867 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:07.971173 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:08.982717 [Press Fill 1] >   Bottle pressure: 5214.97 psi
+2025-12-27T20:31:08.984085 [Press Fill 1] >   COPV pressure: 460.07
+2025-12-27T20:31:08.984721 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:08.985052 [Press Fill 1] >  Pressurizing at rate 2 (itteration 6)
+2025-12-27T20:31:08.985321 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:09.992825 [Press Fill 1] >   Starting pressure: 479.81 psi
+2025-12-27T20:31:09.993183 [Press Fill 1] >   Target pressure: 519.81 psi
+2025-12-27T20:31:09.996995 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:10.813029 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 520.36 psi
+2025-12-27T20:31:10.815633 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:14.994223 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:14.994610 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:16.004137 [Press Fill 1] >   Bottle pressure: 5170.56 psi
+2025-12-27T20:31:16.005079 [Press Fill 1] >   COPV pressure: 520.36
+2025-12-27T20:31:16.005475 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:16.005893 [Press Fill 1] >  Pressurizing at rate 2 (itteration 7)
+2025-12-27T20:31:16.006211 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:17.010270 [Press Fill 1] >   Starting pressure: 539.67 psi
+2025-12-27T20:31:17.010579 [Press Fill 1] >   Target pressure: 579.67 psi
+2025-12-27T20:31:17.012172 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:17.843066 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 580.73 psi
+2025-12-27T20:31:17.847779 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:22.029615 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:22.030345 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:23.039800 [Press Fill 1] >   Bottle pressure: 5124.98 psi
+2025-12-27T20:31:23.040669 [Press Fill 1] >   COPV pressure: 580.73
+2025-12-27T20:31:23.041050 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:23.041259 [Press Fill 1] >  Pressurizing at rate 2 (itteration 8)
+2025-12-27T20:31:23.041477 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:24.045852 [Press Fill 1] >   Starting pressure: 601.11 psi
+2025-12-27T20:31:24.046316 [Press Fill 1] >   Target pressure: 641.11 psi
+2025-12-27T20:31:24.049522 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:24.872427 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 641.16 psi
+2025-12-27T20:31:24.876465 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:29.067069 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:29.067398 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:30.075463 [Press Fill 1] >   Bottle pressure: 5081.50 psi
+2025-12-27T20:31:30.075982 [Press Fill 1] >   COPV pressure: 641.16
+2025-12-27T20:31:30.076189 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:30.076388 [Press Fill 1] >  Pressurizing at rate 2 (itteration 9)
+2025-12-27T20:31:30.077221 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:31.077937 [Press Fill 1] >   Starting pressure: 659.71 psi
+2025-12-27T20:31:31.078656 [Press Fill 1] >   Target pressure: 699.71 psi
+2025-12-27T20:31:31.083287 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:31.944374 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 700.35 psi
+2025-12-27T20:31:31.948609 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:36.098126 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:36.098585 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:37.113583 [Press Fill 1] >   Bottle pressure: 5036.95 psi
+2025-12-27T20:31:37.114557 [Press Fill 1] >   COPV pressure: 700.35
+2025-12-27T20:31:37.114734 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:37.114962 [Press Fill 1] >  Pressurizing at rate 2 (itteration 10)
+2025-12-27T20:31:37.115191 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:38.123415 [Press Fill 1] >   Starting pressure: 719.75 psi
+2025-12-27T20:31:38.123960 [Press Fill 1] >   Target pressure: 759.75 psi
+2025-12-27T20:31:38.128518 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:38.994600 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 760.75 psi
+2025-12-27T20:31:38.995834 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:43.144727 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:43.145378 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:44.155828 [Press Fill 1] >   Bottle pressure: 4993.46 psi
+2025-12-27T20:31:44.156641 [Press Fill 1] >   COPV pressure: 760.75
+2025-12-27T20:31:44.157045 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:44.157310 [Press Fill 1] >  Pressurizing at rate 2 (itteration 11)
+2025-12-27T20:31:44.157528 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:45.159254 [Press Fill 1] >   Starting pressure: 778.38 psi
+2025-12-27T20:31:45.159723 [Press Fill 1] >   Target pressure: 818.38 psi
+2025-12-27T20:31:45.161993 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:46.036643 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 818.44 psi
+2025-12-27T20:31:46.038365 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:50.170576 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:50.171316 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:51.173308 [Press Fill 1] >   Bottle pressure: 4950.99 psi
+2025-12-27T20:31:51.173585 [Press Fill 1] >   COPV pressure: 818.44
+2025-12-27T20:31:51.173784 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:51.173926 [Press Fill 1] >  Pressurizing at rate 2 (itteration 12)
+2025-12-27T20:31:51.174050 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:52.179512 [Press Fill 1] >   Starting pressure: 835.61 psi
+2025-12-27T20:31:52.179989 [Press Fill 1] >   Target pressure: 875.61 psi
+2025-12-27T20:31:52.182974 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:31:53.076938 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 876.02 psi
+2025-12-27T20:31:53.077581 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:31:57.198501 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:31:57.198953 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:31:58.202430 [Press Fill 1] >   Bottle pressure: 4908.58 psi
+2025-12-27T20:31:58.203250 [Press Fill 1] >   COPV pressure: 876.02
+2025-12-27T20:31:58.204595 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:31:58.205055 [Press Fill 1] >  Pressurizing at rate 2 (itteration 13)
+2025-12-27T20:31:58.205696 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:31:59.210425 [Press Fill 1] >   Starting pressure: 892.78 psi
+2025-12-27T20:31:59.210905 [Press Fill 1] >   Target pressure: 932.78 psi
+2025-12-27T20:31:59.216300 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:00.133580 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 933.46 psi
+2025-12-27T20:32:00.135064 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:04.224560 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:04.224936 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:05.229467 [Press Fill 1] >   Bottle pressure: 4865.33 psi
+2025-12-27T20:32:05.229979 [Press Fill 1] >   COPV pressure: 933.46
+2025-12-27T20:32:05.230407 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:05.230714 [Press Fill 1] >  Pressurizing at rate 2 (itteration 14)
+2025-12-27T20:32:05.230955 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:06.231457 [Press Fill 1] >   Starting pressure: 951.06 psi
+2025-12-27T20:32:06.231900 [Press Fill 1] >   Target pressure: 991.06 psi
+2025-12-27T20:32:06.236670 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:07.179100 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 991.91 psi
+2025-12-27T20:32:07.180161 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:11.250478 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:11.250939 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:12.261786 [Press Fill 1] >   Bottle pressure: 4823.18 psi
+2025-12-27T20:32:12.262193 [Press Fill 1] >   COPV pressure: 991.91
+2025-12-27T20:32:12.262387 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:12.262572 [Press Fill 1] >  Pressurizing at rate 2 (itteration 15)
+2025-12-27T20:32:12.262780 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:13.267801 [Press Fill 1] >   Starting pressure: 1007.87 psi
+2025-12-27T20:32:13.268007 [Press Fill 1] >   Target pressure: 1047.87 psi
+2025-12-27T20:32:13.270085 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:14.228108 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1048.92 psi
+2025-12-27T20:32:14.229361 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:18.275677 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:18.276060 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:19.279886 [Press Fill 1] >   Bottle pressure: 4781.22 psi
+2025-12-27T20:32:19.280255 [Press Fill 1] >   COPV pressure: 1048.92
+2025-12-27T20:32:19.280402 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:19.280564 [Press Fill 1] >  Pressurizing at rate 2 (itteration 16)
+2025-12-27T20:32:19.280747 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:20.286561 [Press Fill 1] >   Starting pressure: 1064.44 psi
+2025-12-27T20:32:20.287001 [Press Fill 1] >   Target pressure: 1104.44 psi
+2025-12-27T20:32:20.292709 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:21.276926 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1105.58 psi
+2025-12-27T20:32:21.279089 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:25.293941 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:25.294413 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:26.299696 [Press Fill 1] >   Bottle pressure: 4739.47 psi
+2025-12-27T20:32:26.300134 [Press Fill 1] >   COPV pressure: 1105.58
+2025-12-27T20:32:26.300364 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:26.300522 [Press Fill 1] >  Pressurizing at rate 2 (itteration 17)
+2025-12-27T20:32:26.300798 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:27.305515 [Press Fill 1] >   Starting pressure: 1120.70 psi
+2025-12-27T20:32:27.305844 [Press Fill 1] >   Target pressure: 1160.70 psi
+2025-12-27T20:32:27.311957 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:28.279863 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1160.76 psi
+2025-12-27T20:32:28.281801 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:32.321097 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:32.321438 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:33.327586 [Press Fill 1] >   Bottle pressure: 4698.83 psi
+2025-12-27T20:32:33.328097 [Press Fill 1] >   COPV pressure: 1160.76
+2025-12-27T20:32:33.328322 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:33.328666 [Press Fill 1] >  Pressurizing at rate 2 (itteration 18)
+2025-12-27T20:32:33.328888 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:34.331053 [Press Fill 1] >   Starting pressure: 1175.47 psi
+2025-12-27T20:32:34.331321 [Press Fill 1] >   Target pressure: 1215.47 psi
+2025-12-27T20:32:34.334765 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:35.320227 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1215.58 psi
+2025-12-27T20:32:35.321293 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:39.331809 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:39.332162 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:40.344923 [Press Fill 1] >   Bottle pressure: 4658.45 psi
+2025-12-27T20:32:40.345756 [Press Fill 1] >   COPV pressure: 1215.58
+2025-12-27T20:32:40.346086 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:40.346302 [Press Fill 1] >  Pressurizing at rate 2 (itteration 19)
+2025-12-27T20:32:40.346617 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:41.348540 [Press Fill 1] >   Starting pressure: 1229.90 psi
+2025-12-27T20:32:41.348963 [Press Fill 1] >   Target pressure: 1269.90 psi
+2025-12-27T20:32:41.354294 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:42.365492 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1270.00 psi
+2025-12-27T20:32:42.369441 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:46.365894 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:46.366089 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:47.376166 [Press Fill 1] >   Bottle pressure: 4618.37 psi
+2025-12-27T20:32:47.381387 [Press Fill 1] >   COPV pressure: 1270.00
+2025-12-27T20:32:47.381955 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:47.382146 [Press Fill 1] >  Pressurizing at rate 2 (itteration 20)
+2025-12-27T20:32:47.382340 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:48.388328 [Press Fill 1] >   Starting pressure: 1283.93 psi
+2025-12-27T20:32:48.388758 [Press Fill 1] >   Target pressure: 1323.93 psi
+2025-12-27T20:32:48.391858 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:51.439035 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1323.95 psi
+2025-12-27T20:32:51.442308 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:32:53.402986 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:32:53.403218 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:32:54.405960 [Press Fill 1] >   Bottle pressure: 4578.61 psi
+2025-12-27T20:32:54.406671 [Press Fill 1] >   COPV pressure: 1323.95
+2025-12-27T20:32:54.407252 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:32:54.407327 [Press Fill 1] >  Pressurizing at rate 2 (itteration 21)
+2025-12-27T20:32:54.407405 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:32:55.413751 [Press Fill 1] >   Starting pressure: 1337.51 psi
+2025-12-27T20:32:55.414199 [Press Fill 1] >   Target pressure: 1377.51 psi
+2025-12-27T20:32:55.418563 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:32:56.503477 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1378.45 psi
+2025-12-27T20:32:56.506028 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:00.422217 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:00.422433 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:01.427528 [Press Fill 1] >   Bottle pressure: 4538.48 psi
+2025-12-27T20:33:01.427912 [Press Fill 1] >   COPV pressure: 1378.45
+2025-12-27T20:33:01.428213 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:01.428400 [Press Fill 1] >  Pressurizing at rate 2 (itteration 22)
+2025-12-27T20:33:01.428595 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:02.429646 [Press Fill 1] >   Starting pressure: 1391.60 psi
+2025-12-27T20:33:02.430213 [Press Fill 1] >   Target pressure: 1431.60 psi
+2025-12-27T20:33:02.434418 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:33:03.536084 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1432.34 psi
+2025-12-27T20:33:03.538170 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:07.434741 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:07.435196 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:08.439388 [Press Fill 1] >   Bottle pressure: 4498.78 psi
+2025-12-27T20:33:08.439923 [Press Fill 1] >   COPV pressure: 1432.34
+2025-12-27T20:33:08.440259 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:08.440528 [Press Fill 1] >  Pressurizing at rate 2 (itteration 23)
+2025-12-27T20:33:08.440763 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:09.444382 [Press Fill 1] >   Starting pressure: 1445.10 psi
+2025-12-27T20:33:09.444723 [Press Fill 1] >   Target pressure: 1485.10 psi
+2025-12-27T20:33:09.447873 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:33:10.564280 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1485.59 psi
+2025-12-27T20:33:10.567296 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:14.463254 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:14.463832 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:15.466342 [Press Fill 1] >   Bottle pressure: 4459.56 psi
+2025-12-27T20:33:15.470714 [Press Fill 1] >   COPV pressure: 1485.59
+2025-12-27T20:33:15.470967 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:15.471113 [Press Fill 1] >  Pressurizing at rate 2 (itteration 24)
+2025-12-27T20:33:15.471257 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:16.471827 [Press Fill 1] >   Starting pressure: 1497.96 psi
+2025-12-27T20:33:16.473557 [Press Fill 1] >   Target pressure: 1537.96 psi
+2025-12-27T20:33:16.477536 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:33:17.618846 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1538.15 psi
+2025-12-27T20:33:17.620186 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:21.494261 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:21.495107 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:22.505630 [Press Fill 1] >   Bottle pressure: 4420.85 psi
+2025-12-27T20:33:22.506079 [Press Fill 1] >   COPV pressure: 1538.15
+2025-12-27T20:33:22.506254 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:22.506694 [Press Fill 1] >  Pressurizing at rate 2 (itteration 25)
+2025-12-27T20:33:22.506991 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:24.983678 [Press Fill 1] >   Starting pressure: 1550.15 psi
+2025-12-27T20:33:24.983852 [Press Fill 1] >   Target pressure: 1590.15 psi
+2025-12-27T20:33:24.985574 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:33:26.169183 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1590.88 psi
+2025-12-27T20:33:26.172507 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:29.992093 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:29.992569 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:30.996858 [Press Fill 1] >   Bottle pressure: 4381.34 psi
+2025-12-27T20:33:30.997314 [Press Fill 1] >   COPV pressure: 1590.88
+2025-12-27T20:33:30.997484 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:30.997667 [Press Fill 1] >  Pressurizing at rate 2 (itteration 26)
+2025-12-27T20:33:30.997875 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:31.999289 [Press Fill 1] >   Starting pressure: 1603.40 psi
+2025-12-27T20:33:31.999783 [Press Fill 1] >   Target pressure: 1643.40 psi
+2025-12-27T20:33:32.004978 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:33:33.203241 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1643.68 psi
+2025-12-27T20:33:33.204796 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:37.012333 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:37.012679 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:38.013985 [Press Fill 1] >   Bottle pressure: 4343.11 psi
+2025-12-27T20:33:38.014465 [Press Fill 1] >   COPV pressure: 1643.68
+2025-12-27T20:33:38.014704 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:38.014928 [Press Fill 1] >  Pressurizing at rate 2 (itteration 27)
+2025-12-27T20:33:38.015191 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:39.019671 [Press Fill 1] >   Starting pressure: 1654.92 psi
+2025-12-27T20:33:39.020073 [Press Fill 1] >   Target pressure: 1694.92 psi
+2025-12-27T20:33:39.024439 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:33:40.262274 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1695.58 psi
+2025-12-27T20:33:40.263611 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:44.043620 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:44.044015 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:45.059947 [Press Fill 1] >   Bottle pressure: 4304.88 psi
+2025-12-27T20:33:45.060268 [Press Fill 1] >   COPV pressure: 1695.58
+2025-12-27T20:33:45.060427 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:45.060592 [Press Fill 1] >  Pressurizing at rate 2 (itteration 28)
+2025-12-27T20:33:45.060726 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:46.064109 [Press Fill 1] >   Starting pressure: 1706.45 psi
+2025-12-27T20:33:46.064587 [Press Fill 1] >   Target pressure: 1746.45 psi
+2025-12-27T20:33:46.068788 [Press Fill 1] >   Opened gse_vlv_3
+2025-12-27T20:33:47.339213 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 1746.56 psi
+2025-12-27T20:33:47.342031 [Press Fill 1] >   Closed gse_vlv_3
+2025-12-27T20:33:51.066565 [Press Fill 1] >   Cooldown time elapsed, moving to next itteration
+2025-12-27T20:33:51.066733 [Press Fill 1] >   Checking for bottle equalization
+2025-12-27T20:33:52.072373 [Press Fill 1] >   Bottle pressure: 4267.33 psi
+2025-12-27T20:33:52.072920 [Press Fill 1] >   COPV pressure: 1746.56
+2025-12-27T20:33:52.073095 [Press Fill 1] >   Bottle not yet equalized, continuing pressurization
+2025-12-27T20:33:52.073310 [Press Fill 1] >  Pressurizing at rate 2 (itteration 29)
+2025-12-27T20:33:52.073527 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2025-12-27T20:33:52.883661 > Keyboard interrupt detected, aborting!
+2025-12-27T20:33:52.999224 [Press Fill 1] > Aborting due to exception: Sequence Aborted
+2025-12-27T20:33:53.003494 [Press Fill 1] > Aborting press fill, closing all relevant valves
+2025-12-27T20:33:54.406632 > Autosequence has released control
+2025-12-27T20:33:54.408167 > Autosequence aborted successfully
+2025-12-27T20:33:54.410377 > Autosequence has terminated, have a great flight!
