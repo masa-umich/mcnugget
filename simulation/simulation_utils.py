@@ -202,7 +202,7 @@ class Valve:
         return self.state
     
     def energize(self) -> None:
-        if self.normally_closed:
+        if self.normally_closed: # Invert operation for NO valves
             self.state = State.OPEN
         else:
             self.state = State.CLOSED
@@ -224,11 +224,11 @@ class System:
 
         for valve in config.get_vlvs():
             normally_closed: bool = config.is_vlv_nc(valve)
-            self.valves.append(Valve(valve, normally_closed, 0.01))  # "default" valve
+            self.valves.append(Valve(valve, normally_closed, 0.02))  # "default" valve
 
         # Manually set cv of some valves
         self.get_valve_obj(config.get_vlv("COPV_Vent")).cv = 0.01
-        self.get_valve_obj(config.get_vlv("Press_Fill_Iso")).cv = 0.01
+        self.get_valve_obj(config.get_vlv("Press_Fill_Iso")).cv = 0.02
         self.get_valve_obj(config.get_vlv("Press_Fill_Vent")).cv = 0.01
 
         self.nodes = [
@@ -274,7 +274,7 @@ class System:
             Node(
                 name="press_node",
                 channels=[config.get_pt("Post_Press_Fill_PT")],
-                volume=0.01,  # idk what a good value should be
+                volume=0.1,  # idk what a good value should be
                 pressure=0,
             ),
         ]

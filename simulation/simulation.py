@@ -175,7 +175,7 @@ def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: Sys
 
         for state_ch in config.get_states():
             valve = system.get_valve_obj(state_ch.replace("state", "vlv"))
-            if valve.normally_closed:
+            if valve.normally_closed: # Account for normally open valves
                 if valve.state == State.OPEN:
                     write_data[state_ch] = 1
                 else:
@@ -223,5 +223,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    # except Exception as e:  # catch-all uncaught errors
-        # error_and_exit("Uncaught exception!", exception=e)
+    except Exception as e:  # catch-all uncaught errors
+        error_and_exit("Uncaught exception!", exception=e)
