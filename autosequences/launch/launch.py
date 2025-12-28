@@ -217,7 +217,7 @@ def press_itteration(
     phase.log(f"  Cooldown time elapsed, moving to next itteration")
 
 
-def press_fill(phase: Phase, bottle: int) -> None:
+def press_fill(phase: Phase, bottle: int) -> bool:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
 
@@ -225,7 +225,9 @@ def press_fill(phase: Phase, bottle: int) -> None:
     press_rate_2: float = config.get_var("press_rate_2")
     press_rate_1_ittrs: int = config.get_var("press_rate_1_ittrs")
     bottle_equalization_threshold: float = config.get_var("bottle_equalization_threshold")
-    
+    copv_pressure_target: float = config.get_var("copv_pressure_target")
+    copv_pressure_margin: float = config.get_var("copv_pressure_margin")
+
     press_fill_iso: str = config.get_vlv("Press_Fill_Iso")
     press_isos: list[str] = [
         config.get_vlv("Press_Iso_1"),
@@ -286,13 +288,18 @@ def press_fill(phase: Phase, bottle: int) -> None:
         phase.log(f"  COPV pressure: {copv_current_pressure:.2f}")
         if abs(copv_current_pressure - bottle_pressure) <= bottle_equalization_threshold:
             phase.log("  Bottle equalization reached, ending pressurization")
-            break
+            phase.log(f"Closing press fill iso")
+            close_vlv(ctrl, press_fill_iso)
+            phase.log(f"Completed press fill for bottle {bottle}")
+            return False
         else:
             phase.log("  Bottle not yet equalized, continuing pressurization")
-    phase.log(f"Closing press fill iso")
-    close_vlv(ctrl, press_fill_iso)
-    phase.log(f"Completed press fill for bottle {bottle}")
-    return
+        # Check for COPV pressure target reached
+        if copv_current_pressure >= (copv_pressure_target - copv_pressure_margin):
+            phase.log("  COPV pressure target reached, ending pressurization")
+            phase.log(f"Closing press fill iso")
+            close_vlv(ctrl, press_fill_iso)
+            return True
 
 
 def press_fill_1(phase: Phase) -> None:
@@ -313,9 +320,47 @@ def press_fill_2(phase: Phase) -> None:
     return
 
 
+def tpc_copv(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    copv_pts: list[str] = [
+        config.get_pt("COPV_PT_1"),
+        config.get_pt("COPV_PT_2"),
+        config.get_pt("Fuel_TPC_Inlet_PT"),
+    ]
+
+    copv_pressure_target: float = config.get_var("copv_pressure_target")
+    copv_pressure_margin: float = config.get_var("copv_pressure_margin")
+
+    copv_pressure = average_ch(
+        window=REFRESH_RATE / 2
+    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
+
+    # Try to keep COPV at target pressure
+    while True:
+        current_pressure: float = copv_pressure.add_and_get(
+            value=sensor_vote(
+                ctrl=ctrl, channels=copv_pts, threshold=1.0
+            )
+        )
+        if current_pressure < (copv_pressure_target - copv_pressure_margin):
+            phase.log(f"COPV below target pressure, opening Press Iso 3 & Press Fill Iso to TPC")
+            open_vlv(ctrl, config.get_vlv("Press_Iso_3"))
+            open_vlv(ctrl, config.get_vlv("Press_Fill_Iso"))
+        elif current_pressure >= copv_pressure_target:
+            phase.log(f"COPV at or above target pressure, closing Press Iso 3 & Press Fill Iso")
+            close_vlv(ctrl, config.get_vlv("Press_Iso_3"))
+            close_vlv(ctrl, config.get_vlv("Press_Fill_Iso"))
+        phase.sleep(1.0)  # wait 1 second before checking again
+
+
 def press_fill_3(phase: Phase) -> None:
     try:  # Normal operation
-        press_fill(phase=phase, bottle=3)
+        tpc: bool = press_fill(phase=phase, bottle=3)
+        if tpc:
+            phase.log("COPV filled to target pressure, now continuing TPC of COPV")
+            tpc_copv(phase=phase)
     except Exception as e:  # Abort case
         phase.log(f"Aborting due to exception: {e}")
         press_fill_abort(phase=phase)

@@ -50,5 +50,4 @@ cd mcnugget/autosequences/launch
 
 ## TODO (for developers in no particular order):
 - Watch temperature when venting in global_abort()
-- Make press fill phase 3 TPC COPV pressure at pressure target
 - Automatic phase transitions & only allow for certain phase transitions
