@@ -186,36 +186,32 @@ class Node:
 class Valve:
     name: str
     normally_closed: bool
-    energized: bool
+    state: State
     cv: float
 
     def __init__(self, name: str, normally_closed: bool, cv: float):
+        if normally_closed == True:
+            self.state = State.CLOSED
+        else:
+            self.state = State.OPEN
         self.name = name
         self.normally_closed = normally_closed
-        self.energized = False
         self.cv = cv
 
-    def set_state(self, cmd: int):
-        if (cmd == 0):
-            self.energized = False
-        else:
-            self.energized = True
-
     def get_state(self) -> State:
-        if (self.energized) and (self.normally_closed):
-            return State.OPEN
-        elif (self.energized) and not (self.normally_closed):
-            return State.CLOSED
-        elif not (self.energized) and (self.normally_closed):
-            return State.CLOSED
+        return self.state
+    
+    def energize(self) -> None:
+        if self.normally_closed:
+            self.state = State.OPEN
         else:
-            return State.OPEN
+            self.state = State.CLOSED
 
-    def toggle(self):
-        if self.energized:
-            self.energized = False
+    def de_energize(self) -> None:
+        if self.normally_closed:
+            self.state = State.CLOSED
         else:
-            self.energized = True
+            self.state = State.OPEN
 
 
 class System:
@@ -227,8 +223,8 @@ class System:
         self.config: Config = config
 
         for valve in config.get_vlvs():
-            is_nc: bool = config.is_vlv_nc(valve)
-            self.valves.append(Valve(valve, is_nc, 0.01))  # "default" valve
+            normally_closed: bool = config.is_vlv_nc(valve)
+            self.valves.append(Valve(valve, normally_closed, 0.01))  # "default" valve
 
         # Manually set cv of some valves
         self.get_valve_obj(config.get_vlv("COPV_Vent")).cv = 0.01

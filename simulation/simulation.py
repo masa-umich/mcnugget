@@ -167,17 +167,24 @@ def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: Sys
         if fr is not None:
             for channel in fr.channels:
                 cmd = fr[channel][0]
-                if not config.is_vlv_nc(channel): # type: ignore
-                    cmd = not cmd
-                system.set_valve(channel, cmd) # type: ignore
+                valve = system.get_valve_obj(channel) # type: ignore
+                if cmd == True:
+                    valve.energize()
+                else:
+                    valve.de_energize()
 
         for state_ch in config.get_states():
-            vlv_ch = state_ch.replace("state", "vlv")
-            state = system.get_valve_state(vlv_ch)
-            if state == State.OPEN:
-                write_data[state_ch] = 1
+            valve = system.get_valve_obj(state_ch.replace("state", "vlv"))
+            if valve.normally_closed:
+                if valve.state == State.OPEN:
+                    write_data[state_ch] = 1
+                else:
+                    write_data[state_ch] = 0
             else:
-                write_data[state_ch] = 0
+                if valve.state == State.OPEN:
+                    write_data[state_ch] = 0
+                else:
+                    write_data[state_ch] = 1
 
         for pt_ch in config.get_pts():
             noise = (random.gauss(0, 150)) if (do_noise) else (0) # instrument noise is approximately gaussian
