@@ -43,7 +43,7 @@ spinner.text = colored("Initializing...", "yellow")
 spinner.start()
 
 from synnax.hardware import ni
-from typing import List
+from typing import Any, List
 import synnax as sy
 import argparse
 import datetime
@@ -56,7 +56,6 @@ SH1 = 0.001125256672107591  # 0 degrees celsius
 SH2 = 0.0002347204472978222  # 25 degrees celsius
 SH3 = 8.563052731505164e-08  # 50 degrees celsius
 
-global verbose
 verbose: bool = False # global setting (default = False)
 
 class TC_Channels:
@@ -208,7 +207,7 @@ def calculate_thermistor_offset(supply, signal):
 def compute_mv_from_temperature(celsius):
     # compute mV representation of temperature
     # uses SCIENTIFIC notation
-    c = [0] * 15
+    c: list[float] = [0] * 15
     if -270 <= celsius < 0:
         c[0] = 0.0 * 10**0
         c[1] = 3.8748106364 * 10**1
@@ -246,7 +245,7 @@ def compute_mv_from_temperature(celsius):
 
 def compute_temperature_from_mv(mv):
     if -6.3 <= mv < -4.648:
-        constants = [
+        constants: list[float] = [
             -192.43000,
             -5.4798963,
             59.572141,
@@ -309,18 +308,18 @@ def driver(tc_channels: TC_Channels, streamer: sy.Streamer, writer: sy.Writer, f
     global verbose
     loop = sy.Loop(sy.Rate.HZ * frequency)
     while loop.wait():
-        frame = streamer.read(0.1)
+        frame: sy.Frame | None = streamer.read(0.1)
         if frame is None:
             if verbose:
-                now = datetime.datetime.now()
+                now: datetime.datetime = datetime.datetime.now()
                 spinner.write(colored(f"Getting frame timed out at {now}", "red"))
             continue
 
         # Get raw data
-        therm_supply_value = frame[tc_channels.thermistor_supply_ch.name][-1]
-        therm_signal_value = frame[tc_channels.thermistor_signal_ch.name][-1]
-        gse_sensor_time = frame[tc_channels.gse_sensor_time.name][-1]
-        tc_raw_values = {}
+        therm_supply_value: Any = frame[tc_channels.thermistor_supply_ch.name][-1]
+        therm_signal_value: Any = frame[tc_channels.thermistor_signal_ch.name][-1]
+        gse_sensor_time: Any = frame[tc_channels.gse_sensor_time.name][-1]
+        tc_raw_values: Any = {}
 
         for i in range(len(tc_channels.tc_raw_chs)):
             tc_raw_values[tc_channels.tc_raw_chs[i].name] = frame[tc_channels.tc_raw_chs[i].name][-1]
@@ -337,7 +336,7 @@ def driver(tc_channels: TC_Channels, streamer: sy.Streamer, writer: sy.Writer, f
             write_data[tc_channels.tc_chs[i].name] = tc_temp
         
         write_data[tc_channels.gse_tc_time.name] = gse_sensor_time # Get the time we're writing at
-        writer.write(write_data)
+        writer.write(write_data) # type: ignore
 
 
 def main() -> None:
@@ -350,7 +349,15 @@ def main() -> None:
         print(colored(f"Write channels: {write_chs}", "light_blue"))
         print(colored(f"Read channels: {read_chs}", "light_blue"))
     with client.open_streamer(channels=read_chs) as streamer:
-        with client.open_writer(start=sy.TimeStamp.now(), channels=write_chs) as writer:
+        # Get the current time (GSE time) from the streamer so we can open a writer
+        frame: sy.Frame | None = streamer.read(0.1)
+        if frame is None:
+            if verbose:
+                now: datetime.datetime = datetime.datetime.now()
+                spinner.write(colored(f"Getting frame timed out at {now}", "red"))
+            error_and_exit("Could not get initial frame from streamer to open writer")
+        gse_sensor_time: Any = frame[tc_channels.gse_sensor_time.name][-1] # type: ignore
+        with client.open_writer(start=gse_sensor_time, channels=write_chs, enable_auto_commit=True) as writer:
             driver(tc_channels, streamer, writer, args.frequency)
     print(colored("Thermo-magic script ended. Have a great day!"))
 
