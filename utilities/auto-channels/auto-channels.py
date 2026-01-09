@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas",
-#     "synnax>=0.46.0",
+#     "synnax==0.46.0",
 #     "termcolor",
 #     "yaspin",
 #     "openpyxl"
