@@ -62,9 +62,7 @@ def synnax_login(cluster: str) -> sy.Synnax:
             password="seldon",
         )
     except Exception as e:
-        raise(
-            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
-        )
+        raise Exception(f"Could not connect to Synnax at {cluster}, are you sure you're connected?")
     return client  # type: ignore
 
 def parse_args() -> argparse.Namespace:
@@ -300,13 +298,13 @@ def prompt_calibrations(client: sy.Synnax):
         return 3
     else:
         print(colored("Invalid selection, please try again", "red"))
-        prompt_calibrations()
+        prompt_calibrations(client)
 
 def handle_calibrations(selection: int, client: sy.Synnax, channels, analog_task, frequency: int):
     if selection == 1:
         return get_ambient_calibrations(client, channels, analog_task, frequency)
     elif selection == 2:
-        return get_factory_calibrations(channels)
+        return get_factory_calibrations(channels, analog_task)
     elif selection == 3:
         return get_old_calibrations(client, "Sensors")
 
@@ -345,21 +343,20 @@ def setup_channels(client: sy.Synnax, channels, analog_task, digital_task, analo
             raise Exception(f"Sensor type {channel["type"]} in channels dict not recognized (issue with the script)")
     spinner.write(colored(" > Successfully created channels in Synnax", "green", attrs=["bold"]))
 
-def get_factory_calibrations(channels):
+def get_factory_calibrations(channels, analog_task: ni.AnalogReadTask):
     # assume slope and offset
     calibrations = {}
     spinner.text = colored("Calculating factory calibration data...", "green")    
-    for channel in channels.items():
-        channel = channel[1]
-        type = channel["type"]
-        if type == "PT":
+    for channel in channels:
+        ch_type = channel["type"]
+        if ch_type == "PT":
             calibrations[channel["port"]] = {
                 "slope": (channel["max"] / 4), # 0.5-4.5V
                 "offset": -(channel["max"] / 4)*0.5, # assume 0 psi at exactly 0.5V
                 "min_val": channel["min"],
                 "max_val": channel["max"]
             }
-        elif type == "TC":
+        elif ch_type == "TC":
             calibrations[channel["port"]] = tc_calibrations[str(channel["channel"])]
     return calibrations
 
@@ -416,9 +413,6 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
             "min_val": float(channel_keys[channel][1]),
             "max_val": float(channel_keys[channel][2])
         }
-
-#    with open(filename, 'w') as save_file:
-#        json.dump(calibrations, save_file)
 
     return calibrations
 
@@ -597,13 +591,13 @@ def configure_tasks(client: sy.Synnax, analog_task, digital_task):
 
     if analog_task.config.channels != []:  # only configure if there are channels
         spinner.write(colored(" > Attempting to configure analog task", "cyan"))
-        client.hardware.tasks.configure(
+        client.tasks.configure(
             task=analog_task, timeout=6000
         )  # long timeout cause our NI hardware is dumb
         spinner.write(colored(" > Successfully configured analog task!", "green"))
     if digital_task.config.channels != []:
         spinner.write(colored(" > Attempting to configure digital task", "cyan"))
-        client.hardware.tasks.configure(task=digital_task, timeout=500)
+        client.tasks.configure(task=digital_task, timeout=500)
         spinner.write(colored(" > Successfully configured digital task!", "green"))
     spinner.write(colored(" > All tasks have been successfully created!", "green", attrs=["bold"]))
 
