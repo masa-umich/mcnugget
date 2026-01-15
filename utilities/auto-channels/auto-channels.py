@@ -136,6 +136,7 @@ def create_tasks(client: sy.Synnax, frequency: int):
 
     analog_task = ni.AnalogReadTask(
         name=analog_task_name,
+        device=analog_card.key,
         sample_rate=sy.Rate.HZ * frequency,
         stream_rate=sy.Rate.HZ * frequency/2,
         data_saving=True,
