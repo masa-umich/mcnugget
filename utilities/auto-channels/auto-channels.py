@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas",
-#     "synnax==0.46.0",
+#     "synnax==0.49.0",
 #     "termcolor",
 #     "yaspin",
 #     "openpyxl"
@@ -41,7 +41,7 @@ import pandas as pd
 import synnax as sy
 import json
 import time
-from synnax.hardware import ni
+import synnax.ni as ni
 
 verbose: bool = False # global setting (default = False)
 analog_task_name: str = "Sensors"
@@ -123,14 +123,14 @@ def create_tasks(client: sy.Synnax, frequency: int):
     spinner.write(colored(" > Scanning for cards...", "cyan"))
     time.sleep(0.1)
     try:
-        analog_card = client.hardware.devices.retrieve(model=analog_card_model)
+        analog_card = client.devices.retrieve(model=analog_card_model)
         spinner.write(colored(" > Analog card '" + analog_card.make + " " + analog_card.model + "' found! ✅", "green", attrs=["bold"]))
         time.sleep(0.1)
     except:
         raise Exception(colored("Analog card '" + analog_card_model + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red", attrs=["bold"]))
     
     try:
-        digital_card = client.hardware.devices.retrieve(model=digital_card_model)
+        digital_card = client.devices.retrieve(model=digital_card_model)
         spinner.write(colored(" > Digital card '" + digital_card.make + " " + digital_card.model + "' found! ✅", "green", attrs=["bold"]))
         time.sleep(0.1)
     except:
@@ -279,7 +279,7 @@ def process_sheet(file: pd.DataFrame):
 
 def prompt_calibrations(client: sy.Synnax):
     try:
-        old_analog_task = client.hardware.tasks.retrieve(name=analog_task_name)
+        old_analog_task = client.tasks.retrieve(name=analog_task_name)
     except:
         old_analog_task = None
 
@@ -308,7 +308,7 @@ def handle_calibrations(selection: int, client: sy.Synnax, channels, analog_task
     elif selection == 2:
         return get_factory_calibrations(channels)
     elif selection == 3:
-        return get_old_calibrations(client, "PTs and TCs")
+        return get_old_calibrations(client, "Sensors")
 
 def apply_calibrations(calibrations, analog_task):
     for channel in analog_task.config.channels:
@@ -370,12 +370,15 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
 
     spinner.text = colored("Starting task for ambient calibration...", "green")
 
+    analog_card = client.devices.retrieve(model=analog_card_model)
+
     calibrations = {}
     channel_keys = {} # map channel name to (port, min, max)
     frame = sy.Frame()
 
     temp_task = ni.AnalogReadTask(
         name="Ambient calibration for PTs",
+        device=analog_card.key,
         sample_rate=sy.Rate.HZ * frequency,
         stream_rate=sy.Rate.HZ * frequency/2, # 2 samples at a time
         data_saving=False,
@@ -388,7 +391,7 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
         if not isinstance(channel.custom_scale, ni.types.NoScale) and channel.custom_scale.scaled_units == "PoundsPerSquareInch":
             temp_task.config.channels.append(channel)
 
-    client.hardware.tasks.configure(task=temp_task, timeout=6000)
+    client.tasks.configure(task=temp_task, timeout=6000)
     
     temp_task.start()
 
