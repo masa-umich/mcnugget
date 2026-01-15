@@ -50,6 +50,8 @@ analog_card_model: str = "PCI-6225"
 digital_task_name: str = "Valves"
 digital_card_model: str = "PCI-6514"
 
+calibration_read_time: int = 5
+
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
 def synnax_login(cluster: str) -> sy.Synnax:
     try:
@@ -111,9 +113,9 @@ def main():
         file_path = args.icd
     sheet = get_sheet(file_path)
     channels = process_sheet(sheet)
-    # selection = prompt_calibrations()
-    # calibrations = get_old_calibrations("PTs and TCs")
     setup_channels(client, channels, analog_task, digital_task, analog_card)
+    calibrations = handle_calibrations(prompt_calibrations(client), client, channels, analog_task, args.frequency)
+    apply_calibrations(calibrations, analog_task)
     configure_tasks(client, analog_task, digital_task)
 
 def create_tasks(client: sy.Synnax, frequency: int):
@@ -288,6 +290,7 @@ def prompt_calibrations(client: sy.Synnax):
     if (old_analog_task != None):
         print(colored("3 - Use existing calibration data from last task", "cyan"))
     answer = input(colored("Selection: ", "cyan"))
+    spinner.start()
 
     if answer == "1":
         return 1
@@ -298,6 +301,28 @@ def prompt_calibrations(client: sy.Synnax):
     else:
         print(colored("Invalid selection, please try again", "red"))
         prompt_calibrations()
+
+def handle_calibrations(selection: int, client: sy.Synnax, channels, analog_task, frequency: int):
+    if selection == 1:
+        return get_ambient_calibrations(client, channels, analog_task, frequency)
+    elif selection == 2:
+        return get_factory_calibrations(channels)
+    elif selection == 3:
+        return get_old_calibrations(client, "PTs and TCs")
+
+def apply_calibrations(calibrations, analog_task):
+    for channel in analog_task.config.channels:
+        # same as in get_ambient_calibrations
+        if not isinstance(channel.custom_scale, ni.types.NoScale) and channel.custom_scale.scaled_units == "PoundsPerSquareInch":
+            channel.custom_scale = ni.LinScale(
+                slope            = calibrations[channel.port]["slope"],
+                y_intercept      = calibrations[channel.port]["offset"],
+                pre_scaled_units = "Volts",
+                scaled_units     = "PoundsPerSquareInch"
+            )
+            channel.max_val = calibrations[channel.port]["max_val"]
+            channel.min_val = calibrations[channel.port]["min_val"]
+    spinner.write(colored(" > Calibrations applied", "green", attrs=["bold"]))    
 
 def setup_channels(client: sy.Synnax, channels, analog_task, digital_task, analog_card):
     spinner.text = "Creating channels in Synnax..."
@@ -320,7 +345,7 @@ def setup_channels(client: sy.Synnax, channels, analog_task, digital_task, analo
             raise Exception(f"Sensor type {channel["type"]} in channels dict not recognized (issue with the script)")
     spinner.write(colored(" > Successfully created channels in Synnax", "green", attrs=["bold"]))
 
-def get_factory_calibration(channels):
+def get_factory_calibrations(channels):
     # assume slope and offset
     calibrations = {}
     spinner.text = colored("Calculating factory calibration data...", "green")    
@@ -338,14 +363,61 @@ def get_factory_calibration(channels):
             calibrations[channel["port"]] = tc_calibrations[str(channel["channel"])]
     return calibrations
 
-def get_ambient_calibration(channels):
+def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency: int):
     # temporarily setup a task with all channels
     # start it and read for a couple seconds to get an average value
     # then stop & delete the task, return the calibration values
 
-    spinner.text = colored("Setting up task for ambient calibration...", "green")
+    spinner.text = colored("Starting task for ambient calibration...", "green")
 
-    # TODO: This lmao
+    calibrations = {}
+    channel_keys = {} # map channel name to (port, min, max)
+    frame = sy.Frame()
+
+    temp_task = ni.AnalogReadTask(
+        name="Ambient calibration for PTs",
+        sample_rate=sy.Rate.HZ * frequency,
+        stream_rate=sy.Rate.HZ * frequency/2, # 2 samples at a time
+        data_saving=False,
+        channels=[]
+    )
+
+    for channel in analog_task.config.channels:
+        # copy pt channels for temp_task from analog_task
+        # surely there's a better way to check if channel is for a pt
+        if not isinstance(channel.custom_scale, ni.types.NoScale) and channel.custom_scale.scaled_units == "PoundsPerSquareInch":
+            temp_task.config.channels.append(channel)
+
+    client.hardware.tasks.configure(task=temp_task, timeout=6000)
+    
+    temp_task.start()
+
+    try:
+        channel_names = []
+        for channel in channels:
+            if channel["type"] == "PT":
+                channel_names.append(f"gse_pt_{channel["channel"]}")
+                channel_keys[f"gse_pt_{channel["channel"]}"] = (channel["port"], channel["min"], channel["max"])
+        with client.open_streamer(channel_names) as streamer:
+            spinner.text = colored("Reading for ambient calibration...", "green")        
+            for i in range(frequency//2 * calibration_read_time):
+                frame.append(streamer.read())
+    finally:
+        spinner.text = colored("Stopping task for ambient calibration...", "green")
+        temp_task.stop(timeout=30000)
+
+    for channel in frame.to_df():
+        calibrations[channel_keys[channel][0]] = {
+            "slope": (channel_keys[channel][2] / 4),
+            "offset": -frame.to_df()[channel].mean(),
+            "min_val": float(channel_keys[channel][1]),
+            "max_val": float(channel_keys[channel][2])
+        }
+
+#    with open(filename, 'w') as save_file:
+#        json.dump(calibrations, save_file)
+
+    return calibrations
 
 def get_old_calibrations(client: sy.Synnax, task_name: str):
     spinner.text = colored("Retrieving calibrations...", "green")
