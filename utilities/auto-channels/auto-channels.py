@@ -3,7 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas",
-#     "synnax==0.46.0",
+#     "synnax==0.49.0",
 #     "termcolor",
 #     "yaspin",
 #     "openpyxl"
@@ -41,7 +41,8 @@ import pandas as pd
 import synnax as sy
 import json
 import time
-from synnax.hardware import ni
+import os
+import synnax.ni as ni
 
 verbose: bool = False # global setting (default = False)
 analog_task_name: str = "Sensors"
@@ -62,9 +63,7 @@ def synnax_login(cluster: str) -> sy.Synnax:
             password="seldon",
         )
     except Exception as e:
-        raise(
-            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
-        )
+        raise Exception(f"Could not connect to Synnax at {cluster}, are you sure you're connected?")
     return client  # type: ignore
 
 def parse_args() -> argparse.Namespace:
@@ -123,14 +122,14 @@ def create_tasks(client: sy.Synnax, frequency: int):
     spinner.write(colored(" > Scanning for cards...", "cyan"))
     time.sleep(0.1)
     try:
-        analog_card = client.hardware.devices.retrieve(model=analog_card_model)
+        analog_card = client.devices.retrieve(model=analog_card_model)
         spinner.write(colored(" > Analog card '" + analog_card.make + " " + analog_card.model + "' found! ✅", "green", attrs=["bold"]))
         time.sleep(0.1)
     except:
         raise Exception(colored("Analog card '" + analog_card_model + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red", attrs=["bold"]))
     
     try:
-        digital_card = client.hardware.devices.retrieve(model=digital_card_model)
+        digital_card = client.devices.retrieve(model=digital_card_model)
         spinner.write(colored(" > Digital card '" + digital_card.make + " " + digital_card.model + "' found! ✅", "green", attrs=["bold"]))
         time.sleep(0.1)
     except:
@@ -138,6 +137,7 @@ def create_tasks(client: sy.Synnax, frequency: int):
 
     analog_task = ni.AnalogReadTask(
         name=analog_task_name,
+        device=analog_card.key,
         sample_rate=sy.Rate.HZ * frequency,
         stream_rate=sy.Rate.HZ * frequency/2,
         data_saving=True,
@@ -278,7 +278,7 @@ def process_sheet(file: pd.DataFrame):
 
 def prompt_calibrations(client: sy.Synnax):
     try:
-        old_analog_task = client.hardware.tasks.retrieve(name=analog_task_name)
+        old_analog_task = client.tasks.retrieve(name=analog_task_name)
     except:
         old_analog_task = None
 
@@ -288,6 +288,7 @@ def prompt_calibrations(client: sy.Synnax):
     print(colored("2 - Use factory calibration data (can be incorrect)", "cyan"))
     if (old_analog_task != None):
         print(colored("3 - Use existing calibration data from last task", "cyan"))
+    print(colored("4 - Import old ambient calibration data from json file", "cyan"))
     answer = input(colored("Selection: ", "cyan"))
     spinner.start()
 
@@ -297,17 +298,21 @@ def prompt_calibrations(client: sy.Synnax):
         return 2
     elif answer == "3" and old_analog_task != None:
         return 3
+    elif answer == "4":
+        return 4
     else:
         print(colored("Invalid selection, please try again", "red"))
-        prompt_calibrations()
+        prompt_calibrations(client)
 
 def handle_calibrations(selection: int, client: sy.Synnax, channels, analog_task, frequency: int):
     if selection == 1:
         return get_ambient_calibrations(client, channels, analog_task, frequency)
     elif selection == 2:
-        return get_factory_calibrations(channels)
+        return get_factory_calibrations(channels, analog_task)
     elif selection == 3:
-        return get_old_calibrations(client, "PTs and TCs")
+        return get_old_calibrations_from_task(client, "Sensors")
+    elif selection == 4:
+        return get_old_calibrations_from_json()
 
 def apply_calibrations(calibrations, analog_task):
     for channel in analog_task.config.channels:
@@ -344,21 +349,20 @@ def setup_channels(client: sy.Synnax, channels, analog_task, digital_task, analo
             raise Exception(f"Sensor type {channel["type"]} in channels dict not recognized (issue with the script)")
     spinner.write(colored(" > Successfully created channels in Synnax", "green", attrs=["bold"]))
 
-def get_factory_calibrations(channels):
+def get_factory_calibrations(channels, analog_task: ni.AnalogReadTask):
     # assume slope and offset
     calibrations = {}
     spinner.text = colored("Calculating factory calibration data...", "green")    
-    for channel in channels.items():
-        channel = channel[1]
-        type = channel["type"]
-        if type == "PT":
+    for channel in channels:
+        ch_type = channel["type"]
+        if ch_type == "PT":
             calibrations[channel["port"]] = {
                 "slope": (channel["max"] / 4), # 0.5-4.5V
                 "offset": -(channel["max"] / 4)*0.5, # assume 0 psi at exactly 0.5V
                 "min_val": channel["min"],
                 "max_val": channel["max"]
             }
-        elif type == "TC":
+        elif ch_type == "TC":
             calibrations[channel["port"]] = tc_calibrations[str(channel["channel"])]
     return calibrations
 
@@ -369,12 +373,15 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
 
     spinner.text = colored("Starting task for ambient calibration...", "green")
 
+    analog_card = client.devices.retrieve(model=analog_card_model)
+
     calibrations = {}
     channel_keys = {} # map channel name to (port, min, max)
     frame = sy.Frame()
 
     temp_task = ni.AnalogReadTask(
         name="Ambient calibration for PTs",
+        device=analog_card.key,
         sample_rate=sy.Rate.HZ * frequency,
         stream_rate=sy.Rate.HZ * frequency/2, # 2 samples at a time
         data_saving=False,
@@ -387,7 +394,7 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
         if not isinstance(channel.custom_scale, ni.types.NoScale) and channel.custom_scale.scaled_units == "PoundsPerSquareInch":
             temp_task.config.channels.append(channel)
 
-    client.hardware.tasks.configure(task=temp_task, timeout=6000)
+    client.tasks.configure(task=temp_task, timeout=6000)
     
     temp_task.start()
 
@@ -408,21 +415,24 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
     for channel in frame.to_df():
         calibrations[channel_keys[channel][0]] = {
             "slope": (channel_keys[channel][2] / 4),
-            "offset": -frame.to_df()[channel].mean(),
+            "offset": float(-frame.to_df()[channel].mean()),
             "min_val": float(channel_keys[channel][1]),
             "max_val": float(channel_keys[channel][2])
         }
 
-#    with open(filename, 'w') as save_file:
-#        json.dump(calibrations, save_file)
+    if not os.path.exists('calibrations'):
+        os.makedirs('calibrations')
+
+    with open('calibrations/calibrations-' + time.strftime('%Y%m%d%H%M%S') + '.json', 'w') as save_file:
+        json.dump(calibrations, save_file)
 
     return calibrations
 
-def get_old_calibrations(client: sy.Synnax, task_name: str):
+def get_old_calibrations_from_task(client: sy.Synnax, task_name: str):
     spinner.text = colored("Retrieving calibrations...", "green")
 
     try:
-        task = client.hardware.tasks.retrieve(name=task_name)
+        task = client.tasks.retrieve(name=task_name)
     except:
         raise Exception("Task " + task_name + " not found")
     try:
@@ -441,7 +451,23 @@ def get_old_calibrations(client: sy.Synnax, task_name: str):
                 "max_val": channel["max_val"]
             }
 
-    return task.key, calibrations
+    return calibrations
+
+def get_old_calibrations_from_json():
+    spinner.stop()
+    filename = input(colored("Path to json file with old ambient calibration data: ", "cyan"))
+    spinner.text = "Configuring tasks... (this may take a while)"    
+    spinner.start()
+
+    try:
+        with open(filename, 'r') as file:
+            calibrations = json.load(file)
+        # applying calibrations needs key to be int, but json loads as str
+        return {int(k): v for k, v in calibrations.items()}
+    except json.JSONDecodeError as e:
+        raise Exception(f"Error decoding JSON: {e}")
+    except FileNotFoundError:
+        raise Exception(f"{filename} not found")
 
 def setup_pt(client: sy.Synnax, channel, analog_task, analog_card):
     time_channel = client.channels.create(
@@ -593,13 +619,13 @@ def configure_tasks(client: sy.Synnax, analog_task, digital_task):
 
     if analog_task.config.channels != []:  # only configure if there are channels
         spinner.write(colored(" > Attempting to configure analog task", "cyan"))
-        client.hardware.tasks.configure(
+        client.tasks.configure(
             task=analog_task, timeout=6000
         )  # long timeout cause our NI hardware is dumb
         spinner.write(colored(" > Successfully configured analog task!", "green"))
     if digital_task.config.channels != []:
         spinner.write(colored(" > Attempting to configure digital task", "cyan"))
-        client.hardware.tasks.configure(task=digital_task, timeout=500)
+        client.tasks.configure(task=digital_task, timeout=500)
         spinner.write(colored(" > Successfully configured digital task!", "green"))
     spinner.write(colored(" > All tasks have been successfully created!", "green", attrs=["bold"]))
 
