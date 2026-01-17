@@ -187,7 +187,7 @@ def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: Sys
                     write_data[state_ch] = 1
 
         for pt_ch in config.get_pts():
-            noise = (random.gauss(0, 150)) if (do_noise) else (0) # instrument noise is approximately gaussian
+            noise = (random.gauss(0, 10)) if (do_noise) else (0) # instrument noise is approximately gaussian
             # TODO: add different noise for different instruments with some sort of lookup table
             pressure = system.get_pressure(pt_ch) + noise
             write_data[pt_ch] = pressure

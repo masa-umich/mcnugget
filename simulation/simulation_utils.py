@@ -65,7 +65,7 @@ class Config:
                     synnax_name = f"{prefix}_{suffix}_{ch_index}"
                     real_name: str = config_ch_name.lower()
 
-                    if suffix == "pt":
+                    if suffix == "pt" or real_name == "ox_level_sensor":
                         self.pts[real_name] = synnax_name
                     elif suffix == "tc":
                         self.tcs[real_name] = synnax_name
@@ -277,6 +277,24 @@ class System:
                 volume=0.1,  # idk what a good value should be
                 pressure=0,
             ),
+            Node(
+                name="Ox Dewar",
+                channels=[],
+                volume=999.0,
+                pressure=600,
+            ),
+            Node(
+                name="Ox Tank",
+                channels=[config.get_pt("Ox_Level_Sensor")],
+                volume=66.4,
+                pressure=0,
+            ),
+            Node(
+                name="Fuel Tank",
+                channels=[],#add
+                volume=59.8,
+                pressure=0,
+            )
         ]
 
     def get_valve_obj(self, name: str) -> Valve:
@@ -392,6 +410,8 @@ class System:
         press_iso_1 = self.get_valve_obj(self.config.get_vlv("Press_Iso_1"))
         press_iso_2 = self.get_valve_obj(self.config.get_vlv("Press_Iso_2"))
         press_iso_3 = self.get_valve_obj(self.config.get_vlv("Press_Iso_3"))
+        ox_fill_valve = self.get_valve_obj(self.config.get_vlv("Ox_Fill_Valve"))
+        ox_vent = self.get_valve_obj(self.config.get_vlv("Ox_Vent"))
 
         if copv_vent.get_state() == State.OPEN:
             self.vent_to_atmosphere("COPV", copv_vent.cv)
@@ -410,3 +430,12 @@ class System:
 
         if press_fill_vent.get_state() == State.OPEN:
             self.vent_to_atmosphere("press_node", press_fill_vent.cv)
+
+        if ox_fill_valve.get_state() == State.OPEN:
+            self.transfer_fluid("Ox Dewar", "Ox Tank", ox_fill_valve.cv)
+
+        if ox_vent.get_state() == State.OPEN:
+            self.vent_to_atmosphere("Ox Tank", ox_vent.cv)
+
+        self.vent_to_atmosphere("Ox Tank", 0.0001)  # Small leak to atmosphere
+
