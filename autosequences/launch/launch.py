@@ -396,7 +396,6 @@ def ox_fill(phase: Phase) -> None:
     ox_level = average_ch(
         window=REFRESH_RATE / 2
     )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
-    ox_fill_abort_threshold = config.get_var("ox_fill_abort_threshold")
     ox_fill_target = config.get_var("ox_fill_target")
     ox_fill_lower_bound = config.get_var("ox_fill_lower_bound")
     
@@ -407,7 +406,7 @@ def ox_fill(phase: Phase) -> None:
         phase.log(ox_fill + " opened")
         phase.log(f"Target pressure: {ox_fill_target}")
         current_level: float = ox_level.add_and_get(ctrl[ox_level_sensor])
-        while current_level <= ox_fill_abort_threshold: #check for abort condition
+        while True: 
             #phase.log(f"Current Ox level: {current_level}")
             if current_level >= ox_fill_target:
                 phase.log(f"Target Ox level reached: {current_level}, closing " + ox_fill)
@@ -416,7 +415,7 @@ def ox_fill(phase: Phase) -> None:
             phase.sleep(1/(REFRESH_RATE/2))  # NOTE: subject to change depending on acceptable lag
             current_level = ox_level.add_and_get(ctrl[ox_level_sensor])
         phase.log("Maintaining Ox level with bang-bang control")
-        while current_level <= ox_fill_abort_threshold: #start bang-bang control to maintain level
+        while True: 
             #phase.log(f"Current Ox level: {current_level}")
             if current_level >= ox_fill_target:
                 if(close_vlv(ctrl, ox_fill)):

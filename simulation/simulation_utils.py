@@ -281,7 +281,7 @@ class System:
                 name="Ox Dewar",
                 channels=[],
                 volume=999.0,
-                pressure=600,
+                pressure=300,
             ),
             Node(
                 name="Ox Tank",
