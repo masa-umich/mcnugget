@@ -41,6 +41,7 @@ import pandas as pd
 import synnax as sy
 import json
 import time
+import os
 import synnax.ni as ni
 
 verbose: bool = False # global setting (default = False)
@@ -287,6 +288,7 @@ def prompt_calibrations(client: sy.Synnax):
     print(colored("2 - Use factory calibration data (can be incorrect)", "cyan"))
     if (old_analog_task != None):
         print(colored("3 - Use existing calibration data from last task", "cyan"))
+    print(colored("4 - Import old ambient calibration data from json file", "cyan"))
     answer = input(colored("Selection: ", "cyan"))
     spinner.start()
 
@@ -296,6 +298,8 @@ def prompt_calibrations(client: sy.Synnax):
         return 2
     elif answer == "3" and old_analog_task != None:
         return 3
+    elif answer == "4":
+        return 4
     else:
         print(colored("Invalid selection, please try again", "red"))
         prompt_calibrations(client)
@@ -306,7 +310,9 @@ def handle_calibrations(selection: int, client: sy.Synnax, channels, analog_task
     elif selection == 2:
         return get_factory_calibrations(channels, analog_task)
     elif selection == 3:
-        return get_old_calibrations(client, "Sensors")
+        return get_old_calibrations_from_task(client, "Sensors")
+    elif selection == 4:
+        return get_old_calibrations_from_json()
 
 def apply_calibrations(calibrations, analog_task):
     for channel in analog_task.config.channels:
@@ -409,18 +415,24 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
     for channel in frame.to_df():
         calibrations[channel_keys[channel][0]] = {
             "slope": (channel_keys[channel][2] / 4),
-            "offset": -frame.to_df()[channel].mean(),
+            "offset": float(-frame.to_df()[channel].mean()),
             "min_val": float(channel_keys[channel][1]),
             "max_val": float(channel_keys[channel][2])
         }
 
+    if not os.path.exists('calibrations'):
+        os.makedirs('calibrations')
+
+    with open('calibrations/calibrations-' + time.strftime('%Y%m%d%H%M%S') + '.json', 'w') as save_file:
+        json.dump(calibrations, save_file)
+
     return calibrations
 
-def get_old_calibrations(client: sy.Synnax, task_name: str):
+def get_old_calibrations_from_task(client: sy.Synnax, task_name: str):
     spinner.text = colored("Retrieving calibrations...", "green")
 
     try:
-        task = client.hardware.tasks.retrieve(name=task_name)
+        task = client.tasks.retrieve(name=task_name)
     except:
         raise Exception("Task " + task_name + " not found")
     try:
@@ -439,7 +451,23 @@ def get_old_calibrations(client: sy.Synnax, task_name: str):
                 "max_val": channel["max_val"]
             }
 
-    return task.key, calibrations
+    return calibrations
+
+def get_old_calibrations_from_json():
+    spinner.stop()
+    filename = input(colored("Path to json file with old ambient calibration data: ", "cyan"))
+    spinner.text = "Configuring tasks... (this may take a while)"    
+    spinner.start()
+
+    try:
+        with open(filename, 'r') as file:
+            calibrations = json.load(file)
+        # applying calibrations needs key to be int, but json loads as str
+        return {int(k): v for k, v in calibrations.items()}
+    except json.JSONDecodeError as e:
+        raise Exception(f"Error decoding JSON: {e}")
+    except FileNotFoundError:
+        raise Exception(f"{filename} not found")
 
 def setup_pt(client: sy.Synnax, channel, analog_task, analog_card):
     time_channel = client.channels.create(
