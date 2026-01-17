@@ -75,7 +75,7 @@ class Config:
                     synnax_name = f"{prefix}_{suffix}_{ch_index}"
                     real_name: str = config_ch_name.lower()
 
-                    if suffix == "pt":
+                    if suffix == "pt" or real_name == "ox_level_sensor":
                         self.pts[real_name] = synnax_name
                     elif suffix == "tc":
                         self.tcs[real_name] = synnax_name
@@ -225,7 +225,7 @@ def sensor_vote(
     return sensor_vote_values(values, threshold)
 
 
-def open_vlv(ctrl: Controller, vlv_name: str) -> None:
+def open_vlv(ctrl: Controller, vlv_name: str) -> bool:
     """
     Helper function to open a valve only if not already open
     """
@@ -234,11 +234,11 @@ def open_vlv(ctrl: Controller, vlv_name: str) -> None:
     if state is None:
         raise Exception(f"Could not get state of valve: {vlv_name}, is the valve defined?")
     if state == True:
-        return
+        return False
     ctrl[vlv_name] = True
+    return True
 
-
-def close_vlv(ctrl: Controller, vlv_name: str) -> None:
+def close_vlv(ctrl: Controller, vlv_name: str) -> bool:
     """
     Helper function to close a valve only if not already closed
     """
@@ -247,9 +247,12 @@ def close_vlv(ctrl: Controller, vlv_name: str) -> None:
     if state is None:
         raise Exception(f"Could not get state of valve: {vlv_name}, is the valve defined?")
     if state == False:
-        return
+        return False
     ctrl[vlv_name] = False
+    return True
 
+def STATE(valve: str) -> str:
+    return valve.replace("vlv", "state")
 
 logs: list[str] = []  # Global log list for storing logs if needed
 

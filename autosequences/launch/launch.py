@@ -33,6 +33,7 @@ from autosequence_utils import (
     write_logs_to_file,
     open_vlv,
     close_vlv,
+    SequenceAborted,
 )
 
 # standard modules
@@ -384,6 +385,55 @@ def press_fill_abort(phase: Phase) -> None:
         close_vlv(ctrl, press_iso)
     return
 
+def ox_fill(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+    ox_fill = config.get_vlv("ox_fill_valve")
+    ox_vent = config.get_vlv("ox_vent")
+    fuel_vent = config.get_vlv("fuel_vent")
+
+    ox_level_sensor = config.get_pt("ox_level_sensor")
+    ox_level = average_ch(
+        window=REFRESH_RATE / 2
+    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
+    ox_fill_abort_threshold = config.get_var("ox_fill_abort_threshold")
+    ox_fill_target = config.get_var("ox_fill_target")
+    ox_fill_lower_bound = config.get_var("ox_fill_lower_bound")
+    
+
+    
+    try:#Normal operation
+        open_vlv(ctrl, ox_fill)
+        phase.log(ox_fill + " opened")
+        phase.log(f"Target pressure: {ox_fill_target}")
+        current_level: float = ox_level.add_and_get(ctrl[ox_level_sensor])
+        while current_level <= ox_fill_abort_threshold: #check for abort condition
+            #phase.log(f"Current Ox level: {current_level}")
+            if current_level >= ox_fill_target:
+                phase.log(f"Target Ox level reached: {current_level}, closing " + ox_fill)
+                close_vlv(ctrl, ox_fill)
+                break
+            phase.sleep(1/(REFRESH_RATE/2))  # NOTE: subject to change depending on acceptable lag
+            current_level = ox_level.add_and_get(ctrl[ox_level_sensor])
+        phase.log("Maintaining Ox level with bang-bang control")
+        while current_level <= ox_fill_abort_threshold: #start bang-bang control to maintain level
+            #phase.log(f"Current Ox level: {current_level}")
+            if current_level >= ox_fill_target:
+                if(close_vlv(ctrl, ox_fill)):
+                    phase.log(f"Level above target: {current_level}, closing " + ox_fill)
+            elif current_level <= ox_fill_lower_bound:
+                if(open_vlv(ctrl, ox_fill)):
+                    phase.log(f"Level below lower bound: {current_level}, opening " + ox_fill)
+            phase.sleep(1/(REFRESH_RATE/2))  # wait 1 second before checking again
+            current_level = ox_level.add_and_get(ctrl[ox_level_sensor])
+
+    except:
+        close_vlv(ctrl, ox_fill)
+        open_vlv(ctrl, ox_vent)
+        open_vlv(ctrl, fuel_vent)
+        phase.log(f"Ox level: {current_level} psid")
+        phase.log("Aborted, ox fill valve closed, ox vent and fuel vent opened")
+        
 
 def main() -> None:
     args: argparse.Namespace = parse_args()
@@ -414,6 +464,11 @@ def main() -> None:
         name="Press Fill 3", func=press_fill_3, ctrl=auto.ctrl, config=config
     )
     auto.add_phase(press_fill_3_phase)
+
+    ox_fill_phase: Phase = Phase(
+        name="Ox Fill", func=ox_fill, ctrl=auto.ctrl, config=config
+    )
+    auto.add_phase(ox_fill_phase)    
 
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports and setup
 
