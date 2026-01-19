@@ -284,8 +284,17 @@ class System:
                 pressure=300,
             ),
             Node(
-                name="Ox Tank",
+                name="Ox Tank Level",
                 channels=[config.get_pt("Ox_Level_Sensor")],
+                volume=66.4,
+                pressure=0,
+            ),
+            Node(
+                name="Ox Tank",
+                channels=[
+                    config.get_pt("Ox_Tank_PT_1"),
+                    config.get_pt("Ox_Tank_PT_2"),
+                ],#add
                 volume=66.4,
                 pressure=0,
             ),
@@ -412,6 +421,7 @@ class System:
         press_iso_3 = self.get_valve_obj(self.config.get_vlv("Press_Iso_3"))
         ox_fill_valve = self.get_valve_obj(self.config.get_vlv("Ox_Fill_Valve"))
         ox_vent = self.get_valve_obj(self.config.get_vlv("Ox_Vent"))
+        ox_pre_press = self.get_valve_obj(self.config.get_vlv("Ox_Pre_Press"))
 
         if copv_vent.get_state() == State.OPEN:
             self.vent_to_atmosphere("COPV", copv_vent.cv)
@@ -432,10 +442,13 @@ class System:
             self.vent_to_atmosphere("press_node", press_fill_vent.cv)
 
         if ox_fill_valve.get_state() == State.OPEN:
-            self.transfer_fluid("Ox Dewar", "Ox Tank", ox_fill_valve.cv)
+            self.transfer_fluid("Ox Dewar", "Ox Tank Level", ox_fill_valve.cv)
 
         if ox_vent.get_state() == State.OPEN:
-            self.vent_to_atmosphere("Ox Tank", ox_vent.cv)
+            self.vent_to_atmosphere("Ox Tank Level", ox_vent.cv)
+        
+        if ox_pre_press.get_state() == State.OPEN:
+            self.transfer_fluid("Bottle 1", "Ox Tank", ox_pre_press.cv) #it does not come from bottle 1 but placeholder cuz idk
 
-        self.vent_to_atmosphere("Ox Tank", 0.0001)  # Small leak to atmosphere
-
+        self.vent_to_atmosphere("Ox Tank Level", 0.00005)  # Small leak to atmosphere
+        self.vent_to_atmosphere("Ox Tank", 0.00005)  # Small leak to atmosphere

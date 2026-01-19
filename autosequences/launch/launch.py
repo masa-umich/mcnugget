@@ -421,6 +421,60 @@ def ox_fill(phase: Phase) -> None:
         phase.log(f"Ox level: {ox_level.get()} psid")
         phase.log("Aborted, ox fill valve closed, ox vent and fuel vent opened")
         
+def pre_press(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    ox_pre_press_target = config.get_var("ox_pre_press_target")
+    ox_pre_press_lower_bound = config.get_var("ox_pre_press_lower_bound")
+    
+    averaging_time: float = config.get_var("averaging_time")
+
+    ox_pre_press = config.get_vlv("ox_pre_press")
+    ox_vent = config.get_vlv("ox_vent")
+    fuel_vent = config.get_vlv("fuel_vent")
+
+    ox_tank_pts: list[str] = [
+        config.get_pt("ox_tank_pt_1"),
+        config.get_pt("ox_tank_pt_2"),
+    ]
+    
+    ox_tank_pressure = average_ch(
+        window=REFRESH_RATE / 2
+    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
+
+    try: # Normal operation
+        while True:
+            current_pressure: float = ox_tank_pressure.add_and_get(
+                value=sensor_vote(
+                    ctrl=ctrl, channels=ox_tank_pts, threshold=1.0
+                )
+            )
+            if current_pressure < ox_pre_press_lower_bound:
+                phase.log(f"Current Ox pressure of {current_pressure} psid < {ox_pre_press_lower_bound} psid lower bound")
+                open_vlv(ctrl, ox_pre_press)
+                phase.log(f"Opening Ox Pre-Press until Ox Pressure >= {ox_pre_press_target} psid")
+
+                # Wait until we have reached the target level
+                phase.wait_until(
+                    cond=lambda c: ox_tank_pressure.add_and_get(
+                        value=sensor_vote(
+                            ctrl=c, channels=ox_tank_pts, threshold=50
+                        )
+                    )
+                    >= ox_pre_press_target
+                )
+                
+                phase.log(f"Target Ox pressure reached: {current_pressure}, closing Ox Pre-Press")
+                close_vlv(ctrl, ox_pre_press)
+                phase.log("Continuing to monitor Ox pressure...")
+            phase.sleep(0.01) # yield thread
+    except:
+        close_vlv(ctrl, ox_pre_press)
+        open_vlv(ctrl, ox_vent)
+        open_vlv(ctrl, fuel_vent)
+        phase.log(f"Ox Tank Pressure: {ox_tank_pressure.get()} psid")
+        phase.log("Aborted, ox pre-press valve closed, ox vent and fuel vent opened")
 
 def main() -> None:
     args: argparse.Namespace = parse_args()
@@ -456,6 +510,11 @@ def main() -> None:
         name="Ox Fill", func=ox_fill, ctrl=auto.ctrl, config=config
     )
     auto.add_phase(ox_fill_phase)    
+
+    pre_press_phase: Phase = Phase(
+        name="Pre Press", func=pre_press, ctrl=auto.ctrl, config=config
+    )
+    auto.add_phase(pre_press_phase)
 
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports and setup
 
