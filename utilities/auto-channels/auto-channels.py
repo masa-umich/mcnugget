@@ -175,6 +175,7 @@ def get_sheet(sheet_path: str):
             # The ICD has a goofy formatting, we start header at 1 and mappings must be in "AVI GSE Mappings" sheet
             df = pd.read_excel(sheet_path, header=1, sheet_name="AVI Mappings 25-26", index_col=[0])
             # we also add index_col=0 to handle the merged cells for sensor type
+            df["Connection Location"] = df["Connection Location"].ffill() # Fix merged cells
         except FileNotFoundError as e:
             raise Exception(colored("File not found: " + sheet_path, "red"))
         
@@ -189,6 +190,9 @@ def process_sheet(file: pd.DataFrame):
     time.sleep(0.1)
     setup_thermistor = False
     for _, row in file.iterrows():
+        if row["Connection Location"] != "EBOX":
+            spinner.write(colored(f"Channel found for non-EBox device, skipping...", "yellow"))
+            continue
         # handle invalid rows
         if row["Channel"] == "" or row["Name"] == "":
             spinner.write(colored(" > Skipping row with no channel or name...", "yellow"))
