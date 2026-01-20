@@ -333,6 +333,7 @@ class Phase:
     _pause: threading.Event  # Thread-safe flag
 
     _func_thread: threading.Thread  # Thread wrapper
+    _safe_func: Callable | None = None # Optional safe function to run on abort
 
     _refresh_rate: int  # Hz
     # The minimum amount of time (in seconds) the thread should be spent sleeping / yielding
@@ -345,9 +346,10 @@ class Phase:
     def __init__(
         self,
         name: str,
-        func: Callable,
         ctrl: Controller,
         config: Config,
+        main_func: Callable,
+        safe_func: Callable | None = None,
         refresh_rate: int = 50,
     ):
         self.name: str = name
@@ -358,10 +360,12 @@ class Phase:
         self._refresh_rate: int = refresh_rate
         self._refresh_period: float = 1.0 / (2.0 * self._refresh_rate)
 
+
+        self._safe_func: Callable | None = safe_func
         self._func_thread = threading.Thread(
             name=self.name,
             target=self._func_wrapper,
-            args=(func,),
+            args=(main_func,),
         )
 
         self._pause = threading.Event()
@@ -375,10 +379,14 @@ class Phase:
         if self._abort.is_set():
             raise SequenceAborted("Sequence Aborted")
 
-        while self._pause.is_set():
-            if self._abort.is_set():
-                raise SequenceAborted("Sequence Aborted during pause")
-            time.sleep(self._refresh_period)  # Sleep and yield thread
+        if self._pause.is_set():
+            if (self._safe_func is not None):
+                self._safe_func(self)
+
+            while self._pause.is_set():
+                if self._abort.is_set():
+                    raise SequenceAborted("Sequence Aborted during pause")
+                time.sleep(self._refresh_period)  # Sleep and yield thread
 
     # Sleep function that should be used inside of the control sequence
     # Allows for thread aborting and pausing with _check_signals
@@ -440,9 +448,13 @@ class Phase:
         """
         log(msg=msg, color=color, bold=bold, phase_name=self.name)
 
-    # A function wrapper to be able to do threading stuff (might not be necessary)
-    def _func_wrapper(self, func: Callable):
-        func(self)
+    # A function wrapper to be able to do threading stuff and abort handling
+    def _func_wrapper(self, main_func: Callable) -> None:
+        try:
+            main_func(self)
+        except:
+            if (self._safe_func is not None):
+                self._safe_func(self)
 
     def start(self) -> None:
         self._func_thread.start()

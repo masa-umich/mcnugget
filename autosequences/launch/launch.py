@@ -95,6 +95,8 @@ def global_abort(auto: Autosequence) -> None:
     vents: list[str] = [
         config.get_vlv("COPV_Vent"),
         config.get_vlv("Press_Fill_Vent"),
+        config.get_vlv("ox_vent"),
+        config.get_vlv("fuel_vent"),
     ]
 
     confirm: str = ""
@@ -132,6 +134,7 @@ def background_thread(auto: Autosequence) -> None:
         config.get_vlv("Press_Iso_1"),
         config.get_vlv("Press_Iso_2"),
         config.get_vlv("Press_Iso_3"),
+        config.get_vlv("Press_Iso_4"),
     ]
 
     copv_abort_threshold: float = config.get_var("copv_pressure_max")
@@ -233,12 +236,14 @@ def press_fill(phase: Phase, bottle: int) -> bool:
         config.get_vlv("Press_Iso_1"),
         config.get_vlv("Press_Iso_2"),
         config.get_vlv("Press_Iso_3"),
+        config.get_vlv("Press_Iso_4"),
     ]
 
     bottle_pts: list[str] = [
         config.get_pt("Bottle_1_PT"),
         config.get_pt("Bottle_2_PT"),
         config.get_pt("Bottle_3_PT"),
+        config.get_pt("Bottle_4_PT"),
     ]
 
     copv_pressure = average_ch(
@@ -303,22 +308,14 @@ def press_fill(phase: Phase, bottle: int) -> bool:
 
 
 def press_fill_1(phase: Phase) -> None:
-    try:  # Normal operation
-        press_fill(phase=phase, bottle=1)
-    except Exception as e:  # Abort case
-        phase.log(f"Aborting due to exception: {e}")
-        press_fill_abort(phase=phase)
-    return
+    press_fill(phase=phase, bottle=1)
 
 
 def press_fill_2(phase: Phase) -> None:
-    try:  # Normal operation
-        press_fill(phase=phase, bottle=2)
-    except Exception as e:  # Abort case
-        phase.log(f"Aborting due to exception: {e}")
-        press_fill_abort(phase=phase)
-    return
+    press_fill(phase=phase, bottle=2)
 
+def press_fill_3(phase: Phase) -> None:
+    press_fill(phase=phase, bottle=3)
 
 def tpc_copv(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -355,17 +352,11 @@ def tpc_copv(phase: Phase) -> None:
         phase.sleep(1.0)  # wait 1 second before checking again
 
 
-def press_fill_3(phase: Phase) -> None:
-    try:  # Normal operation
-        tpc: bool = press_fill(phase=phase, bottle=3)
-        if tpc:
-            phase.log("COPV filled to target pressure, now continuing TPC of COPV")
-            tpc_copv(phase=phase)
-    except Exception as e:  # Abort case
-        phase.log(f"Aborting due to exception: {e}")
-        press_fill_abort(phase=phase)
-    return
-
+def press_fill_4(phase: Phase) -> None:
+    tpc: bool = press_fill(phase=phase, bottle=4)
+    if tpc:
+        phase.log("COPV filled to target pressure, now continuing TPC of COPV")
+        tpc_copv(phase=phase)
 
 def press_fill_abort(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -376,6 +367,7 @@ def press_fill_abort(phase: Phase) -> None:
         config.get_vlv("Press_Iso_1"),
         config.get_vlv("Press_Iso_2"),
         config.get_vlv("Press_Iso_3"),
+        config.get_vlv("Press_Iso_4"),
     ]
 
     phase.log("Aborting press fill, closing all relevant valves")
@@ -398,29 +390,34 @@ def ox_fill(phase: Phase) -> None:
         window=REFRESH_RATE / 2
     )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
     ox_level.add(ctrl.get(ox_level_sensor)) # initialize current level
-    
-    try: # Normal operation
-        while True:
-            ox_level.add(ctrl.get(ox_level_sensor)) # update current level
-            if ox_level.get() < ox_fill_lower_bound:
-                phase.log(f"Current Ox level of {ox_level.get()} psid < {ox_fill_lower_bound} psid lower bound")
-                open_vlv(ctrl, ox_fill)
-                phase.log(f"Opening Ox Fill Valve until Ox Level >= {ox_fill_target} psid")
 
-                # Wait until we have reached the target level
-                phase.wait_until(cond=lambda ctrl: ox_level.add_and_get(ctrl.get(ox_level_sensor)) >= ox_fill_target)
+    while True:
+        ox_level.add(ctrl.get(ox_level_sensor)) # update current level
+        if ox_level.get() < ox_fill_lower_bound:
+            phase.log(f"Current Ox level of {ox_level.get()} psid < {ox_fill_lower_bound} psid lower bound")
+            open_vlv(ctrl, ox_fill)
+            phase.log(f"Opening Ox Fill Valve until Ox Level >= {ox_fill_target} psid")
 
-                phase.log(f"Target Ox level reached: {ox_level.get()}, closing Ox Fill Valve")
-                close_vlv(ctrl, ox_fill)
-                phase.log("Continuing to monitor Ox level...")
-            phase.sleep(0.01) # yield thread
-    except:
-        close_vlv(ctrl, ox_fill)
-        open_vlv(ctrl, ox_vent)
-        open_vlv(ctrl, fuel_vent)
-        phase.log(f"Ox level: {ox_level.get()} psid")
-        phase.log("Aborted, ox fill valve closed, ox vent and fuel vent opened")
+            # Wait until we have reached the target level
+            while ox_level.add_and_get(ctrl.get(ox_level_sensor)) <= ox_fill_target:
+                phase.sleep(0.10) # yield thread
+                if open_vlv(ctrl, ox_fill):
+                    phase.log(f"Re-opening Ox Fill Valve, resuming filling...")
+
+            phase.log(f"Target Ox level reached: {ox_level.get()}, closing Ox Fill Valve")
+            close_vlv(ctrl, ox_fill)
+            phase.log("Continuing to monitor Ox level...")
+        phase.sleep(0.01) # yield thread
         
+def ox_fill_safe(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+    ox_fill: str = config.get_vlv("ox_fill_valve")
+
+    phase.log("Safing Ox Fill Phase - Closing Ox Fill Valve")
+    close_vlv(ctrl, ox_fill)
+    return
+
 def pre_press(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
@@ -443,38 +440,41 @@ def pre_press(phase: Phase) -> None:
         window=REFRESH_RATE / 2
     )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
 
-    try: # Normal operation
-        while True:
-            current_pressure: float = ox_tank_pressure.add_and_get(
-                value=sensor_vote(
-                    ctrl=ctrl, channels=ox_tank_pts, threshold=1.0
-                )
+    while True:
+        current_pressure: float = ox_tank_pressure.add_and_get(
+            value=sensor_vote(
+                ctrl=ctrl, channels=ox_tank_pts, threshold=1.0
             )
-            if current_pressure < ox_pre_press_lower_bound:
-                phase.log(f"Current Ox pressure of {current_pressure} psid < {ox_pre_press_lower_bound} psid lower bound")
-                open_vlv(ctrl, ox_pre_press)
-                phase.log(f"Opening Ox Pre-Press until Ox Pressure >= {ox_pre_press_target} psid")
+        )
+        if current_pressure < ox_pre_press_lower_bound:
+            phase.log(f"Current Ox pressure of {current_pressure} psid < {ox_pre_press_lower_bound} psid lower bound")
+            open_vlv(ctrl, ox_pre_press)
+            phase.log(f"Opening Ox Pre-Press until Ox Pressure >= {ox_pre_press_target} psid")
 
-                # Wait until we have reached the target level
-                phase.wait_until(
-                    cond=lambda c: ox_tank_pressure.add_and_get(
-                        value=sensor_vote(
-                            ctrl=c, channels=ox_tank_pts, threshold=50
-                        )
-                    )
-                    >= ox_pre_press_target
+            # Wait until we have reached the target level
+            while True:
+                current_pressure = ox_tank_pressure.add_and_get(
+                    value=sensor_vote(ctrl=ctrl, channels=ox_tank_pts, threshold=50)
                 )
-                
-                phase.log(f"Target Ox pressure reached: {current_pressure}, closing Ox Pre-Press")
-                close_vlv(ctrl, ox_pre_press)
-                phase.log("Continuing to monitor Ox pressure...")
-            phase.sleep(0.01) # yield thread
-    except:
-        close_vlv(ctrl, ox_pre_press)
-        open_vlv(ctrl, ox_vent)
-        open_vlv(ctrl, fuel_vent)
-        phase.log(f"Ox Tank Pressure: {ox_tank_pressure.get()} psid")
-        phase.log("Aborted, ox pre-press valve closed, ox vent and fuel vent opened")
+                if current_pressure >= ox_pre_press_target:
+                    break
+                phase.sleep(0.10)  # yield thread
+                if open_vlv(ctrl, ox_pre_press):
+                    phase.log("Re-opening Ox Pre-Press Valve, resuming pressurization...")
+            
+            phase.log(f"Target Ox pressure reached: {current_pressure}, closing Ox Pre-Press")
+            close_vlv(ctrl, ox_pre_press)
+            phase.log("Continuing to monitor Ox pressure...")
+        phase.sleep(0.01) # yield thread
+
+
+def pre_press_safe(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+    ox_pre_press = config.get_vlv("ox_pre_press")
+
+    close_vlv(ctrl, ox_pre_press)
+    phase.log("Safing Pre-Press Phase - Closing Ox Pre-Press Valve")
 
 def main() -> None:
     args: argparse.Namespace = parse_args()
@@ -492,27 +492,32 @@ def main() -> None:
 
     # Define and add each phase to the autosequence
     press_fill_1_phase: Phase = Phase(
-        name="Press Fill 1", func=press_fill_1, ctrl=auto.ctrl, config=config
+        name="Press Fill 1", ctrl=auto.ctrl, config=config, main_func=press_fill_1, safe_func=press_fill_abort
     )
     auto.add_phase(press_fill_1_phase)
 
     press_fill_2_phase: Phase = Phase(
-        name="Press Fill 2", func=press_fill_2, ctrl=auto.ctrl, config=config
+        name="Press Fill 2", ctrl=auto.ctrl, config=config, main_func=press_fill_2, safe_func=press_fill_abort
     )
     auto.add_phase(press_fill_2_phase)
 
     press_fill_3_phase: Phase = Phase(
-        name="Press Fill 3", func=press_fill_3, ctrl=auto.ctrl, config=config
+        name="Press Fill 3", ctrl=auto.ctrl, config=config, main_func=press_fill_3, safe_func=press_fill_abort
     )
     auto.add_phase(press_fill_3_phase)
 
+    press_fill_4_phase: Phase = Phase(
+        name="Press Fill 4", ctrl=auto.ctrl, config=config, main_func=press_fill_4, safe_func=press_fill_abort
+    )
+    auto.add_phase(press_fill_4_phase)
+
     ox_fill_phase: Phase = Phase(
-        name="Ox Fill", func=ox_fill, ctrl=auto.ctrl, config=config
+        name="Ox Fill", ctrl=auto.ctrl, config=config, main_func=ox_fill, safe_func=ox_fill_safe
     )
     auto.add_phase(ox_fill_phase)    
 
     pre_press_phase: Phase = Phase(
-        name="Pre Press", func=pre_press, ctrl=auto.ctrl, config=config
+        name="Pre Press", ctrl=auto.ctrl, config=config, main_func=pre_press, safe_func=pre_press_safe
     )
     auto.add_phase(pre_press_phase)
 
