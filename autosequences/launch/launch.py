@@ -425,11 +425,7 @@ def pre_press(phase: Phase) -> None:
     ox_pre_press_target = config.get_var("ox_pre_press_target")
     ox_pre_press_lower_bound = config.get_var("ox_pre_press_lower_bound")
     
-    averaging_time: float = config.get_var("averaging_time")
-
     ox_pre_press = config.get_vlv("ox_pre_press")
-    ox_vent = config.get_vlv("ox_vent")
-    fuel_vent = config.get_vlv("fuel_vent")
 
     ox_tank_pts: list[str] = [
         config.get_pt("ox_tank_pt_1"),
@@ -476,6 +472,29 @@ def pre_press_safe(phase: Phase) -> None:
     close_vlv(ctrl, ox_pre_press)
     phase.log("Safing Pre-Press Phase - Closing Ox Pre-Press Valve")
 
+def qd_disconnect(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    ox_fill_qd_pilot: str = config.get_vlv("ox_fill_qd_pilot")
+    ox_pre_press_qd_pilot: str = config.get_vlv("ox_pre_press_qd_pilot")
+    copv_fill_qd_pilot: str = config.get_vlv("copv_fill_qd_pilot")
+
+    phase.log("Input enter to disconnect ox fill QD")
+    phase.wait_for_input()
+    open_vlv(ctrl, ox_fill_qd_pilot)
+    phase.log("Ox fill QD disconnected")
+    phase.log("Input enter to disconnect ox pre-press QD")
+    phase.wait_for_input()
+    open_vlv(ctrl, ox_pre_press_qd_pilot)
+    phase.log("Ox pre-press QD disconnected")
+    phase.log("Input enter to disconnect COPV fill QD")
+    phase.wait_for_input()
+    open_vlv(ctrl, copv_fill_qd_pilot)
+    phase.log("COPV fill QD disconnected")
+    phase.log("QD disconnection phase complete","green",True)
+    return
+
 def main() -> None:
     args: argparse.Namespace = parse_args()
     config: Config = Config(filepath=args.config)
@@ -520,6 +539,11 @@ def main() -> None:
         name="Pre Press", ctrl=auto.ctrl, config=config, main_func=pre_press, safe_func=pre_press_safe
     )
     auto.add_phase(pre_press_phase)
+
+    qd_disconnect_phase: Phase = Phase(
+        name="QD", ctrl=auto.ctrl, config=config, main_func=qd_disconnect
+    )
+    auto.add_phase(qd_disconnect_phase)
 
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports and setup
 

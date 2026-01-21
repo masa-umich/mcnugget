@@ -268,7 +268,7 @@ def log(msg: str, color: str = "white", bold: bool = False, phase_name: str | No
     if phase_name != None: # Add phase name if provided
         entry += colored(f" [{phase_name}]", color="yellow")
     entry += colored(" > ", color="dark_grey")
-
+    
     if bold == False: # Add message with color / bolding
         entry += colored(msg, color=color)
     else:
@@ -331,6 +331,8 @@ class Phase:
 
     _abort: threading.Event  # Thread-safe flag
     _pause: threading.Event  # Thread-safe flag
+    _wait: threading.Event  # Thread-safe flag for waiting for input
+    _stop_wait: threading.Event  # Thread-safe flag for stopping wait for input
 
     _func_thread: threading.Thread  # Thread wrapper
     _safe_func: Callable | None = None # Optional safe function to run on abort
@@ -374,6 +376,9 @@ class Phase:
         self._abort = threading.Event()
         self._abort.clear()  # Make sure flag is cleared initially
 
+        self._wait = threading.Event()
+        self._wait.clear()  # Make sure flag is cleared initially
+
     # Checks for abort or pause signals. Blocks if paused
     def _check_signals(self) -> None:
         if self._abort.is_set():
@@ -386,6 +391,11 @@ class Phase:
             while self._pause.is_set():
                 if self._abort.is_set():
                     raise SequenceAborted("Sequence Aborted during pause")
+                time.sleep(self._refresh_period)  # Sleep and yield thread
+        if self._wait.is_set():
+            while self._wait.is_set():
+                if self._abort.is_set():
+                    raise SequenceAborted("Sequence Aborted during wait for input")
                 time.sleep(self._refresh_period)  # Sleep and yield thread
 
     # Sleep function that should be used inside of the control sequence
@@ -456,6 +466,8 @@ class Phase:
             if (self._safe_func is not None):
                 self._safe_func(self)
 
+    
+    
     def start(self) -> None:
         self._func_thread.start()
 
@@ -471,6 +483,12 @@ class Phase:
     def unpause(self) -> None:
         self._pause.clear()
 
+    def wait_for_input(self) -> None:
+        self._wait.set()
+        self._check_signals()
+
+    def stop_waiting_for_input(self) -> None:
+        self._wait.clear()
 
 class Autosequence:
     """
@@ -598,7 +616,7 @@ class Autosequence:
             if phase_name == phase.name.lower():
                 return phase
         return None
-
+    
     # Run command interface thread & main listener thread
     def run(self) -> None:
         with patch_stdout():  # Fix print statements with command interface
@@ -658,7 +676,9 @@ class Autosequence:
                     user_input.strip().lower().split(maxsplit=1)
                 )  # Get command and phase
                 if len(parts) == 0:
-                    print(" > Please input a command")
+                    for p in self.phases:
+                        if p._wait.is_set():
+                            p.stop_waiting_for_input()
                     continue
                 command: str = parts[0]
                 if (len(parts) == 1) and (parts[0] != "quit") and (parts[0] != "exit"):
@@ -681,9 +701,12 @@ class Autosequence:
                         phase.pause()
                     case "unpause":
                         phase.unpause()
+                    case "go" | "continue":
+                        phase.stop_waiting_for_input()
                     case _:
                         print(" > Unrecognized command, please try again")
                         continue
+
         except KeyboardInterrupt:
             log("Keyboard interrupt detected, aborting!")
             self.raise_abort()
