@@ -392,11 +392,9 @@ class Phase:
                 if self._abort.is_set():
                     raise SequenceAborted("Sequence Aborted during pause")
                 time.sleep(self._refresh_period)  # Sleep and yield thread
-        if self._wait.is_set():
-            while self._wait.is_set():
-                if self._abort.is_set():
-                    raise SequenceAborted("Sequence Aborted during wait for input")
-                time.sleep(self._refresh_period)  # Sleep and yield thread
+        
+                
+                
 
     # Sleep function that should be used inside of the control sequence
     # Allows for thread aborting and pausing with _check_signals
@@ -701,8 +699,6 @@ class Autosequence:
                         phase.pause()
                     case "unpause":
                         phase.unpause()
-                    case "go" | "continue":
-                        phase.stop_waiting_for_input()
                     case _:
                         print(" > Unrecognized command, please try again")
                         continue

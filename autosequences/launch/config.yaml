@@ -59,6 +59,7 @@ channel_mappings:
       COPV_Fill_QD_Pilot: 17
       Igniter: 18
       Press_Iso_4: 19
+      handoff_vlv: 20 #SUPER FAKE I JUST NEEDED IT TO BE HERE
     tcs: # TCs
       Bottle_1_Skin_TC: 1
       Bottle_2_Skin_TC: 2

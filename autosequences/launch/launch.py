@@ -93,26 +93,29 @@ def global_abort(auto: Autosequence) -> None:
     config: Config = auto.config
 
     vents: list[str] = [
-        config.get_vlv("COPV_Vent"),
         config.get_vlv("Press_Fill_Vent"),
         config.get_vlv("ox_vent"),
         config.get_vlv("fuel_vent"),
     ]
 
+    copv_vent: str = config.get_vlv("COPV_Vent") 
+
+    for vent in vents:
+        if config.is_vlv_nc(vent):
+            ctrl[vent] = True
+        else:
+            ctrl[vent] = False
+
     confirm: str = ""
     try:
-        confirm = input("Vent? Y/N: ").lower()
+        confirm = input("Vent COPV? Y/N: ").lower()
     except KeyboardInterrupt:
         log("Taking Ctrl+C as confirmation to vent")
         confirm = "y"
     finally:  # in any case
         if confirm == "y" or confirm == "yes":
             log("Venting...")
-            for vent in vents:
-                if config.is_vlv_nc(vent):
-                    ctrl[vent] = True
-                else:
-                    ctrl[vent] = False
+            open_vlv(ctrl, copv_vent)
             log("Vents opened")
     return
 
@@ -292,7 +295,7 @@ def press_fill(phase: Phase, bottle: int) -> bool:
         phase.log(f"  Bottle pressure: {bottle_pressure:.2f} psi")
         phase.log(f"  COPV pressure: {copv_current_pressure:.2f}")
         if abs(copv_current_pressure - bottle_pressure) <= bottle_equalization_threshold:
-            phase.log("  Bottle equalization reached, ending pressurization")
+            phase.log("  Bottle equalization reached, ending pressurization", "green", True)
             phase.log(f"Closing press fill iso")
             close_vlv(ctrl, press_fill_iso)
             phase.log(f"Completed press fill for bottle {bottle}")
@@ -301,7 +304,7 @@ def press_fill(phase: Phase, bottle: int) -> bool:
             phase.log("  Bottle not yet equalized, continuing pressurization")
         # Check for COPV pressure target reached
         if copv_current_pressure >= (copv_pressure_target - copv_pressure_margin):
-            phase.log("  COPV pressure target reached, ending pressurization")
+            phase.log("  COPV pressure target reached, ending pressurization", "green", True)
             phase.log(f"Closing press fill iso")
             close_vlv(ctrl, press_fill_iso)
             return True
@@ -482,17 +485,81 @@ def qd_disconnect(phase: Phase) -> None:
 
     phase.log("Input enter to disconnect ox fill QD")
     phase.wait_for_input()
+    while(phase._wait.is_set()):
+        phase.sleep(0.1)
     open_vlv(ctrl, ox_fill_qd_pilot)
     phase.log("Ox fill QD disconnected")
     phase.log("Input enter to disconnect ox pre-press QD")
     phase.wait_for_input()
+    while(phase._wait.is_set()):
+        phase.sleep(0.1)
     open_vlv(ctrl, ox_pre_press_qd_pilot)
     phase.log("Ox pre-press QD disconnected")
     phase.log("Input enter to disconnect COPV fill QD")
     phase.wait_for_input()
+    while(phase._wait.is_set()):
+        phase.sleep(0.1)
     open_vlv(ctrl, copv_fill_qd_pilot)
     phase.log("COPV fill QD disconnected")
     phase.log("QD disconnection phase complete","green",True)
+    return
+
+
+def coldflow(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    handoff: str = config.get_vlv("handoff_vlv")
+
+    phase.log("Hit 'enter' to start coldflow sequence")
+    phase.wait_for_input()
+    
+    while(phase._wait.is_set()):
+        phase.sleep(0.1)
+    phase.log("Beginning coldflow sequence...","green",True)
+    
+    for i in range(10,1,-1):
+        phase.log(f"T-{i}")
+        if (i == 6):
+            phase.log("Press 'enter' to confirm smoke")
+            phase.wait_for_input()
+        if (i == 2 and phase._wait.is_set()):
+            phase.log("Coldflow aborted. No ignition.","red",True)
+            global_abort(phase.auto)
+            return
+        elif (i == 2):
+            phase.log("Ignition confirmed.","green",True)
+            open_vlv(ctrl, handoff)
+            phase.log("Control handoff complete.  Go Limelight!","green",True)
+
+        phase.sleep(1)
+    return
+
+def coldflow_full(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    phase.log("Hit 'enter' to start coldflow sequence")
+    phase.wait_for_input()
+    
+    while(phase._wait.is_set()):
+        phase.sleep(0.1)
+    phase.log("Beginning coldflow sequence...","green",True)
+    
+    for i in range(10,-1,-1):
+        phase.log(f"T-{i}")
+        if (i == 6):
+            phase.log("Press 'enter' to confirm smoke")
+            phase.wait_for_input()
+        if (i == 2 and phase._wait.is_set()):
+            phase.log("Coldflow aborted. No ignition.","red",True)
+            global_abort(phase.auto)
+            return
+        elif (i ==2):
+            phase.log("Ignition confirmed. Continuing sequence...","green",True)
+        if (i == 0):
+            phase.log("IGNITION","red",True)
+        phase.sleep(1)
     return
 
 def main() -> None:
@@ -544,6 +611,16 @@ def main() -> None:
         name="QD", ctrl=auto.ctrl, config=config, main_func=qd_disconnect
     )
     auto.add_phase(qd_disconnect_phase)
+
+    coldflow_phase: Phase = Phase(
+        name="Coldflow", ctrl=auto.ctrl, config=config, main_func=coldflow
+    )
+    auto.add_phase(coldflow_phase)
+
+    coldflow_full_phase: Phase = Phase(
+        name="Coldflow Full", ctrl=auto.ctrl, config=config, main_func=coldflow_full
+    )
+    auto.add_phase(coldflow_full_phase)
 
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports and setup
 
