@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "synnax==0.46.0",
+#     "synnax>=0.49,<0.50",
 #     "termcolor",
 #     "yaspin",
 # ]
@@ -42,7 +42,7 @@ spinner = yaspin()
 spinner.text = colored("Initializing...", "yellow")
 spinner.start()
 
-from synnax.hardware import ni
+import synnax.ni as ni
 from typing import Any, List
 import synnax as sy
 import argparse
