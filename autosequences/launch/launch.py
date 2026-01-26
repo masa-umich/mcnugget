@@ -98,7 +98,21 @@ def global_abort(auto: Autosequence) -> None:
         config.get_vlv("fuel_vent"),
     ]
 
+    ox_mpv: str = config.get_vlv("ox_mpv")
+    fuel_mpv: str = config.get_vlv("fuel_mpv")
+    press_iso_1: str = config.get_vlv("Press_Iso_1")
+    press_iso_2: str = config.get_vlv("Press_Iso_2")
+    press_iso_3: str = config.get_vlv("Press_Iso_3")
+    press_iso_4: str = config.get_vlv("Press_Iso_4")
     copv_vent: str = config.get_vlv("COPV_Vent") 
+
+    ctrl[ox_mpv] = False
+    ctrl[fuel_mpv] = False
+    ctrl[press_iso_1] = False
+    ctrl[press_iso_2] = False
+    ctrl[press_iso_3] = False
+    ctrl[press_iso_4] = False
+    
 
     for vent in vents:
         if config.is_vlv_nc(vent):
@@ -531,8 +545,8 @@ def coldflow(phase: Phase) -> None:
             phase.log("Ignition confirmed.","green",True)
             open_vlv(ctrl, handoff)
             phase.log("Control handoff complete.  Go Limelight!","green",True)
-
         phase.sleep(1)
+
     return
 
 def coldflow_full(phase: Phase) -> None:
@@ -560,6 +574,7 @@ def coldflow_full(phase: Phase) -> None:
         if (i == 0):
             phase.log("IGNITION","red",True)
         phase.sleep(1)
+        
     return
 
 def main() -> None:
