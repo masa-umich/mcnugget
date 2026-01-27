@@ -39,7 +39,15 @@ from autosequence_utils import (
 import argparse
 import time
 
+
+#CHANGEABLE CONSTANTS
 REFRESH_RATE: int = 50  # Hz
+FIRST_MPV_TIME: float = 0.5  # seconds before ignition to open first mpv
+SECOND_MPV_DELAY: float = 0.2  # seconds after first mpv to open second mpv
+SECOND_MPV_TIME: float = FIRST_MPV_TIME - SECOND_MPV_DELAY
+FIRST_MPV: str = "ox" # Which MPV to open first, ox or fuel
+SECOND_MPV: str = "fuel" # Which MPV to open second, ox or fuel
+DURATION: int = 5  # Duration to keep MPVs open after ignition in seconds
 
 
 # CLI argument parser
@@ -104,7 +112,9 @@ def global_abort(auto: Autosequence) -> None:
     press_iso_2: str = config.get_vlv("Press_Iso_2")
     press_iso_3: str = config.get_vlv("Press_Iso_3")
     press_iso_4: str = config.get_vlv("Press_Iso_4")
+    ox_fill: str = config.get_vlv("ox_fill_valve")
     copv_vent: str = config.get_vlv("COPV_Vent") 
+
 
     ctrl[ox_mpv] = False
     ctrl[fuel_mpv] = False
@@ -112,7 +122,7 @@ def global_abort(auto: Autosequence) -> None:
     ctrl[press_iso_2] = False
     ctrl[press_iso_3] = False
     ctrl[press_iso_4] = False
-    
+    ctrl[ox_fill] = False
 
     for vent in vents:
         if config.is_vlv_nc(vent):
@@ -532,26 +542,66 @@ def coldflow(phase: Phase) -> None:
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...","green",True)
     
-    for i in range(10,1,-1):
-        phase.log(f"T-{i}")
-        if (i == 6):
+    start = time.perf_counter()
+    fired = set()
+
+    while True:
+        t = time.perf_counter() - start
+        
+        if 0.0 not in fired and 0.0 <= t < 0.0 + 0.001:
+            phase.log("T-10")
+            fired.add(0.0)
+        if 1.0 not in fired and 1.0 <= t < 1.0 + 0.001:
+            phase.log("T-9")
+            fired.add(1.0)
+        if 2.0 not in fired and 2.0 <= t < 2.0 + 0.001:
+            phase.log("T-8")
+            fired.add(2.0)
+        if 3.0 not in fired and 3.0 <= t < 3.0 + 0.001:
+            phase.log("T-7")
+            fired.add(3.0)
+        if 4.0 not in fired and 4.0 <= t < 4.0 + 0.001:
+            phase.log("T-6")
             phase.log("Press 'enter' to confirm smoke")
             phase.wait_for_input()
-        if (i == 2 and phase._wait.is_set()):
-            phase.log("Coldflow aborted. No ignition.","red",True)
-            global_abort(phase.auto)
-            return
-        elif (i == 2):
-            phase.log("Ignition confirmed.","green",True)
-            open_vlv(ctrl, handoff)
-            phase.log("Control handoff complete.  Go Limelight!","green",True)
-        phase.sleep(1)
-
+            fired.add(4.0)
+        if 5.0 not in fired and 5.0 <= t < 5.0 + 0.001:
+            phase.log("T-5")
+            fired.add(5.0)
+        if 6.0 not in fired and 6.0 <= t < 6.0 + 0.001:
+            phase.log("T-4")
+            fired.add(6.0)
+        if 7.0 not in fired and 7.0 <= t < 7.0 + 0.001:
+            phase.log("T-3")
+            fired.add(7.0)
+        if 8.0 not in fired and 8.0 <= t < 8.0 + 0.001:
+            phase.log("T-2")
+            if phase._wait.is_set():
+                phase.log("Coldflow aborted. No ignition.","red",True)
+                global_abort(phase.auto)
+                return
+            else:
+                phase.log("Ignition confirmed. Handing off...","green",True)
+                open_vlv(ctrl, handoff)
+            fired.add(8.0)
+        if 9.0 not in fired and 9.0 <= t < 9.0 + 0.001:
+            phase.log("T-1")
+            fired.add(9.0)
+        if 10.0 not in fired and 10.0 <= t:
+            phase.log("IGNITION","red",True)
+            phase.log("Launch autosequence complete.","green",True)
+            break
     return
 
 def coldflow_full(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
+
+    vents: list[str] = [
+        config.get_vlv("Press_Fill_Vent"),
+        config.get_vlv("ox_vent"),
+        config.get_vlv("fuel_vent"),
+    ]
 
     phase.log("Hit 'enter' to start coldflow sequence")
     phase.wait_for_input()
@@ -560,20 +610,76 @@ def coldflow_full(phase: Phase) -> None:
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...","green",True)
     
-    for i in range(10,-1,-1):
-        phase.log(f"T-{i}")
-        if (i == 6):
+    start = time.perf_counter()
+    fired = set()
+    WINDOW = 0.001
+
+    while True:
+        t = time.perf_counter() - start
+        
+        if 0.0 not in fired and 0.0 <= t < 0.0 + WINDOW:
+            phase.log("T-10")
+            fired.add(0.0)
+        if 1.0 not in fired and 1.0 <= t < 1.0 + WINDOW:
+            phase.log("T-9")
+            fired.add(1.0)
+        if 2.0 not in fired and 2.0 <= t < 2.0 + WINDOW:
+            phase.log("T-8")
+            fired.add(2.0)
+        if 3.0 not in fired and 3.0 <= t < 3.0 + WINDOW:
+            phase.log("T-7")
+            fired.add(3.0)
+        if 4.0 not in fired and 4.0 <= t < 4.0 + WINDOW:
+            phase.log("T-6")
             phase.log("Press 'enter' to confirm smoke")
             phase.wait_for_input()
-        if (i == 2 and phase._wait.is_set()):
-            phase.log("Coldflow aborted. No ignition.","red",True)
-            global_abort(phase.auto)
-            return
-        elif (i ==2):
-            phase.log("Ignition confirmed. Continuing sequence...","green",True)
-        if (i == 0):
+            fired.add(4.0)
+        if 5.0 not in fired and 5.0 <= t < 5.0 + WINDOW:
+            phase.log("T-5")
+            fired.add(5.0)
+        if 6.0 not in fired and 6.0 <= t < 6.0 + WINDOW:
+            phase.log("T-4")
+            fired.add(6.0)
+        if 7.0 not in fired and 7.0 <= t < 7.0 + WINDOW:
+            phase.log("T-3")
+            fired.add(7.0)
+        if 8.0 not in fired and 8.0 <= t < 8.0 + WINDOW:
+            phase.log("T-2")
+            if phase._wait.is_set():
+                phase.log("Coldflow aborted. No ignition.","red",True)
+                global_abort(phase.auto)
+                return
+            else:
+                phase.log("Ignition confirmed. Continuing sequence...","green",True)
+            fired.add(8.0)
+        if 9.0 not in fired and 9.0 <= t < 9.0 + WINDOW:
+            phase.log("T-1")
+            fired.add(9.0)
+        if 10.0 not in fired and 10.0 <= t < 10.0 + WINDOW:
             phase.log("IGNITION","red",True)
-        phase.sleep(1)
+            fired.add(10.0)
+        if 32.0 not in fired and (10.0-FIRST_MPV_TIME) <= t < (10.0-FIRST_MPV_TIME) + 0.001:
+            phase.log("Opening First MPV")
+            open_vlv(ctrl, config.get_vlv(f"{FIRST_MPV.lower()}_mpv"))
+            fired.add(32.0)
+        if 64.0 not in fired and (10.0-SECOND_MPV_TIME) <= t < (10.0-SECOND_MPV_TIME) + 0.001:
+            phase.log("Opening Second MPV")
+            open_vlv(ctrl, config.get_vlv(f"{SECOND_MPV.lower()}_mpv"))
+            fired.add(64.0)
+        if t >= 10.0 + WINDOW:
+            for i in range(0,DURATION):
+                phase.log(f"T+{i+1}")
+                time.sleep(1.0)
+            phase.log("Coldflow sequence complete. Safing system.","green",True)
+            close_vlv(ctrl, config.get_vlv(f"{FIRST_MPV.lower()}_mpv"))
+            close_vlv(ctrl, config.get_vlv(f"{SECOND_MPV.lower()}_mpv"))
+            for vent in vents:
+                if config.is_vlv_nc(vent):
+                    ctrl[vent] = True
+                else:
+                    ctrl[vent] = False
+            break
+            
         
     return
 
