@@ -1,4 +1,8 @@
 variables:
+  FIRST_MPV_TIME: 0.5  # seconds before ignition to open first mpv
+  SECOND_MPV_DELAY: 0.2  # seconds after first mpv to open second mpv
+  FIRST_MPV: "ox" # Which MPV to open first, ox or fuel
+  DURATION: 5  # Duration to keep MPVs open after ignition in seconds
   averaging_time: 1 # seconds to average over for pressure readings
   press_rate_1: 20 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles

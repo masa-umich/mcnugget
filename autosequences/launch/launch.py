@@ -42,12 +42,7 @@ import time
 
 #CHANGEABLE CONSTANTS
 REFRESH_RATE: int = 50  # Hz
-FIRST_MPV_TIME: float = 0.5  # seconds before ignition to open first mpv
-SECOND_MPV_DELAY: float = 0.2  # seconds after first mpv to open second mpv
-SECOND_MPV_TIME: float = FIRST_MPV_TIME - SECOND_MPV_DELAY
-FIRST_MPV: str = "ox" # Which MPV to open first, ox or fuel
-SECOND_MPV: str = "fuel" # Which MPV to open second, ox or fuel
-DURATION: int = 5  # Duration to keep MPVs open after ignition in seconds
+
 
 
 # CLI argument parser
@@ -596,6 +591,21 @@ def coldflow(phase: Phase) -> None:
 def coldflow_full(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
+
+    FIRST_MPV_TIME: float = config.get_var("FIRST_MPV_TIME")  # seconds before ignition to open first mpv
+    SECOND_MPV_DELAY: float = config.get_var("SECOND_MPV_DELAY")  # seconds after first mpv to open second mpv
+    SECOND_MPV_TIME: float = FIRST_MPV_TIME - SECOND_MPV_DELAY # seconds before ignition to open second mpv
+    FIRST_MPV: str = config.get_var("FIRST_MPV") # Which MPV to open first, ox or fuel
+    DURATION: int = config.get_var("DURATION")  # Duration to keep MPVs open after ignition in seconds
+
+    if(FIRST_MPV.lower() == "ox"):
+        SECOND_MPV: str = "fuel" # Which MPV to open second, ox or fuel
+    elif (FIRST_MPV.lower() == "fuel"):
+        SECOND_MPV: str = "ox" # Which MPV to open second, ox or fuel
+    else:
+        phase.log(f"Invalid FIRST_MPV value: {FIRST_MPV}. Must be 'ox' or 'fuel'. Aborting coldflow.","red",True)
+        global_abort(phase.auto)
+        return
 
     vents: list[str] = [
         config.get_vlv("Press_Fill_Vent"),
