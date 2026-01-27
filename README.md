@@ -1,6 +1,8 @@
 # McNugget
 "The McChicken of Data Analysis."
 
+README last updated: 1-27-2026
+
 ## Overview
 McNugget is a collection of Python (and a few MatLab) scripts which interact with our data visualization, system control, and telemetry database server, [Synnax](https://www.synnaxlabs.com/). This repository was originally made by [Emiliano Bonilla](https://www.linkedin.com/in/emiliano-bonilla-8a0a95187/) in March 2023, then maintained by the 'Software' subteam until August 2025, and is now managed by Avionics.
 
@@ -39,17 +41,28 @@ Hopefully what you're looking for is named as you would expect, and you can find
 ```sh
 ./auto-channels.py
 ```
+or, if you're outside of a POSIX system you can also type out the full command:
+```sh
+uv run auto-channels.py
+```
 
 ## Development
 Assuming you've already gone through the usage instructions (you have [`uv`](https://docs.astral.sh/uv/) installed and this repository cloned)
 ### Step 0: Make your project (Optional)
-Go to the right directory (`autosequences/`, `utilities/`, or `avionics/`) and make a new project directory with `uv`:
+If you're make a new script from scratch rather than modifying an existing one, follow this guide so that it fits in with the others. First, go to the right directory (`autosequences/`, `utilities/`, or `avionics/`) and make a new project directory with `uv`:
 ```sh
 uv init <new project name>
 ```
 Enter it, if you want you can rename `main.py` to the name of the project which is usually nice, and then I also suggest you make the primary file of the script into a `uv` script so that it's easier for others to execute without activating the venv:
 ```sh
 uv init --script <primary file name>
+```
+I also suggest that you add this line to the very top of the script. This is the 'shebang' that allows you to run the script as if it were an executable file (using the `./` syntax in your terminal) 
+```
+#!/usr/bin/env -S uv run --script
+```
+And if you've added a shebang, also modify the file metadata so that the operating system knows to look for it.
+```sh
 chmod +x <primary file name> # tells the OS that this should be run as an executable
 ```
 ### Step 1: Activate & Sync Virtual Environment
@@ -79,6 +92,10 @@ uv add synnax
 As well as any other external modules or libraries you want to use. Also make sure to add them to the 'script' version of the primary file as well with:
 ```sh
 uv add --script <file_name> synnax
+```
+or specify a version like this:
+```sh
+uv add --script <file_name> 'synnax==0.49.8'
 ```
 And run your project with:
 ```sh
@@ -122,6 +139,15 @@ When run in a project with the virtual environment activated. When connecting, t
 - **Password:** `seldon`
 - **Secure:** `FALSE`
 
+Q: How do I make it so I can run my script with the `./` again?\
+A: Add this line to the top of the file above your UV script header:
+```sh
+#!/usr/bin/env -S uv run --script
+```
+And also modify the file metadata so the OS sees it as an executable with this:
+```sh
+sudo chmod +x <filname>
+``` 
 
 Q: When I run a Synnax server on Windows but try to access it with my script in WSL, I can't connect\
 A: The IP of your Windows computer that is exposed to WSL is not `localhost` be default, but you can find it by running this command in WSL:
