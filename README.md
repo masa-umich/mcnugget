@@ -6,12 +6,15 @@ README last updated: 1-27-2026
 ## Overview
 McNugget is a collection of Python (and a few MatLab) scripts which interact with our data visualization, system control, and telemetry database server, [Synnax](https://www.synnaxlabs.com/). This repository was originally made by [Emiliano Bonilla](https://www.linkedin.com/in/emiliano-bonilla-8a0a95187/) in March 2023, then maintained by the 'Software' subteam until August 2025, and is now managed by Avionics.
 
+## Disclaimer with Windows
+
+> ### Running McNugget scripts natively inside of Windows may have unexpected behavior, including potentially being unable to use `Ctrl+C` for aborting!
+
+While Python is an interpreted language which lets you run these scripts on any operating system, there can be some differences with how your operating system may interact with script including different Keyboard Interupt signals (`Ctrl+C`) and file path formatting.
+
+This may not be an issue most of the time, but just in case I highly reccomend using [`WSL`](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows sub-system for Linux), which will allow you to run a virtual machine of Ubuntu (or most other Linux distributions) locally on your computer with fairly low overhead. Click on the link above for instructions on how to do that.
+
 ## Usage
-### Step `null`: Are you on Windows? (Optional)
-If you are, download and launch/use [`WSL`](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows sub-system for Linux), which will allow you to run a virtual machine of Ubuntu (or most other Linux distributions) locally on your computer with fairly low overhead. 
-
-This is useful because some Python behavior is dependent on your operating system such as program interrupt signals and file systems. While MacOS and Linux are "POSIX compliant" and so share many commonalities with how they interact with programs, Windows is not which causes problems. Using WSL gets around all of these headaches by literally installing another operating system inside of your existing Windows install so that you can work on stuff just like this without compatibility issues.
-
 ### Step 0: Authenticate with Git for Development (Optional)
 If you are doing development, you probably want to push to this repository eventually, however to do this you will need to authenticate yourself and be added to this project. Assuming you have a GitHub account with your Umich email added to this repository, there are a few ways of doing this:
 
