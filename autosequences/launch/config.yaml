@@ -1,8 +1,8 @@
 variables:
-  FIRST_MPV_TIME: 0.5  # seconds before ignition to open first mpv
-  SECOND_MPV_DELAY: 0.2  # seconds after first mpv to open second mpv
-  FIRST_MPV: "ox" # Which MPV to open first, ox or fuel
-  DURATION: 5  # Duration to keep MPVs open after ignition in seconds
+  first_mpv_time: 0.5  # seconds before ignition to open first mpv
+  second_mpv_delay: 0.2  # seconds after first mpv to open second mpv
+  first_mpv: "ox" # Which MPV to open first, ox or fuel
+  duration: 5  # Duration to keep MPVs open after ignition in seconds
   averaging_time: 1 # seconds to average over for pressure readings
   press_rate_1: 20 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
@@ -36,6 +36,7 @@ channel_mappings:
       Purge_Post_Reg_PT: 6
       Trickle_Purge_PT: 7
       Bottle_1_PT: 8
+      # 9 though 14 are 12 volt, skipped
       Bottle_2_PT: 15
       Bottle_3_PT: 16
       Bottle_4_PT: 17
@@ -125,8 +126,12 @@ channel_mappings:
       Fuel_Flowmeter_Inlet_PT: 9
       Fuel_Flowmeter_Throat_PT: 10
     valves:
-      Ox_MPV: 1
-      Fuel_MPV: 2
+      Ox_MPV: 
+        id: 1
+        normally_open: true
+      Fuel_MPV: 
+        id: 2
+        normally_open: true
     tcs: # TCs
       Ox_Level_Sensor_TC: 1
       Fuel_Manifold_TC_1: 2

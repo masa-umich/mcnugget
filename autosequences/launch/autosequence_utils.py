@@ -573,13 +573,13 @@ class Autosequence:
             if state == True:
                 if is_nc:
                     confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
-                    if confirm.lower() == "y" or confirm.lower() == "yes" or confirm.lower() == "":
+                    if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
                         log(f"Closing valve {vlv} on autosequence start")
                         close_vlv(self.ctrl, vlv)
             else:
                 if not is_nc:
                     confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
-                    if confirm.lower() == "y" or confirm.lower() == "yes" or confirm.lower() == "":
+                    if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
                         log(f"Closing valve {vlv} on autosequence start")
                         open_vlv(self.ctrl, vlv) # "open" is actually closing for NO valves
 

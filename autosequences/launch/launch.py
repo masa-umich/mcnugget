@@ -38,6 +38,7 @@ from autosequence_utils import (
 # standard modules
 import argparse
 import time
+import math
 
 
 #CHANGEABLE CONSTANTS
@@ -101,23 +102,25 @@ def global_abort(auto: Autosequence) -> None:
         config.get_vlv("fuel_vent"),
     ]
 
-    ox_mpv: str = config.get_vlv("ox_mpv")
-    fuel_mpv: str = config.get_vlv("fuel_mpv")
-    press_iso_1: str = config.get_vlv("Press_Iso_1")
-    press_iso_2: str = config.get_vlv("Press_Iso_2")
-    press_iso_3: str = config.get_vlv("Press_Iso_3")
-    press_iso_4: str = config.get_vlv("Press_Iso_4")
-    ox_fill: str = config.get_vlv("ox_fill_valve")
+    valves_to_close: list[str] = [
+        config.get_vlv("ox_mpv"),
+        config.get_vlv("fuel_mpv"),
+        config.get_vlv("Press_Iso_1"),
+        config.get_vlv("Press_Iso_2"),
+        config.get_vlv("Press_Iso_3"),
+        config.get_vlv("Press_Iso_4"),
+        config.get_vlv("ox_fill_valve"),
+    ]
+
+
     copv_vent: str = config.get_vlv("COPV_Vent") 
 
 
-    ctrl[ox_mpv] = False
-    ctrl[fuel_mpv] = False
-    ctrl[press_iso_1] = False
-    ctrl[press_iso_2] = False
-    ctrl[press_iso_3] = False
-    ctrl[press_iso_4] = False
-    ctrl[ox_fill] = False
+    for valve in valves_to_close:
+        if config.is_vlv_nc(valve):
+            ctrl[valve] = False
+        else:
+            ctrl[valve] = True
 
     for vent in vents:
         if config.is_vlv_nc(vent):
@@ -537,81 +540,54 @@ def coldflow(phase: Phase) -> None:
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...","green",True)
     
-    start = time.perf_counter()
-    fired = set()
-
+    target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(8.0) #time of handoff
+    igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(6.0) #time to prompt for igniter light
+    times_shown = set()
+    igniter_prompted: bool = False
     while True:
-        t = time.perf_counter() - start
-        
-        if 0.0 not in fired and 0.0 <= t < 0.0 + 0.001:
-            phase.log("T-10")
-            fired.add(0.0)
-        if 1.0 not in fired and 1.0 <= t < 1.0 + 0.001:
-            phase.log("T-9")
-            fired.add(1.0)
-        if 2.0 not in fired and 2.0 <= t < 2.0 + 0.001:
-            phase.log("T-8")
-            fired.add(2.0)
-        if 3.0 not in fired and 3.0 <= t < 3.0 + 0.001:
-            phase.log("T-7")
-            fired.add(3.0)
-        if 4.0 not in fired and 4.0 <= t < 4.0 + 0.001:
-            phase.log("T-6")
-            phase.log("Press 'enter' to confirm smoke")
-            phase.wait_for_input()
-            fired.add(4.0)
-        if 5.0 not in fired and 5.0 <= t < 5.0 + 0.001:
-            phase.log("T-5")
-            fired.add(5.0)
-        if 6.0 not in fired and 6.0 <= t < 6.0 + 0.001:
-            phase.log("T-4")
-            fired.add(6.0)
-        if 7.0 not in fired and 7.0 <= t < 7.0 + 0.001:
-            phase.log("T-3")
-            fired.add(7.0)
-        if 8.0 not in fired and 8.0 <= t < 8.0 + 0.001:
+        phase.sleep(0)
+        now: sy.TimeStamp = sy.TimeStamp.now()
+        if now >= target_time and phase._wait.is_set():
             phase.log("T-2")
-            if phase._wait.is_set():
-                phase.log("Coldflow aborted. No ignition.","red",True)
-                global_abort(phase.auto)
-                return
-            else:
-                phase.log("Ignition confirmed. Handing off...","green",True)
-                open_vlv(ctrl, handoff)
-            fired.add(8.0)
-        if 9.0 not in fired and 9.0 <= t < 9.0 + 0.001:
-            phase.log("T-1")
-            fired.add(9.0)
-        if 10.0 not in fired and 10.0 <= t:
-            phase.log("IGNITION","red",True)
+            phase.log("Coldflow aborted. No ignition.","red",True)
+            phase.stop_waiting_for_input()
+            #NOTE: add no-light logic here.
+            break
+        elif now>= target_time:
+            phase.log("Ignition confirmed. Handing off...","green",True)
+            phase.log("Opening handoff valve...")
+            open_vlv(ctrl, handoff)
             phase.log("Launch autosequence complete.","green",True)
             break
+        if now >= igniter_start_time and not igniter_prompted:
+            phase.log("Press 'enter' to confirm smoke...","yellow",True)
+            phase.wait_for_input()
+            igniter_prompted = True
+        remaining_span = sy.TimeSpan(target_time - now)
+        remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
+        remaining_seconds_int = int(math.ceil(remaining_seconds))
+        if remaining_seconds_int not in times_shown:
+            phase.log(f"T-{remaining_seconds_int + 2}")
+            times_shown.add(remaining_seconds_int)
     return
 
 def coldflow_full(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
 
-    FIRST_MPV_TIME: float = config.get_var("FIRST_MPV_TIME")  # seconds before ignition to open first mpv
-    SECOND_MPV_DELAY: float = config.get_var("SECOND_MPV_DELAY")  # seconds after first mpv to open second mpv
-    SECOND_MPV_TIME: float = FIRST_MPV_TIME - SECOND_MPV_DELAY # seconds before ignition to open second mpv
-    FIRST_MPV: str = config.get_var("FIRST_MPV") # Which MPV to open first, ox or fuel
-    DURATION: int = config.get_var("DURATION")  # Duration to keep MPVs open after ignition in seconds
+    first_mpv_time: float = config.get_var("first_mpv_time")  # seconds before ignition to open first mpv
+    second_mpv_delay: float = config.get_var("second_mpv_delay")  # seconds after first mpv to open second mpv
+    second_mpv_time: float = first_mpv_time - second_mpv_delay # seconds before ignition to open second mpv
+    first_mpv: str = config.get_var("first_mpv") # Which MPV to open first, ox or fuel
 
-    if(FIRST_MPV.lower() == "ox"):
-        SECOND_MPV: str = "fuel" # Which MPV to open second, ox or fuel
-    elif (FIRST_MPV.lower() == "fuel"):
-        SECOND_MPV: str = "ox" # Which MPV to open second, ox or fuel
+    if(first_mpv.lower() == "ox"):
+        second_mpv: str = "fuel" # Which MPV to open second, ox or fuel
+    elif (first_mpv.lower() == "fuel"):
+        second_mpv: str = "ox" # Which MPV to open second, ox or fuel
     else:
-        phase.log(f"Invalid FIRST_MPV value: {FIRST_MPV}. Must be 'ox' or 'fuel'. Aborting coldflow.","red",True)
-        global_abort(phase.auto)
+        phase.log(f"Invalid first_mpv value: {first_mpv}. Must be 'ox' or 'fuel'. Aborting coldflow.","red",True)
+        #NOTE: What to do here?
         return
-
-    vents: list[str] = [
-        config.get_vlv("Press_Fill_Vent"),
-        config.get_vlv("ox_vent"),
-        config.get_vlv("fuel_vent"),
-    ]
 
     phase.log("Hit 'enter' to start coldflow sequence")
     phase.wait_for_input()
@@ -620,77 +596,121 @@ def coldflow_full(phase: Phase) -> None:
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...","green",True)
     
-    start = time.perf_counter()
-    fired = set()
-    WINDOW = 0.001
+    
+    target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(10.0) #time of ignition
+    igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(6.0) #time to prompt for igniter light
+    igniter_end_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(2.0) #time to stop waiting for igniter light
+    first_mpv_open_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(first_mpv_time)
+    second_mpv_open_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(second_mpv_time)
+
+    times_shown = set() # to track which times have been shown in countdown
+
+    first_mpv_opened: bool = False
+    second_mpv_opened: bool = False
+    igniter_prompted: bool = False
+    igniter_confirmed: bool = False
 
     while True:
-        t = time.perf_counter() - start
-        
-        if 0.0 not in fired and 0.0 <= t < 0.0 + WINDOW:
-            phase.log("T-10")
-            fired.add(0.0)
-        if 1.0 not in fired and 1.0 <= t < 1.0 + WINDOW:
-            phase.log("T-9")
-            fired.add(1.0)
-        if 2.0 not in fired and 2.0 <= t < 2.0 + WINDOW:
-            phase.log("T-8")
-            fired.add(2.0)
-        if 3.0 not in fired and 3.0 <= t < 3.0 + WINDOW:
-            phase.log("T-7")
-            fired.add(3.0)
-        if 4.0 not in fired and 4.0 <= t < 4.0 + WINDOW:
-            phase.log("T-6")
-            phase.log("Press 'enter' to confirm smoke")
-            phase.wait_for_input()
-            fired.add(4.0)
-        if 5.0 not in fired and 5.0 <= t < 5.0 + WINDOW:
-            phase.log("T-5")
-            fired.add(5.0)
-        if 6.0 not in fired and 6.0 <= t < 6.0 + WINDOW:
-            phase.log("T-4")
-            fired.add(6.0)
-        if 7.0 not in fired and 7.0 <= t < 7.0 + WINDOW:
-            phase.log("T-3")
-            fired.add(7.0)
-        if 8.0 not in fired and 8.0 <= t < 8.0 + WINDOW:
+        phase.sleep(0)
+        now: sy.TimeStamp = sy.TimeStamp.now()
+
+        if now >= igniter_end_time and phase._wait.is_set():
             phase.log("T-2")
-            if phase._wait.is_set():
-                phase.log("Coldflow aborted. No ignition.","red",True)
-                global_abort(phase.auto)
-                return
-            else:
-                phase.log("Ignition confirmed. Continuing sequence...","green",True)
-            fired.add(8.0)
-        if 9.0 not in fired and 9.0 <= t < 9.0 + WINDOW:
-            phase.log("T-1")
-            fired.add(9.0)
-        if 10.0 not in fired and 10.0 <= t < 10.0 + WINDOW:
-            phase.log("IGNITION","red",True)
-            fired.add(10.0)
-        if 32.0 not in fired and (10.0-FIRST_MPV_TIME) <= t < (10.0-FIRST_MPV_TIME) + 0.001:
-            phase.log("Opening First MPV")
-            open_vlv(ctrl, config.get_vlv(f"{FIRST_MPV.lower()}_mpv"))
-            fired.add(32.0)
-        if 64.0 not in fired and (10.0-SECOND_MPV_TIME) <= t < (10.0-SECOND_MPV_TIME) + 0.001:
-            phase.log("Opening Second MPV")
-            open_vlv(ctrl, config.get_vlv(f"{SECOND_MPV.lower()}_mpv"))
-            fired.add(64.0)
-        if t >= 10.0 + WINDOW:
-            for i in range(0,DURATION):
-                phase.log(f"T+{i+1}")
-                time.sleep(1.0)
-            phase.log("Coldflow sequence complete. Safing system.","green",True)
-            close_vlv(ctrl, config.get_vlv(f"{FIRST_MPV.lower()}_mpv"))
-            close_vlv(ctrl, config.get_vlv(f"{SECOND_MPV.lower()}_mpv"))
-            for vent in vents:
-                if config.is_vlv_nc(vent):
-                    ctrl[vent] = True
-                else:
-                    ctrl[vent] = False
+            phase.log("Coldflow aborted. No ignition.","red",True)
+            phase.stop_waiting_for_input()
+            #NOTE: add no-light logic here.
             break
-            
+        elif now>= igniter_end_time and not igniter_confirmed:
+            phase.log("Ignition confirmed. Continuing with coldflow...","green",True)
+            igniter_confirmed = True
+
+        if now >= igniter_start_time and not igniter_prompted:
+            phase.log("Press 'enter' to confirm smoke...","yellow",True)
+            phase.wait_for_input()
+            igniter_prompted = True
+
+        if now >= first_mpv_open_time and not first_mpv_opened:
+            phase.log(f"Opening {first_mpv.upper()} MPV...")
+            open_vlv(ctrl, config.get_vlv(f"{first_mpv}_mpv"))
+            first_mpv_opened = True
+
+        if now >= second_mpv_open_time and not second_mpv_opened:
+            phase.log(f"Opening {second_mpv.upper()} MPV...")
+            open_vlv(ctrl, config.get_vlv(f"{second_mpv}_mpv"))
+            second_mpv_opened = True
+
+        if now >= target_time:
+            phase.log("IGNITION.","red",True)
+            post_ignition_sequence(phase)
+            phase.log("Launch autosequence complete.","green",True)
+            break
+
+        remaining_span = sy.TimeSpan(target_time - now)
+        remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
+        remaining_seconds_int = int(math.ceil(remaining_seconds))
+        if remaining_seconds_int not in times_shown:
+            phase.log(f"T-{remaining_seconds_int}")
+            times_shown.add(remaining_seconds_int)
+                  
+    return
+
+def post_ignition_sequence(phase: Phase) -> None:
+    
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    vents: list[str] = [
+        config.get_vlv("Press_Fill_Vent"),
+        config.get_vlv("ox_vent"),
+        config.get_vlv("fuel_vent"),
+    ]
+
+    valves_to_close: list[str] = [
+        config.get_vlv("ox_mpv"),
+        config.get_vlv("fuel_mpv"),
+    ]
+
+    duration: int = config.get_var("duration")  # Duration to keep MPVs open after ignition in seconds
+
+    coldflow_start_time: sy.TimeStamp = sy.TimeStamp.now()
+    last_shown: int = -1
+
+    end_time = coldflow_start_time + sy.TimeSpan.from_seconds(duration)
+
+    coldflow_start_time: sy.TimeStamp = sy.TimeStamp.now()
+    last_shown: int = -1
+    
+    # Calculate the end time once
+    end_time = coldflow_start_time + sy.TimeSpan.from_seconds(duration)
+
+    while sy.TimeStamp.now() < end_time:
+        phase.sleep(0.05) 
+  
+        now: sy.TimeStamp = sy.TimeStamp.now() 
+        span_passed = sy.TimeSpan(now - coldflow_start_time)
+        seconds_passed_float: float | None = sy.TimeSpan.to_seconds(span_passed)
+        seconds_passed_int = int(seconds_passed_float)
         
+        if seconds_passed_int != last_shown:
+            phase.log(f"T+{seconds_passed_int}")
+            last_shown = seconds_passed_int
+
+    phase.log("Duration elapsed, closing MPVs and safing system...","yellow")
+
+    for valve in valves_to_close:
+        if config.is_vlv_nc(valve):
+            ctrl[valve] = False
+        else:
+            ctrl[valve] = True
+
+    for vent in vents:
+        if config.is_vlv_nc(vent):
+            ctrl[vent] = True
+        else:
+            ctrl[vent] = False
+
+    phase.log("System safed.","green",True)
+
     return
 
 def main() -> None:
