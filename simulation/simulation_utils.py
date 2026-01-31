@@ -272,6 +272,15 @@ class System:
                 pressure=5600,
             ),
             Node(
+                name="Bottle 4",
+                channels=[
+                    config.get_pt("Bottle_4_PT"),
+                    config.get_tc("Bottle_4_Skin_TC"),
+                ],
+                volume=STD_BOTTLE_VOLUME,
+                pressure=5600,
+            ),
+            Node(
                 name="press_node",
                 channels=[config.get_pt("Post_Press_Fill_PT")],
                 volume=0.1,  # idk what a good value should be
@@ -422,6 +431,7 @@ class System:
         ox_fill_valve = self.get_valve_obj(self.config.get_vlv("Ox_Fill_Valve"))
         ox_vent = self.get_valve_obj(self.config.get_vlv("Ox_Vent"))
         ox_pre_press = self.get_valve_obj(self.config.get_vlv("Ox_Pre_Press"))
+        press_iso_4 = self.get_valve_obj(self.config.get_vlv("Press_Iso_4"))
 
         if copv_vent.get_state() == State.OPEN:
             self.vent_to_atmosphere("COPV", copv_vent.cv)
@@ -434,6 +444,9 @@ class System:
 
         if press_iso_3.get_state() == State.OPEN:
             self.transfer_fluid("Bottle 3", "press_node", press_iso_3.cv)
+        
+        if press_iso_4.get_state() == State.OPEN:
+            self.transfer_fluid("Fuel Tank", "press_node", press_iso_4.cv)
 
         if press_fill_iso.get_state() == State.OPEN:
             self.transfer_fluid("press_node", "COPV", press_fill_iso.cv)
