@@ -3,7 +3,7 @@ variables:
   press_rate_1: 20 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
   press_rate_2: 40 # psi/min
-  copv_cooldown_time: 5 # seconds to wait every pressurization cycle (the denominator of pressurization rate)
+  copv_cooldown_time: 60 # seconds to wait every pressurization cycle (the denominator of pressurization rate)
   copv_upper_bound_temp: -1 # (TBD) degrees celsius
   copv_lower_bound_temp: -1 # (TBD) degrees celsius
   copv_minimum_temp: -1 # (TBD) degrees celsius
@@ -11,6 +11,9 @@ variables:
   copv_pressure_margin: 100 # (TBD) psi (+ or - from target)
   copv_pressure_max: 5200 # (TBD) psi
   bottle_equalization_threshold: 50 # (TBD) psi
+  ox_fill_target: 120 # (TBD) psi
+  ox_fill_lower_bound: 115 # (TBD) psi
+  ox_fill_upper_bound: 130 # (TBD) psi NOTE: may not even use, just in case bang-bang upper num isnt fill target
 
 
 # Channel Mappings
@@ -27,13 +30,13 @@ channel_mappings:
       Purge_2k_Bottle_PT: 5
       Purge_Post_Reg_PT: 6
       Trickle_Purge_PT: 7
-      # 8 through 12 are 12 volt (skipped)
-      Bottle_1_PT: 13
-      Bottle_2_PT: 14
-      Bottle_3_PT: 15
-      Post_Press_Fill_PT: 16
-      Reg_Set_PT: 17
-      Fuel_Level_Sensing_PT: 18
+      Bottle_1_PT: 8
+      Bottle_2_PT: 15
+      Bottle_3_PT: 16
+      Bottle_4_PT: 17
+      Post_Press_Fill_PT: 18
+      Reg_Set_PT: 19
+      Fuel_Level_Sensing_PT: 20
     valves: # Valves
       Ox_Fill_Valve: 1
       Ox_Drain_Valve: 2
@@ -53,6 +56,9 @@ channel_mappings:
       Ox_Fill_QD_Pilot: 15
       Ox_Pre_Press_QD_Pilot: 16
       COPV_Fill_QD_Pilot: 17
+      Igniter: 18
+      Press_Iso_4: 19
+
     tcs: # TCs
       Bottle_1_Skin_TC: 1
       Bottle_2_Skin_TC: 2
@@ -104,22 +110,18 @@ channel_mappings:
   bay_board_3: # Engine Bay Board
     pts: # PTs
       Ox_MPV_Inlet_PT: 1
-      Ox_MPV_Throat_PT: 2
-      Ox_Level_Sensor: 3
-      Fuel_Flowmeter_Inlet_PT: 4
-      Fuel_Flowmeter_Throat_PT: 5
-      Chamber_PT_1: 6
-      Chamber_PT_2: 7
-      Chamber_PT_3: 8
-      Fuel_Manifold_PT_1: 9
-      Regen_Manifold_PT_1: 10
+      Ox_MPV_Outlet_PT: 2
+      Chamber_PT_1: 3
+      Chamber_PT_2: 4
+      Chamber_PT_3: 5
+      Fuel_Manifold_PT_1: 6
+      Regen_Manifold_PT_1: 7
+      Ox_Level_Sensor: 8
+      Fuel_Flowmeter_Inlet_PT: 9
+      Fuel_Flowmeter_Throat_PT: 10
     valves:
-      Ox_MPV:
-        id: 1
-        normally_open: true
-      Fuel_MPV:
-        id: 2
-        normally_open: true
+      Ox_MPV: 1
+      Fuel_MPV: 2
     tcs: # TCs
       Ox_Level_Sensor_TC: 1
       Fuel_Manifold_TC_1: 2

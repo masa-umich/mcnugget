@@ -1,4 +1,9 @@
 variables:
+  first_mpv_time: 0.5  # seconds before ignition to open first mpv
+  ox_iso_time: 1.0  # seconds before ox mpv opening to open ox iso
+  fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
+  first_mpv: "fuel" # Which MPV to open first, ox or fuel
+  duration: 16  # Duration to keep MPVs open after ignition in seconds
   averaging_time: 1 # seconds to average over for pressure readings
   press_rate_1: 20 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
@@ -7,11 +12,15 @@ variables:
   copv_upper_bound_temp: -1 # (TBD) degrees celsius
   copv_lower_bound_temp: -1 # (TBD) degrees celsius
   copv_minimum_temp: -1 # (TBD) degrees celsius
-  copv_pressure_target: 5000 # psi
-  copv_pressure_margin: 100 # (TBD) psi (+ or - from target)
-  copv_pressure_max: 5200 # (TBD) psi
-  bottle_equalization_threshold: 50 # (TBD) psi
-
+  copv_pressure_target: 4800 # psi
+  copv_pressure_margin: 100 # psi (+ or - from target)
+  copv_pressure_max: 5000 # psi
+  bottle_equalization_threshold: 50 # psi
+  ox_fill_target: 1.48 # psid
+  ox_fill_margin: 0.06 # psid
+  ox_pre_press_target: 255 # psid
+  ox_pre_press_margin: 10 # psid
+  press_fill_vent_time: 5 # seconds to keep press fill vent open
 
 # Channel Mappings
 channel_mappings:
@@ -27,13 +36,14 @@ channel_mappings:
       Purge_2k_Bottle_PT: 5
       Purge_Post_Reg_PT: 6
       Trickle_Purge_PT: 7
-      # 8 through 12 are 12 volt (skipped)
-      Bottle_1_PT: 13
-      Bottle_2_PT: 14
-      Bottle_3_PT: 15
-      Post_Press_Fill_PT: 16
-      Reg_Set_PT: 17
-      Fuel_Level_Sensing_PT: 18
+      Bottle_1_PT: 8
+      # 9 though 14 are 12 volt, skipped
+      Bottle_2_PT: 15
+      Bottle_3_PT: 16
+      Bottle_4_PT: 17
+      Post_Press_Fill_PT: 18
+      Reg_Set_PT: 19
+      Fuel_Level_Sensing_PT: 20
     valves: # Valves
       Ox_Fill_Valve: 1
       Ox_Drain_Valve: 2
@@ -53,6 +63,8 @@ channel_mappings:
       Ox_Fill_QD_Pilot: 15
       Ox_Pre_Press_QD_Pilot: 16
       COPV_Fill_QD_Pilot: 17
+      Igniter: 18
+      Press_Iso_4: 19
     tcs: # TCs
       Bottle_1_Skin_TC: 1
       Bottle_2_Skin_TC: 2
@@ -104,20 +116,20 @@ channel_mappings:
   bay_board_3: # Engine Bay Board
     pts: # PTs
       Ox_MPV_Inlet_PT: 1
-      Ox_MPV_Throat_PT: 2
-      Ox_Level_Sensor: 3
-      Fuel_Flowmeter_Inlet_PT: 4
-      Fuel_Flowmeter_Throat_PT: 5
-      Chamber_PT_1: 6
-      Chamber_PT_2: 7
-      Chamber_PT_3: 8
-      Fuel_Manifold_PT_1: 9
-      Regen_Manifold_PT_1: 10
+      Ox_MPV_Outlet_PT: 2
+      Chamber_PT_1: 3
+      Chamber_PT_2: 4
+      Chamber_PT_3: 5
+      Fuel_Manifold_PT_1: 6
+      Regen_Manifold_PT_1: 7
+      Ox_Level_Sensor: 8
+      Fuel_Flowmeter_Inlet_PT: 9
+      Fuel_Flowmeter_Throat_PT: 10
     valves:
-      Ox_MPV:
+      Ox_MPV: 
         id: 1
         normally_open: true
-      Fuel_MPV:
+      Fuel_MPV: 
         id: 2
         normally_open: true
     tcs: # TCs

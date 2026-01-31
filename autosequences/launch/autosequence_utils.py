@@ -75,7 +75,7 @@ class Config:
                     synnax_name = f"{prefix}_{suffix}_{ch_index}"
                     real_name: str = config_ch_name.lower()
 
-                    if suffix == "pt":
+                    if suffix == "pt" or real_name == "ox_level_sensor":
                         self.pts[real_name] = synnax_name
                     elif suffix == "tc":
                         self.tcs[real_name] = synnax_name
@@ -225,7 +225,7 @@ def sensor_vote(
     return sensor_vote_values(values, threshold)
 
 
-def open_vlv(ctrl: Controller, vlv_name: str) -> None:
+def open_vlv(ctrl: Controller, vlv_name: str) -> bool:
     """
     Helper function to open a valve only if not already open
     """
@@ -234,11 +234,11 @@ def open_vlv(ctrl: Controller, vlv_name: str) -> None:
     if state is None:
         raise Exception(f"Could not get state of valve: {vlv_name}, is the valve defined?")
     if state == True:
-        return
+        return False
     ctrl[vlv_name] = True
+    return True
 
-
-def close_vlv(ctrl: Controller, vlv_name: str) -> None:
+def close_vlv(ctrl: Controller, vlv_name: str) -> bool:
     """
     Helper function to close a valve only if not already closed
     """
@@ -247,9 +247,12 @@ def close_vlv(ctrl: Controller, vlv_name: str) -> None:
     if state is None:
         raise Exception(f"Could not get state of valve: {vlv_name}, is the valve defined?")
     if state == False:
-        return
+        return False
     ctrl[vlv_name] = False
+    return True
 
+def STATE(valve: str) -> str:
+    return valve.replace("vlv", "state")
 
 logs: list[str] = []  # Global log list for storing logs if needed
 
@@ -265,7 +268,7 @@ def log(msg: str, color: str = "white", bold: bool = False, phase_name: str | No
     if phase_name != None: # Add phase name if provided
         entry += colored(f" [{phase_name}]", color="yellow")
     entry += colored(" > ", color="dark_grey")
-
+    
     if bold == False: # Add message with color / bolding
         entry += colored(msg, color=color)
     else:
@@ -328,8 +331,11 @@ class Phase:
 
     _abort: threading.Event  # Thread-safe flag
     _pause: threading.Event  # Thread-safe flag
+    _wait: threading.Event  # Thread-safe flag for waiting for input
+    _stop_wait: threading.Event  # Thread-safe flag for stopping wait for input
 
     _func_thread: threading.Thread  # Thread wrapper
+    _safe_func: Callable | None = None # Optional safe function to run on abort
 
     _refresh_rate: int  # Hz
     # The minimum amount of time (in seconds) the thread should be spent sleeping / yielding
@@ -342,9 +348,10 @@ class Phase:
     def __init__(
         self,
         name: str,
-        func: Callable,
         ctrl: Controller,
         config: Config,
+        main_func: Callable,
+        safe_func: Callable | None = None,
         refresh_rate: int = 50,
     ):
         self.name: str = name
@@ -355,10 +362,12 @@ class Phase:
         self._refresh_rate: int = refresh_rate
         self._refresh_period: float = 1.0 / (2.0 * self._refresh_rate)
 
+
+        self._safe_func: Callable | None = safe_func
         self._func_thread = threading.Thread(
             name=self.name,
             target=self._func_wrapper,
-            args=(func,),
+            args=(main_func,),
         )
 
         self._pause = threading.Event()
@@ -367,15 +376,25 @@ class Phase:
         self._abort = threading.Event()
         self._abort.clear()  # Make sure flag is cleared initially
 
+        self._wait = threading.Event()
+        self._wait.clear()  # Make sure flag is cleared initially
+
     # Checks for abort or pause signals. Blocks if paused
     def _check_signals(self) -> None:
         if self._abort.is_set():
             raise SequenceAborted("Sequence Aborted")
 
-        while self._pause.is_set():
-            if self._abort.is_set():
-                raise SequenceAborted("Sequence Aborted during pause")
-            time.sleep(self._refresh_period)  # Sleep and yield thread
+        if self._pause.is_set():
+            if (self._safe_func is not None):
+                self._safe_func(self)
+
+            while self._pause.is_set():
+                if self._abort.is_set():
+                    raise SequenceAborted("Sequence Aborted during pause")
+                time.sleep(self._refresh_period)  # Sleep and yield thread
+        
+                
+                
 
     # Sleep function that should be used inside of the control sequence
     # Allows for thread aborting and pausing with _check_signals
@@ -437,10 +456,16 @@ class Phase:
         """
         log(msg=msg, color=color, bold=bold, phase_name=self.name)
 
-    # A function wrapper to be able to do threading stuff (might not be necessary)
-    def _func_wrapper(self, func: Callable):
-        func(self)
+    # A function wrapper to be able to do threading stuff and abort handling
+    def _func_wrapper(self, main_func: Callable) -> None:
+        try:
+            main_func(self)
+        except:
+            if (self._safe_func is not None):
+                self._safe_func(self)
 
+    
+    
     def start(self) -> None:
         self._func_thread.start()
 
@@ -456,6 +481,12 @@ class Phase:
     def unpause(self) -> None:
         self._pause.clear()
 
+    def wait_for_input(self) -> None:
+        self._wait.set()
+        self._check_signals()
+
+    def stop_waiting_for_input(self) -> None:
+        self._wait.clear()
 
 class Autosequence:
     """
@@ -533,24 +564,24 @@ class Autosequence:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
 
-    def init_valves(self) -> None:
-        # Set every valve to closed state initially
-        for vlv in self.config.get_vlvs():
-            is_nc: bool = self.config.is_vlv_nc(vlv)
-            state = self.ctrl.get(vlv.replace("vlv", "state"))
-            confirm = "y"
-            if state == True:
-                if is_nc:
-                    confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
-                    if confirm.lower() == "y" or confirm.lower() == "yes":
-                        log(f"Closing valve {vlv} on autosequence start")
-                        close_vlv(self.ctrl, vlv)
-            else:
-                if not is_nc:
-                    confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
-                    if confirm.lower() == "y" or confirm.lower() == "yes":
-                        log(f"Closing valve {vlv} on autosequence start")
-                        open_vlv(self.ctrl, vlv) # "open" is actually closing for NO valves
+    # def init_valves(self) -> None:
+    #     # Set every valve to closed state initially
+    #     for vlv in self.config.get_vlvs():
+    #         is_nc: bool = self.config.is_vlv_nc(vlv)
+    #         state = self.ctrl.get(vlv.replace("vlv", "state"))
+    #         confirm = "y"
+    #         if state == True:
+    #             if is_nc:
+    #                 confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
+    #                 if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
+    #                     log(f"Closing valve {vlv} on autosequence start")
+    #                     close_vlv(self.ctrl, vlv)
+    #         else:
+    #             if not is_nc:
+    #                 confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
+    #                 if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
+    #                     log(f"Closing valve {vlv} on autosequence start")
+    #                     open_vlv(self.ctrl, vlv) # "open" is actually closing for NO valves
 
     def synnax_login(self, cluster: str) -> sy.Synnax:
         try:
@@ -583,7 +614,7 @@ class Autosequence:
             if phase_name == phase.name.lower():
                 return phase
         return None
-
+    
     # Run command interface thread & main listener thread
     def run(self) -> None:
         with patch_stdout():  # Fix print statements with command interface
@@ -643,7 +674,9 @@ class Autosequence:
                     user_input.strip().lower().split(maxsplit=1)
                 )  # Get command and phase
                 if len(parts) == 0:
-                    print(" > Please input a command")
+                    for p in self.phases:
+                        if p._wait.is_set():
+                            p.stop_waiting_for_input()
                     continue
                 command: str = parts[0]
                 if (len(parts) == 1) and (parts[0] != "quit") and (parts[0] != "exit"):
@@ -669,6 +702,7 @@ class Autosequence:
                     case _:
                         print(" > Unrecognized command, please try again")
                         continue
+
         except KeyboardInterrupt:
             log("Keyboard interrupt detected, aborting!")
             self.raise_abort()
