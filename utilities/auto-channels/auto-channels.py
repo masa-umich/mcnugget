@@ -173,7 +173,7 @@ def get_sheet(sheet_path: str):
     else: # assume it's an excel file
         try:
             # The ICD has a goofy formatting, we start header at 1 and mappings must be in "AVI GSE Mappings" sheet
-            df = pd.read_excel(sheet_path, header=1, sheet_name="AVI Mappings 25-26", index_col=[0])
+            df = pd.read_excel(sheet_path.strip(' \'"'), header=1, sheet_name="AVI Mappings 25-26", index_col=[0])
             # we also add index_col=0 to handle the merged cells for sensor type
             df["Connection Location"] = df["Connection Location"].ffill() # Fix merged cells
         except FileNotFoundError as e:
