@@ -564,24 +564,24 @@ class Autosequence:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
 
-    def init_valves(self) -> None:
-        # Set every valve to closed state initially
-        for vlv in self.config.get_vlvs():
-            is_nc: bool = self.config.is_vlv_nc(vlv)
-            state = self.ctrl.get(vlv.replace("vlv", "state"))
-            confirm = "y"
-            if state == True:
-                if is_nc:
-                    confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
-                    if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
-                        log(f"Closing valve {vlv} on autosequence start")
-                        close_vlv(self.ctrl, vlv)
-            else:
-                if not is_nc:
-                    confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
-                    if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
-                        log(f"Closing valve {vlv} on autosequence start")
-                        open_vlv(self.ctrl, vlv) # "open" is actually closing for NO valves
+    # def init_valves(self) -> None:
+    #     # Set every valve to closed state initially
+    #     for vlv in self.config.get_vlvs():
+    #         is_nc: bool = self.config.is_vlv_nc(vlv)
+    #         state = self.ctrl.get(vlv.replace("vlv", "state"))
+    #         confirm = "y"
+    #         if state == True:
+    #             if is_nc:
+    #                 confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
+    #                 if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
+    #                     log(f"Closing valve {vlv} on autosequence start")
+    #                     close_vlv(self.ctrl, vlv)
+    #         else:
+    #             if not is_nc:
+    #                 confirm: str = input(f"Valve {vlv} is currently OPEN, should it be closed? (y/n): ")
+    #                 if confirm.lower() == "y" or confirm.lower() == "yes" or confirm == "":
+    #                     log(f"Closing valve {vlv} on autosequence start")
+    #                     open_vlv(self.ctrl, vlv) # "open" is actually closing for NO valves
 
     def synnax_login(self, cluster: str) -> sy.Synnax:
         try:
