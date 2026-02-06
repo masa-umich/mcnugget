@@ -329,6 +329,8 @@ class Phase:
     ctrl: Controller
     config: Config
 
+    auto: 'Autosequence'
+
     _abort: threading.Event  # Thread-safe flag
     _pause: threading.Event  # Thread-safe flag
     _wait: threading.Event  # Thread-safe flag for waiting for input
@@ -351,6 +353,7 @@ class Phase:
         ctrl: Controller,
         config: Config,
         main_func: Callable,
+        auto: 'Autosequence',
         safe_func: Callable | None = None,
         refresh_rate: int = 50,
     ):
@@ -358,6 +361,7 @@ class Phase:
 
         self.ctrl: Controller = ctrl
         self.config: Config = config
+        self.auto: Autosequence = auto
 
         self._refresh_rate: int = refresh_rate
         self._refresh_period: float = 1.0 / (2.0 * self._refresh_rate)

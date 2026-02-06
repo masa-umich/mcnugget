@@ -4,6 +4,7 @@ variables:
   fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
   duration: 16  # Duration to keep MPVs open after ignition in seconds
+  purge_duration: 5 # seconds to purge after MPVs close
   averaging_time: 1 # seconds to average over for pressure readings
   press_rate_1: 20 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles

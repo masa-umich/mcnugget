@@ -63,6 +63,7 @@ channel_mappings:
       Bottle_1_Skin_TC: 1
       Bottle_2_Skin_TC: 2
       Bottle_3_Skin_TC: 3
+      Bottle_4_Skin_TC: 4
 
   flight_computer: # Flight Computer
     pts: # PTs
