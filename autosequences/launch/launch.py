@@ -94,7 +94,6 @@ def parse_args() -> argparse.Namespace:
 def global_abort(auto: Autosequence) -> None:
     ctrl: Controller = auto.ctrl
     config: Config = auto.config
-
     vents: list[str] = [
         config.get_vlv("ox_vent"),
         config.get_vlv("fuel_vent"),
@@ -198,6 +197,8 @@ def background_thread(auto: Autosequence) -> None:
             for press_iso in press_isos:  # close all bottles
                 ctrl[press_iso] = False
             return
+             
+        
 
 
 def press_iteration(
@@ -568,8 +569,11 @@ def qd_disconnect(phase: Phase) -> None:
 def coldflow(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
-
-    handoff: str = config.get_vlv("handoff")
+    
+    #track state variables
+    times_shown = set() # to track which times have been shown in countdown
+    igniter_prompted: bool = False
+    igniter_confirmed: bool = False
 
     phase.log("Hit 'enter' to start coldflow sequence")
     phase.wait_for_input()
@@ -577,36 +581,39 @@ def coldflow(phase: Phase) -> None:
     while(phase._wait.is_set()):
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...","green",True)
+
+    open_vlv(ctrl, config.get_vlv("handoff")) #Open handoff valve to prime Flight Computer 
     
-    target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(8.0) #time of handoff
-    igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(4.0) #time to prompt for igniter light
-    times_shown = set()
-    igniter_prompted: bool = False
+    target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(10.0) #time of ignition
+    igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(6.0) #time to prompt for igniter light
+    igniter_end_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(2.0) #time to stop waiting for igniter light
+
     while True:
         phase.sleep(0)
         now: sy.TimeStamp = sy.TimeStamp.now()
-        if now >= target_time and phase._wait.is_set():
+
+        if now >= igniter_end_time and phase._wait.is_set():
             phase.log("T-2")
             phase.log("Coldflow aborted. No ignition.","red",True)
             phase.stop_waiting_for_input()
-            #NOTE: global abort
-            break
-        elif now>= target_time:
-            phase.log("Ignition confirmed. Handing off...","green",True)
-            phase.log("Opening handoff valve...")
-            open_vlv(ctrl, handoff)
-            phase.log("Launch autosequence complete.","green",True)
-            break
+            phase.auto.raise_abort()
+            return
+        elif now>= igniter_end_time and not igniter_confirmed: #NOTE: This is actually what is ran when it has been confirmed
+            phase.log("Ignition confirmed. Continuing with coldflow...","green",True)
+            igniter_confirmed = True
+
         if now >= igniter_start_time and not igniter_prompted:
             phase.log("Press 'enter' to confirm smoke...","yellow",True)
             phase.wait_for_input()
             igniter_prompted = True
+
         remaining_span = sy.TimeSpan(target_time - now)
         remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
         remaining_seconds_int = int(math.ceil(remaining_seconds))
         if remaining_seconds_int not in times_shown:
-            phase.log(f"T-{remaining_seconds_int + 2}")
+            phase.log(f"T-{remaining_seconds_int}")
             times_shown.add(remaining_seconds_int)
+                  
     return
 
 def coldflow_full(phase: Phase) -> None:
@@ -664,10 +671,10 @@ def coldflow_full(phase: Phase) -> None:
 
         if now >= igniter_end_time and phase._wait.is_set():
             phase.log("T-2")
-            phase.log("Coldflow aborted. No ignition.","red",True)
+            phase.log("Aborting. No ignition.","red",True)
             phase.stop_waiting_for_input()
-            #NOTE: global abort
-            break
+            phase.auto.raise_abort()
+            return
         elif now>= igniter_end_time and not igniter_confirmed:
             phase.log("Ignition confirmed. Continuing with coldflow...","green",True)
             igniter_confirmed = True
@@ -728,7 +735,13 @@ def post_ignition_sequence(phase: Phase) -> None:
         config.get_vlv("fuel_mpv"),
     ]
 
+    purge_valves: list[str] = [
+        config.get_vlv("ox_mpv_purge"),
+        config.get_vlv("fuel_mpv_purge"),
+    ]
+
     duration: int = config.get_var("duration")  # Duration to keep MPVs open after ignition in seconds
+    purge_duration: int = config.get_var("purge_duration") # Duration to purge after closing valves in seconds
 
     coldflow_start_time: sy.TimeStamp = sy.TimeStamp.now()
     last_shown: int = -1
@@ -766,7 +779,24 @@ def post_ignition_sequence(phase: Phase) -> None:
             ctrl[vent] = True
         else:
             ctrl[vent] = False
+    
+    phase.log(f"Purging for {purge_duration} seconds...")
 
+    for purge_valve in purge_valves:
+        if config.is_vlv_nc(purge_valve):
+            ctrl[purge_valve] = True
+        else:
+            ctrl[purge_valve] = False
+    
+    phase.sleep(purge_duration) # purge for configured duration
+
+    for purge_valve in purge_valves:
+        if config.is_vlv_nc(purge_valve):
+            ctrl[purge_valve] = False
+        else:
+            ctrl[purge_valve] = True
+
+    phase.log("Purging complete.","green",True)
     phase.log("System safed.","green",True)
 
     return
@@ -787,37 +817,37 @@ def main() -> None:
 
     # Define and add each phase to the autosequence
     press_fill_1_phase: Phase = Phase(
-        name="Press Fill 1", ctrl=auto.ctrl, config=config, main_func=press_fill_1, safe_func=press_fill_abort
+        name="Press Fill 1", ctrl=auto.ctrl, config=config, main_func=press_fill_1, auto=auto, safe_func=press_fill_abort
     )
     auto.add_phase(press_fill_1_phase)
 
     press_fill_2_phase: Phase = Phase(
-        name="Press Fill 2", ctrl=auto.ctrl, config=config, main_func=press_fill_2, safe_func=press_fill_abort
+        name="Press Fill 2", ctrl=auto.ctrl, config=config, main_func=press_fill_2, auto=auto, safe_func=press_fill_abort
     )
     auto.add_phase(press_fill_2_phase)
 
     press_fill_3_phase: Phase = Phase(
-        name="Press Fill 3", ctrl=auto.ctrl, config=config, main_func=press_fill_3, safe_func=press_fill_abort
+        name="Press Fill 3", ctrl=auto.ctrl, config=config, main_func=press_fill_3, auto=auto, safe_func=press_fill_abort
     )
     auto.add_phase(press_fill_3_phase)
 
     press_fill_4_phase: Phase = Phase(
-        name="Press Fill 4", ctrl=auto.ctrl, config=config, main_func=press_fill_4, safe_func=press_fill_abort
+        name="Press Fill 4", ctrl=auto.ctrl, config=config, main_func=press_fill_4, auto=auto, safe_func=press_fill_abort
     )
     auto.add_phase(press_fill_4_phase)
 
     ox_fill_phase: Phase = Phase(
-        name="Ox Fill", ctrl=auto.ctrl, config=config, main_func=ox_fill, safe_func=ox_fill_safe
+        name="Ox Fill", ctrl=auto.ctrl, config=config, main_func=ox_fill, auto=auto, safe_func=ox_fill_safe
     )
     auto.add_phase(ox_fill_phase)    
 
     pre_press_phase: Phase = Phase(
-        name="Pre Press", ctrl=auto.ctrl, config=config, main_func=pre_press, safe_func=pre_press_safe
+        name="Pre Press", ctrl=auto.ctrl, config=config, main_func=pre_press, auto=auto, safe_func=pre_press_safe
     )
     auto.add_phase(pre_press_phase)
 
     qd_disconnect_phase: Phase = Phase(
-        name="QD", ctrl=auto.ctrl, config=config, main_func=qd_disconnect
+        name="QD", ctrl=auto.ctrl, config=config, main_func=qd_disconnect, auto=auto
     )
     auto.add_phase(qd_disconnect_phase)
 
@@ -827,7 +857,7 @@ def main() -> None:
     # auto.add_phase(coldflow_phase)
 
     coldflow_full_phase: Phase = Phase(
-        name="Coldflow Full", ctrl=auto.ctrl, config=config, main_func=coldflow_full
+        name="Coldflow Full", ctrl=auto.ctrl, config=config, main_func=coldflow_full, auto=auto
     )
     auto.add_phase(coldflow_full_phase)
 

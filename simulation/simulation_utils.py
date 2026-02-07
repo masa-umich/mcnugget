@@ -230,6 +230,7 @@ class System:
         self.get_valve_obj(config.get_vlv("COPV_Vent")).cv = 0.01
         self.get_valve_obj(config.get_vlv("Press_Fill_Iso")).cv = 0.02
         self.get_valve_obj(config.get_vlv("Press_Fill_Vent")).cv = 0.01
+        self.get_valve_obj(config.get_vlv("Ox_Fill_Valve")).cv = 0.0000001
 
         self.nodes = [
             Node(

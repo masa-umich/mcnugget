@@ -4,6 +4,7 @@ variables:
   fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
   duration: 16  # Duration to keep MPVs open after ignition in seconds
+  purge_duration: 5 # seconds to purge after MPVs close
   averaging_time: 1 # seconds to average over for pressure readings
   press_rate_1: 20 # psi/min
   press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
@@ -43,7 +44,7 @@ channel_mappings:
       Bottle_4_PT: 17
       Post_Press_Fill_PT: 18
       Reg_Set_PT: 19
-      Fuel_Level_Sensing_PT: 20
+      Fullstack_Hydraulic_PT: 20
     valves: # Valves
       Ox_Fill_Valve: 1
       Ox_Drain_Valve: 2
@@ -69,6 +70,7 @@ channel_mappings:
       Bottle_1_Skin_TC: 1
       Bottle_2_Skin_TC: 2
       Bottle_3_Skin_TC: 3
+      Bottle_4_Skin_TC: 4
 
   flight_computer: # Flight Computer
     pts: # PTs
@@ -96,6 +98,7 @@ channel_mappings:
     tcs: # TCs
       COPV_TC_1: 1
       COPV_TC_2: 2
+      COPV_TC_3: 3
 
   bay_board_2: # Intertank Bay Board
     pts: # PTs
@@ -107,6 +110,7 @@ channel_mappings:
       Ox_Tank_PT_2: 6
       Fuel_Manifold_PT_2: 7
       Regen_Manifold_PT_2: 8
+      Fuel_MPV_Outlet_PT: 9
     valves:
       Ox_Dome_Iso: 1
       Ox_Vent: 2
