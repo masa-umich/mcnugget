@@ -625,6 +625,8 @@ def coldflow_full(phase: Phase) -> None:
     ox_iso_time: float = config.get_var("ox_iso_time")  # seconds before ignition to open ox iso
     fuel_iso_time: float = config.get_var("fuel_iso_time")  # seconds before ignition to open fuel iso
 
+    igniter: str = config.get_vlv("igniter")
+
     if(first_mpv.lower() == "ox"):
         second_mpv: str = "fuel" # Which MPV to open second, ox or fuel
     elif (first_mpv.lower() == "fuel"):
@@ -681,6 +683,7 @@ def coldflow_full(phase: Phase) -> None:
 
         if now >= igniter_start_time and not igniter_prompted:
             phase.log("Press 'enter' to confirm smoke...","yellow",True)
+            open_vlv(ctrl, igniter)
             phase.wait_for_input()
             igniter_prompted = True
 
@@ -733,6 +736,7 @@ def post_ignition_sequence(phase: Phase) -> None:
         config.get_vlv("fuel_dome_iso"),
         config.get_vlv("ox_mpv"),
         config.get_vlv("fuel_mpv"),
+        config.get_vlv("igniter"),
     ]
 
     purge_valves: list[str] = [
