@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
         "-c",
         "--cluster",
         help="Specify a Synnax cluster to connect to",
-        default="synnax.masa.engin.umich.edu",
+        default="141.212.192.160",
         type=str,
     )
     parser.add_argument(
@@ -699,12 +699,12 @@ def coldflow_full(phase: Phase) -> None:
 
         if now >= first_mpv_open_time and not first_mpv_opened:
             phase.log(f"Opening {first_mpv.upper()} MPV...")
-            open_vlv(ctrl, config.get_vlv(f"{first_mpv}_mpv"))
+            ctrl[config.get_vlv(f"{first_mpv}_mpv")] = False
             first_mpv_opened = True
 
         if now >= target_time and not second_mpv_opened:
             phase.log(f"Opening {second_mpv.upper()} MPV...")
-            open_vlv(ctrl, config.get_vlv(f"{second_mpv}_mpv"))
+            ctrl[config.get_vlv(f"{second_mpv}_mpv")] = False
             second_mpv_opened = True
             phase.log("IGNITION.","red",True)
             post_ignition_sequence(phase)

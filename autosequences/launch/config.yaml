@@ -26,7 +26,6 @@ variables:
 # Channel Mappings
 channel_mappings:
   # Synnax channel for handoff system (probably static) (also TBD)
-  handoff: "limewire_handoff"
   # Device mappings
   ebox: # EBox / Launch GSE
     pts: # PTs
@@ -45,6 +44,7 @@ channel_mappings:
       Post_Press_Fill_PT: 18
       Reg_Set_PT: 19
       Fullstack_Hydraulic_PT: 20
+      Ox_MPV_Pneumatics: 21
     valves: # Valves
       Ox_Fill_Valve: 1
       Ox_Drain_Valve: 2
@@ -142,3 +142,4 @@ channel_mappings:
       Fuel_Manifold_TC_2: 3
       Regen_Manifold_TC_1: 4
       Regen_Manifold_TC_2: 5
+      Ox_MPV_Inlet_TC: 6

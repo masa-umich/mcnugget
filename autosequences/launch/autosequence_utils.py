@@ -688,7 +688,7 @@ class Autosequence:
                     continue
                 if (command == "quit") or (command == "exit"):
                     print(" > Exiting autosequence interface...")
-                    self.raise_abort()
+                    self.release()
                     return
                 phase: Phase | None = self.get_phase(phase_name=parts[1])
                 if phase is None:
