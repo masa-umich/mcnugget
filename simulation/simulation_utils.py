@@ -447,7 +447,7 @@ class System:
             self.transfer_fluid("Bottle 3", "press_node", press_iso_3.cv)
         
         if press_iso_4.get_state() == State.OPEN:
-            self.transfer_fluid("Fuel Tank", "press_node", press_iso_4.cv)
+            self.transfer_fluid("Bottle 4", "press_node", press_iso_4.cv)
 
         if press_fill_iso.get_state() == State.OPEN:
             self.transfer_fluid("press_node", "COPV", press_fill_iso.cv)

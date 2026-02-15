@@ -354,7 +354,14 @@ def press_fill_2(phase: Phase) -> None:
     press_fill(phase=phase, bottle=2)
 
 def press_fill_3(phase: Phase) -> None:
-    press_fill(phase=phase, bottle=3)
+    config: Config= phase.config
+    num_bottles = config.get_var("num_press_bottles")
+
+    tpc: bool = press_fill(phase=phase, bottle=3)
+    if tpc and num_bottles == 3:
+        phase.log("COPV filled to target pressure, now continuing TPC of COPV")
+        tpc_copv(phase=phase)
+
 
 def tpc_copv(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -392,8 +399,10 @@ def tpc_copv(phase: Phase) -> None:
 
 
 def press_fill_4(phase: Phase) -> None:
+    config: Config = phase.config
+    num_bottles = config.get_var("num_press_bottles")
     tpc: bool = press_fill(phase=phase, bottle=4)
-    if tpc:
+    if tpc and num_bottles == 4:
         phase.log("COPV filled to target pressure, now continuing TPC of COPV")
         tpc_copv(phase=phase)
 
