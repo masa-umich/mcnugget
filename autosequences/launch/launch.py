@@ -109,6 +109,7 @@ def global_abort(auto: Autosequence) -> None:
         config.get_vlv("ox_fill_valve"),
         config.get_vlv("ox_dome_iso"),
         config.get_vlv("fuel_dome_iso"),
+        config.get_vlv("igniter"),
     ]
 
     press_fill_vent: str = config.get_vlv("Press_Fill_Vent")
@@ -707,6 +708,7 @@ def coldflow_full(phase: Phase) -> None:
             ctrl[config.get_vlv(f"{second_mpv}_mpv")] = False
             second_mpv_opened = True
             phase.log("IGNITION.","red",True)
+            close_vlv(ctrl, igniter) #close igniter valve after ignition
             post_ignition_sequence(phase)
             phase.log("Launch autosequence complete.","green",True)
             break

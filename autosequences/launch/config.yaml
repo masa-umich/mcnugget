@@ -1,6 +1,6 @@
 variables:
-  first_mpv_time: 0.5  # seconds before ignition to open first mpv
-  ox_iso_time: 1.0  # seconds before ox mpv opening to open ox iso
+  first_mpv_time: 1  # seconds before ignition to open first mpv
+  ox_iso_time: 2.0  # seconds before ox mpv opening to open ox iso
   fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
   duration: 16  # Duration to keep MPVs open after ignition in seconds
