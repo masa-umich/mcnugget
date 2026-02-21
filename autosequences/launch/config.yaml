@@ -32,7 +32,7 @@ channel_mappings:
     pts: # PTs
       Ox_Fill_PT: 1
       Pneumatics_2k_Bottle_PT: 2
-      Engine_Pneumatics_PT: 3
+      Fuel_MPV_Pneumatics_PT: 3
       Trailer_Pneumatics_PT: 4
       Purge_2k_Bottle_PT: 5
       Purge_Post_Reg_PT: 6
@@ -44,8 +44,8 @@ channel_mappings:
       Bottle_4_PT: 17
       Post_Press_Fill_PT: 18
       Reg_Set_PT: 19
-      Fullstack_Hydraulic_PT: 20
-      Ox_MPV_Pneumatics: 21
+      #Fullstack_Hydraulic_PT: 20
+      Ox_MPV_Pneumatics: 20
     valves: # Valves
       Ox_Fill_Valve: 1
       Ox_Drain_Valve: 2
@@ -54,12 +54,14 @@ channel_mappings:
       Press_Iso_3: 5
       Press_Fill_Iso: 6
       Press_Fill_Vent:
-        id: 7
+        id: 20
         normally_open: true
       Ox_Pre_Press: 8
       # 9 and 10 are broken
       Fuel_Fill_Purge: 11
-      Ox_MPV_Purge: 12
+      Ox_MPV_Purge: 
+        id: 12
+        normally_open: true
       # 13 is broken
       Fuel_MPV_Purge: 14
       Ox_Fill_QD_Pilot: 15
