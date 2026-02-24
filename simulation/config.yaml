@@ -1,9 +1,12 @@
 variables:
-  first_mpv_time: 0.5  # seconds before ignition to open first mpv
-  ox_iso_time: 1.0  # seconds before ox mpv opening to open ox iso
+  first_mpv_time: 1  # seconds before ignition to open first mpv
+  ox_iso_time: 2.0  # seconds before ox mpv opening to open ox iso
   fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
+  using_ox: False
+  using_fuel: True
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
-  duration: 16  # Duration to keep MPVs open after ignition in seconds
+  duration: 20  # Duration to keep MPVs open after ignition in seconds
+  num_press_bottles: 4 # Number of press bottles on gse
   purge_duration: 5 # seconds to purge after MPVs close
   averaging_time: 1 # seconds to average over for pressure readings
   press_rate_1: 20 # psi/min
@@ -31,7 +34,7 @@ channel_mappings:
     pts: # PTs
       Ox_Fill_PT: 1
       Pneumatics_2k_Bottle_PT: 2
-      Engine_Pneumatics_PT: 3
+      Fuel_MPV_Pneumatics_PT: 3
       Trailer_Pneumatics_PT: 4
       Purge_2k_Bottle_PT: 5
       Purge_Post_Reg_PT: 6
@@ -43,8 +46,8 @@ channel_mappings:
       Bottle_4_PT: 17
       Post_Press_Fill_PT: 18
       Reg_Set_PT: 19
-      Fullstack_Hydraulic_PT: 20
-      Ox_MPV_Pneumatics: 21
+      #Fullstack_Hydraulic_PT: 20
+      Ox_MPV_Pneumatics: 20
     valves: # Valves
       Ox_Fill_Valve: 1
       Ox_Drain_Valve: 2
@@ -53,7 +56,7 @@ channel_mappings:
       Press_Iso_3: 5
       Press_Fill_Iso: 6
       Press_Fill_Vent:
-        id: 7
+        id: 20
         normally_open: true
       Ox_Pre_Press: 8
       # 9 and 10 are broken
@@ -95,6 +98,7 @@ channel_mappings:
       COPV_Vent: 1
       Fuel_Dome_Iso: 2
       Fuel_Vent: 3
+      Ball_Valve_Vent: 5 #NOT FOR LAUNCH
     tcs: # TCs
       COPV_TC_1: 1
       COPV_TC_2: 2

@@ -97,6 +97,7 @@ def global_abort(auto: Autosequence) -> None:
     vents: list[str] = [
         config.get_vlv("ox_vent"),
         config.get_vlv("fuel_vent"),
+        config.get_vlv("Ball_valve_vent"), #NOT FOR LAUNCH
     ]
 
     valves_to_close: list[str] = [
@@ -635,6 +636,9 @@ def coldflow_full(phase: Phase) -> None:
     ox_iso_time: float = config.get_var("ox_iso_time")  # seconds before ignition to open ox iso
     fuel_iso_time: float = config.get_var("fuel_iso_time")  # seconds before ignition to open fuel iso
 
+    using_ox: bool = config.get_var("using_ox")
+    using_fuel: bool = config.get_var("using_fuel")
+
     igniter: str = config.get_vlv("igniter")
 
     if(first_mpv.lower() == "ox"):
@@ -642,7 +646,7 @@ def coldflow_full(phase: Phase) -> None:
     elif (first_mpv.lower() == "fuel"):
         second_mpv: str = "ox" # Which MPV to open second, ox or fuel
     else:
-        phase.log(f"Invalid first_mpv value: {first_mpv}. Must be 'ox' or 'fuel'. Aborting coldflow.","red",True)
+        phase.log(f"Invalid first_mpv value: {first_mpv}. Must be 'ox' or 'fuel'. Quitting coldflow.","red",True)
         #NOTE: What to do here?
         return
     
@@ -698,23 +702,27 @@ def coldflow_full(phase: Phase) -> None:
             igniter_prompted = True
 
         if now >= first_iso_open_time and not first_iso_opened:
-            phase.log(f"Opening {first_mpv.upper()} ISO...")
-            open_vlv(ctrl, config.get_vlv(f"{first_mpv}_dome_iso"))
+            if (first_mpv == "ox" and using_ox) or (first_mpv == "fuel" and using_fuel):
+                phase.log(f"Opening {first_mpv.upper()} ISO...")
+                open_vlv(ctrl, config.get_vlv(f"{first_mpv}_dome_iso"))
             first_iso_opened = True
 
         if now >= second_iso_open_time and not second_iso_opened:
-            phase.log(f"Opening {second_mpv.upper()} ISO...")
-            open_vlv(ctrl, config.get_vlv(f"{second_mpv}_dome_iso"))
+            if (second_mpv == "ox" and using_ox) or (second_mpv == "fuel" and using_fuel):
+                phase.log(f"Opening {second_mpv.upper()} ISO...")
+                open_vlv(ctrl, config.get_vlv(f"{second_mpv}_dome_iso"))
             second_iso_opened = True
 
         if now >= first_mpv_open_time and not first_mpv_opened:
-            phase.log(f"Opening {first_mpv.upper()} MPV...")
-            ctrl[config.get_vlv(f"{first_mpv}_mpv")] = False
+            if (first_mpv == "ox" and using_ox) or (first_mpv == "fuel" and using_fuel):
+                phase.log(f"Opening {first_mpv.upper()} MPV...")
+                ctrl[config.get_vlv(f"{first_mpv}_mpv")] = False
             first_mpv_opened = True
 
         if now >= target_time and not second_mpv_opened:
-            phase.log(f"Opening {second_mpv.upper()} MPV...")
-            ctrl[config.get_vlv(f"{second_mpv}_mpv")] = False
+            if (second_mpv == "ox" and using_ox) or (second_mpv == "fuel" and using_fuel):
+                phase.log(f"Opening {second_mpv.upper()} MPV...")
+                ctrl[config.get_vlv(f"{second_mpv}_mpv")] = False
             second_mpv_opened = True
             phase.log("IGNITION.","red",True)
             close_vlv(ctrl, igniter) #close igniter valve after ignition
@@ -739,7 +747,8 @@ def post_ignition_sequence(phase: Phase) -> None:
     vents: list[str] = [
         config.get_vlv("Press_Fill_Vent"),
         config.get_vlv("ox_vent"),
-        config.get_vlv("fuel_vent"),
+        config.get_vlv("fuel_vent"),    
+        config.get_vlv("Ball_valve_vent"), #NOT FOR LAUNCH
     ]
 
     valves_to_close: list[str] = [

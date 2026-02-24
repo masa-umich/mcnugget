@@ -536,7 +536,7 @@ class Autosequence:
         # Take control with autosequence
         self.ctrl: Controller = self.client.control.acquire(
             name=name,
-            write_authorities=1,  # 1 is the default console authority (NOTE: This might/should be higher)
+            write_authorities=255,  # 1 is the default console authority (NOTE: This might/should be higher)
             write=self.config.get_vlvs(),
             read=self.config.get_sensors() + self.config.get_states(),
         )
