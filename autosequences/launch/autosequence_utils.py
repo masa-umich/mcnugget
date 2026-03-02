@@ -2,6 +2,7 @@
 from datetime import datetime
 import statistics
 import time
+from prompt_toolkit.completion import NestedCompleter
 from termcolor import colored
 import yaml
 import synnax as sy
@@ -9,6 +10,7 @@ from synnax.control.controller import Controller
 from typing import Any, Callable
 import threading
 from prompt_toolkit import PromptSession, print_formatted_text
+from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.formatted_text import ANSI
 
@@ -204,7 +206,6 @@ def sensor_vote_values(input: list[float], threshold: float) -> float | None:
     trusted_sensors: list[float] = [
         x for x in input if abs(x - median_val) <= threshold
     ]
-
     if not trusted_sensors:
         return median_val
 
@@ -312,6 +313,9 @@ class SequenceAborted(Exception):
 
     pass
 
+class SequenceExited(Exception):
+    pass
+
 
 class Phase:
     """
@@ -332,6 +336,7 @@ class Phase:
     auto: 'Autosequence'
 
     _abort: threading.Event  # Thread-safe flag
+    _quit: threading.Event  # Thread-safe flag
     _pause: threading.Event  # Thread-safe flag
     _wait: threading.Event  # Thread-safe flag for waiting for input
     _stop_wait: threading.Event  # Thread-safe flag for stopping wait for input
@@ -382,6 +387,9 @@ class Phase:
 
         self._wait = threading.Event()
         self._wait.clear()  # Make sure flag is cleared initially
+        
+        self._quit = threading.Event()
+        self._quit.clear()  # Make sure flag is cleared initially
 
     # Checks for abort or pause signals. Blocks if paused
     def _check_signals(self) -> None:
@@ -395,10 +403,12 @@ class Phase:
             while self._pause.is_set():
                 if self._abort.is_set():
                     raise SequenceAborted("Sequence Aborted during pause")
+                if self._quit.is_set():
+                    raise SequenceExited()
                 time.sleep(self._refresh_period)  # Sleep and yield thread
-        
-                
-                
+            
+        if self._quit.is_set():
+            raise SequenceExited()
 
     # Sleep function that should be used inside of the control sequence
     # Allows for thread aborting and pausing with _check_signals
@@ -471,13 +481,19 @@ class Phase:
     
     
     def start(self) -> None:
-        self._func_thread.start()
+        if self._func_thread.ident is None:
+            self._func_thread.start()
+        else:
+            log(f"Phase {self.name} already started")
 
     def join(self) -> None:
         self._func_thread.join()
 
     def abort(self) -> None:
         self._abort.set()
+    
+    def quit(self) -> None:
+        self._quit.set()
 
     def pause(self) -> None:
         self._pause.set()
@@ -513,6 +529,7 @@ class Autosequence:
     _background_thread: threading.Thread | None = None
     _interface_thread: threading.Thread | None = None
     _prompt_session: PromptSession | None = None
+    _has_clean_quit: threading.Event
 
     # Constuctor
     def __init__(
@@ -529,6 +546,8 @@ class Autosequence:
         self.global_abort: Callable | None = global_abort
         self.abort_flag: threading.Event = threading.Event()
         self.abort_flag.clear()  # Make sure flag is cleared initially
+        self._has_clean_quit: threading.Event = threading.Event()
+        self._has_clean_quit.clear()
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
@@ -653,6 +672,18 @@ class Autosequence:
                     self.release()
                     log("Autosequence aborted successfully")
                     return
+                elif self._has_clean_quit.is_set():
+                    if (self._interface_thread is not None) and (self._interface_thread.is_alive()):
+                        self._interface_thread.join()
+                    time.sleep(0.1)
+                    for phase in self.phases:
+                        phase.quit()
+                        if phase._func_thread.is_alive():
+                            phase.join()
+                    if (self._background_thread is not None) and (self._background_thread.is_alive()):
+                        self._background_thread.join()
+                    self.release()
+                    return
                 time.sleep(0.01)  # Yield thread
 
     def _interface_func(self) -> None:
@@ -668,8 +699,18 @@ class Autosequence:
             printf("Valid phases:", color="green", bold=True)
             for phase_name in self.phases:
                 printf(f" - {phase_name.name}", color="light_green")
-
-            self._prompt_session = PromptSession()
+                
+            completer_phases = ["Press Fill 1", "Press Fill 2", "Press Fill 3", "Press Fill 4", "QD", "Ox Fill", "Pre Press", "Coldflow Full"]
+            complete_cmds = {
+                "start": {p: None for p in completer_phases},
+                "pause": {p: None for p in completer_phases},
+                "unpause": {p: None for p in completer_phases},
+                "abort": {p: None for p in completer_phases},
+                "quit": None
+            }
+            completer = NestedCompleter.from_nested_dict(complete_cmds)
+            completer.ignore_case = True
+            self._prompt_session = PromptSession(completer=completer, complete_while_typing=True, complete_style=CompleteStyle.COLUMN)
             while not self.abort_flag.is_set():  # Parse input
                 user_input: str = self._prompt_session.prompt(" > ")
                 if self.abort_flag.is_set():
@@ -688,7 +729,7 @@ class Autosequence:
                     continue
                 if (command == "quit") or (command == "exit"):
                     print(" > Exiting autosequence interface...")
-                    self.release()
+                    self._has_clean_quit.set()
                     return
                 phase: Phase | None = self.get_phase(phase_name=parts[1])
                 if phase is None:
