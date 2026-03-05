@@ -482,11 +482,12 @@ class Phase:
             if (self._safe_func is not None):
                 self._safe_func(self)
         finally:
-            parent_range.create_child_range(
-                name=self.name,
-                time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
-                color="#D81E5B",
-            )
+            if parent_range is not None:
+                parent_range.create_child_range(
+                    name=self.name,
+                    time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
+                    color="#7849E5",
+                )
 
     
     
@@ -607,14 +608,18 @@ class Autosequence:
         if not self._has_released:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
-        full_range = parent_range.create_child_range(
-            name="Autosequence",
-            time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
-            color="#bada55",
-        )
         if parent_range is not None: 
+            full_range = parent_range.create_child_range(
+                name=self.name,
+                time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
+                color="#00ff1e",
+            )
+            # join all dicts together
             all_channels: dict[str, str] = self.config.pts | self.config.tcs | self.config.vlvs
+            # swap keys and values for correct synnax alias format
             aliases: dict[int | str, str] = {value: key for key, value in all_channels.items()}
+            # replace underscores in aliases with spaces
+            aliases = {alias: name.replace("_", " ") for alias, name in aliases.items()}
             full_range.set_alias(aliases)
 
     # def init_valves(self) -> None:
