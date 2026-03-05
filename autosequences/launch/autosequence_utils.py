@@ -337,7 +337,7 @@ class Phase:
 
     auto: 'Autosequence'
 
-    phase_start_time: sy.TimeStamp
+    phase_start_time: sy.TimeStamp | None = None
 
     _abort: threading.Event  # Thread-safe flag
     _quit: threading.Event  # Thread-safe flag
