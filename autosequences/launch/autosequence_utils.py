@@ -536,6 +536,9 @@ class Autosequence:
     global_abort: Callable | None
     abort_flag: threading.Event  # Thread-safe flag
 
+    start_time: sy.TimeStamp
+    aliases: dict[int | str, str]
+
     # Private members
     _has_released: bool
     _background_thread: threading.Thread | None = None
@@ -560,7 +563,6 @@ class Autosequence:
         self.abort_flag.clear()  # Make sure flag is cleared initially
         self._has_clean_quit: threading.Event = threading.Event()
         self._has_clean_quit.clear()
-        self.start_time: sy.TimeStamp
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
@@ -573,6 +575,15 @@ class Autosequence:
             name="Limelight Autosequence",
             time_range=sy.TimeRange(sy.TimeStamp.now(), sy.TimeStamp.now()),
         )
+
+        # join all dicts together
+        all_channels: dict[str, str] = self.config.pts | self.config.tcs | self.config.vlvs
+        # swap keys and values for correct synnax alias format
+        self.aliases: dict[int | str, str] = {value: key for key, value in all_channels.items()}
+        # replace underscores in aliases with spaces
+        self.aliases: dict[int | str, str] = {alias: name.replace("_", " ") for alias, name in self.aliases.items()}
+        # apply aliases
+        parent_range.set_alias(self.aliases)
 
         # Take control with autosequence
         self.ctrl: Controller = self.client.control.acquire(
@@ -614,13 +625,7 @@ class Autosequence:
                 time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
                 color="#00ff1e",
             )
-            # join all dicts together
-            all_channels: dict[str, str] = self.config.pts | self.config.tcs | self.config.vlvs
-            # swap keys and values for correct synnax alias format
-            aliases: dict[int | str, str] = {value: key for key, value in all_channels.items()}
-            # replace underscores in aliases with spaces
-            aliases = {alias: name.replace("_", " ") for alias, name in aliases.items()}
-            full_range.set_alias(aliases)
+            full_range.set_alias(self.aliases)
 
     # def init_valves(self) -> None:
     #     # Set every valve to closed state initially
