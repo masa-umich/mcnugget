@@ -14,6 +14,8 @@ from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.formatted_text import ANSI
 
+global_client: sy.Synnax | None = None
+parent_range: sy.Range | None = None
 
 class Config:
     """
@@ -335,6 +337,8 @@ class Phase:
 
     auto: 'Autosequence'
 
+    phase_start_time: sy.TimeStamp
+
     _abort: threading.Event  # Thread-safe flag
     _quit: threading.Event  # Thread-safe flag
     _pause: threading.Event  # Thread-safe flag
@@ -477,12 +481,19 @@ class Phase:
         except:
             if (self._safe_func is not None):
                 self._safe_func(self)
+        finally:
+            parent_range.create_child_range(
+                name=self.name,
+                time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
+                color="#D81E5B",
+            )
 
     
     
     def start(self) -> None:
         if self._func_thread.ident is None:
             self._func_thread.start()
+            self.phase_start_time = sy.TimeStamp.now() 
         else:
             log(f"Phase {self.name} already started")
 
@@ -551,6 +562,15 @@ class Autosequence:
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
+        global global_client
+        global_client = self.client
+
+        # Make range
+        global parent_range
+        parent_range = self.client.ranges.create(
+            name="Limelight Autosequence",
+            time_range=sy.TimeRange(sy.TimeStamp.now(), sy.TimeStamp.now()),
+        )
 
         # Take control with autosequence
         self.ctrl: Controller = self.client.control.acquire(
