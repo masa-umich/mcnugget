@@ -559,6 +559,7 @@ class Autosequence:
         self.abort_flag.clear()  # Make sure flag is cleared initially
         self._has_clean_quit: threading.Event = threading.Event()
         self._has_clean_quit.clear()
+        self.start_time: sy.TimeStamp
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
@@ -606,6 +607,15 @@ class Autosequence:
         if not self._has_released:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
+        full_range = parent_range.create_child_range(
+            name="Autosequence",
+            time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
+            color="#bada55",
+        )
+        if parent_range is not None: 
+            all_channels: dict[str, str] = self.config.pts | self.config.tcs | self.config.vlvs
+            aliases: dict[int | str, str] = {value: key for key, value in all_channels.items()}
+            full_range.set_alias(aliases)
 
     # def init_valves(self) -> None:
     #     # Set every valve to closed state initially
@@ -660,6 +670,8 @@ class Autosequence:
     
     # Run command interface thread & main listener thread
     def run(self) -> None:
+        self.start_time = sy.TimeStamp.now()
+
         with patch_stdout():  # Fix print statements with command interface
             # Run background thread if provided
             if self._background_thread is not None:
