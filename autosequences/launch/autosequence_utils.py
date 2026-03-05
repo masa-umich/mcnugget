@@ -619,13 +619,16 @@ class Autosequence:
         if not self._has_released:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
-        if parent_range is not None: 
-            full_range = parent_range.create_child_range(
+        # Update the parent range to end at the end of the autosequence
+        global parent_range
+        if parent_range is not None:
+            parent_range = self.client.ranges.create(
                 name=self.name,
+                key=parent_range.key,  # type: ignore
                 time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
                 color="#00ff1e",
             )
-            full_range.set_alias(self.aliases)
+            # parent_range.set_alias(self.aliases)
 
     # def init_valves(self) -> None:
     #     # Set every valve to closed state initially
