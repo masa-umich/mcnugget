@@ -336,7 +336,7 @@ class Phase:
 
     auto: 'Autosequence'
 
-    phase_start_time: sy.TimeStamp
+    phase_start_time: sy.TimeStamp | None = None
 
     _abort: threading.Event  # Thread-safe flag
     _quit: threading.Event  # Thread-safe flag
@@ -492,8 +492,10 @@ class Phase:
     
     def start(self) -> None:
         if self._func_thread.ident is None:
+            # Record the phase start time before starting the worker thread to avoid
+            # a race where the thread's finally block runs before this is set.
+            self.phase_start_time = sy.TimeStamp.now()
             self._func_thread.start()
-            self.phase_start_time = sy.TimeStamp.now() 
         else:
             log(f"Phase {self.name} already started")
 
