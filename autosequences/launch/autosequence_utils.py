@@ -14,7 +14,6 @@ from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.formatted_text import ANSI
 
-global_client: sy.Synnax | None = None
 parent_range: sy.Range | None = None
 
 class Config:
@@ -566,13 +565,14 @@ class Autosequence:
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
-        global global_client
-        global_client = self.client
 
         # Make range
+        day: str = sy.TimeStamp.now().datetime().strftime("%m/%d")
+        run: int = len(self.client.ranges.search(term=f"{self.name} {day} run")) + 1
+
         global parent_range
         parent_range = self.client.ranges.create(
-            name="Limelight Autosequence",
+            name=f"{self.name} {day} run {run}",
             time_range=sy.TimeRange(sy.TimeStamp.now(), sy.TimeStamp.now()),
         )
 
@@ -623,7 +623,7 @@ class Autosequence:
         global parent_range
         if parent_range is not None:
             parent_range = self.client.ranges.create(
-                name=self.name,
+                name=parent_range.name, # type: ignore
                 key=parent_range.key,  # type: ignore
                 time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
                 color="#00ff1e",
