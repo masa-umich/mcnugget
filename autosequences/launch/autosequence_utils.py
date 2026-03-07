@@ -14,6 +14,7 @@ from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.formatted_text import ANSI
 
+parent_range: sy.Range | None = None
 
 class Config:
     """
@@ -335,6 +336,8 @@ class Phase:
 
     auto: 'Autosequence'
 
+    phase_start_time: sy.TimeStamp | None = None
+
     _abort: threading.Event  # Thread-safe flag
     _quit: threading.Event  # Thread-safe flag
     _pause: threading.Event  # Thread-safe flag
@@ -477,11 +480,21 @@ class Phase:
         except:
             if (self._safe_func is not None):
                 self._safe_func(self)
+        finally:
+            if parent_range is not None:
+                parent_range.create_child_range(
+                    name=self.name,
+                    time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
+                    color="#7849E5",
+                )
 
     
     
     def start(self) -> None:
         if self._func_thread.ident is None:
+            # Record the phase start time before starting the worker thread to avoid
+            # a race where the thread's finally block runs before this is set.
+            self.phase_start_time = sy.TimeStamp.now()
             self._func_thread.start()
         else:
             log(f"Phase {self.name} already started")
@@ -524,6 +537,9 @@ class Autosequence:
     global_abort: Callable | None
     abort_flag: threading.Event  # Thread-safe flag
 
+    start_time: sy.TimeStamp
+    aliases: dict[int | str, str]
+
     # Private members
     _has_released: bool
     _background_thread: threading.Thread | None = None
@@ -551,6 +567,25 @@ class Autosequence:
 
         # Try to login
         self.client: sy.Synnax = self.synnax_login(cluster)
+
+        # Make range
+        day: str = sy.TimeStamp.now().datetime().strftime("%m/%d")
+        run: int = len(self.client.ranges.search(term=f"{self.name} {day} run")) + 1
+
+        global parent_range
+        parent_range = self.client.ranges.create(
+            name=f"{self.name} {day} run {run}",
+            time_range=sy.TimeRange(sy.TimeStamp.now(), sy.TimeStamp.now()),
+        )
+
+        # join all dicts together
+        all_channels: dict[str, str] = self.config.pts | self.config.tcs | self.config.vlvs
+        # swap keys and values for correct synnax alias format
+        self.aliases: dict[int | str, str] = {value: key for key, value in all_channels.items()}
+        # replace underscores in aliases with spaces
+        self.aliases: dict[int | str, str] = {alias: name.replace("_", " ") for alias, name in self.aliases.items()}
+        # apply aliases
+        parent_range.set_alias(self.aliases)
 
         # Take control with autosequence
         self.ctrl: Controller = self.client.control.acquire(
@@ -586,6 +621,16 @@ class Autosequence:
         if not self._has_released:
             self.release()
             self._has_released = True  # Object should be deleted atp but just in case
+        # Update the parent range to end at the end of the autosequence
+        global parent_range
+        if parent_range is not None:
+            parent_range = self.client.ranges.create(
+                name=parent_range.name, # type: ignore
+                key=parent_range.key,  # type: ignore
+                time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
+                color="#00ff1e",
+            )
+            # parent_range.set_alias(self.aliases)
 
     # def init_valves(self) -> None:
     #     # Set every valve to closed state initially
@@ -640,6 +685,8 @@ class Autosequence:
     
     # Run command interface thread & main listener thread
     def run(self) -> None:
+        self.start_time = sy.TimeStamp.now()
+
         with patch_stdout():  # Fix print statements with command interface
             # Run background thread if provided
             if self._background_thread is not None:
