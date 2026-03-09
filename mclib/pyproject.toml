@@ -1,7 +1,7 @@
 [project]
 name = "mclib"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Python library and command-line interface for mclib."
 readme = "README.md"
 authors = [
     { name = "Jack Hammerberg", email = "jackmh@umich.edu" }
@@ -14,8 +14,6 @@ dependencies = [
     "termcolor>=3.3.0",
 ]
 
-[project.scripts]
-mclib = "mclib:main"
 
 [build-system]
 requires = ["hatchling"]

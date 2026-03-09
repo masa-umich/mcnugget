@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Any, List, Dict
+from typing import Callable, List, Dict
 import threading
 import time
 import synnax as sy
@@ -40,7 +40,7 @@ class Autosequence:
     _prompt_session: PromptSession | None = None
     _has_clean_quit: threading.Event
 
-    # Constuctor
+    # Constructor
     def __init__(
         self,
         name: str,

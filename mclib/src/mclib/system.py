@@ -1,9 +1,6 @@
 from enum import Enum, auto
-from typing import Any, List, Dict
-import yaml
+from typing import List
 from mclib.config import Config
-
-
 class State(Enum):
     OPEN = auto()
     CLOSED = auto()
