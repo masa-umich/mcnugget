@@ -164,7 +164,7 @@ def driver(
 ):
     global do_noise
     driver_frequency = args.frequency  # Hz
-    loop = sy.Loop(sy.Rate.HZ * driver_frequency)
+    loop = sy.Loop(interval=(sy.Rate.HZ * driver_frequency))
 
     while loop.wait():
         write_data: dict = {}

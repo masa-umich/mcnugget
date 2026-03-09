@@ -667,7 +667,10 @@ def coldflow(phase: Phase) -> None:
 
         remaining_span = sy.TimeSpan(target_time - now)
         remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
-        remaining_seconds_int = int(math.ceil(remaining_seconds))
+        if remaining_seconds is None:
+            remaining_seconds_int = 0
+        else:
+            remaining_seconds_int = int(math.ceil(remaining_seconds))
         if remaining_seconds_int not in times_shown:
             phase.log(f"T-{remaining_seconds_int}")
             times_shown.add(remaining_seconds_int)
@@ -812,7 +815,10 @@ def coldflow_full(phase: Phase) -> None:
 
         remaining_span = sy.TimeSpan(target_time - now)
         remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
-        remaining_seconds_int = int(math.ceil(remaining_seconds))
+        if remaining_seconds is None:
+            remaining_seconds_int = 0
+        else:
+            remaining_seconds_int = int(math.ceil(remaining_seconds))
         if remaining_seconds_int not in times_shown:
             phase.log(f"T-{remaining_seconds_int}")
             times_shown.add(remaining_seconds_int)
@@ -869,7 +875,10 @@ def post_ignition_sequence(phase: Phase) -> None:
         now: sy.TimeStamp = sy.TimeStamp.now()
         span_passed = sy.TimeSpan(now - coldflow_start_time)
         seconds_passed_float: float | None = sy.TimeSpan.to_seconds(span_passed)
-        seconds_passed_int = int(seconds_passed_float)
+        if seconds_passed_float is None:
+            seconds_passed_int = 0
+        else:
+            seconds_passed_int = int(seconds_passed_float)
 
         if seconds_passed_int != last_shown:
             phase.log(f"T+{seconds_passed_int}")
