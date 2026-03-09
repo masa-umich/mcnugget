@@ -2,6 +2,7 @@ import statistics
 from typing import Any
 from synnax.control.controller import Controller
 
+
 class average_ch:
     """
     Uses EWMA to run a weighted running average on data in a performant way

@@ -3,9 +3,11 @@ from typing import Any, List, Dict
 import yaml
 from mclib.config import Config
 
+
 class State(Enum):
     OPEN = auto()
     CLOSED = auto()
+
 
 AMBIENT_TEMP: float = 22.0  # degrees celsius
 STD_BOTTLE_VOLUME: float = 42.2  # Liters
@@ -21,7 +23,14 @@ class Node:
     temperature: float
     volume: float
 
-    def __init__(self, name: str, channels: list, volume: float, pressure: float, temperature: float = AMBIENT_TEMP):
+    def __init__(
+        self,
+        name: str,
+        channels: list,
+        volume: float,
+        pressure: float,
+        temperature: float = AMBIENT_TEMP,
+    ):
         self.name = name
         self.channels = channels
         self.pressure = pressure
@@ -51,9 +60,9 @@ class Valve:
 
     def get_state(self) -> State:
         return self.state
-    
+
     def energize(self) -> None:
-        if self.normally_closed: # Invert operation for NO valves
+        if self.normally_closed:  # Invert operation for NO valves
             self.state = State.OPEN
         else:
             self.state = State.CLOSED
@@ -63,7 +72,7 @@ class Valve:
             self.state = State.CLOSED
         else:
             self.state = State.OPEN
-            
+
     def toggle(self):
         if self.state == State.OPEN:
             self.de_energize()
@@ -90,7 +99,9 @@ class System:
 
         for valve_name in config.get_vlvs():
             normally_closed: bool = config.is_vlv_nc(valve_name)
-            self.valves.append(Valve(valve_name, normally_closed, 0.02))  # "default" valve
+            self.valves.append(
+                Valve(valve_name, normally_closed, 0.02)
+            )  # "default" valve
 
         # Manually set cv of some valves
         self.get_valve_obj(config.get_vlv("COPV_Vent")).cv = 0.01
@@ -170,16 +181,16 @@ class System:
                 channels=[
                     config.get_pt("Ox_Tank_PT_1"),
                     config.get_pt("Ox_Tank_PT_2"),
-                ],#add
+                ],  # add
                 volume=66.4,
                 pressure=0,
             ),
             Node(
                 name="Fuel Tank",
-                channels=[],#add
+                channels=[],  # add
                 volume=59.8,
                 pressure=0,
-            )
+            ),
         ]
 
     def get_valve_obj(self, name: str) -> Valve:
@@ -206,13 +217,13 @@ class System:
         for valve in self.valves:
             if valve.name == valve_name.lower():
                 return valve.toggle()
-    
+
     def set_valve(self, valve_name: str, cmd: int):
         valve_name = valve_name.lower()
         for valve in self.valves:
             if valve.name == valve_name.lower():
                 valve.set_state(cmd)
-    
+
     def get_temperature(self, channel_name: str) -> float:
         channel_name = channel_name.lower()
         for node in self.nodes:
@@ -311,7 +322,7 @@ class System:
 
         if press_iso_3.get_state() == State.OPEN:
             self.transfer_fluid("Bottle 3", "press_node", press_iso_3.cv)
-        
+
         if press_iso_4.get_state() == State.OPEN:
             self.transfer_fluid("Bottle 4", "press_node", press_iso_4.cv)
 
@@ -326,9 +337,11 @@ class System:
 
         if ox_vent.get_state() == State.OPEN:
             self.vent_to_atmosphere("Ox Tank Level", ox_vent.cv)
-        
+
         if ox_pre_press.get_state() == State.OPEN:
-            self.transfer_fluid("Bottle 1", "Ox Tank", ox_pre_press.cv) #it does not come from bottle 1 but placeholder cuz idk
+            self.transfer_fluid(
+                "Bottle 1", "Ox Tank", ox_pre_press.cv
+            )  # it does not come from bottle 1 but placeholder cuz idk
 
         self.vent_to_atmosphere("Ox Tank Level", 0.00005)  # Small leak to atmosphere
         self.vent_to_atmosphere("Ox Tank", 0.00005)  # Small leak to atmosphere

@@ -2,7 +2,6 @@ import yaml
 from typing import Any
 
 
-
 class Config:
     """
     Parses a config.yaml file for channel mappings and autosequence variables.
@@ -53,14 +52,14 @@ class Config:
                 for config_ch_name, value in items.items():
                     # Construct Synnax Name: prefix_suffix_index (e.g., gse_pt_1)
                     ch_index = value
-                    is_normally_open = False # Default assumption
+                    is_normally_open = False  # Default assumption
 
                     # If the entry has extra information
                     if isinstance(value, dict):
                         ch_index = value.get("id")
                         # We use .get(key, default) so it still works if 'normally_open' is omitted
                         is_normally_open = value.get("normally_open", False)
-                    
+
                     # Construct Synnax Name
                     synnax_name = f"{prefix}_{suffix}_{ch_index}"
                     real_name: str = config_ch_name.lower()
@@ -72,7 +71,9 @@ class Config:
                     elif suffix == "vlv":
                         self.vlvs[real_name] = synnax_name
                         self.normally_open_vlvs[real_name] = is_normally_open
-                        self.normally_open_vlvs[synnax_name] = is_normally_open # add both name styles
+                        self.normally_open_vlvs[synnax_name] = (
+                            is_normally_open  # add both name styles
+                        )
                     else:
                         raise Exception("Bad entry in mappings part of config")
 
@@ -135,7 +136,7 @@ class Config:
         for pt in self.pts.values():
             all_pts.append(pt)
         return all_pts
-    
+
     def get_tcs(self) -> list[str]:
         all_tcs: list[str] = []
         for tc in self.tcs.values():

@@ -14,11 +14,14 @@ if TYPE_CHECKING:
 # Global shared state
 parent_range: sy.Range | None = None
 
+
 class SequenceAborted(Exception):
     pass
 
+
 class SequenceExited(Exception):
     pass
+
 
 class Phase:
     name: str
@@ -26,7 +29,7 @@ class Phase:
     ctrl: Controller
     config: Config
 
-    auto: 'Autosequence'
+    auto: "Autosequence"
 
     phase_start_time: sy.TimeStamp | None = None
 
@@ -37,7 +40,7 @@ class Phase:
     _stop_wait: threading.Event  # Thread-safe flag for stopping wait for input
 
     _func_thread: threading.Thread  # Thread wrapper
-    _safe_func: Callable | None = None # Optional safe function to run on abort
+    _safe_func: Callable | None = None  # Optional safe function to run on abort
 
     _refresh_rate: int  # Hz
     _refresh_period: float
@@ -48,7 +51,7 @@ class Phase:
         ctrl: Controller,
         config: Config,
         main_func: Callable,
-        auto: 'Autosequence',
+        auto: "Autosequence",
         safe_func: Callable | None = None,
         refresh_rate: int = 50,
     ):
@@ -76,7 +79,7 @@ class Phase:
 
         self._wait = threading.Event()
         self._wait.clear()  # Make sure flag is cleared initially
-        
+
         self._quit = threading.Event()
         self._quit.clear()  # Make sure flag is cleared initially
 
@@ -86,7 +89,7 @@ class Phase:
             raise SequenceAborted("Sequence Aborted")
 
         if self._pause.is_set():
-            if (self._safe_func is not None):
+            if self._safe_func is not None:
                 self._safe_func(self)
 
             while self._pause.is_set():
@@ -95,7 +98,7 @@ class Phase:
                 if self._quit.is_set():
                     raise SequenceExited()
                 time.sleep(self._refresh_period)  # Sleep and yield thread
-            
+
         if self._quit.is_set():
             raise SequenceExited()
 
@@ -164,7 +167,7 @@ class Phase:
         try:
             main_func(self)
         except:
-            if (self._safe_func is not None):
+            if self._safe_func is not None:
                 self._safe_func(self)
         finally:
             if parent_range is not None:
@@ -173,7 +176,7 @@ class Phase:
                     time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
                     color="#7849E5",
                 )
-    
+
     def start(self) -> None:
         if self._func_thread.ident is None:
             # Record the phase start time before starting the worker thread to avoid
@@ -188,7 +191,7 @@ class Phase:
 
     def abort(self) -> None:
         self._abort.set()
-    
+
     def quit(self) -> None:
         self._quit.set()
 

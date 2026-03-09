@@ -13,6 +13,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 
 from mclib.phase import Phase
 
+
 class Autosequence:
     """
     An autosequence which is a wrapper of phases and a way to run them
@@ -67,17 +68,24 @@ class Autosequence:
         run: int = len(self.client.ranges.search(term=f"{self.name} {day} run")) + 1
 
         import mclib.phase
+
         mclib.phase.parent_range = self.client.ranges.create(
             name=f"{self.name} {day} run {run}",
             time_range=sy.TimeRange(sy.TimeStamp.now(), sy.TimeStamp.now()),
         )
 
         # join all dicts together
-        all_channels: Dict[str, str] = self.config.pts | self.config.tcs | self.config.vlvs
+        all_channels: Dict[str, str] = (
+            self.config.pts | self.config.tcs | self.config.vlvs
+        )
         # swap keys and values for correct synnax alias format
-        self.aliases: Dict[int | str, str] = {value: key for key, value in all_channels.items()}
+        self.aliases: Dict[int | str, str] = {
+            value: key for key, value in all_channels.items()
+        }
         # replace underscores in aliases with spaces
-        self.aliases: Dict[int | str, str] = {alias: name.replace("_", " ") for alias, name in self.aliases.items()}
+        self.aliases: Dict[int | str, str] = {
+            alias: name.replace("_", " ") for alias, name in self.aliases.items()
+        }
         # apply aliases
         mclib.phase.parent_range.set_alias(self.aliases)
 
@@ -117,9 +125,10 @@ class Autosequence:
             self._has_released = True  # Object should be deleted atp but just in case
         # Update the parent range to end at the end of the autosequence
         import mclib.phase
+
         if mclib.phase.parent_range is not None:
             mclib.phase.parent_range = self.client.ranges.create(
-                name=mclib.phase.parent_range.name, # type: ignore
+                name=mclib.phase.parent_range.name,  # type: ignore
                 key=mclib.phase.parent_range.key,  # type: ignore
                 time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
                 color="#00ff1e",
@@ -156,7 +165,7 @@ class Autosequence:
             if phase_name == phase.name.lower():
                 return phase
         return None
-    
+
     # Run command interface thread & main listener thread
     def run(self) -> None:
         self.start_time = sy.TimeStamp.now()
@@ -175,9 +184,13 @@ class Autosequence:
                 # Listen for abort signal
                 if self.abort_flag.is_set():
                     # Kill the command interface thread
-                    if (self._prompt_session is not None) and (self._prompt_session.app.is_running):
+                    if (self._prompt_session is not None) and (
+                        self._prompt_session.app.is_running
+                    ):
                         self._prompt_session.app.exit()
-                    if (self._interface_thread is not None) and (self._interface_thread.is_alive()):
+                    if (self._interface_thread is not None) and (
+                        self._interface_thread.is_alive()
+                    ):
                         self._interface_thread.join()
                     time.sleep(0.1)  # give a small amount of time for thread to close
                     for phase in self.phases:
@@ -188,20 +201,26 @@ class Autosequence:
                     if self.global_abort is not None:
                         self.global_abort(self)
                     # Kill the background thread if it exists
-                    if (self._background_thread is not None) and (self._background_thread.is_alive()):
+                    if (self._background_thread is not None) and (
+                        self._background_thread.is_alive()
+                    ):
                         self._background_thread.join()
                     self.release()
                     log("Autosequence aborted successfully")
                     return
                 elif self._has_clean_quit.is_set():
-                    if (self._interface_thread is not None) and (self._interface_thread.is_alive()):
+                    if (self._interface_thread is not None) and (
+                        self._interface_thread.is_alive()
+                    ):
                         self._interface_thread.join()
                     time.sleep(0.1)
                     for phase in self.phases:
                         phase.quit()
                         if phase._func_thread.is_alive():
                             phase.join()
-                    if (self._background_thread is not None) and (self._background_thread.is_alive()):
+                    if (self._background_thread is not None) and (
+                        self._background_thread.is_alive()
+                    ):
                         self._background_thread.join()
                     self.release()
                     return
@@ -220,18 +239,22 @@ class Autosequence:
             printf("Valid phases:", color="green", bold=True)
             for phase in self.phases:
                 printf(f" - {phase.name}", color="light_green")
-                
+
             completer_phases = [phase.name for phase in self.phases]
             complete_cmds = {
                 "start": {p: None for p in completer_phases},
                 "pause": {p: None for p in completer_phases},
                 "unpause": {p: None for p in completer_phases},
                 "abort": {p: None for p in completer_phases},
-                "quit": None
+                "quit": None,
             }
             completer = NestedCompleter.from_nested_dict(complete_cmds)
             completer.ignore_case = True
-            self._prompt_session = PromptSession(completer=completer, complete_while_typing=True, complete_style=CompleteStyle.COLUMN)
+            self._prompt_session = PromptSession(
+                completer=completer,
+                complete_while_typing=True,
+                complete_style=CompleteStyle.COLUMN,
+            )
             while not self.abort_flag.is_set():  # Parse input
                 user_input: str = self._prompt_session.prompt(" > ")
                 if self.abort_flag.is_set():

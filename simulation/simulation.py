@@ -29,6 +29,7 @@ import synnax as sy
 
 do_noise = True
 
+
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
     spinner.stop()  # incase it's running
@@ -89,9 +90,9 @@ def parse_args() -> argparse.Namespace:
             error_and_exit(
                 f"Invalid specified config file: {args.config}, must be .yaml file"
             )
-    if (args.noise.lower() == "true"):
+    if args.noise.lower() == "true":
         do_noise = True
-    elif (args.noise.lower() == "false"):
+    elif args.noise.lower() == "false":
         do_noise = False
     else:
         error_and_exit("Argument --noise must be followed by either 'true' or 'false'")
@@ -158,9 +159,11 @@ def get_channels(client: sy.Synnax, config: Config):
 
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
-def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: System, args):
+def driver(
+    config: Config, streamer: sy.Streamer, writer: sy.Writer, system: System, args
+):
     global do_noise
-    driver_frequency = args.frequency # Hz
+    driver_frequency = args.frequency  # Hz
     loop = sy.Loop(sy.Rate.HZ * driver_frequency)
 
     while loop.wait():
@@ -172,7 +175,7 @@ def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: Sys
         if fr is not None:
             for channel in fr.channels:
                 cmd = fr[channel][0]
-                valve = system.get_valve_obj(channel) # type: ignore
+                valve = system.get_valve_obj(channel)  # type: ignore
                 if cmd == True:
                     valve.energize()
                 else:
@@ -180,7 +183,7 @@ def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: Sys
 
         for state_ch in config.get_states():
             valve = system.get_valve_obj(state_ch.replace("state", "vlv"))
-            if valve.normally_closed: # Account for normally open valves
+            if valve.normally_closed:  # Account for normally open valves
                 if valve.state == State.OPEN:
                     write_data[state_ch] = 1
                 else:
@@ -192,12 +195,16 @@ def driver(config: Config, streamer: sy.Streamer, writer: sy.Writer, system: Sys
                     write_data[state_ch] = 1
 
         for pt_ch in config.get_pts():
-            noise = (random.gauss(0, 10)) if (do_noise) else (0) # instrument noise is approximately gaussian
+            noise = (
+                (random.gauss(0, 10)) if (do_noise) else (0)
+            )  # instrument noise is approximately gaussian
             # TODO: add different noise for different instruments with some sort of lookup table
             pressure = system.get_pressure(pt_ch) + noise
             write_data[pt_ch] = pressure
         for tc_ch in config.get_tcs():
-            noise = (random.gauss(0, 2)) if (do_noise) else (0) # instrument noise is approximately gaussian
+            noise = (
+                (random.gauss(0, 2)) if (do_noise) else (0)
+            )  # instrument noise is approximately gaussian
             temperature = system.get_temperature(tc_ch) + noise
             write_data[tc_ch] = temperature
 
