@@ -2,7 +2,7 @@ variables:
   first_mpv_time: 1  # seconds before ignition to open first mpv
   ox_iso_time: 2.0  # seconds before ox mpv opening to open ox iso
   fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
-  using_ox: False
+  using_ox: True
   using_fuel: True
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
   duration: 20  # Duration to keep MPVs open after ignition in seconds
@@ -22,7 +22,7 @@ variables:
   bottle_equalization_threshold: 50 # psi
   ox_fill_target: 1.48 # psid
   ox_fill_margin: 0.06 # psid
-  ox_pre_press_target: 255 # psid
+  ox_pre_press_target: 456 # psid
   ox_pre_press_margin: 10 # psid
   press_fill_vent_time: 5 # seconds to keep press fill vent open
 
@@ -134,12 +134,13 @@ channel_mappings:
       Fuel_Flowmeter_Inlet_PT: 9
       Fuel_Flowmeter_Throat_PT: 10
     valves:
-      Ox_MPV: 
+      Ox_MPV_NO: 
         id: 1
         normally_open: true
       Fuel_MPV: 
         id: 2
         normally_open: true
+      Ox_MPV_NC: 3
     tcs: # TCs
       Ox_Level_Sensor_TC: 1
       Fuel_Manifold_TC_1: 2

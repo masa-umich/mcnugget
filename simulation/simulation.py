@@ -2,16 +2,21 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "synnax==0.46.0",
+#     "synnax>=0.49.0",
 #     "yaspin",
 #     "termcolor",
 #     "pyyaml",
+#     "mclib",
 # ]
+#
+# [tool.uv.sources]
+# mclib = { path = "../mclib" }
 # ///
 
 from termcolor import colored
 from yaspin import yaspin
-from simulation_utils import State, System, Config
+from mclib.system import State, System
+from mclib.config import Config
 
 # fun spinner while we load packages
 spinner = yaspin()

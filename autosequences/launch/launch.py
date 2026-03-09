@@ -7,7 +7,11 @@
 #     "termcolor",
 #     "pyyaml",
 #     "prompt-toolkit",
+#     "mclib",
 # ]
+#
+# [tool.uv.sources]
+# mclib = { path = "../../mclib" }
 # ///
 
 from termcolor import colored
@@ -23,7 +27,7 @@ from synnax.control.controller import Controller
 import synnax as sy
 
 # our modules
-from autosequence_utils import (
+from mclib import (
     Phase,
     Autosequence,
     Config,
@@ -137,13 +141,13 @@ def global_abort(auto: Autosequence) -> None:
 
         log(f"Please wait {press_fill_vent_time} seconds to vent press fill safely...")
         log("Or, press Ctrl+C again to close press fill iso immediately")
-        open_vlv(ctrl, press_fill_vent)
+        open_vlv(ctrl, config, press_fill_vent)
         try:
             time.sleep(press_fill_vent_time)
         except KeyboardInterrupt:
             log("Ctrl+C during press fill vent delay — continuing abort")
 
-        close_vlv(ctrl, press_fill_iso)
+        close_vlv(ctrl, config, press_fill_iso)
 
         try:
             confirm = input("Vent COPV? Y/N: ").lower()
@@ -152,7 +156,7 @@ def global_abort(auto: Autosequence) -> None:
 
     finally:
         if confirm in ("y", "yes"):
-            open_vlv(ctrl, copv_vent)
+            open_vlv(ctrl, config, copv_vent)
             log("COPV Vent opened.")
 
 
@@ -238,7 +242,7 @@ def press_iteration(
         sy.TimeStamp.now() + sy.TimeSpan.from_seconds(copv_cooldown_time)
     )
 
-    open_vlv(ctrl, press_iso)
+    open_vlv(ctrl, config, press_iso)
     phase.log(f"  Opened {press_iso}")
     
     # Wait until the averaged COPV pressure reaches the target pressure OR it has been more than 1 minute
@@ -253,7 +257,7 @@ def press_iteration(
     )
 
     phase.log(f"  Target pressure reached or timeout elapsed, final COPV pressure: {copv_pressure.get():.2f} psi")
-    close_vlv(ctrl, press_iso)
+    close_vlv(ctrl, config, press_iso)
     phase.log(f"  Closed {press_iso}")
 
     # Make sure that any remaining time has elapsed before starting the next iteration
@@ -294,7 +298,7 @@ def press_fill(phase: Phase, bottle: int) -> bool:
     phase.log(f"Starting press fill for bottle {bottle}")
 
     phase.log(f"Opening press fill iso")
-    open_vlv(ctrl, press_fill_iso)
+    open_vlv(ctrl, config, press_fill_iso)
 
     # Press rate 1 fill
     for i in range(press_rate_1_ittrs):
@@ -335,7 +339,7 @@ def press_fill(phase: Phase, bottle: int) -> bool:
         if abs(copv_current_pressure - bottle_pressure) <= bottle_equalization_threshold:
             phase.log("  Bottle equalization reached, ending pressurization", "green", True)
             phase.log(f"Closing press fill iso")
-            close_vlv(ctrl, press_fill_iso)
+            close_vlv(ctrl, config, press_fill_iso)
             phase.log(f"Completed press fill for bottle {bottle}")
             return False
         else:
@@ -344,7 +348,7 @@ def press_fill(phase: Phase, bottle: int) -> bool:
         if copv_current_pressure >= (copv_pressure_target - copv_pressure_margin):
             phase.log("  COPV pressure target reached, ending pressurization", "green", True)
             phase.log(f"Closing press fill iso")
-            close_vlv(ctrl, press_fill_iso)
+            close_vlv(ctrl, config, press_fill_iso)
             return True
 
 
@@ -391,12 +395,12 @@ def tpc_copv(phase: Phase) -> None:
         )
         if current_pressure < (copv_pressure_target - copv_pressure_margin):
             phase.log(f"COPV below target pressure, opening Press Iso 4 & Press Fill Iso to TPC")
-            open_vlv(ctrl, config.get_vlv("Press_Iso_4")) #NOTE: change if we have 3 bottles vs 4
-            open_vlv(ctrl, config.get_vlv("Press_Fill_Iso"))
+            open_vlv(ctrl, config, config.get_vlv("Press_Iso_4")) #NOTE: change if we have 3 bottles vs 4
+            open_vlv(ctrl, config, config.get_vlv("Press_Fill_Iso"))
         elif current_pressure >= copv_pressure_target:
             phase.log(f"COPV at or above target pressure, closing Press Iso 4 & Press Fill Iso")
-            close_vlv(ctrl, config.get_vlv("Press_Iso_4"))
-            close_vlv(ctrl, config.get_vlv("Press_Fill_Iso"))
+            close_vlv(ctrl, config, config.get_vlv("Press_Iso_4"))
+            close_vlv(ctrl, config, config.get_vlv("Press_Fill_Iso"))
         phase.sleep(0.1)
 
 
@@ -421,9 +425,9 @@ def press_fill_abort(phase: Phase) -> None:
     ]
 
     phase.log("Halting press fill, closing all relevant valves")
-    close_vlv(ctrl, press_fill_iso)
+    close_vlv(ctrl, config, press_fill_iso)
     for press_iso in press_isos:
-        close_vlv(ctrl, press_iso)
+        close_vlv(ctrl, config, press_iso)
     return
 
 def ox_fill(phase: Phase) -> None:
@@ -446,17 +450,17 @@ def ox_fill(phase: Phase) -> None:
         ox_level.add(ctrl.get(ox_level_sensor)) # update current level
         if ox_level.get() < ox_fill_lower_bound:
             phase.log(f"Current Ox level of {ox_level.get()} psid < {ox_fill_lower_bound} psid lower bound")
-            open_vlv(ctrl, ox_fill)
+            open_vlv(ctrl, config, ox_fill)
             phase.log(f"Opening Ox Fill Valve until Ox Level >= {ox_fill_upper_bound} psid")
 
             # Wait until we have reached the target level
             while ox_level.add_and_get(ctrl.get(ox_level_sensor)) <= ox_fill_upper_bound:
                 phase.sleep(0.10) # yield thread
-                if open_vlv(ctrl, ox_fill):
+                if open_vlv(ctrl, config, ox_fill):
                     phase.log(f"Re-opening Ox Fill Valve, resuming filling...")
 
             phase.log(f"Target Ox level reached: {ox_level.get()}, closing Ox Fill Valve")
-            close_vlv(ctrl, ox_fill)
+            close_vlv(ctrl, config, ox_fill)
             phase.log("Continuing to monitor Ox level...")
         phase.sleep(0.01) # yield thread
         
@@ -466,7 +470,7 @@ def ox_fill_safe(phase: Phase) -> None:
     ox_fill: str = config.get_vlv("ox_fill_valve")
 
     phase.log("Safing Ox Fill Phase - Closing Ox Fill Valve")
-    close_vlv(ctrl, ox_fill)
+    close_vlv(ctrl, config, ox_fill)
     return
 
 def pre_press(phase: Phase) -> None:
@@ -497,7 +501,7 @@ def pre_press(phase: Phase) -> None:
         )
         if current_pressure < ox_pre_press_lower_bound:
             phase.log(f"Current Ox pressure of {current_pressure} psid < {ox_pre_press_lower_bound} psid lower bound")
-            open_vlv(ctrl, ox_pre_press)
+            open_vlv(ctrl, config, ox_pre_press)
             phase.log(f"Opening Ox Pre-Press until Ox Pressure >= {ox_pre_press_target} psid")
 
             # Wait until we have reached the target level
@@ -508,11 +512,11 @@ def pre_press(phase: Phase) -> None:
                 if current_pressure >= ox_pre_press_upper_bound:
                     break
                 phase.sleep(0.10)  # yield thread
-                if open_vlv(ctrl, ox_pre_press):
+                if open_vlv(ctrl, config, ox_pre_press):
                     phase.log("Re-opening Ox Pre-Press Valve, resuming pressurization...")
             
             phase.log(f"Upper Bound Ox pressure reached: {current_pressure}, closing Ox Pre-Press")
-            close_vlv(ctrl, ox_pre_press)
+            close_vlv(ctrl, config, ox_pre_press)
             phase.log("Continuing to monitor Ox pressure...")
         phase.sleep(0.01) # yield thread
 
@@ -522,7 +526,7 @@ def pre_press_safe(phase: Phase) -> None:
     config: Config = phase.config
     ox_pre_press = config.get_vlv("ox_pre_press")
 
-    close_vlv(ctrl, ox_pre_press)
+    close_vlv(ctrl, config, ox_pre_press)
     phase.log("Safing Pre-Press Phase - Closing Ox Pre-Press Valve")
 
 def qd_disconnect(phase: Phase) -> None:
@@ -548,13 +552,13 @@ def qd_disconnect(phase: Phase) -> None:
     phase.wait_for_input()
     while(phase._wait.is_set()):
         phase.sleep(0.1)
-    open_vlv(ctrl, ox_fill_qd_pilot)
+    open_vlv(ctrl, config, ox_fill_qd_pilot)
     phase.log("Ox fill QD disconnected")
     phase.log("Input enter to disconnect ox pre-press QD") #NOTE: add venting then wait before QD
     phase.wait_for_input()
     while(phase._wait.is_set()):
         phase.sleep(0.1)
-    open_vlv(ctrl, ox_pre_press_qd_pilot)
+    open_vlv(ctrl, config, ox_pre_press_qd_pilot)
     phase.log("Ox pre-press QD disconnected")
     phase.log("Input enter to initiate COPV fill QD disconnect sequence")
     phase.wait_for_input()
@@ -562,17 +566,17 @@ def qd_disconnect(phase: Phase) -> None:
         phase.sleep(0.1)
     phase.log("Closing all press isos...")
     for iso in press_isos:
-        close_vlv(ctrl, iso)
+        close_vlv(ctrl, config, iso)
     phase.log("Opening press fill iso...")
-    open_vlv(ctrl, press_fill_iso)
+    open_vlv(ctrl, config, press_fill_iso)
     phase.log(f"Opening press fill vent for {press_fill_vent_time} seconds...")
-    open_vlv(ctrl, press_fill_vent)
+    open_vlv(ctrl, config, press_fill_vent)
     phase.sleep(press_fill_vent_time)  # wait 5 seconds to ensure full venting
     phase.log("Closing press fill vent and iso...")
-    close_vlv(ctrl, press_fill_vent)
-    close_vlv(ctrl, press_fill_iso)
+    close_vlv(ctrl, config, press_fill_vent)
+    close_vlv(ctrl, config, press_fill_iso)
     phase.log("Disconnecting COPV fill QD...")
-    open_vlv(ctrl, copv_fill_qd_pilot)
+    open_vlv(ctrl, config, copv_fill_qd_pilot)
     phase.log("COPV fill QD disconnected")
     phase.log("QD disconnection phase complete","green",True)
     return
@@ -594,7 +598,7 @@ def coldflow(phase: Phase) -> None:
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...","green",True)
 
-    open_vlv(ctrl, config.get_vlv("handoff")) #Open handoff valve to prime Flight Computer 
+    open_vlv(ctrl, config, config.get_vlv("handoff")) #Open handoff valve to prime Flight Computer 
     
     target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(10.0) #time of ignition
     igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(6.0) #time to prompt for igniter light
@@ -625,8 +629,6 @@ def coldflow(phase: Phase) -> None:
         if remaining_seconds_int not in times_shown:
             phase.log(f"T-{remaining_seconds_int}")
             times_shown.add(remaining_seconds_int)
-                  
-    return
 
 def coldflow_full(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -698,20 +700,20 @@ def coldflow_full(phase: Phase) -> None:
 
         if now >= igniter_start_time and not igniter_prompted:
             phase.log("Press 'enter' to confirm smoke...","yellow",True)
-            open_vlv(ctrl, igniter)
+            open_vlv(ctrl, config, igniter)
             phase.wait_for_input()
             igniter_prompted = True
 
         if now >= first_iso_open_time and not first_iso_opened:
             if (first_mpv == "ox" and using_ox) or (first_mpv == "fuel" and using_fuel):
                 phase.log(f"Opening {first_mpv.upper()} ISO...")
-                open_vlv(ctrl, config.get_vlv(f"{first_mpv}_dome_iso"))
+                open_vlv(ctrl, config, config.get_vlv(f"{first_mpv}_dome_iso"))
             first_iso_opened = True
 
         if now >= second_iso_open_time and not second_iso_opened:
             if (second_mpv == "ox" and using_ox) or (second_mpv == "fuel" and using_fuel):
                 phase.log(f"Opening {second_mpv.upper()} ISO...")
-                open_vlv(ctrl, config.get_vlv(f"{second_mpv}_dome_iso"))
+                open_vlv(ctrl, config, config.get_vlv(f"{second_mpv}_dome_iso"))
             second_iso_opened = True
 
         if now >= first_mpv_open_time and not first_mpv_opened:
@@ -734,7 +736,7 @@ def coldflow_full(phase: Phase) -> None:
                     ctrl[config.get_vlv(f"{second_mpv}_mpv")] = False
             second_mpv_opened = True
             phase.log("IGNITION.","red",True)
-            close_vlv(ctrl, igniter) #close igniter valve after ignition
+            close_vlv(ctrl, config, igniter) #close igniter valve after ignition
             post_ignition_sequence(phase)
             phase.log("Launch autosequence complete.","green",True)
             break
