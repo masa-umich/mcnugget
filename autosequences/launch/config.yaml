@@ -1,7 +1,7 @@
 variables:
   first_mpv_time: 1  # seconds before ignition to open first mpv
   ox_iso_time: 2.0  # seconds before ox mpv opening to open ox iso
-  fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
+  fuel_iso_time: 0.5  # seconds before fuel mpv opening to open fuel iso
   using_ox: True
   using_fuel: True
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
@@ -22,7 +22,7 @@ variables:
   bottle_equalization_threshold: 50 # psi
   ox_fill_target: 1.48 # psid
   ox_fill_margin: 0.06 # psid
-  ox_pre_press_target: 456 # psid
+  ox_pre_press_target: 469 # psid
   ox_pre_press_margin: 10 # psid
   press_fill_vent_time: 5 # seconds to keep press fill vent open
 
@@ -98,7 +98,7 @@ channel_mappings:
       COPV_Vent: 1
       Fuel_Dome_Iso: 2
       Fuel_Vent: 3
-      Ball_Valve_Vent: 5 #NOT FOR LAUNCH
+      Ball_Valve_Vent: 4 #NOT FOR LAUNCH
     tcs: # TCs
       COPV_TC_1: 1
       COPV_TC_2: 2
