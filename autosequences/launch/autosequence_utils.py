@@ -485,7 +485,7 @@ class Phase:
                 parent_range.create_child_range(
                     name=self.name,
                     time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
-                    color="#7849E5",
+                    color="#000034",
                 )
 
     
@@ -628,7 +628,7 @@ class Autosequence:
                 name=parent_range.name, # type: ignore
                 key=parent_range.key,  # type: ignore
                 time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
-                color="#00ff1e",
+                color="#003400",
             )
             # parent_range.set_alias(self.aliases)
 
