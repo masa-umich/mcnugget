@@ -174,7 +174,7 @@ class Phase:
                 parent_range.create_child_range(
                     name=self.name,
                     time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
-                    color="#7849E5",
+                    color="#000034",
                 )
 
     def start(self) -> None:

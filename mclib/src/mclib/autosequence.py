@@ -92,7 +92,7 @@ class Autosequence:
         # Take control with autosequence
         self.ctrl: Controller = self.client.control.acquire(
             name=name,
-            write_authorities=255,  # 1 is the default console authority (NOTE: This might/should be higher)
+            write_authorities=100,  # 1 is the default console authority for reference
             write=self.config.get_vlvs(),
             read=self.config.get_sensors() + self.config.get_states(),
         )
@@ -131,7 +131,7 @@ class Autosequence:
                 name=mclib.phase.parent_range.name,  # type: ignore
                 key=mclib.phase.parent_range.key,  # type: ignore
                 time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
-                color="#00ff1e",
+                color="#003400",
             )
 
     def synnax_login(self, cluster: str) -> sy.Synnax:
