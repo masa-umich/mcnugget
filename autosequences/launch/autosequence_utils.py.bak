@@ -485,7 +485,7 @@ class Phase:
                 parent_range.create_child_range(
                     name=self.name,
                     time_range=sy.TimeRange(self.phase_start_time, sy.TimeStamp.now()),
-                    color="#7849E5",
+                    color="#000034",
                 )
 
     
@@ -590,7 +590,7 @@ class Autosequence:
         # Take control with autosequence
         self.ctrl: Controller = self.client.control.acquire(
             name=name,
-            write_authorities=255,  # 1 is the default console authority (NOTE: This might/should be higher)
+            write_authorities=100,  # 1 is the default console authority (NOTE: This might/should be higher)
             write=self.config.get_vlvs(),
             read=self.config.get_sensors() + self.config.get_states(),
         )
@@ -628,7 +628,7 @@ class Autosequence:
                 name=parent_range.name, # type: ignore
                 key=parent_range.key,  # type: ignore
                 time_range=sy.TimeRange(self.start_time, sy.TimeStamp.now()),
-                color="#00ff1e",
+                color="#003400",
             )
             # parent_range.set_alias(self.aliases)
 
