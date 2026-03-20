@@ -72,7 +72,7 @@ def parse_args() -> argparse.Namespace:
         "-l",
         "--log",
         help="Specify a log file to write logs to at the end of the autosequence",
-        default="",
+        default="launch-autosequence.log",
         type=str,
     )
     parser.add_argument(
