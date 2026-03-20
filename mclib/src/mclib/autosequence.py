@@ -93,7 +93,7 @@ class Autosequence:
         self.ctrl: Controller = self.client.control.acquire(
             name=name,
             write_authorities=100,  # 1 is the default console authority for reference
-            write=self.config.get_vlvs(),
+            write=self.config.get_vlvs() + ["handoff_channel"],
             read=self.config.get_sensors() + self.config.get_states(),
         )
         self._has_released = False

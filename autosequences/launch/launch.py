@@ -9,7 +9,8 @@
 #     "prompt-toolkit",
 #     "mclib",
 # ]
-#
+# [tool.uv]
+# reinstall-package = ["mclib"]
 # [tool.uv.sources]
 # mclib = { path = "../../mclib" }
 # ///
@@ -138,6 +139,8 @@ def global_abort(auto: Autosequence) -> None:
                 ctrl[vent] = True
             else:
                 ctrl[vent] = False
+        
+        ctrl["handoff_channel"] = False
 
         log(f"Please wait {press_fill_vent_time} seconds to vent press fill safely...")
         log("Or, press Ctrl+C again to close press fill iso immediately")
@@ -244,11 +247,13 @@ def press_iteration(
 
     # Wait until the averaged COPV pressure reaches the target pressure OR it has been more than 1 minute
     phase.wait_until(
-        cond=lambda c: copv_pressure.add_and_get(
-            value=sensor_vote(ctrl=c, channels=copv_pts, threshold=press_rate)
+        cond=lambda c: (
+            copv_pressure.add_and_get(
+                value=sensor_vote(ctrl=c, channels=copv_pts, threshold=press_rate)
+            )
+            >= target_pressure
+            or sy.TimeStamp.now() >= target_time
         )
-        >= target_pressure
-        or sy.TimeStamp.now() >= target_time
     )
 
     phase.log(
@@ -613,7 +618,7 @@ def qd_disconnect(phase: Phase) -> None:
     phase.log("QD disconnection phase complete", "green", True)
     return
 
-
+# DO NOT EDIT OR USE THIS DOES NOT GET USED
 def coldflow(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
@@ -629,7 +634,6 @@ def coldflow(phase: Phase) -> None:
     while phase._wait.is_set():
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...", "green", True)
-
     open_vlv(
         ctrl, config, config.get_vlv("handoff")
     )  # Open handoff valve to prime Flight Computer
@@ -724,6 +728,7 @@ def coldflow_full(phase: Phase) -> None:
     while phase._wait.is_set():
         phase.sleep(0.1)
     phase.log("Beginning coldflow sequence...", "green", True)
+    ctrl["handoff_channel"] = True
 
     target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
         10.0

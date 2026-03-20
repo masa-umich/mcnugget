@@ -9,6 +9,8 @@
 #     "mclib",
 # ]
 #
+# [tool.uv]
+# reinstall-package = ["mclib"]
 # [tool.uv.sources]
 # mclib = { path = "../mclib" }
 # ///

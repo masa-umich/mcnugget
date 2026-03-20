@@ -21,3 +21,210 @@
 2026-03-19T19:25:32.122261 [Pre Press] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
 2026-03-19T19:25:32.131123 > Autosequence has released control
 2026-03-19T19:25:32.132303 > Autosequence has terminated, have a great flight!
+2026-03-19T20:34:58.972827 > Background task started
+2026-03-19T20:35:02.487120 [Press Fill 1] > Starting press fill for bottle 1
+2026-03-19T20:35:02.488494 [Press Fill 1] > Opening press fill iso
+2026-03-19T20:35:02.491218 [Press Fill 1] >  Pressurizing at rate 1 (iteration 1)
+2026-03-19T20:35:02.492264 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2026-03-19T20:35:03.505909 [Press Fill 1] >   Starting pressure: 0.18 psi
+2026-03-19T20:35:03.506109 [Press Fill 1] >   Target pressure: 20.18 psi
+2026-03-19T20:35:03.506835 [Press Fill 1] >   Opened gse_vlv_3
+2026-03-19T20:35:03.981743 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 21.18 psi
+2026-03-19T20:35:03.982204 [Press Fill 1] >   Closed gse_vlv_3
+2026-03-19T20:35:05.299065 [Press Fill 1] > Halting press fill, closing all relevant valves
+2026-03-19T20:35:05.312176 > Autosequence has released control
+2026-03-19T20:35:05.313161 > Autosequence has terminated, have a great flight!
+2026-03-20T00:53:50.050856 > Background task started
+2026-03-20T00:53:52.766513 > Keyboard interrupt detected, aborting!
+2026-03-20T00:53:52.976890 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T00:53:52.978276 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T00:54:08.688887 > Autosequence has released control
+2026-03-20T00:54:08.690554 > Autosequence aborted successfully
+2026-03-20T00:54:08.691648 > Autosequence has terminated, have a great flight!
+2026-03-20T00:58:15.950434 > Background task started
+2026-03-20T00:58:20.932720 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T00:58:22.250373 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T00:58:22.251014 [Coldflow Full] > T-10
+2026-03-20T00:58:23.250955 [Coldflow Full] > T-9
+2026-03-20T00:58:24.250952 [Coldflow Full] > T-8
+2026-03-20T00:58:25.250952 [Coldflow Full] > T-7
+2026-03-20T00:58:26.212641 > Keyboard interrupt detected, aborting!
+2026-03-20T00:58:26.250953 [Coldflow Full] > Press 'enter' to confirm smoke...
+2026-03-20T00:58:26.259299 [Coldflow Full] > T-6
+2026-03-20T00:58:26.443179 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T00:58:26.443945 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T00:58:27.526142 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T00:58:28.239956 > Taking Ctrl+C as confirmation to vent
+2026-03-20T00:58:28.248520 > Autosequence has released control
+2026-03-20T00:58:28.249045 > Autosequence aborted successfully
+2026-03-20T00:58:28.249540 > Autosequence has terminated, have a great flight!
+2026-03-20T00:59:16.040289 > Background task started
+2026-03-20T00:59:18.867531 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T00:59:20.690442 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T00:59:20.690701 [Coldflow Full] > T-10
+2026-03-20T00:59:21.690591 [Coldflow Full] > T-9
+2026-03-20T00:59:22.690596 [Coldflow Full] > T-8
+2026-03-20T00:59:23.690591 [Coldflow Full] > T-7
+2026-03-20T00:59:24.690695 [Coldflow Full] > Press 'enter' to confirm smoke...
+2026-03-20T00:59:24.692303 [Coldflow Full] > T-6
+2026-03-20T00:59:25.690588 [Coldflow Full] > T-5
+2026-03-20T00:59:26.690589 [Coldflow Full] > T-4
+2026-03-20T00:59:27.690606 [Coldflow Full] > T-3
+2026-03-20T00:59:28.690598 [Coldflow Full] > Ignition confirmed. Continuing with coldflow...
+2026-03-20T00:59:28.690716 [Coldflow Full] > Opening OX ISO...
+2026-03-20T00:59:28.692878 [Coldflow Full] > T-2
+2026-03-20T00:59:29.190589 [Coldflow Full] > Opening FUEL ISO...
+2026-03-20T00:59:29.690591 [Coldflow Full] > Opening FUEL MPV...
+2026-03-20T00:59:29.691624 [Coldflow Full] > T-1
+2026-03-20T00:59:30.690591 [Coldflow Full] > Opening OX MPV...
+2026-03-20T00:59:30.691794 [Coldflow Full] > IGNITION.
+2026-03-20T00:59:30.742964 [Coldflow Full] > T+0
+2026-03-20T00:59:31.708674 [Coldflow Full] > T+1
+2026-03-20T00:59:32.232551 > Keyboard interrupt detected, aborting!
+2026-03-20T00:59:32.467436 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T00:59:32.468670 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T00:59:33.293691 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T00:59:33.619681 > Taking Ctrl+C as confirmation to vent
+2026-03-20T00:59:33.630263 > Autosequence has released control
+2026-03-20T00:59:33.630781 > Autosequence aborted successfully
+2026-03-20T00:59:33.631266 > Autosequence has terminated, have a great flight!
+2026-03-20T01:04:10.139198 > Background task started
+2026-03-20T01:04:14.480005 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T01:04:15.289641 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T01:04:15.289770 [Coldflow Full] > T-10
+2026-03-20T01:04:16.289745 [Coldflow Full] > T-9
+2026-03-20T01:04:16.901472 > Keyboard interrupt detected, aborting!
+2026-03-20T01:04:17.137891 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T01:04:17.138512 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T01:04:17.209759 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T01:04:17.383821 > Taking Ctrl+C as confirmation to vent
+2026-03-20T01:04:17.458442 > Autosequence has released control
+2026-03-20T01:04:17.464270 > Autosequence aborted successfully
+2026-03-20T01:04:17.466115 > Autosequence has terminated, have a great flight!
+2026-03-20T01:04:47.280972 > Background task started
+2026-03-20T01:04:49.360546 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T01:04:50.871819 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T01:04:50.871977 [Coldflow Full] > T-10
+2026-03-20T01:04:51.872296 [Coldflow Full] > T-9
+2026-03-20T01:04:52.871937 [Coldflow Full] > T-8
+2026-03-20T01:04:53.852996 > Keyboard interrupt detected, aborting!
+2026-03-20T01:04:53.871937 [Coldflow Full] > T-7
+2026-03-20T01:04:54.079552 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T01:04:54.080085 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T01:04:55.534555 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T01:04:55.728007 > Taking Ctrl+C as confirmation to vent
+2026-03-20T01:04:55.737215 > Autosequence has released control
+2026-03-20T01:04:55.737840 > Autosequence aborted successfully
+2026-03-20T01:04:55.738348 > Autosequence has terminated, have a great flight!
+2026-03-20T01:06:32.437808 > Background task started
+2026-03-20T01:06:34.738395 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T01:06:36.255281 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T01:06:36.255396 [Coldflow Full] > T-10
+2026-03-20T01:06:37.255359 [Coldflow Full] > T-9
+2026-03-20T01:06:37.865315 > Keyboard interrupt detected, aborting!
+2026-03-20T01:06:38.087105 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T01:06:38.087647 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T01:06:43.733513 > Taking Ctrl+C as confirmation to vent
+2026-03-20T01:06:43.742363 > Autosequence has released control
+2026-03-20T01:06:43.742948 > Autosequence aborted successfully
+2026-03-20T01:06:43.743426 > Autosequence has terminated, have a great flight!
+2026-03-20T01:06:45.434720 > Background task started
+2026-03-20T01:06:46.988113 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T01:06:48.400648 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T01:06:48.400882 [Coldflow Full] > T-10
+2026-03-20T01:06:49.400806 [Coldflow Full] > T-9
+2026-03-20T01:06:49.431031 > Keyboard interrupt detected, aborting!
+2026-03-20T01:06:49.651368 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T01:06:49.651895 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T01:06:49.927661 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T01:06:50.689493 > Taking Ctrl+C as confirmation to vent
+2026-03-20T01:06:50.695028 > Autosequence has released control
+2026-03-20T01:06:50.696439 > Autosequence aborted successfully
+2026-03-20T01:06:50.697250 > Autosequence has terminated, have a great flight!
+2026-03-20T01:08:43.916833 > Background task started
+2026-03-20T01:08:46.720674 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T01:08:47.533811 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T01:08:47.533957 [Coldflow Full] > T-10
+2026-03-20T01:08:48.415875 > Keyboard interrupt detected, aborting!
+2026-03-20T01:08:48.533907 [Coldflow Full] > T-9
+2026-03-20T01:08:48.640050 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T01:08:48.640588 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T01:08:48.723028 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T01:08:49.020127 > Taking Ctrl+C as confirmation to vent
+2026-03-20T01:08:49.024125 > Autosequence has released control
+2026-03-20T01:08:49.024624 > Autosequence aborted successfully
+2026-03-20T01:08:49.025077 > Autosequence has terminated, have a great flight!
+2026-03-20T02:35:57.860236 > Background task started
+2026-03-20T02:36:00.715889 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T02:36:01.726559 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T02:36:01.729064 [Coldflow Full] > T-10
+2026-03-20T02:36:02.729013 [Coldflow Full] > T-9
+2026-03-20T02:36:03.121407 > Keyboard interrupt detected, aborting!
+2026-03-20T02:36:03.350750 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T02:36:03.351303 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T02:36:04.025150 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T02:36:05.198201 > Taking Ctrl+C as confirmation to vent
+2026-03-20T02:36:05.206366 > Autosequence has released control
+2026-03-20T02:36:05.207544 > Autosequence aborted successfully
+2026-03-20T02:36:05.208297 > Autosequence has terminated, have a great flight!
+2026-03-20T02:37:52.419540 > Background task started
+2026-03-20T02:37:54.968613 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T02:40:49.750249 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T02:40:49.760714 [Coldflow Full] > T-10
+2026-03-20T02:40:50.760575 [Coldflow Full] > T-9
+2026-03-20T02:40:51.760568 [Coldflow Full] > T-8
+2026-03-20T02:40:52.224926 > Keyboard interrupt detected, aborting!
+2026-03-20T02:40:52.468361 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T02:40:52.471009 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T02:40:52.810383 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T02:40:53.244206 > Taking Ctrl+C as confirmation to vent
+2026-03-20T02:40:53.257459 > Autosequence has released control
+2026-03-20T02:40:53.258261 > Autosequence aborted successfully
+2026-03-20T02:40:53.258996 > Autosequence has terminated, have a great flight!
+2026-03-20T02:41:31.025181 > Background task started
+2026-03-20T02:41:32.180494 > Keyboard interrupt detected, aborting!
+2026-03-20T02:41:32.393898 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T02:41:32.395274 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T02:41:33.188975 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T02:41:33.436632 > Taking Ctrl+C as confirmation to vent
+2026-03-20T02:41:33.441617 > Autosequence has released control
+2026-03-20T02:41:33.442321 > Autosequence aborted successfully
+2026-03-20T02:41:33.442847 > Autosequence has terminated, have a great flight!
+2026-03-20T02:53:14.125840 > Background task started
+2026-03-20T02:53:17.013555 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T02:53:18.225787 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T02:53:18.226706 [Coldflow Full] > T-10
+2026-03-20T02:53:19.226638 [Coldflow Full] > T-9
+2026-03-20T02:53:20.226642 [Coldflow Full] > T-8
+2026-03-20T02:53:21.226637 [Coldflow Full] > T-7
+2026-03-20T02:53:22.226637 [Coldflow Full] > Press 'enter' to confirm smoke...
+2026-03-20T02:53:22.229437 [Coldflow Full] > T-6
+2026-03-20T02:53:23.226640 [Coldflow Full] > T-5
+2026-03-20T02:53:24.226637 [Coldflow Full] > T-4
+2026-03-20T02:53:25.226638 [Coldflow Full] > T-3
+2026-03-20T02:53:26.226635 [Coldflow Full] > T-2
+2026-03-20T02:53:26.227246 [Coldflow Full] > Aborting. No ignition.
+2026-03-20T02:53:26.472201 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T02:53:26.472800 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T02:53:31.386003 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T02:53:31.548594 > Taking Ctrl+C as confirmation to vent
+2026-03-20T02:53:31.559920 > Autosequence has released control
+2026-03-20T02:53:31.560723 > Autosequence aborted successfully
+2026-03-20T02:53:31.561369 > Autosequence has terminated, have a great flight!
+2026-03-20T02:54:23.051643 > Background task started
+2026-03-20T02:54:25.923158 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T02:54:28.044336 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T02:54:28.046228 [Coldflow Full] > T-10
+2026-03-20T02:54:29.046138 [Coldflow Full] > T-9
+2026-03-20T02:54:30.046139 [Coldflow Full] > T-8
+2026-03-20T02:54:31.046140 [Coldflow Full] > T-7
+2026-03-20T02:54:32.046141 [Coldflow Full] > Press 'enter' to confirm smoke...
+2026-03-20T02:54:32.048465 [Coldflow Full] > T-6
+2026-03-20T02:54:32.316589 > Keyboard interrupt detected, aborting!
+2026-03-20T02:54:32.532885 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T02:54:32.533497 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T02:54:33.595579 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T02:54:33.800692 > Taking Ctrl+C as confirmation to vent
+2026-03-20T02:54:33.815155 > Autosequence has released control
+2026-03-20T02:54:33.816160 > Autosequence aborted successfully
+2026-03-20T02:54:33.816707 > Autosequence has terminated, have a great flight!
