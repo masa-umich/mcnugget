@@ -1,0 +1,23 @@
+2026-03-19T19:24:52.311171 > Background task started
+2026-03-19T19:24:56.281737 [Press Fill 1] > Starting press fill for bottle 1
+2026-03-19T19:24:56.282860 [Press Fill 1] > Opening press fill iso
+2026-03-19T19:24:56.284988 [Press Fill 1] >  Pressurizing at rate 1 (iteration 1)
+2026-03-19T19:24:56.286043 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2026-03-19T19:24:57.290687 [Press Fill 1] >   Starting pressure: -1.57 psi
+2026-03-19T19:24:57.290818 [Press Fill 1] >   Target pressure: 18.43 psi
+2026-03-19T19:24:57.291296 [Press Fill 1] >   Opened gse_vlv_3
+2026-03-19T19:24:57.777702 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 18.47 psi
+2026-03-19T19:24:57.779186 [Press Fill 1] >   Closed gse_vlv_3
+2026-03-19T19:24:57.894180 > Keyboard interrupt detected, aborting!
+2026-03-19T19:24:58.009180 [Press Fill 1] > Halting press fill, closing all relevant valves
+2026-03-19T19:24:58.117833 > Please wait 5 seconds to vent press fill safely...
+2026-03-19T19:24:58.119053 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-19T19:25:03.128804 > Autosequence has released control
+2026-03-19T19:25:03.129945 > Autosequence aborted successfully
+2026-03-19T19:25:03.130925 > Autosequence has terminated, have a great flight!
+2026-03-19T19:25:16.076445 > Background task started
+2026-03-19T19:25:27.481756 [Pre Press] > Current Ox pressure of 13.26366901397705 psid < 459 psid lower bound
+2026-03-19T19:25:27.484542 [Pre Press] > Opening Ox Pre-Press until Ox Pressure >= 469 psid
+2026-03-19T19:25:32.122261 [Pre Press] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
+2026-03-19T19:25:32.131123 > Autosequence has released control
+2026-03-19T19:25:32.132303 > Autosequence has terminated, have a great flight!

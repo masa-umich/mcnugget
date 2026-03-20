@@ -290,7 +290,7 @@ def write_logs_to_file(filepath: str) -> None:
     """
     Helper function to write the current logs to a file
     """
-    with open(filepath, "w") as f:
+    with open(filepath, "a") as f:
         for log_entry in logs:
             # Strip ANSI codes for file writing
             f.write(log_entry + "\n")
