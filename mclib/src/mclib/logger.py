@@ -48,7 +48,7 @@ class CustomLogger:
         """
         Helper function to write the current logs to a file
         """
-        with open(filepath, "w") as f:
+        with open(filepath, "a") as f:
             for log_entry in self.logs:
                 # Strip ANSI codes for file writing (this is already done when appending to self.logs)
                 f.write(log_entry + "\n")
