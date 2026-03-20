@@ -120,7 +120,7 @@ def synnax_login(cluster: str) -> sy.Synnax:
 # Makes or gets all the channels we care about into Synnax
 @yaspin(text=colored("Setting up channels...", "yellow"))
 def get_channels(client: sy.Synnax, config: Config):
-    valves = config.get_vlvs()
+    valves = config.get_vlvs() + ["handoff_channel"]
     states = config.get_states()
     sensors = config.get_sensors()
 

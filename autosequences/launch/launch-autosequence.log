@@ -228,3 +228,29 @@
 2026-03-20T02:54:33.815155 > Autosequence has released control
 2026-03-20T02:54:33.816160 > Autosequence aborted successfully
 2026-03-20T02:54:33.816707 > Autosequence has terminated, have a great flight!
+2026-03-20T10:06:20.459985 > Background task started
+2026-03-20T10:06:32.775800 [Coldflow Full] > Hit 'enter' to start coldflow sequence
+2026-03-20T10:06:34.286882 [Coldflow Full] > Beginning coldflow sequence...
+2026-03-20T10:06:34.295247 [Coldflow Full] > T-10
+2026-03-20T10:06:35.294995 [Coldflow Full] > T-9
+2026-03-20T10:06:35.354434 > Keyboard interrupt detected, aborting!
+2026-03-20T10:06:35.585202 > Please wait 5 seconds to vent press fill safely...
+2026-03-20T10:06:35.585755 > Or, press Ctrl+C again to close press fill iso immediately
+2026-03-20T10:06:36.330413 > Ctrl+C during press fill vent delay — continuing abort
+2026-03-20T10:06:36.514232 > Taking Ctrl+C as confirmation to vent
+2026-03-20T10:06:36.523156 > Autosequence has released control
+2026-03-20T10:06:36.523776 > Autosequence aborted successfully
+2026-03-20T10:06:36.524324 > Autosequence has terminated, have a great flight!
+2026-03-20T10:06:38.409809 > Background task started
+2026-03-20T10:06:42.198991 [Press Fill 1] > Starting press fill for bottle 1
+2026-03-20T10:06:42.199515 [Press Fill 1] > Opening press fill iso
+2026-03-20T10:06:42.200568 [Press Fill 1] >  Pressurizing at rate 1 (iteration 1)
+2026-03-20T10:06:42.201028 [Press Fill 1] >   Measuring COPV starting pressure for 1.00 seconds
+2026-03-20T10:06:43.206215 [Press Fill 1] >   Starting pressure: -1.08 psi
+2026-03-20T10:06:43.206347 [Press Fill 1] >   Target pressure: 18.92 psi
+2026-03-20T10:06:43.206872 [Press Fill 1] >   Opened gse_vlv_3
+2026-03-20T10:06:43.672063 [Press Fill 1] >   Target pressure reached or timeout elapsed, final COPV pressure: 20.61 psi
+2026-03-20T10:06:43.672656 [Press Fill 1] >   Closed gse_vlv_3
+2026-03-20T10:06:52.542378 [Press Fill 1] > Halting press fill, closing all relevant valves
+2026-03-20T10:06:52.554870 > Autosequence has released control
+2026-03-20T10:06:52.555688 > Autosequence has terminated, have a great flight!
