@@ -98,7 +98,6 @@ channel_mappings:
       COPV_Vent: 1
       Fuel_Dome_Iso: 2
       Fuel_Vent: 3
-      Ball_Valve_Vent: 4 #NOT FOR LAUNCH
     tcs: # TCs
       COPV_TC_1: 1
       COPV_TC_2: 2
@@ -134,13 +133,12 @@ channel_mappings:
       Fuel_Flowmeter_Inlet_PT: 9
       Fuel_Flowmeter_Throat_PT: 10
     valves:
-      Ox_MPV_NO: 
+      Ox_MPV: 
         id: 1
-        normally_open: true
+        normally_open: false
       Fuel_MPV: 
         id: 2
         normally_open: true
-      Ox_MPV_NC: 3
     tcs: # TCs
       Ox_Level_Sensor_TC: 1
       Fuel_Manifold_TC_1: 2

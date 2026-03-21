@@ -102,13 +102,11 @@ def global_abort(auto: Autosequence) -> None:
     vents: list[str] = [
         config.get_vlv("ox_vent"),
         config.get_vlv("fuel_vent"),
-        config.get_vlv("Ball_valve_vent"),  # NOT FOR LAUNCH
-        config.get_vlv("ox_mpv_nc"),  # TEMPORARY
     ]
 
     valves_to_close: list[str] = [
-        config.get_vlv("ox_mpv_no"),  # TEMPORARY
         config.get_vlv("fuel_mpv"),
+        config.get_vlv("ox_mpv"),
         config.get_vlv("Press_Iso_1"),
         config.get_vlv("Press_Iso_2"),
         config.get_vlv("Press_Iso_3"),
@@ -794,11 +792,8 @@ def coldflow_full(phase: Phase) -> None:
         if now >= first_mpv_open_time and not first_mpv_opened:
             if (first_mpv == "ox" and using_ox) or (first_mpv == "fuel" and using_fuel):
                 phase.log(f"Opening {first_mpv.upper()} MPV...")
-                if first_mpv == "ox":
-                    ctrl[config.get_vlv(f"{first_mpv}_mpv_nc")] = False
-                    ctrl[config.get_vlv(f"{first_mpv}_mpv_no")] = False
-                else:
-                    ctrl[config.get_vlv(f"{first_mpv}_mpv")] = False
+                open_vlv(ctrl, config, config.get_vlv(f"{first_mpv}_mpv"))
+                
             first_mpv_opened = True
 
         if now >= target_time and not second_mpv_opened:
@@ -806,11 +801,8 @@ def coldflow_full(phase: Phase) -> None:
                 second_mpv == "fuel" and using_fuel
             ):
                 phase.log(f"Opening {second_mpv.upper()} MPV...")
-                if second_mpv == "ox":
-                    ctrl[config.get_vlv(f"{second_mpv}_mpv_nc")] = False
-                    ctrl[config.get_vlv(f"{second_mpv}_mpv_no")] = False
-                else:
-                    ctrl[config.get_vlv(f"{second_mpv}_mpv")] = False
+                open_vlv(ctrl, config, config.get_vlv(f"{second_mpv}_mpv"))
+                
             second_mpv_opened = True
             phase.log("IGNITION.", "red", True)
             close_vlv(ctrl, config, igniter)  # close igniter valve after ignition
@@ -839,15 +831,13 @@ def post_ignition_sequence(phase: Phase) -> None:
         config.get_vlv("Press_Fill_Vent"),
         config.get_vlv("ox_vent"),
         config.get_vlv("fuel_vent"),
-        config.get_vlv("Ball_valve_vent"),  # NOT FOR LAUNCH
-        config.get_vlv("ox_mpv_nc"),  # TEMPORARY
     ]
 
     valves_to_close: list[str] = [
         config.get_vlv("ox_dome_iso"),
         config.get_vlv("fuel_dome_iso"),
-        config.get_vlv("ox_mpv_no"),  # TEMPORARY
         config.get_vlv("fuel_mpv"),
+        config.get_vlv("ox_mpv"),
         config.get_vlv("igniter"),
     ]
 
