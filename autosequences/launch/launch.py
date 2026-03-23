@@ -509,6 +509,7 @@ def pre_press(phase: Phase) -> None:
     ox_pre_press_upper_bound = ox_pre_press_target + ox_pre_press_margin
 
     ox_pre_press = config.get_vlv("ox_pre_press")
+    ox_vent = config.get_vlv("ox_vent")
 
     ox_tank_pts: list[str] = [
         config.get_pt("ox_tank_pt_1"),
@@ -518,6 +519,12 @@ def pre_press(phase: Phase) -> None:
     ox_tank_pressure = average_ch(
         window=REFRESH_RATE / 2
     )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
+
+    #Close ox vent
+    if config.is_vlv_nc(ox_vent):
+        ctrl[ox_vent] = False
+    else:
+        ctrl[ox_vent] = True
 
     while True:
         current_pressure: float = ox_tank_pressure.add_and_get(
