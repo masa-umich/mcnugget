@@ -529,7 +529,7 @@ def pre_press(phase: Phase) -> None:
             )
             open_vlv(ctrl, config, ox_pre_press)
             phase.log(
-                f"Opening Ox Pre-Press until Ox Pressure >= {ox_pre_press_target} psid"
+                f"Opening Ox Pre-Press until Ox Pressure >= {ox_pre_press_upper_bound} psid"
             )
 
             # Wait until we have reached the target level
