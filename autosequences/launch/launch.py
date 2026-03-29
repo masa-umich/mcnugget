@@ -835,8 +835,8 @@ def post_ignition_sequence(phase: Phase) -> None:
     config: Config = phase.config
 
     vents: list[str] = [
-        config.get_vlv("Press_Fill_Vent"),
-        config.get_vlv("ox_vent"),
+        # config.get_vlv("Press_Fill_Vent"),
+        # config.get_vlv("ox_vent"),
         config.get_vlv("fuel_vent"),
     ]
 
@@ -849,8 +849,8 @@ def post_ignition_sequence(phase: Phase) -> None:
     ]
 
     purge_valves: list[str] = [
-        config.get_vlv("ox_mpv_purge"),
-        config.get_vlv("fuel_mpv_purge"),
+        # config.get_vlv("ox_mpv_purge"),
+        # config.get_vlv("fuel_mpv_purge"),
     ]
 
     duration: int = config.get_var(
@@ -900,24 +900,25 @@ def post_ignition_sequence(phase: Phase) -> None:
         else:
             ctrl[vent] = False
 
-    phase.log(f"Purging for {purge_duration} seconds...")
+    # phase.log(f"Purging for {purge_duration} seconds...")
 
-    for purge_valve in purge_valves:
-        if config.is_vlv_nc(purge_valve):
-            ctrl[purge_valve] = True
-        else:
-            ctrl[purge_valve] = False
+    # for purge_valve in purge_valves:
+    #     if config.is_vlv_nc(purge_valve):
+    #         ctrl[purge_valve] = True
+    #     else:
+    #         ctrl[purge_valve] = False
 
-    phase.sleep(purge_duration)  # purge for configured duration
+    # phase.sleep(purge_duration)  # purge for configured duration
 
-    for purge_valve in purge_valves:
-        if config.is_vlv_nc(purge_valve):
-            ctrl[purge_valve] = False
-        else:
-            ctrl[purge_valve] = True
+    # for purge_valve in purge_valves:
+    #     if config.is_vlv_nc(purge_valve):
+    #         ctrl[purge_valve] = False
+    #     else:
+    #         ctrl[purge_valve] = True
 
-    phase.log("Purging complete.", "green", True)
-    phase.log("System safed.", "green", True)
+    # phase.log("Purging complete.", "green", True)
+
+    phase.log("Autosequence complete.", "green", True)
 
     return
 
@@ -937,45 +938,45 @@ def main() -> None:
     )
 
     # Define and add each phase to the autosequence
-    press_fill_1_phase: Phase = Phase(
-        name="Press Fill 1",
-        ctrl=auto.ctrl,
-        config=config,
-        main_func=press_fill_1,
-        auto=auto,
-        safe_func=press_fill_abort,
-    )
-    auto.add_phase(press_fill_1_phase)
+    # press_fill_1_phase: Phase = Phase(
+    #     name="Press Fill 1",
+    #     ctrl=auto.ctrl,
+    #     config=config,
+    #     main_func=press_fill_1,
+    #     auto=auto,
+    #     safe_func=press_fill_abort,
+    # )
+    # auto.add_phase(press_fill_1_phase)
 
-    press_fill_2_phase: Phase = Phase(
-        name="Press Fill 2",
-        ctrl=auto.ctrl,
-        config=config,
-        main_func=press_fill_2,
-        auto=auto,
-        safe_func=press_fill_abort,
-    )
-    auto.add_phase(press_fill_2_phase)
+    # press_fill_2_phase: Phase = Phase(
+    #     name="Press Fill 2",
+    #     ctrl=auto.ctrl,
+    #     config=config,
+    #     main_func=press_fill_2,
+    #     auto=auto,
+    #     safe_func=press_fill_abort,
+    # )
+    # auto.add_phase(press_fill_2_phase)
 
-    press_fill_3_phase: Phase = Phase(
-        name="Press Fill 3",
-        ctrl=auto.ctrl,
-        config=config,
-        main_func=press_fill_3,
-        auto=auto,
-        safe_func=press_fill_abort,
-    )
-    auto.add_phase(press_fill_3_phase)
+    # press_fill_3_phase: Phase = Phase(
+    #     name="Press Fill 3",
+    #     ctrl=auto.ctrl,
+    #     config=config,
+    #     main_func=press_fill_3,
+    #     auto=auto,
+    #     safe_func=press_fill_abort,
+    # )
+    # auto.add_phase(press_fill_3_phase)
 
-    press_fill_4_phase: Phase = Phase(
-        name="Press Fill 4",
-        ctrl=auto.ctrl,
-        config=config,
-        main_func=press_fill_4,
-        auto=auto,
-        safe_func=press_fill_abort,
-    )
-    auto.add_phase(press_fill_4_phase)
+    # press_fill_4_phase: Phase = Phase(
+    #     name="Press Fill 4",
+    #     ctrl=auto.ctrl,
+    #     config=config,
+    #     main_func=press_fill_4,
+    #     auto=auto,
+    #     safe_func=press_fill_abort,
+    # )
+    # auto.add_phase(press_fill_4_phase)
 
     ox_fill_phase: Phase = Phase(
         name="Ox Fill",
@@ -1008,7 +1009,7 @@ def main() -> None:
     # auto.add_phase(coldflow_phase)
 
     coldflow_full_phase: Phase = Phase(
-        name="Coldflow Full",
+        name="Coldflow",
         ctrl=auto.ctrl,
         config=config,
         main_func=coldflow_full,

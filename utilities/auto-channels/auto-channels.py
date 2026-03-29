@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
         "--cluster",
         help="Specify a Synnax cluster to connect to",
         type=str,
-        default="synnax.masa.engin.umich.edu"
+        default="141.212.192.160"
     )
     parser.add_argument(
         "-i",
