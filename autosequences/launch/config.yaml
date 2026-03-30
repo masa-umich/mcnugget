@@ -1,11 +1,11 @@
 variables:
   first_mpv_time: 0   # seconds before ignition to open first mpv
   ox_iso_time: 0    # seconds before ox mpv opening to open ox iso
-  fuel_iso_time: 0.391  # seconds before fuel mpv opening to open fuel iso
-  using_ox: True
+  fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
+  using_ox: False
   using_fuel: True
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
-  duration: 1  # Duration to keep MPVs open after ignition in seconds
+  duration: 20  # Duration to keep MPVs open after ignition in seconds
   num_press_bottles: 4 # Number of press bottles on gse
   purge_duration: 5 # seconds to purge after MPVs close
   averaging_time: 1 # seconds to average over for pressure readings
@@ -69,11 +69,11 @@ channel_mappings:
       Press_Fill_Vent:
         id: 20
         normally_open: true
-    tcs: # TCs
-      Bottle_1_Skin_TC: 1
-      Bottle_2_Skin_TC: 2
-      Bottle_3_Skin_TC: 3
-      Bottle_4_Skin_TC: 4
+    #tcs: # TCs
+      # Bottle_1_Skin_TC: 1
+      # Bottle_2_Skin_TC: 2
+      # Bottle_3_Skin_TC: 3
+      # Bottle_4_Skin_TC: 4
 
   flight_computer: # Flight Computer
     pts: # PTs
