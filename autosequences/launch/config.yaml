@@ -25,6 +25,7 @@ variables:
   ox_pre_press_target: 280.96 # psid
   ox_pre_press_margin: 10 # psid
   press_fill_vent_time: 5 # seconds to keep press fill vent open
+  fuel_pre_press_time: 0.1 # seconds to open fuel dome iso after one press of "enter" during fuel pre-press
 
 # Channel Mappings
 channel_mappings:
@@ -69,11 +70,11 @@ channel_mappings:
       Press_Fill_Vent:
         id: 20
         normally_open: true
-    #tcs: # TCs
-      # Bottle_1_Skin_TC: 1
-      # Bottle_2_Skin_TC: 2
-      # Bottle_3_Skin_TC: 3
-      # Bottle_4_Skin_TC: 4
+    tcs: # TCs
+      Bottle_1_Skin_TC: 1
+      Bottle_2_Skin_TC: 2
+      Bottle_3_Skin_TC: 3
+      Bottle_4_Skin_TC: 4
 
   flight_computer: # Flight Computer
     pts: # PTs

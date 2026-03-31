@@ -157,7 +157,7 @@ class System:
             ),
             Node(
                 name="press_node",
-                channels=[config.get_pt("Post_Press_Fill_PT")],
+                channels=[config.get_pt("Press_Fill_PT")],
                 volume=0.1,  # idk what a good value should be
                 pressure=0,
             ),

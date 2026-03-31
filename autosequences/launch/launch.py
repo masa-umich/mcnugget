@@ -499,7 +499,7 @@ def ox_fill_safe(phase: Phase) -> None:
     return
 
 
-def pre_press(phase: Phase) -> None:
+def ox_pre_press(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
 
@@ -559,8 +559,24 @@ def pre_press(phase: Phase) -> None:
             phase.log("Continuing to monitor Ox pressure...")
         phase.sleep(0.01)  # yield thread
 
+def fuel_pre_press(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
 
-def pre_press_safe(phase: Phase) -> None:
+    fuel_dome_iso = config.get_vlv("fuel_dome_iso")
+    fuel_pre_press_time = config.get_var("fuel_pre_press_time")
+    while True:
+        phase.log(f"Press 'enter' to open fuel dome iso for {fuel_pre_press_time} seconds...")
+        phase.wait_for_input()
+        while phase._wait.is_set():
+            phase.sleep(0.1)
+        phase.log(f"Opening fuel dome iso for {fuel_pre_press_time} seconds...")
+        open_vlv(ctrl, config, fuel_dome_iso)
+        phase.sleep(fuel_pre_press_time)
+        close_vlv(ctrl, config, fuel_dome_iso)
+        phase.log("Fuel dome iso closed, continuing to monitor fuel tank pressure...")
+
+def ox_pre_press_safe(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
     ox_pre_press = config.get_vlv("ox_pre_press")
@@ -624,65 +640,65 @@ def qd_disconnect(phase: Phase) -> None:
     return
 
 # DO NOT EDIT OR USE THIS DOES NOT GET USED
-def coldflow(phase: Phase) -> None:
-    ctrl: Controller = phase.ctrl
-    config: Config = phase.config
+# def coldflow(phase: Phase) -> None:
+#     ctrl: Controller = phase.ctrl
+#     config: Config = phase.config
 
-    # track state variables
-    times_shown = set()  # to track which times have been shown in countdown
-    igniter_prompted: bool = False
-    igniter_confirmed: bool = False
+#     # track state variables
+#     times_shown = set()  # to track which times have been shown in countdown
+#     igniter_prompted: bool = False
+#     igniter_confirmed: bool = False
 
-    phase.log("Hit 'enter' to start coldflow sequence")
-    phase.wait_for_input()
+#     phase.log("Hit 'enter' to start coldflow sequence")
+#     phase.wait_for_input()
 
-    while phase._wait.is_set():
-        phase.sleep(0.1)
-    phase.log("Beginning coldflow sequence...", "green", True)
-    open_vlv(
-        ctrl, config, config.get_vlv("handoff")
-    )  # Open handoff valve to prime Flight Computer
+#     while phase._wait.is_set():
+#         phase.sleep(0.1)
+#     phase.log("Beginning coldflow sequence...", "green", True)
+#     open_vlv(
+#         ctrl, config, config.get_vlv("handoff")
+#     )  # Open handoff valve to prime Flight Computer
 
-    target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
-        10.0
-    )  # time of ignition
-    igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(
-        6.0
-    )  # time to prompt for igniter light
-    igniter_end_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(
-        2.0
-    )  # time to stop waiting for igniter light
+#     target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
+#         10.0
+#     )  # time of ignition
+#     igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(
+#         6.0
+#     )  # time to prompt for igniter light
+#     igniter_end_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(
+#         2.0
+#     )  # time to stop waiting for igniter light
 
-    while True:
-        phase.sleep(0)
-        now: sy.TimeStamp = sy.TimeStamp.now()
+#     while True:
+#         phase.sleep(0)
+#         now: sy.TimeStamp = sy.TimeStamp.now()
 
-        if now >= igniter_end_time and phase._wait.is_set():
-            phase.log("T-2")
-            phase.log("Coldflow aborted. No ignition.", "red", True)
-            phase.stop_waiting_for_input()
-            phase.auto.raise_abort()
-            return
-        elif (
-            now >= igniter_end_time and not igniter_confirmed
-        ):  # NOTE: This is actually what is ran when it has been confirmed
-            phase.log("Ignition confirmed. Continuing with coldflow...", "green", True)
-            igniter_confirmed = True
+#         if now >= igniter_end_time and phase._wait.is_set():
+#             phase.log("T-2")
+#             phase.log("Coldflow aborted. No ignition.", "red", True)
+#             phase.stop_waiting_for_input()
+#             phase.auto.raise_abort()
+#             return
+#         elif (
+#             now >= igniter_end_time and not igniter_confirmed
+#         ):  # NOTE: This is actually what is ran when it has been confirmed
+#             phase.log("Ignition confirmed. Continuing with coldflow...", "green", True)
+#             igniter_confirmed = True
 
-        if now >= igniter_start_time and not igniter_prompted:
-            phase.log("Press 'enter' to confirm smoke...", "yellow", True)
-            phase.wait_for_input()
-            igniter_prompted = True
+#         if now >= igniter_start_time and not igniter_prompted:
+#             phase.log("Press 'enter' to confirm smoke...", "yellow", True)
+#             phase.wait_for_input()
+#             igniter_prompted = True
 
-        remaining_span = sy.TimeSpan(target_time - now)
-        remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
-        if remaining_seconds is None:
-            remaining_seconds_int = 0
-        else:
-            remaining_seconds_int = int(math.ceil(remaining_seconds))
-        if remaining_seconds_int not in times_shown:
-            phase.log(f"T-{remaining_seconds_int}")
-            times_shown.add(remaining_seconds_int)
+#         remaining_span = sy.TimeSpan(target_time - now)
+#         remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
+#         if remaining_seconds is None:
+#             remaining_seconds_int = 0
+#         else:
+#             remaining_seconds_int = int(math.ceil(remaining_seconds))
+#         if remaining_seconds_int not in times_shown:
+#             phase.log(f"T-{remaining_seconds_int}")
+#             times_shown.add(remaining_seconds_int)
 
 
 def coldflow_full(phase: Phase) -> None:
@@ -773,6 +789,9 @@ def coldflow_full(phase: Phase) -> None:
             phase.auto.raise_abort()
             return
         elif now >= igniter_end_time and not igniter_confirmed:
+            #NOTE: This is actually what is ran when the igniter HAS been confirmed.
+            #       "not igniter_confirmed" just ensures that we don't print this 
+            #        message multiple times after the end time has passed.
             phase.log("Ignition confirmed. Continuing with coldflow...", "green", True)
             igniter_confirmed = True
 
@@ -988,15 +1007,24 @@ def main() -> None:
     )
     auto.add_phase(ox_fill_phase)
 
-    pre_press_phase: Phase = Phase(
-        name="Pre Press",
+    ox_pre_press_phase: Phase = Phase(
+        name="Ox PP",
         ctrl=auto.ctrl,
         config=config,
-        main_func=pre_press,
+        main_func=ox_pre_press,
         auto=auto,
-        safe_func=pre_press_safe,
+        safe_func=ox_pre_press_safe,
     )
-    auto.add_phase(pre_press_phase)
+    auto.add_phase(ox_pre_press_phase)
+
+    fuel_pre_press_phase: Phase = Phase(
+        name="Fuel PP",
+        ctrl=auto.ctrl,
+        config=config,
+        main_func=fuel_pre_press,
+        auto=auto,
+    )
+    auto.add_phase(fuel_pre_press_phase)
 
     qd_disconnect_phase: Phase = Phase(
         name="QD", ctrl=auto.ctrl, config=config, main_func=qd_disconnect, auto=auto
