@@ -1127,3 +1127,35 @@
 2026-03-31T13:52:06.291459 [Fuel PP] > Press 'enter' to open fuel dome iso for pre-press
 2026-03-31T13:52:24.449110 > Autosequence has released control
 2026-03-31T13:52:24.451457 > Autosequence has terminated, have a great flight!
+2026-04-04T05:29:04.332510 > Background task started
+2026-04-04T05:29:07.681187 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-04T05:29:08.888493 [Coldflow] > Beginning coldflow sequence...
+2026-04-04T05:29:08.891959 [Coldflow] > T-10
+2026-04-04T05:29:09.892495 [Coldflow] > T-9
+2026-04-04T05:29:10.891824 [Coldflow] > T-8
+2026-04-04T05:29:11.891832 [Coldflow] > T-7
+2026-04-04T05:29:12.891818 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-04T05:29:12.895251 [Coldflow] > T-6
+2026-04-04T05:29:13.891823 [Coldflow] > T-5
+2026-04-04T05:29:14.891917 [Coldflow] > T-4
+2026-04-04T05:29:15.891822 [Coldflow] > T-3
+2026-04-04T05:29:16.891816 [Coldflow] > T-2
+2026-04-04T05:29:16.891993 [Coldflow] > No ignition. Ending sequence.
+2026-04-04T05:29:21.684136 > Autosequence has released control
+2026-04-04T05:29:21.685962 > Autosequence has terminated, have a great flight!
+2026-04-04T05:31:53.109299 > Background task started
+2026-04-04T05:32:01.663429 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-04T05:32:02.868027 [Coldflow] > Beginning coldflow sequence...
+2026-04-04T05:32:02.870178 [Coldflow] > T-10
+2026-04-04T05:32:03.870088 [Coldflow] > T-9
+2026-04-04T05:32:04.870593 [Coldflow] > T-8
+2026-04-04T05:32:05.870103 [Coldflow] > T-7
+2026-04-04T05:32:06.870083 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-04T05:32:06.872164 [Coldflow] > T-6
+2026-04-04T05:32:07.870091 [Coldflow] > T-5
+2026-04-04T05:32:08.870089 [Coldflow] > T-4
+2026-04-04T05:32:09.870089 [Coldflow] > T-3
+2026-04-04T05:32:10.870086 [Coldflow] > T-2
+2026-04-04T05:32:10.870249 [Coldflow] > No ignition. Ending sequence.
+2026-04-04T05:32:14.526863 > Autosequence has released control
+2026-04-04T05:32:14.528693 > Autosequence has terminated, have a great flight!

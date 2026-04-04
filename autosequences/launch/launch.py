@@ -784,9 +784,8 @@ def coldflow_full(phase: Phase) -> None:
 
         if now >= igniter_end_time and phase._wait.is_set():
             phase.log("T-2")
-            phase.log("Aborting. No ignition.", "red", True)
+            phase.log("No ignition. Ending sequence.", "red", True)
             phase.stop_waiting_for_input()
-            phase.auto.raise_abort()
             return
         elif now >= igniter_end_time and not igniter_confirmed:
             #NOTE: This is actually what is ran when the igniter HAS been confirmed.
@@ -997,15 +996,15 @@ def main() -> None:
     # )
     # auto.add_phase(press_fill_4_phase)
 
-    ox_fill_phase: Phase = Phase(
-        name="Ox Fill",
-        ctrl=auto.ctrl,
-        config=config,
-        main_func=ox_fill,
-        auto=auto,
-        safe_func=ox_fill_safe,
-    )
-    auto.add_phase(ox_fill_phase)
+    # ox_fill_phase: Phase = Phase(
+    #     name="Ox Fill",
+    #     ctrl=auto.ctrl,
+    #     config=config,
+    #     main_func=ox_fill,
+    #     auto=auto,
+    #     safe_func=ox_fill_safe,
+    # )
+    # auto.add_phase(ox_fill_phase)
 
     ox_pre_press_phase: Phase = Phase(
         name="Ox PP",
