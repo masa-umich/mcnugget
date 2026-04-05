@@ -571,10 +571,70 @@ def fuel_pre_press(phase: Phase) -> None:
         while phase._wait.is_set():
             phase.sleep(0.1)
         phase.log(f"Opening fuel dome iso for {fuel_pre_press_time} seconds...")
-        open_vlv(ctrl, config, fuel_dome_iso)
+        ctrl[fuel_dome_iso] = True
         phase.sleep(fuel_pre_press_time)
-        close_vlv(ctrl, config, fuel_dome_iso)
+        ctrl[fuel_dome_iso] = False
         phase.log("Fuel dome iso closed, continuing to monitor fuel tank pressure...")
+
+def fuel_pre_press_new(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+
+    fuel_dome_iso = config.get_vlv("fuel_dome_iso")
+    fuel_pre_press_time = config.get_var("fuel_pre_press_time")
+    fuel_pre_press_target = config.get_var("fuel_pre_press_target")
+    fuel_pre_press_wait_time = config.get_var("fuel_pre_press_wait_time")
+
+    fuel_tank_pts: list[str] = [
+        config.get_pt("fuel_tank_pt_1"),
+        config.get_pt("fuel_tank_pt_2"),
+    ]
+
+    fuel_tank_pressure = average_ch(
+        window=REFRESH_RATE / 2
+    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
+    
+    while True:
+        current_pressure: float = fuel_tank_pressure.add_and_get(
+                value=sensor_vote(ctrl=ctrl, channels=fuel_tank_pts, threshold=1.0)
+        )
+        phase.log(
+            f"Current fuel tank pressure: {current_pressure}, pressing for {fuel_pre_press_time} seconds..."
+        )
+        
+        ctrl[fuel_dome_iso] = True
+        phase.sleep(fuel_pre_press_time)
+        ctrl[fuel_dome_iso] = False
+
+        while True:
+            phase.log(f"Waiting {fuel_pre_press_wait_time} seconds before checking fuel tank pressure...")
+
+            target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
+                fuel_pre_press_wait_time
+            )
+
+            while sy.TimeStamp.now() < target_time:
+                phase.sleep(0.1)
+                current_pressure = fuel_tank_pressure.add_and_get(
+                    value=sensor_vote(ctrl=ctrl, channels=fuel_tank_pts, threshold=50)
+                )
+            
+            if current_pressure <= fuel_pre_press_target:
+                break
+            else:
+                phase.log(
+                    f"Current fuel tank pressure: {current_pressure}, continuing to monitor..."
+                )
+
+def fuel_pre_press_safe(phase: Phase) -> None:
+    ctrl: Controller = phase.ctrl
+    config: Config = phase.config
+    fuel_dome_iso = config.get_vlv("fuel_dome_iso")
+
+    phase.log("Safing Fuel Pre-Press Phase - Closing Fuel Dome Iso")
+    ctrl[fuel_dome_iso] = False
+    return
+
 
 def ox_pre_press_safe(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -820,7 +880,6 @@ def coldflow_full(phase: Phase) -> None:
             if (first_mpv == "ox" and using_ox) or (first_mpv == "fuel" and using_fuel):
                 phase.log(f"Opening {first_mpv.upper()} MPV...")
                 open_vlv(ctrl, config, config.get_vlv(f"{first_mpv}_mpv"))
-                
             first_mpv_opened = True
 
         if now >= target_time and not second_mpv_opened:
@@ -833,7 +892,7 @@ def coldflow_full(phase: Phase) -> None:
             second_mpv_opened = True
             phase.log("IGNITION.", "red", True)
             close_vlv(ctrl, config, igniter)  # close igniter valve after ignition
-            post_ignition_sequence(phase)
+            #post_ignition_sequence(phase) #NOTE: ONLY FOR COLDFLOWS
             phase.log("Launch autosequence complete.", "green", True)
             break
 
@@ -855,8 +914,8 @@ def post_ignition_sequence(phase: Phase) -> None:
     config: Config = phase.config
 
     vents: list[str] = [
-        # config.get_vlv("Press_Fill_Vent"),
-        # config.get_vlv("ox_vent"),
+        config.get_vlv("Press_Fill_Vent"),
+        config.get_vlv("ox_vent"),
         config.get_vlv("fuel_vent"),
     ]
 
@@ -1022,7 +1081,7 @@ def main() -> None:
         name="Fuel PP",
         ctrl=auto.ctrl,
         config=config,
-        main_func=fuel_pre_press,
+        main_func=fuel_pre_press_new,
         auto=auto,
     )
     auto.add_phase(fuel_pre_press_phase)
