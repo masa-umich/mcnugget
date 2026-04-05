@@ -786,6 +786,7 @@ def coldflow_full(phase: Phase) -> None:
             phase.log("T-2")
             phase.log("No ignition. Ending sequence.", "red", True)
             ctrl["handoff_channel"] = False
+            ctrl[igniter] = False 
             phase.stop_waiting_for_input()
             return
         elif now >= igniter_end_time and not igniter_confirmed:

@@ -29,7 +29,6 @@ variables:
 
 # Channel Mappings
 channel_mappings:
-  # Synnax channel for handoff system (probably static) (also TBD)
   # Device mappings
   ebox: # EBox / Launch GSE
     pts: # PTs

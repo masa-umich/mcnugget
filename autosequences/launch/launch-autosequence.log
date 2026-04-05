@@ -1159,3 +1159,219 @@
 2026-04-04T05:32:10.870249 [Coldflow] > No ignition. Ending sequence.
 2026-04-04T05:32:14.526863 > Autosequence has released control
 2026-04-04T05:32:14.528693 > Autosequence has terminated, have a great flight!
+2026-04-04T11:44:25.776356 > Background task started
+2026-04-04T11:44:38.673641 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-04T11:44:45.395594 [Coldflow] > Beginning coldflow sequence...
+2026-04-04T11:44:45.398721 [Coldflow] > T-10
+2026-04-04T11:44:46.398612 [Coldflow] > T-9
+2026-04-04T11:44:47.398612 [Coldflow] > T-8
+2026-04-04T11:44:48.398611 [Coldflow] > T-7
+2026-04-04T11:44:49.398609 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-04T11:44:49.401620 [Coldflow] > T-6
+2026-04-04T11:44:50.398613 [Coldflow] > T-5
+2026-04-04T11:44:51.398612 [Coldflow] > T-4
+2026-04-04T11:44:52.398617 [Coldflow] > T-3
+2026-04-04T11:44:53.398610 [Coldflow] > Ignition confirmed. Continuing with coldflow...
+2026-04-04T11:44:53.398766 [Coldflow] > T-2
+2026-04-04T11:44:54.398612 [Coldflow] > T-1
+2026-04-04T11:44:54.648619 [Coldflow] > Opening FUEL ISO...
+2026-04-04T11:44:54.650660 [Coldflow] > Opening FUEL MPV...
+2026-04-04T11:44:55.398613 [Coldflow] > Opening OX ISO...
+2026-04-04T11:44:55.399949 [Coldflow] > Opening OX MPV...
+2026-04-04T11:44:55.401683 [Coldflow] > IGNITION.
+2026-04-04T11:44:55.452871 [Coldflow] > T+0
+2026-04-04T11:44:56.157452 [Coldflow] > Duration elapsed, safing system...
+2026-04-04T11:44:56.161850 [Coldflow] > Autosequence complete.
+2026-04-04T11:44:56.161931 [Coldflow] > Launch autosequence complete.
+2026-04-04T11:45:13.103218 > Autosequence has released control
+2026-04-04T11:45:13.104966 > Autosequence has terminated, have a great flight!
+2026-04-04T11:46:02.327284 > Background task started
+2026-04-04T11:46:07.632345 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-04T11:46:11.848288 [Coldflow] > Beginning coldflow sequence...
+2026-04-04T11:46:11.849653 [Coldflow] > T-10
+2026-04-04T11:46:12.849602 [Coldflow] > T-9
+2026-04-04T11:46:13.849602 [Coldflow] > T-8
+2026-04-04T11:46:14.849599 [Coldflow] > T-7
+2026-04-04T11:46:15.850422 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-04T11:46:15.855067 [Coldflow] > T-6
+2026-04-04T11:46:16.849601 [Coldflow] > T-5
+2026-04-04T11:46:17.849601 [Coldflow] > T-4
+2026-04-04T11:46:18.849601 [Coldflow] > T-3
+2026-04-04T11:46:19.849599 [Coldflow] > T-2
+2026-04-04T11:46:19.849811 [Coldflow] > No ignition. Ending sequence.
+2026-04-04T11:46:30.180620 > Autosequence has released control
+2026-04-04T11:46:30.182624 > Autosequence has terminated, have a great flight!
+2026-04-04T11:48:33.632310 > Background task started
+2026-04-04T11:48:38.553703 [Fuel PP] > Press 'enter' to open fuel dome iso for 0.1 seconds...
+2026-04-04T11:48:58.811082 [Fuel PP] > Opening fuel dome iso for 0.1 seconds...
+2026-04-04T11:48:58.915711 [Fuel PP] > Fuel dome iso closed, continuing to monitor fuel tank pressure...
+2026-04-04T11:48:58.915894 [Fuel PP] > Press 'enter' to open fuel dome iso for 0.1 seconds...
+2026-04-04T11:49:19.377991 > Autosequence has released control
+2026-04-04T11:49:19.380737 > Autosequence has terminated, have a great flight!
+2026-04-04T11:49:33.019799 > Background task started
+2026-04-04T11:49:37.446953 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-04T11:49:53.595562 [Coldflow] > Beginning coldflow sequence...
+2026-04-04T11:49:53.598033 [Coldflow] > T-10
+2026-04-04T11:49:54.597924 [Coldflow] > T-9
+2026-04-04T11:49:55.597924 [Coldflow] > T-8
+2026-04-04T11:49:56.597926 [Coldflow] > T-7
+2026-04-04T11:49:57.597922 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-04T11:49:57.599125 [Coldflow] > T-6
+2026-04-04T11:49:58.597927 [Coldflow] > T-5
+2026-04-04T11:49:59.597927 [Coldflow] > T-4
+2026-04-04T11:50:00.598326 [Coldflow] > T-3
+2026-04-04T11:50:01.597924 [Coldflow] > T-2
+2026-04-04T11:50:01.598550 [Coldflow] > No ignition. Ending sequence.
+2026-04-04T11:51:02.507994 > Autosequence has released control
+2026-04-04T11:51:02.509778 > Autosequence has terminated, have a great flight!
+2026-04-04T13:06:03.184090 > Background task started
+2026-04-04T13:06:14.087743 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-04T13:06:17.803940 [Coldflow] > Beginning coldflow sequence...
+2026-04-04T13:06:17.806859 [Coldflow] > T-10
+2026-04-04T13:06:18.806747 [Coldflow] > T-9
+2026-04-04T13:06:19.806746 [Coldflow] > T-8
+2026-04-04T13:06:20.806746 [Coldflow] > T-7
+2026-04-04T13:06:21.807279 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-04T13:06:21.808042 [Coldflow] > T-6
+2026-04-04T13:06:22.806757 [Coldflow] > T-5
+2026-04-04T13:06:23.806747 [Coldflow] > T-4
+2026-04-04T13:06:24.806748 [Coldflow] > T-3
+2026-04-04T13:06:25.806815 [Coldflow] > Ignition confirmed. Continuing with coldflow...
+2026-04-04T13:06:25.807161 [Coldflow] > T-2
+2026-04-04T13:06:26.806746 [Coldflow] > T-1
+2026-04-04T13:06:27.056986 [Coldflow] > Opening FUEL ISO...
+2026-04-04T13:06:27.059149 [Coldflow] > Opening FUEL MPV...
+2026-04-04T13:06:27.806748 [Coldflow] > Opening OX ISO...
+2026-04-04T13:06:27.807744 [Coldflow] > Opening OX MPV...
+2026-04-04T13:06:27.810364 [Coldflow] > IGNITION.
+2026-04-04T13:06:27.860843 [Coldflow] > T+0
+2026-04-04T13:06:28.566764 [Coldflow] > Duration elapsed, safing system...
+2026-04-04T13:06:28.574092 [Coldflow] > Autosequence complete.
+2026-04-04T13:06:28.574219 [Coldflow] > Launch autosequence complete.
+2026-04-04T13:07:04.881903 > Autosequence has released control
+2026-04-04T13:07:04.884168 > Autosequence has terminated, have a great flight!
+2026-04-04T18:14:01.004259 > Background task started
+2026-04-04T18:14:16.571267 [QD] > Input enter to disconnect ox fill QD
+2026-04-04T18:14:23.599269 [QD] > Ox fill QD disconnected
+2026-04-04T18:14:23.599484 [QD] > Input enter to disconnect ox pre-press QD
+2026-04-04T18:14:31.024670 [QD] > Ox pre-press QD disconnected
+2026-04-04T18:14:31.024797 [QD] > Input enter to initiate COPV fill QD disconnect sequence
+2026-04-04T18:14:37.645177 [QD] > Closing all press isos...
+2026-04-04T18:14:37.645415 [QD] > Opening press fill iso...
+2026-04-04T18:14:37.647066 [QD] > Opening press fill vent for 5 seconds...
+2026-04-04T18:14:42.649454 [QD] > Closing press fill vent and iso...
+2026-04-04T18:14:42.655153 [QD] > Disconnecting COPV fill QD...
+2026-04-04T18:14:42.655436 [QD] > COPV fill QD disconnected
+2026-04-04T18:14:42.655510 [QD] > QD disconnection phase complete
+2026-04-04T18:14:50.212237 > Autosequence has released control
+2026-04-04T18:14:50.213981 > Autosequence has terminated, have a great flight!
+2026-04-05T07:04:56.528582 > Background task started
+2026-04-05T07:05:03.247806 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-05T07:05:13.893441 [Coldflow] > Beginning coldflow sequence...
+2026-04-05T07:05:13.898265 [Coldflow] > T-10
+2026-04-05T07:05:14.898197 [Coldflow] > T-9
+2026-04-05T07:05:15.898198 [Coldflow] > T-8
+2026-04-05T07:05:16.898190 [Coldflow] > T-7
+2026-04-05T07:05:17.898188 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-05T07:05:17.900510 [Coldflow] > T-6
+2026-04-05T07:05:18.898187 [Coldflow] > T-5
+2026-04-05T07:05:19.898191 [Coldflow] > T-4
+2026-04-05T07:05:20.898257 [Coldflow] > T-3
+2026-04-05T07:05:21.898187 [Coldflow] > Ignition confirmed. Continuing with coldflow...
+2026-04-05T07:05:21.898430 [Coldflow] > T-2
+2026-04-05T07:05:22.898187 [Coldflow] > T-1
+2026-04-05T07:05:23.148197 [Coldflow] > Opening FUEL ISO...
+2026-04-05T07:05:23.150174 [Coldflow] > Opening FUEL MPV...
+2026-04-05T07:05:23.898189 [Coldflow] > Opening OX ISO...
+2026-04-05T07:05:23.900052 [Coldflow] > Opening OX MPV...
+2026-04-05T07:05:23.900950 [Coldflow] > IGNITION.
+2026-04-05T07:05:23.951715 [Coldflow] > T+0
+2026-04-05T07:05:24.661074 [Coldflow] > Duration elapsed, safing system...
+2026-04-05T07:05:24.667232 [Coldflow] > Autosequence complete.
+2026-04-05T07:05:24.667669 [Coldflow] > Launch autosequence complete.
+2026-04-05T07:05:43.393564 > Autosequence has released control
+2026-04-05T07:05:43.395404 > Autosequence has terminated, have a great flight!
+2026-04-05T07:06:34.197451 > Background task started
+2026-04-05T07:06:37.991910 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-05T07:06:57.667570 [Coldflow] > Beginning coldflow sequence...
+2026-04-05T07:06:57.670048 [Coldflow] > T-10
+2026-04-05T07:06:58.669975 [Coldflow] > T-9
+2026-04-05T07:06:59.669969 [Coldflow] > T-8
+2026-04-05T07:07:00.669969 [Coldflow] > T-7
+2026-04-05T07:07:01.669969 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-05T07:07:01.672717 [Coldflow] > T-6
+2026-04-05T07:07:02.669978 [Coldflow] > T-5
+2026-04-05T07:07:03.669971 [Coldflow] > T-4
+2026-04-05T07:07:04.669974 [Coldflow] > T-3
+2026-04-05T07:07:05.669970 [Coldflow] > Ignition confirmed. Continuing with coldflow...
+2026-04-05T07:07:05.670163 [Coldflow] > T-2
+2026-04-05T07:07:06.669971 [Coldflow] > T-1
+2026-04-05T07:07:06.920059 [Coldflow] > Opening FUEL ISO...
+2026-04-05T07:07:06.922186 [Coldflow] > Opening FUEL MPV...
+2026-04-05T07:07:07.669977 [Coldflow] > Opening OX ISO...
+2026-04-05T07:07:07.671729 [Coldflow] > Opening OX MPV...
+2026-04-05T07:07:07.673479 [Coldflow] > IGNITION.
+2026-04-05T07:07:07.725572 [Coldflow] > T+0
+2026-04-05T07:07:08.433124 [Coldflow] > Duration elapsed, safing system...
+2026-04-05T07:07:08.438452 [Coldflow] > Autosequence complete.
+2026-04-05T07:07:08.438562 [Coldflow] > Launch autosequence complete.
+2026-04-05T07:07:19.745875 > Autosequence has released control
+2026-04-05T07:07:19.747928 > Autosequence has terminated, have a great flight!
+2026-04-05T07:08:09.523434 > Background task started
+2026-04-05T07:08:28.518318 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-05T07:08:33.436710 [Coldflow] > Beginning coldflow sequence...
+2026-04-05T07:08:33.440076 [Coldflow] > T-10
+2026-04-05T07:08:34.439929 [Coldflow] > T-9
+2026-04-05T07:08:35.439930 [Coldflow] > T-8
+2026-04-05T07:08:36.439931 [Coldflow] > T-7
+2026-04-05T07:08:37.439927 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-05T07:08:37.441497 [Coldflow] > T-6
+2026-04-05T07:08:38.439931 [Coldflow] > T-5
+2026-04-05T07:08:39.439936 [Coldflow] > T-4
+2026-04-05T07:08:40.439931 [Coldflow] > T-3
+2026-04-05T07:08:41.439930 [Coldflow] > T-2
+2026-04-05T07:08:41.440347 [Coldflow] > No ignition. Ending sequence.
+2026-04-05T07:08:52.995160 > Autosequence has released control
+2026-04-05T07:08:52.996994 > Autosequence has terminated, have a great flight!
+2026-04-05T08:06:07.348734 > Background task started
+2026-04-05T08:06:11.354338 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-05T08:06:15.876333 [Coldflow] > Beginning coldflow sequence...
+2026-04-05T08:06:15.879249 [Coldflow] > T-10
+2026-04-05T08:06:16.879340 [Coldflow] > T-9
+2026-04-05T08:06:17.879147 [Coldflow] > T-8
+2026-04-05T08:06:18.879147 [Coldflow] > T-7
+2026-04-05T08:06:19.879484 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-05T08:06:19.880922 [Coldflow] > T-6
+2026-04-05T08:06:20.879154 [Coldflow] > T-5
+2026-04-05T08:06:21.879148 [Coldflow] > T-4
+2026-04-05T08:06:22.879150 [Coldflow] > T-3
+2026-04-05T08:06:23.879145 [Coldflow] > T-2
+2026-04-05T08:06:23.879298 [Coldflow] > No ignition. Ending sequence.
+2026-04-05T08:07:03.881983 > Autosequence has released control
+2026-04-05T08:07:03.884066 > Autosequence has terminated, have a great flight!
+2026-04-05T08:07:10.586902 > Background task started
+2026-04-05T08:07:13.680317 [Coldflow] > Hit 'enter' to start coldflow sequence
+2026-04-05T08:07:17.797793 [Coldflow] > Beginning coldflow sequence...
+2026-04-05T08:07:17.801932 [Coldflow] > T-10
+2026-04-05T08:07:18.801787 [Coldflow] > T-9
+2026-04-05T08:07:19.801785 [Coldflow] > T-8
+2026-04-05T08:07:20.801784 [Coldflow] > T-7
+2026-04-05T08:07:21.802340 [Coldflow] > Press 'enter' to confirm smoke...
+2026-04-05T08:07:21.804817 [Coldflow] > T-6
+2026-04-05T08:07:22.801783 [Coldflow] > T-5
+2026-04-05T08:07:23.802435 [Coldflow] > T-4
+2026-04-05T08:07:24.801784 [Coldflow] > T-3
+2026-04-05T08:07:25.801811 [Coldflow] > Ignition confirmed. Continuing with coldflow...
+2026-04-05T08:07:25.802404 [Coldflow] > T-2
+2026-04-05T08:07:26.801786 [Coldflow] > T-1
+2026-04-05T08:07:27.051784 [Coldflow] > Opening FUEL ISO...
+2026-04-05T08:07:27.053910 [Coldflow] > Opening FUEL MPV...
+2026-04-05T08:07:27.801792 [Coldflow] > Opening OX ISO...
+2026-04-05T08:07:27.802612 [Coldflow] > Opening OX MPV...
+2026-04-05T08:07:27.803078 [Coldflow] > IGNITION.
+2026-04-05T08:07:27.854258 [Coldflow] > T+0
+2026-04-05T08:07:28.561440 [Coldflow] > Duration elapsed, safing system...
+2026-04-05T08:07:28.566500 [Coldflow] > Autosequence complete.
+2026-04-05T08:07:28.566614 [Coldflow] > Launch autosequence complete.
+2026-04-05T08:07:35.962448 > Autosequence has released control
+2026-04-05T08:07:35.963836 > Autosequence has terminated, have a great flight!
