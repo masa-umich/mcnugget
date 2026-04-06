@@ -22,11 +22,11 @@ variables:
   bottle_equalization_threshold: 50 # psi
   ox_fill_target: 1.48 # psid
   ox_fill_margin: 0.06 # psid
-  ox_pre_press_target: 291.0 
+  ox_pre_press_target: 411.61 
   ox_pre_press_margin: 10 
   press_fill_vent_time: 5 # seconds to keep press fill vent open
-  fuel_pre_press_time: 0.1 # seconds to open fuel dome iso after one press of "enter" during fuel pre-press
-  fuel_pre_press_target: 620.0 # psi
+  fuel_pre_press_time: 0.025 # seconds to open fuel dome iso after one press of "enter" during fuel pre-press
+  fuel_pre_press_target: 614.55 # psi
   fuel_pre_press_wait_time: 3.0 # seconds to wait between fuel pre-press pressure checks
 
 # Channel Mappings
