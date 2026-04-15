@@ -167,285 +167,6 @@ def background_thread(auto: Autosequence) -> None:
     ctrl: Controller = auto.ctrl
     config: Config = auto.config
 
-    copv_pts: list[str] = [
-        config.get_pt("COPV_PT_1"),
-        config.get_pt("COPV_PT_2"),
-        config.get_pt("Fuel_TPC_Inlet_PT"),
-    ]
-
-    press_fill_iso: str = config.get_vlv("Press_Fill_Iso")
-    press_isos: list[str] = [
-        config.get_vlv("Press_Iso_1"),
-        config.get_vlv("Press_Iso_2"),
-        config.get_vlv("Press_Iso_3"),
-        config.get_vlv("Press_Iso_4"),
-    ]
-
-    copv_abort_threshold: float = config.get_var("copv_pressure_max")
-
-    copv_pressure = average_ch(
-        window=REFRESH_RATE / 2
-    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
-
-    while not auto.abort_flag.is_set() and not auto._has_clean_quit.is_set():
-        time.sleep(0.1)  # yeild thread
-        # NOTE: using time.sleep() is fine because we have no conditions to check like in phases
-        copv_pressure.add(
-            value=sensor_vote(
-                ctrl=ctrl,
-                channels=copv_pts,
-                threshold=50,  # arbitrary threshold for voting
-            )
-        )
-        if copv_pressure.get() >= copv_abort_threshold:
-            log("COPV Exceeding max pressure! Aborting...")
-            auto.raise_abort()
-            # Some of these conditions may already happen in the phase aborts, but just to be safe
-            ctrl[press_fill_iso] = False  # close fill iso
-            for press_iso in press_isos:  # close all bottles
-                ctrl[press_iso] = False
-            return
-
-
-def press_iteration(
-    phase: Phase,
-    press_rate: float,
-    copv_pressure: average_ch,
-    press_iso: str,
-) -> None:
-    ctrl: Controller = phase.ctrl
-    config: Config = phase.config
-
-    averaging_time: float = config.get_var("averaging_time")
-    copv_cooldown_time: float = config.get_var("copv_cooldown_time")
-
-    copv_pts: list[str] = [
-        config.get_pt("COPV_PT_1"),
-        config.get_pt("COPV_PT_2"),
-        config.get_pt("Fuel_TPC_Inlet_PT"),
-    ]
-
-    phase.log(f"  Measuring COPV starting pressure for {averaging_time:.2f} seconds")
-    starting_pressure: float = phase.avg_and_vote_for(
-        ctrl=ctrl,
-        channels=copv_pts,
-        threshold=press_rate,
-        averaging_time=averaging_time,
-    )
-    target_pressure: float = starting_pressure + press_rate
-    phase.log(f"  Starting pressure: {starting_pressure:.2f} psi")
-    phase.log(f"  Target pressure: {target_pressure:.2f} psi")
-
-    target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
-        copv_cooldown_time
-    )
-
-    open_vlv(ctrl, config, press_iso)
-    phase.log(f"  Opened {press_iso}")
-
-    # Wait until the averaged COPV pressure reaches the target pressure OR it has been more than 1 minute
-    phase.wait_until(
-        cond=lambda c: (
-            copv_pressure.add_and_get(
-                value=sensor_vote(ctrl=c, channels=copv_pts, threshold=press_rate)
-            )
-            >= target_pressure
-            or sy.TimeStamp.now() >= target_time
-        )
-    )
-
-    phase.log(
-        f"  Target pressure reached or timeout elapsed, final COPV pressure: {copv_pressure.get():.2f} psi"
-    )
-    close_vlv(ctrl, config, press_iso)
-    phase.log(f"  Closed {press_iso}")
-
-    # Make sure that any remaining time has elapsed before starting the next iteration
-    phase.wait_until(cond=lambda c: sy.TimeStamp.now() >= target_time)
-    phase.log(f"  Cooldown time elapsed, moving to next iteration")
-
-
-def press_fill(phase: Phase, bottle: int) -> bool:
-    ctrl: Controller = phase.ctrl
-    config: Config = phase.config
-
-    press_rate_1: float = config.get_var("press_rate_1")
-    press_rate_2: float = config.get_var("press_rate_2")
-    press_rate_1_ittrs: int = config.get_var("press_rate_1_ittrs")
-    bottle_equalization_threshold: float = config.get_var(
-        "bottle_equalization_threshold"
-    )
-    copv_pressure_target: float = config.get_var("copv_pressure_target")
-    copv_pressure_margin: float = config.get_var("copv_pressure_margin")
-
-    press_fill_iso: str = config.get_vlv("Press_Fill_Iso")
-    press_isos: list[str] = [
-        config.get_vlv("Press_Iso_1"),
-        config.get_vlv("Press_Iso_2"),
-        config.get_vlv("Press_Iso_3"),
-        config.get_vlv("Press_Iso_4"),
-    ]
-
-    bottle_pts: list[str] = [
-        config.get_pt("Bottle_1_PT"),
-        config.get_pt("Bottle_2_PT"),
-        config.get_pt("Bottle_3_PT"),
-        config.get_pt("Bottle_4_PT"),
-    ]
-
-    copv_pressure = average_ch(
-        window=REFRESH_RATE / 2
-    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
-
-    phase.log(f"Starting press fill for bottle {bottle}")
-
-    phase.log(f"Opening press fill iso")
-    open_vlv(ctrl, config, press_fill_iso)
-
-    # Press rate 1 fill
-    for i in range(press_rate_1_ittrs):
-        phase.log(f" Pressurizing at rate 1 (iteration {i + 1})")
-        press_iteration(
-            phase=phase,
-            press_rate=press_rate_1,
-            copv_pressure=copv_pressure,
-            press_iso=press_isos[bottle - 1],
-        )
-
-    phase.log("Completed first pressurization stage, moving to rate 2")
-
-    # Until bottle equalization
-    press_rate_2_ittrs: int = 0
-    while True:
-        press_rate_2_ittrs += 1
-        phase.log(f" Pressurizing at rate 2 (iteration {press_rate_2_ittrs})")
-
-        press_iteration(
-            phase=phase,
-            press_rate=press_rate_2,
-            copv_pressure=copv_pressure,
-            press_iso=press_isos[bottle - 1],
-        )
-
-        # Check for bottle equalization
-        phase.log(f"  Checking for bottle equalization")
-        bottle_pressure: float = phase.avg_and_vote_for(
-            ctrl=phase.ctrl,
-            channels=[bottle_pts[bottle - 1]],
-            threshold=press_rate_2,
-            averaging_time=1.0,
-        )
-        copv_current_pressure: float = copv_pressure.get()
-        phase.log(f"  Bottle pressure: {bottle_pressure:.2f} psi")
-        phase.log(f"  COPV pressure: {copv_current_pressure:.2f}")
-        if (
-            abs(copv_current_pressure - bottle_pressure)
-            <= bottle_equalization_threshold
-        ):
-            phase.log(
-                "  Bottle equalization reached, ending pressurization", "green", True
-            )
-            phase.log(f"Closing press fill iso")
-            close_vlv(ctrl, config, press_fill_iso)
-            phase.log(f"Completed press fill for bottle {bottle}")
-            return False
-        else:
-            phase.log("  Bottle not yet equalized, continuing pressurization")
-        # Check for COPV pressure target reached
-        if copv_current_pressure >= (copv_pressure_target - copv_pressure_margin):
-            phase.log(
-                "  COPV pressure target reached, ending pressurization", "green", True
-            )
-            phase.log(f"Closing press fill iso")
-            close_vlv(ctrl, config, press_fill_iso)
-            return True
-
-
-def press_fill_1(phase: Phase) -> None:
-    press_fill(phase=phase, bottle=1)
-
-
-def press_fill_2(phase: Phase) -> None:
-    press_fill(phase=phase, bottle=2)
-
-
-def press_fill_3(phase: Phase) -> None:
-    config: Config = phase.config
-    num_bottles = config.get_var("num_press_bottles")
-
-    tpc: bool = press_fill(phase=phase, bottle=3)
-    if tpc and num_bottles == 3:
-        phase.log("COPV filled to target pressure, now continuing TPC of COPV")
-        tpc_copv(phase=phase)
-
-
-def tpc_copv(phase: Phase) -> None:
-    ctrl: Controller = phase.ctrl
-    config: Config = phase.config
-
-    copv_pts: list[str] = [
-        config.get_pt("COPV_PT_1"),
-        config.get_pt("COPV_PT_2"),
-        config.get_pt("Fuel_TPC_Inlet_PT"),
-    ]
-
-    copv_pressure_target: float = config.get_var("copv_pressure_target")
-    copv_pressure_margin: float = config.get_var("copv_pressure_margin")
-
-    copv_pressure = average_ch(
-        window=REFRESH_RATE / 2
-    )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
-
-    # Try to keep COPV at target pressure
-    while True:
-        current_pressure: float = copv_pressure.add_and_get(
-            value=sensor_vote(ctrl=ctrl, channels=copv_pts, threshold=1.0)
-        )
-        if current_pressure < (copv_pressure_target - copv_pressure_margin):
-            phase.log(
-                f"COPV below target pressure, opening Press Iso 4 & Press Fill Iso to TPC"
-            )
-            open_vlv(
-                ctrl, config, config.get_vlv("Press_Iso_4")
-            )  # NOTE: change if we have 3 bottles vs 4
-            open_vlv(ctrl, config, config.get_vlv("Press_Fill_Iso"))
-        elif current_pressure >= copv_pressure_target:
-            phase.log(
-                f"COPV at or above target pressure, closing Press Iso 4 & Press Fill Iso"
-            )
-            close_vlv(ctrl, config, config.get_vlv("Press_Iso_4"))
-            close_vlv(ctrl, config, config.get_vlv("Press_Fill_Iso"))
-        phase.sleep(0.1)
-
-
-def press_fill_4(phase: Phase) -> None:
-    config: Config = phase.config
-    num_bottles = config.get_var("num_press_bottles")
-    tpc: bool = press_fill(phase=phase, bottle=4)
-    if tpc and num_bottles == 4:
-        phase.log("COPV filled to target pressure, now continuing TPC of COPV")
-        tpc_copv(phase=phase)
-
-
-def press_fill_abort(phase: Phase) -> None:
-    ctrl: Controller = phase.ctrl
-    config: Config = phase.config
-
-    press_fill_iso: str = config.get_vlv("Press_Fill_Iso")
-    press_isos: list[str] = [
-        config.get_vlv("Press_Iso_1"),
-        config.get_vlv("Press_Iso_2"),
-        config.get_vlv("Press_Iso_3"),
-        config.get_vlv("Press_Iso_4"),
-    ]
-
-    phase.log("Halting press fill, closing all relevant valves")
-    close_vlv(ctrl, config, press_fill_iso)
-    for press_iso in press_isos:
-        close_vlv(ctrl, config, press_iso)
-    return
-
-
 def ox_fill(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
@@ -576,65 +297,6 @@ def fuel_pre_press(phase: Phase) -> None:
         ctrl[fuel_dome_iso] = False
         phase.log("Fuel dome iso closed, continuing to monitor fuel tank pressure...")
 
-# def fuel_pre_press_new(phase: Phase) -> None:
-#     ctrl: Controller = phase.ctrl
-#     config: Config = phase.config
-
-#     fuel_dome_iso = config.get_vlv("fuel_dome_iso")
-#     fuel_pre_press_time = config.get_var("fuel_pre_press_time")
-#     fuel_pre_press_target = config.get_var("fuel_pre_press_target")
-#     fuel_pre_press_wait_time = config.get_var("fuel_pre_press_wait_time")
-
-#     fuel_tank_pts: list[str] = [
-#         config.get_pt("fuel_tank_pt_1"),
-#         config.get_pt("fuel_tank_pt_2"),
-#     ]
-
-#     fuel_tank_pressure = average_ch(
-#         window=REFRESH_RATE / 2
-#     )  # 0.5 second window (NOTE: adjust as needed depending on acceptable lag)
-    
-#     while True:
-#         current_pressure: float = fuel_tank_pressure.add_and_get(
-#                 value=sensor_vote(ctrl=ctrl, channels=fuel_tank_pts, threshold=1.0)
-#         )
-#         phase.log(
-#             f"Current fuel tank pressure: {current_pressure}, pressing for {fuel_pre_press_time} seconds..."
-#         )
-        
-#         ctrl[fuel_dome_iso] = True
-#         phase.sleep(fuel_pre_press_time)
-#         ctrl[fuel_dome_iso] = False
-
-#         while True:
-#             phase.log(f"Waiting {fuel_pre_press_wait_time} seconds before checking fuel tank pressure...")
-
-#             target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
-#                 fuel_pre_press_wait_time
-#             )
-
-#             while sy.TimeStamp.now() < target_time:
-#                 phase.sleep(0.1)
-#                 current_pressure = fuel_tank_pressure.add_and_get(
-#                     value=sensor_vote(ctrl=ctrl, channels=fuel_tank_pts, threshold=50)
-#                 )
-            
-#             if current_pressure <= fuel_pre_press_target:
-#                 break
-#             else:
-#                 phase.log(
-#                     f"Current fuel tank pressure: {current_pressure}, continuing to monitor..."
-#                 )
-
-# def fuel_pre_press_safe(phase: Phase) -> None:
-#     ctrl: Controller = phase.ctrl
-#     config: Config = phase.config
-#     fuel_dome_iso = config.get_vlv("fuel_dome_iso")
-
-#     phase.log("Safing Fuel Pre-Press Phase - Closing Fuel Dome Iso")
-#     ctrl[fuel_dome_iso] = False
-#     return
-
 
 def ox_pre_press_safe(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -698,68 +360,6 @@ def qd_disconnect(phase: Phase) -> None:
     phase.log("COPV fill QD disconnected")
     phase.log("QD disconnection phase complete", "green", True)
     return
-
-# DO NOT EDIT OR USE THIS DOES NOT GET USED
-# def coldflow(phase: Phase) -> None:
-#     ctrl: Controller = phase.ctrl
-#     config: Config = phase.config
-
-#     # track state variables
-#     times_shown = set()  # to track which times have been shown in countdown
-#     igniter_prompted: bool = False
-#     igniter_confirmed: bool = False
-
-#     phase.log("Hit 'enter' to start coldflow sequence")
-#     phase.wait_for_input()
-
-#     while phase._wait.is_set():
-#         phase.sleep(0.1)
-#     phase.log("Beginning coldflow sequence...", "green", True)
-#     open_vlv(
-#         ctrl, config, config.get_vlv("handoff")
-#     )  # Open handoff valve to prime Flight Computer
-
-#     target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
-#         10.0
-#     )  # time of ignition
-#     igniter_start_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(
-#         6.0
-#     )  # time to prompt for igniter light
-#     igniter_end_time: sy.TimeStamp = target_time - sy.TimeSpan.from_seconds(
-#         2.0
-#     )  # time to stop waiting for igniter light
-
-#     while True:
-#         phase.sleep(0)
-#         now: sy.TimeStamp = sy.TimeStamp.now()
-
-#         if now >= igniter_end_time and phase._wait.is_set():
-#             phase.log("T-2")
-#             phase.log("Coldflow aborted. No ignition.", "red", True)
-#             phase.stop_waiting_for_input()
-#             phase.auto.raise_abort()
-#             return
-#         elif (
-#             now >= igniter_end_time and not igniter_confirmed
-#         ):  # NOTE: This is actually what is ran when it has been confirmed
-#             phase.log("Ignition confirmed. Continuing with coldflow...", "green", True)
-#             igniter_confirmed = True
-
-#         if now >= igniter_start_time and not igniter_prompted:
-#             phase.log("Press 'enter' to confirm smoke...", "yellow", True)
-#             phase.wait_for_input()
-#             igniter_prompted = True
-
-#         remaining_span = sy.TimeSpan(target_time - now)
-#         remaining_seconds: float | None = sy.TimeSpan.to_seconds(remaining_span)
-#         if remaining_seconds is None:
-#             remaining_seconds_int = 0
-#         else:
-#             remaining_seconds_int = int(math.ceil(remaining_seconds))
-#         if remaining_seconds_int not in times_shown:
-#             phase.log(f"T-{remaining_seconds_int}")
-#             times_shown.add(remaining_seconds_int)
-
 
 def coldflow_full(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
@@ -928,8 +528,8 @@ def post_ignition_sequence(phase: Phase) -> None:
     ]
 
     purge_valves: list[str] = [
-        # config.get_vlv("ox_mpv_purge"),
-        # config.get_vlv("fuel_mpv_purge"),
+        config.get_vlv("ox_mpv_purge"),
+        config.get_vlv("fuel_mpv_purge"),
     ]
 
     duration: int = config.get_var(
@@ -979,23 +579,23 @@ def post_ignition_sequence(phase: Phase) -> None:
         else:
             ctrl[vent] = False
 
-    # phase.log(f"Purging for {purge_duration} seconds...")
+    phase.log(f"Purging for {purge_duration} seconds...")
 
-    # for purge_valve in purge_valves:
-    #     if config.is_vlv_nc(purge_valve):
-    #         ctrl[purge_valve] = True
-    #     else:
-    #         ctrl[purge_valve] = False
+    for purge_valve in purge_valves:
+        if config.is_vlv_nc(purge_valve):
+            ctrl[purge_valve] = True
+        else:
+            ctrl[purge_valve] = False
 
-    # phase.sleep(purge_duration)  # purge for configured duration
+    phase.sleep(purge_duration)  # purge for configured duration
 
-    # for purge_valve in purge_valves:
-    #     if config.is_vlv_nc(purge_valve):
-    #         ctrl[purge_valve] = False
-    #     else:
-    #         ctrl[purge_valve] = True
+    for purge_valve in purge_valves:
+        if config.is_vlv_nc(purge_valve):
+            ctrl[purge_valve] = False
+        else:
+            ctrl[purge_valve] = True
 
-    # phase.log("Purging complete.", "green", True)
+    phase.log("Purging complete.", "green", True)
 
     phase.log("Autosequence complete.", "green", True)
 
@@ -1017,55 +617,16 @@ def main() -> None:
     )
 
     # Define and add each phase to the autosequence
-    # press_fill_1_phase: Phase = Phase(
-    #     name="Press Fill 1",
-    #     ctrl=auto.ctrl,
-    #     config=config,
-    #     main_func=press_fill_1,
-    #     auto=auto,
-    #     safe_func=press_fill_abort,
-    # )
-    # auto.add_phase(press_fill_1_phase)
 
-    # press_fill_2_phase: Phase = Phase(
-    #     name="Press Fill 2",
-    #     ctrl=auto.ctrl,
-    #     config=config,
-    #     main_func=press_fill_2,
-    #     auto=auto,
-    #     safe_func=press_fill_abort,
-    # )
-    # auto.add_phase(press_fill_2_phase)
-
-    # press_fill_3_phase: Phase = Phase(
-    #     name="Press Fill 3",
-    #     ctrl=auto.ctrl,
-    #     config=config,
-    #     main_func=press_fill_3,
-    #     auto=auto,
-    #     safe_func=press_fill_abort,
-    # )
-    # auto.add_phase(press_fill_3_phase)
-
-    # press_fill_4_phase: Phase = Phase(
-    #     name="Press Fill 4",
-    #     ctrl=auto.ctrl,
-    #     config=config,
-    #     main_func=press_fill_4,
-    #     auto=auto,
-    #     safe_func=press_fill_abort,
-    # )
-    # auto.add_phase(press_fill_4_phase)
-
-    # ox_fill_phase: Phase = Phase(
-    #     name="Ox Fill",
-    #     ctrl=auto.ctrl,
-    #     config=config,
-    #     main_func=ox_fill,
-    #     auto=auto,
-    #     safe_func=ox_fill_safe,
-    # )
-    # auto.add_phase(ox_fill_phase)
+    ox_fill_phase: Phase = Phase(
+        name="Ox Fill",
+        ctrl=auto.ctrl,
+        config=config,
+        main_func=ox_fill,
+        auto=auto,
+        safe_func=ox_fill_safe,
+    )
+    auto.add_phase(ox_fill_phase)
 
     ox_pre_press_phase: Phase = Phase(
         name="Ox PP",
@@ -1090,11 +651,6 @@ def main() -> None:
         name="QD", ctrl=auto.ctrl, config=config, main_func=qd_disconnect, auto=auto
     )
     auto.add_phase(qd_disconnect_phase)
-
-    # coldflow_phase: Phase = Phase(
-    #     name="Coldflow", ctrl=auto.ctrl, config=config, main_func=coldflow
-    # )
-    # auto.add_phase(coldflow_phase)
 
     coldflow_full_phase: Phase = Phase(
         name="Coldflow",

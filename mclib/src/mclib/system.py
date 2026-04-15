@@ -105,6 +105,7 @@ class System:
         self.get_valve_obj(config.get_vlv("Press_Fill_Iso")).cv = 0.02
         self.get_valve_obj(config.get_vlv("Press_Fill_Vent")).cv = 0.01
         self.get_valve_obj(config.get_vlv("Ox_Fill_Valve")).cv = 0.0000001
+        self.get_valve_obj(config.get_vlv("Fuel_Dome_Iso")).cv = .05
 
         self.nodes = [
             Node(
@@ -184,7 +185,10 @@ class System:
             ),
             Node(
                 name="Fuel Tank",
-                channels=[],  # add
+                channels=[
+                    config.get_pt("Fuel_Tank_PT_1"),
+                    config.get_pt("Fuel_Tank_PT_2"),
+                ],  # add
                 volume=59.8,
                 pressure=0,
             ),
@@ -307,6 +311,7 @@ class System:
         ox_vent = self.get_valve_obj(self.config.get_vlv("Ox_Vent"))
         ox_pre_press = self.get_valve_obj(self.config.get_vlv("Ox_Pre_Press"))
         press_iso_4 = self.get_valve_obj(self.config.get_vlv("Press_Iso_4"))
+        fuel_dome_iso = self.get_valve_obj(self.config.get_vlv("Fuel_Dome_Iso"))
 
         if copv_vent.get_state() == State.OPEN:
             self.vent_to_atmosphere("COPV", copv_vent.cv)
@@ -340,5 +345,10 @@ class System:
                 "Bottle 1", "Ox Tank", ox_pre_press.cv
             )  # it does not come from bottle 1 but placeholder cuz idk
 
+        if fuel_dome_iso.get_state() == State.OPEN:
+            self.transfer_fluid("Bottle 4", "Fuel Tank", fuel_dome_iso.cv)
+            #Doesn't actually come from bottle 4 but I don't want to sim press fill to sim this
+
         self.vent_to_atmosphere("Ox Tank Level", 0.00005)  # Small leak to atmosphere
         self.vent_to_atmosphere("Ox Tank", 0.00005)  # Small leak to atmosphere
+        self.vent_to_atmosphere("Fuel Tank", 0.00001)  # Small leak to atmosphere
