@@ -1,0 +1,10 @@
+variables:
+  methane_mpv_lead_time: 0
+  burn_duration: 3
+
+channel_mappings:
+  ebox:
+    valves:
+      gox_mpv: 1
+      methane_mpv: 3
+      spark_plug: 4
