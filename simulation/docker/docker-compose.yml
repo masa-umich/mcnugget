@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  synnax:
+    image: synnaxlabs/synnax:latest # Replace with the exact Synnax image tag
+    ports:
+      - "8080:8080" # Map whatever ports Synnax uses to your host
+    # volumes:
+    #   - synnax_data:/data # Optional: Persist Synnax data
+
+  simulator:
+    build: ./simulator
+    depends_on:
+      - synnax
+
+# volumes:
+#   synnax_data:

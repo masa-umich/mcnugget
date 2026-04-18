@@ -213,7 +213,7 @@ def main():
     # Streamer for sensor values
     with client.open_streamer(channels=read_chs) as streamer:
         # Open writer for everything else
-        with client.open_writer(start=sy.TimeStamp.now(), channels=write_chs) as writer:
+        with client.open_writer(start=sy.TimeStamp.now(), channels=write_chs, enable_auto_commit=True) as writer:
             driver(streamer, writer, read_chs, args)
 
 
