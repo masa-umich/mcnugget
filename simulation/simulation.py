@@ -8,11 +8,6 @@
 #     "pyyaml",
 #     "mclib",
 # ]
-#
-# [tool.uv]
-# reinstall-package = ["mclib"]
-# [tool.uv.sources]
-# mclib = { path = "../mclib" }
 # ///
 
 from termcolor import colored
@@ -137,7 +132,7 @@ class Simulation:
             for vlv_data in yaml_dict.get("valves", []):
                 channel = vlv_data["channel"]
                 is_normally_open = bool(vlv_data.get("is_normally_open", False))
-                self.valves[channel] = Valve(
+                self.valves[channel.lower()] = Valve(
                     channel=channel.lower(),
                     is_normally_open=is_normally_open,
                     is_check_valve=bool(vlv_data.get("is_check_valve", False)),
@@ -148,6 +143,29 @@ class Simulation:
             error_and_exit(f"Missing required key {e} in simulation parameters file {params_path}")
         except Exception as e:
             error_and_exit(f"Error parsing simulation parameters from {params_path}", exception=e)
+    
+    def update_physics(self):
+        """
+        Update the physics of the system according to valve states.
+        This should be called every time step.
+        """
+        # For each valve, if it's open, equalize pressure between inlet and outlet volumes according to flowrate
+        for valve in self.valves.values():
+            if valve.state == OPEN:
+                inlet_volume = self.volumes.get(valve.inlet_volume_name.lower())
+                outlet_volume = self.volumes.get(valve.outlet_volume_name.lower())
+                if inlet_volume is None or outlet_volume is None:
+                    error_and_exit(f"Valve {valve.channel} has invalid inlet or outlet volume name, please check your simulation parameters file")
+                # Simple flow model: flowrate is proportional to pressure differential, with some constant of proportionality
+                pressure_diff = inlet_volume.pressure - outlet_volume.pressure
+                flowrate = 0.01 * pressure_diff  # liters per second at 1 psi pressure differential, adjust as needed
+                # Update pressures of inlet and outlet volumes according to flowrate and volume size
+                inlet_volume.pressure -= flowrate / inlet_volume.volume
+                outlet_volume.pressure += flowrate / outlet_volume.volume
+                # If it's a check valve, only allow flow from inlet to outlet
+                if valve.is_check_valve and pressure_diff < 0:
+                    inlet_volume.pressure += flowrate / inlet_volume.volume
+                    outlet_volume.pressure -= flowrate / outlet_volume.volume
 
 def load_yaml(path: str) -> dict[str, str]:
     """
@@ -207,14 +225,11 @@ def parse_aliases(aliases_path: str) -> dict[str, str]:
                     error_and_exit(f"Error parsing channel {config_ch_name} in {aliases_path}", exception=e)
     return aliases
 
-def get_aliased_name(synnax_ch_name: str, aliases: dict[str, str]) -> str:
-    """
-    Helper function to get the aliased name for a given synnax channel name
-    """
-    for alias, ch_name in aliases.items():
-        if ch_name == synnax_ch_name:
+def synnax_to_alias(aliased_name: str, aliases: dict[str, str]) -> str:
+    for alias, synnax_ch_name in aliases.items():
+        if synnax_ch_name == aliased_name:
             return alias
-    return synnax_ch_name  # if no alias found, return original name
+    error_and_exit(f"Could not find unaliased name for {aliased_name} in aliases, please check your alias file")
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -285,36 +300,40 @@ def driver(streamer: sy.Streamer, writer: sy.Writer, sim: Simulation, aliases: d
         # Check for incoming valve commands
         fr = streamer.read(timeout=0)
         if fr is not None:
-            for channel in fr.channels:
-                cmd = fr[channel][0]
-                valve = sim.valves.get(get_aliased_name(channel, aliases))
+            for synnax_ch_name in fr.channels:
+                cmd = fr[synnax_ch_name][0]
+                valve = sim.valves.get(synnax_to_alias(synnax_ch_name, aliases))
                 if valve is None:
-                    spinner.write(" > Valve command received for unmapped channel {channel}, ignoring...")
+                    spinner.write(f" > Valve command received for unmapped channel {synnax_ch_name}, ignoring...")
                     continue
                 if valve.is_normally_open:
-                    if cmd == 0:  # command to close the valve
+                    if cmd == 1:  # command to close the valve
                         valve.state = CLOSED
-                    elif cmd == 1:  # command to open the valve
+                        spinner.write(f" > Valve {valve.channel} closed")
+                    elif cmd == 0:  # command to open the valve
                         valve.state = OPEN
+                        spinner.write(f" > Valve {valve.channel} opened")
                 else:
-                    if cmd == 0:  # command to open the valve
+                    if cmd == 1:  # command to open the valve
                         valve.state = OPEN
-                    elif cmd == 1:  # command to close the valve
+                        spinner.write(f" > Valve {valve.channel} opened")
+                    elif cmd == 0:  # command to close the valve
                         valve.state = CLOSED
+                        spinner.write(f" > Valve {valve.channel} closed")
 
         # Write current valve stats
         for valve in sim.valves.values():
             state_ch = aliases[valve.channel].replace("vlv", "state")
             if valve.is_normally_open:
                 if valve.state == OPEN:
-                    write_data[state_ch] = 1
-                else:
                     write_data[state_ch] = 0
+                else:
+                    write_data[state_ch] = 1
             else:
                 if valve.state == OPEN:
-                    write_data[state_ch] = 0
-                else:
                     write_data[state_ch] = 1
+                else:
+                    write_data[state_ch] = 0
 
         for volume in sim.volumes.values():
             for ch in volume.channels:
@@ -328,10 +347,11 @@ def driver(streamer: sy.Streamer, writer: sy.Writer, sim: Simulation, aliases: d
                 elif "tc" in ch:
                     # add noise if enabled
                     noise = 0.0
-                    if sim.do_noise and sim.do_temp_simulation:
+                    if sim.do_noise:
                         noise = random.gauss(0, sim.default_tc_noise_sigma)
                     write_data[synnax_ch_name] = volume.temperature + noise
         writer.write(write_data)  # type: ignore
+        sim.update_physics()
 
 @yaspin(text=colored("Setting up channels...", "yellow"))
 def setup_channels(client: sy.Synnax, sim: Simulation, aliases: dict[str, str]) -> tuple[list[str], list[str]]:

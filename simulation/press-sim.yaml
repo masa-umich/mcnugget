@@ -1,5 +1,5 @@
-do_noise: false
-default_pt_noise_sigma: 10
+do_noise: true
+default_pt_noise_sigma: 50
 do_temp_simulation: false
 default_tc_noise_sigma: 2
 frequency: 50 # Hz
