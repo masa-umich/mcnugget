@@ -13,19 +13,19 @@ volumes:
   - name: "bottle 1"
     volume: 42.2
     initial_pressure: 6000
-    channels: ["Bottle_1_PT", "Bottle_1_TC"]
+    channels: ["Bottle_1_PT", "Bottle_1_Skin_TC"]
   - name: "bottle 2"
     volume: 42.2
     initial_pressure: 6000
-    channels: ["Bottle_2_PT", "Bottle_2_TC"]
+    channels: ["Bottle_2_PT", "Bottle_2_Skin_TC"]
   - name: "bottle 3"
     volume: 42.2
     initial_pressure: 6000
-    channels: ["Bottle_3_PT", "Bottle_3_TC"]
+    channels: ["Bottle_3_PT", "Bottle_3_Skin_TC"]
   - name: "bottle 4"
     volume: 42.2
     initial_pressure: 6000
-    channels: ["Bottle_4_PT", "Bottle_4_TC"]
+    channels: ["Bottle_4_PT", "Bottle_4_Skin_TC"]
   - name: "press fill manifold"
     volume: 0.1
     initial_pressure: 0

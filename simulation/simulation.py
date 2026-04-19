@@ -33,6 +33,10 @@ State = NewType('State', bool)
 OPEN = True
 CLOSED = False
 
+# Physics constants
+AMBIENT_TEMPERATURE = 20.0  # C
+AMBIENT_PRESSURE = 14.7  # psi
+
 class Volume:
     """
     A volume is a class which represents a physical container of fluid.
@@ -52,10 +56,11 @@ class Volume:
     pressure: float  # psi
     temperature: float  # C
 
-    def __init__(self, name: str, volume: float, initial_pressure: float, channels: list[str]):
+    def __init__(self, name: str, volume: float, initial_pressure: float, initial_temperature: float, channels: list[str]):
         self.name = name
         self.volume = volume  # liters
         self.pressure = initial_pressure  # psi
+        self.temperature = initial_temperature  # C
         self.channels = channels
 
 class Valve:
@@ -69,7 +74,7 @@ class Valve:
 
     # Constants:
     channel: str # synnax channel name or alias for the valve command (valves may only have one channel)
-    is_normally_closed: bool
+    is_normally_open: bool
     is_check_valve: bool # if true, only unidirectional flow from INLET to OUTLET
     inlet_volume_name: str
     outlet_volume_name: str
@@ -77,16 +82,16 @@ class Valve:
     # State variables:
     state: State # 0 for closed, 1 for open (or use alias OPEN and CLOSED for readability)
 
-    def __init__(self, channel: str, normally_closed: bool, is_check_valve: bool, inlet_volume_name: str, outlet_volume_name: str):
+    def __init__(self, channel: str, is_normally_open: bool, is_check_valve: bool, inlet_volume_name: str, outlet_volume_name: str):
         self.channel = channel
-        self.is_normally_closed = normally_closed
+        self.is_normally_open = is_normally_open
         self.is_check_valve = is_check_valve
         self.inlet_volume_name = inlet_volume_name
         self.outlet_volume_name = outlet_volume_name
-        if normally_closed:
-            self.state = CLOSED
-        else:
+        if is_normally_open:
             self.state = OPEN
+        else:
+            self.state = CLOSED
 
 class Simulation:
     """
@@ -121,10 +126,11 @@ class Simulation:
             for vol_data in yaml_dict.get("volumes", []):
                 name = vol_data["name"]
                 self.volumes[name] = Volume(
-                    name=name,
+                    name=name.lower(),
                     volume=float(vol_data["volume"]),
                     initial_pressure=float(vol_data["initial_pressure"]),
-                    channels=vol_data.get("channels", [])
+                    initial_temperature=float(vol_data.get("initial_temperature", AMBIENT_TEMPERATURE)),
+                    channels=list(map(str.lower, vol_data.get("channels", [])))
                 )
 
             self.valves = {}
@@ -132,8 +138,8 @@ class Simulation:
                 channel = vlv_data["channel"]
                 is_normally_open = bool(vlv_data.get("is_normally_open", False))
                 self.valves[channel] = Valve(
-                    channel=channel,
-                    normally_closed=not is_normally_open,
+                    channel=channel.lower(),
+                    is_normally_open=is_normally_open,
                     is_check_valve=bool(vlv_data.get("is_check_valve", False)),
                     inlet_volume_name=vlv_data["inlet"],
                     outlet_volume_name=vlv_data["outlet"]
@@ -199,8 +205,16 @@ def parse_aliases(aliases_path: str) -> dict[str, str]:
                     error_and_exit(f"Missing key {e} for channel {config_ch_name} in {aliases_path}")
                 except Exception as e:
                     error_and_exit(f"Error parsing channel {config_ch_name} in {aliases_path}", exception=e)
-
     return aliases
+
+def get_aliased_name(synnax_ch_name: str, aliases: dict[str, str]) -> str:
+    """
+    Helper function to get the aliased name for a given synnax channel name
+    """
+    for alias, ch_name in aliases.items():
+        if ch_name == synnax_ch_name:
+            return alias
+    return synnax_ch_name  # if no alias found, return original name
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -261,10 +275,8 @@ def synnax_login(cluster: str) -> sy.Synnax:
 
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
-def driver(args: argparse.Namespace, streamer: sy.Streamer, writer: sy.Writer, ):
-    global do_noise
-    driver_frequency = args.frequency  # Hz
-    loop = sy.Loop(interval=(sy.Rate.HZ * driver_frequency))
+def driver(streamer: sy.Streamer, writer: sy.Writer, sim: Simulation, aliases: dict[str, str]) -> None:
+    loop = sy.Loop(interval=(sy.Rate.HZ * sim.frequency))
 
     while loop.wait():
         write_data: dict = {}
@@ -275,57 +287,126 @@ def driver(args: argparse.Namespace, streamer: sy.Streamer, writer: sy.Writer, )
         if fr is not None:
             for channel in fr.channels:
                 cmd = fr[channel][0]
-                valve = system.get_valve_obj(channel)  # type: ignore
-                if cmd == True:
-                    valve.energize()
+                valve = sim.valves.get(get_aliased_name(channel, aliases))
+                if valve is None:
+                    spinner.write(" > Valve command received for unmapped channel {channel}, ignoring...")
+                    continue
+                if valve.is_normally_open:
+                    if cmd == 0:  # command to close the valve
+                        valve.state = CLOSED
+                    elif cmd == 1:  # command to open the valve
+                        valve.state = OPEN
                 else:
-                    valve.de_energize()
+                    if cmd == 0:  # command to open the valve
+                        valve.state = OPEN
+                    elif cmd == 1:  # command to close the valve
+                        valve.state = CLOSED
 
-        for state_ch in config.get_states():
-            valve = system.get_valve_obj(state_ch.replace("state", "vlv"))
-            if valve.normally_closed:  # Account for normally open valves
-                if valve.state == State.OPEN:
+        # Write current valve stats
+        for valve in sim.valves.values():
+            state_ch = aliases[valve.channel].replace("vlv", "state")
+            if valve.is_normally_open:
+                if valve.state == OPEN:
                     write_data[state_ch] = 1
                 else:
                     write_data[state_ch] = 0
             else:
-                if valve.state == State.OPEN:
+                if valve.state == OPEN:
                     write_data[state_ch] = 0
                 else:
                     write_data[state_ch] = 1
 
-        for pt_ch in config.get_pts():
-            noise = (
-                (random.gauss(0, 10)) if (do_noise) else (0)
-            )  # instrument noise is approximately gaussian
-            # TODO: add different noise for different instruments with some sort of lookup table
-            pressure = system.get_pressure(pt_ch) + noise
-            write_data[pt_ch] = pressure
-        for tc_ch in config.get_tcs():
-            noise = (
-                (random.gauss(0, 2)) if (do_noise) else (0)
-            )  # instrument noise is approximately gaussian
-            temperature = system.get_temperature(tc_ch) + noise
-            write_data[tc_ch] = temperature
-
+        for volume in sim.volumes.values():
+            for ch in volume.channels:
+                synnax_ch_name = aliases.get(ch)
+                if "pt" in ch:
+                    # add noise if enabled
+                    noise = 0.0
+                    if sim.do_noise:
+                        noise = random.gauss(0, sim.default_pt_noise_sigma)
+                    write_data[synnax_ch_name] = volume.pressure + noise
+                elif "tc" in ch:
+                    # add noise if enabled
+                    noise = 0.0
+                    if sim.do_noise and sim.do_temp_simulation:
+                        noise = random.gauss(0, sim.default_tc_noise_sigma)
+                    write_data[synnax_ch_name] = volume.temperature + noise
         writer.write(write_data)  # type: ignore
-        system.update()
 
+@yaspin(text=colored("Setting up channels...", "yellow"))
+def setup_channels(client: sy.Synnax, sim: Simulation, aliases: dict[str, str]) -> tuple[list[str], list[str]]:
+    read_channels: list[str] = []
+    write_channels: list[str] = []
+    
+    # time channel always exists
+    time_channel = client.channels.create(
+        retrieve_if_name_exists=True,
+        name="time",
+        data_type=sy.DataType.TIMESTAMP,
+        virtual=False,
+        is_index=True,
+    )
+    write_channels.append("time") # add time channel to list of channels to write to
+
+    for volume in sim.volumes.values():
+        for ch_name in volume.channels:
+            synnax_ch_name = aliases.get(ch_name)
+            if synnax_ch_name is None:
+                error_and_exit(f"Channel {ch_name} for volume {volume.name} not found in aliases, please check your alias file")
+            if "pt" in synnax_ch_name:
+                client.channels.create(
+                    retrieve_if_name_exists=True,
+                    name=synnax_ch_name,
+                    data_type=sy.DataType.FLOAT32,
+                    virtual=False,
+                    index=time_channel.key,
+                )
+            elif "tc" in synnax_ch_name:
+                client.channels.create(
+                    retrieve_if_name_exists=True,
+                    name=synnax_ch_name,
+                    data_type=sy.DataType.FLOAT32,
+                    virtual=False,
+                    index=time_channel.key,
+                )
+            write_channels.append(synnax_ch_name) # add to list of channels to write to
+    for valve in sim.valves.values():
+        synnax_ch_name = aliases.get(valve.channel)
+        if synnax_ch_name is None:
+            error_and_exit(f"Channel {valve.channel} for valve not found in aliases, please check your alias file")
+        client.channels.create(
+            retrieve_if_name_exists=True,
+            name=synnax_ch_name,
+            data_type=sy.DataType.INT8,
+            virtual=False,
+            index=time_channel.key,
+        )
+        read_channels.append(synnax_ch_name)  # add to list of channels to read from
+        # also create state channel for each valve
+        state_ch_name = synnax_ch_name.replace("vlv", "state")
+        client.channels.create(
+            retrieve_if_name_exists=True,
+            name=state_ch_name,
+            data_type=sy.DataType.INT8,
+            virtual=False,
+            index=time_channel.key,
+        )
+        write_channels.append(state_ch_name) # add to list of channels to write to
+
+    return write_channels, read_channels
 
 def main():
     args = parse_args()
     aliases = parse_aliases(args.aliases)
     simulation = Simulation(args.sim_params)
     client = synnax_login(args.cluster)
+    write_channels, read_channels = setup_channels(client, simulation, aliases)
+
     # Open streamer for valve commands
-
-    write_chs = config.get_vlvs()
-    read_chs = config.get_states() + config.get_sensors() + ["time"]
-
-    with client.open_streamer(channels=write_chs) as streamer:
+    with client.open_streamer(channels=read_channels) as streamer:
         # Open writer for everything else
-        with client.open_writer(start=sy.TimeStamp.now(), channels=read_chs) as writer:
-            driver(config, streamer, writer, system, args)  # Run the fake driver
+        with client.open_writer(start=sy.TimeStamp.now(), channels=write_channels) as writer:
+            driver(streamer, writer, simulation, aliases)  # Run the fake driver
 
 
 if __name__ == "__main__":
@@ -334,5 +415,3 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
         error_and_exit("Keyboard interrupt detected")
-    except Exception as e:  # catch-all uncaught errors
-        error_and_exit("Uncaught exception!", exception=e)
