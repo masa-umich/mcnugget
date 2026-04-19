@@ -17,8 +17,6 @@
 
 from termcolor import colored
 from yaspin import yaspin
-from mclib.system import State, System
-from mclib.config import Config
 
 # fun spinner while we load packages
 spinner = yaspin()
@@ -28,9 +26,181 @@ spinner.start()
 import argparse
 import random
 import synnax as sy
+from typing import NewType
 
-do_noise = True
+# Valve state alias for readability
+State = NewType('State', bool)
+OPEN = True
+CLOSED = False
 
+class Volume:
+    """
+    A volume is a class which represents a physical container of fluid.
+    Volumes have a constant name, volume, and associated channels.
+    Volumes have variables pressure and temperature
+
+    A volume's pressure and temperature are checked and updated every
+    time step according to the state of the system (valves).
+    """
+
+    # Constants:
+    name: str
+    volume: float  # liters
+    channels: list[str] # list of synnax channel names or aliases
+
+    # State variables:
+    pressure: float  # psi
+    temperature: float  # C
+
+    def __init__(self, name: str, volume: float, initial_pressure: float, channels: list[str]):
+        self.name = name
+        self.volume = volume  # liters
+        self.pressure = initial_pressure  # psi
+        self.channels = channels
+
+class Valve:
+    """
+    A valve is a class which represents a physical valve in the system.
+    Valves have a constant name, normally_open boolean, and associated channels.
+    Valves have a state variable which is either OPEN or CLOSED.
+
+    A valve's state is updated according to incoming commands from the streamer.
+    """
+
+    # Constants:
+    channel: str # synnax channel name or alias for the valve command (valves may only have one channel)
+    is_normally_closed: bool
+    is_check_valve: bool # if true, only unidirectional flow from INLET to OUTLET
+    inlet_volume_name: str
+    outlet_volume_name: str
+
+    # State variables:
+    state: State # 0 for closed, 1 for open (or use alias OPEN and CLOSED for readability)
+
+    def __init__(self, channel: str, normally_closed: bool, is_check_valve: bool, inlet_volume_name: str, outlet_volume_name: str):
+        self.channel = channel
+        self.is_normally_closed = normally_closed
+        self.is_check_valve = is_check_valve
+        self.inlet_volume_name = inlet_volume_name
+        self.outlet_volume_name = outlet_volume_name
+        if normally_closed:
+            self.state = CLOSED
+        else:
+            self.state = OPEN
+
+class Simulation:
+    """
+    Class which represents the entire simulation. 
+    Contains all volumes and valves, as well as physics updates
+    """
+
+    # Simulation Parameters:
+    volumes: dict[str, Volume] # dictionary mapping volume names to Volume objects
+    valves: dict[str, Valve] # dictionary mapping valve channel names to Valve objects
+    do_noise: bool
+    default_pt_noise_sigma: float
+    do_temp_simulation: bool
+    default_tc_noise_sigma: float
+    frequency: int # Hz
+    atmosphere_volume_name: str
+
+    def __init__(self, params_path: str):
+        """
+        Parse simulation parameters from yaml
+        """
+        yaml_dict = load_yaml(params_path)
+        try:
+            self.do_noise = bool(yaml_dict.get("do_noise", False))
+            self.default_pt_noise_sigma = float(yaml_dict.get("default_pt_noise_sigma", 0.0))
+            self.do_temp_simulation = bool(yaml_dict.get("do_temp_simulation", False))
+            self.default_tc_noise_sigma = float(yaml_dict.get("default_tc_noise_sigma", 0.0))
+            self.frequency = int(yaml_dict.get("frequency", 10))
+            self.atmosphere_volume_name = str(yaml_dict.get("atmosphere_volume_name", "atmosphere"))
+
+            self.volumes = {}
+            for vol_data in yaml_dict.get("volumes", []):
+                name = vol_data["name"]
+                self.volumes[name] = Volume(
+                    name=name,
+                    volume=float(vol_data["volume"]),
+                    initial_pressure=float(vol_data["initial_pressure"]),
+                    channels=vol_data.get("channels", [])
+                )
+
+            self.valves = {}
+            for vlv_data in yaml_dict.get("valves", []):
+                channel = vlv_data["channel"]
+                is_normally_open = bool(vlv_data.get("is_normally_open", False))
+                self.valves[channel] = Valve(
+                    channel=channel,
+                    normally_closed=not is_normally_open,
+                    is_check_valve=bool(vlv_data.get("is_check_valve", False)),
+                    inlet_volume_name=vlv_data["inlet"],
+                    outlet_volume_name=vlv_data["outlet"]
+                )
+        except KeyError as e:
+            error_and_exit(f"Missing required key {e} in simulation parameters file {params_path}")
+        except Exception as e:
+            error_and_exit(f"Error parsing simulation parameters from {params_path}", exception=e)
+
+def load_yaml(path: str) -> dict[str, str]:
+    """
+    Parses a yaml file of channel aliases and returns a dictionary mapping alias to channel name
+    """
+    import yaml
+    with open(path, 'r') as f:
+        yaml_dict = yaml.safe_load(f)
+    if yaml_dict is None:
+        error_and_exit(f"Alias file {path} is empty or not properly formatted")
+    return yaml_dict
+
+def parse_aliases(aliases_path: str) -> dict[str, str]:
+    """
+    Parses a yaml dictionary of channel aliases and returns a dictionary mapping alias to channel name
+    """
+    yaml_dict = load_yaml(aliases_path)
+    aliases: dict[str, str] = {}
+
+    prefix_map: dict[str, str] = {
+        "ebox": "gse",
+        "flight_computer": "fc",
+        "bay_board_1": "bb1",
+        "bay_board_2": "bb2",
+        "bay_board_3": "bb3",
+    }
+
+    type_suffix_map: dict[str, str] = {"pts": "pt", "valves": "vlv", "tcs": "tc"}
+
+    mappings_data = yaml_dict.get("channel_mappings")
+    if not mappings_data:
+        error_and_exit(f"Alias file {aliases_path} is missing 'channel_mappings' key or it is empty.")
+
+    for controller_key, prefix in prefix_map.items():
+        controller_data = mappings_data.get(controller_key)
+        if not controller_data:
+            continue
+
+        for type_key, suffix in type_suffix_map.items():
+            items = controller_data.get(type_key)
+            if not items:
+                continue
+
+            for config_ch_name, value in items.items():
+                try:
+                    ch_index = value
+                    if isinstance(value, dict):
+                        ch_index = value.get("id")
+                        if ch_index is None:
+                            raise KeyError("id")
+
+                    synnax_name = f"{prefix}_{suffix}_{ch_index}"
+                    aliases[config_ch_name.lower()] = synnax_name
+                except KeyError as e:
+                    error_and_exit(f"Missing key {e} for channel {config_ch_name} in {aliases_path}")
+                except Exception as e:
+                    error_and_exit(f"Error parsing channel {config_ch_name} in {aliases_path}", exception=e)
+
+    return aliases
 
 # helper function to raise pretty errors
 def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
@@ -45,59 +215,31 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
 def parse_args() -> argparse.Namespace:
     global do_noise
     parser = argparse.ArgumentParser(
-        description="The autosequence for preparring Limeight for launch!"
+        description="A universal fluid simulator for verifying autosequence logic"
     )
-
     parser.add_argument(
-        "-n",
-        "--noise",
-        help="Should the simulation include simulated sensor noise?",
-        default="True",
+        "-a",
+        "--aliases",
+        help="The file to use for channel aliases",
+        default="aliases.yaml",
+        required=True,
         type=str,
     )
     parser.add_argument(
-        "-m",
-        "--config",
-        help="The file to use for channel config",
-        default="config.yaml",
+        "-s",
+        "--sim-params",
+        help="The file to use for simulation parameters",
+        required=True,
         type=str,
     )
     parser.add_argument(
         "-c",
         "--cluster",
-        help="Specify a Synnax cluster to connect to",
+        help="Specify a Synnax cluster to connect to (should almost always be localhost)",
         default="localhost",
         type=str,
     )
-    parser.add_argument(
-        "-f",
-        "--frequency",
-        help="Specify a frequency to push data into Synnax at",
-        default=50,
-        type=int,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Shold the program output extra debugging information",
-        action="store_true",
-    )  # Positional argument
     args = parser.parse_args()
-    # check that if there was an alternate config file given, that it is at least a .yaml file
-    if args.config != "config.yaml":
-        if args.config.endswith(".yaml"):
-            if args.verbose:
-                print(colored(f"Using config from file: {args.config}", "yellow"))
-        else:
-            error_and_exit(
-                f"Invalid specified config file: {args.config}, must be .yaml file"
-            )
-    if args.noise.lower() == "true":
-        do_noise = True
-    elif args.noise.lower() == "false":
-        do_noise = False
-    else:
-        error_and_exit("Argument --noise must be followed by either 'true' or 'false'")
     return args
 
 
@@ -117,53 +259,9 @@ def synnax_login(cluster: str) -> sy.Synnax:
     return client  # type: ignore
 
 
-# Makes or gets all the channels we care about into Synnax
-@yaspin(text=colored("Setting up channels...", "yellow"))
-def get_channels(client: sy.Synnax, config: Config):
-    valves = config.get_vlvs() + ["handoff_channel"]
-    states = config.get_states()
-    sensors = config.get_sensors()
-
-    time_channel = client.channels.create(
-        retrieve_if_name_exists=True,
-        name="time",
-        data_type=sy.DataType.TIMESTAMP,
-        virtual=False,
-        is_index=True,
-    )
-
-    for valve in valves:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=valve,
-            data_type=sy.DataType.INT8,
-            virtual=True,
-        )
-
-    for state in states:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=state,
-            data_type=sy.DataType.INT8,
-            virtual=False,
-            index=time_channel.key,
-        )
-
-    for sensor in sensors:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=sensor,
-            data_type=sy.DataType.FLOAT32,
-            virtual=False,
-            index=time_channel.key,
-        )
-
-
 # A fake driver that writes data to all channels according to the simulation
 @yaspin(text=colored("Running Simulation...", "green"))
-def driver(
-    config: Config, streamer: sy.Streamer, writer: sy.Writer, system: System, args
-):
+def driver(args: argparse.Namespace, streamer: sy.Streamer, writer: sy.Writer, ):
     global do_noise
     driver_frequency = args.frequency  # Hz
     loop = sy.Loop(interval=(sy.Rate.HZ * driver_frequency))
@@ -216,10 +314,9 @@ def driver(
 
 def main():
     args = parse_args()
+    aliases = parse_aliases(args.aliases)
+    simulation = Simulation(args.sim_params)
     client = synnax_login(args.cluster)
-    config = Config(args.config)
-    system = System(config)
-    get_channels(client, config)
     # Open streamer for valve commands
 
     write_chs = config.get_vlvs()

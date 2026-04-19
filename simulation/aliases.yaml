@@ -1,32 +1,3 @@
-variables:
-  first_mpv_time: 0   # seconds before ignition to open first mpv
-  ox_iso_time: 0    # seconds before ox mpv opening to open ox iso
-  fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
-  using_ox: False
-  using_fuel: True
-  first_mpv: "fuel" # Which MPV to open first, ox or fuel
-  duration: 20  # Duration to keep MPVs open after ignition in seconds
-  num_press_bottles: 4 # Number of press bottles on gse
-  purge_duration: 5 # seconds to purge after MPVs close
-  averaging_time: 1 # seconds to average over for pressure readings
-  press_rate_1: 20 # psi/min
-  press_rate_1_ittrs: 4 # number of iterations at press_rate_1 for all bottles
-  press_rate_2: 40 # psi/min
-  copv_cooldown_time: 60 # seconds to wait every pressurization cycle (the denominator of pressurization rate)
-  copv_upper_bound_temp: -1 # (TBD) degrees celsius
-  copv_lower_bound_temp: -1 # (TBD) degrees celsius
-  copv_minimum_temp: -1 # (TBD) degrees celsius
-  copv_pressure_target: 4800 # psi
-  copv_pressure_margin: 100 # psi (+ or - from target)
-  copv_pressure_max: 5000 # psi
-  bottle_equalization_threshold: 50 # psi
-  ox_fill_target: 1.48 # psid
-  ox_fill_margin: 0.06 # psid
-  ox_pre_press_target: 280.96 # psid
-  ox_pre_press_margin: 10 # psid
-  press_fill_vent_time: 5 # seconds to keep press fill vent open
-  fuel_pre_press_time: 0.1 # seconds to open fuel dome iso after one press of "enter" during fuel pre-press
-
 # Channel Mappings
 channel_mappings:
   # Synnax channel for handoff system (probably static) (also TBD)
