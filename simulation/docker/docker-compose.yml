@@ -1,16 +1,24 @@
 version: "3.8"
 services:
   synnax:
-    image: synnaxlabs/synnax:latest # Replace with the exact Synnax image tag
+    image: synnaxlabs/synnax:latest
+    command: ["-ivm", "--license-key", ""]
     ports:
-      - "8080:8080" # Map whatever ports Synnax uses to your host
+      - "9090:9090"
+    restart: unless-stopped
     # volumes:
-    #   - synnax_data:/data # Optional: Persist Synnax data
+    #   - synnax_data:/data
 
   simulator:
-    build: ./simulator
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     depends_on:
       - synnax
+    restart: on-failure
+    environment:
+      - SYNNAX_CLUSTER=synnax
+    command: ["-a", "aliases.yaml", "-s", "press-sim.yaml"]
 
 # volumes:
 #   synnax_data:

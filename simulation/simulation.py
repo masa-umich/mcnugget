@@ -73,16 +73,18 @@ class Valve:
     is_check_valve: bool # if true, only unidirectional flow from INLET to OUTLET
     inlet_volume_name: str
     outlet_volume_name: str
+    flow_coefficient: float
 
     # State variables:
     state: State # 0 for closed, 1 for open (or use alias OPEN and CLOSED for readability)
 
-    def __init__(self, channel: str, is_normally_open: bool, is_check_valve: bool, inlet_volume_name: str, outlet_volume_name: str):
+    def __init__(self, channel: str, is_normally_open: bool, is_check_valve: bool, inlet_volume_name: str, outlet_volume_name: str, flow_coefficient: float = 0.01):
         self.channel = channel
         self.is_normally_open = is_normally_open
         self.is_check_valve = is_check_valve
         self.inlet_volume_name = inlet_volume_name
         self.outlet_volume_name = outlet_volume_name
+        self.flow_coefficient = flow_coefficient
         if is_normally_open:
             self.state = OPEN
         else:
@@ -137,12 +139,46 @@ class Simulation:
                     is_normally_open=is_normally_open,
                     is_check_valve=bool(vlv_data.get("is_check_valve", False)),
                     inlet_volume_name=vlv_data["inlet"],
-                    outlet_volume_name=vlv_data["outlet"]
+                    outlet_volume_name=vlv_data["outlet"],
+                    flow_coefficient=float(vlv_data.get("flow_coefficient", 0.01))
                 )
         except KeyError as e:
             error_and_exit(f"Missing required key {e} in simulation parameters file {params_path}")
         except Exception as e:
             error_and_exit(f"Error parsing simulation parameters from {params_path}", exception=e)
+
+    def transfer_fluid(self, valve: Valve):
+        source = self.volumes[valve.inlet_volume_name.lower()]
+        dest = self.volumes[valve.outlet_volume_name.lower()]
+
+        p_diff = source.pressure - dest.pressure
+
+        # If pressure is roughly equal, no flow
+        if abs(p_diff) < 0.001:
+            return
+
+        PV_transfer = p_diff * valve.flow_coefficient
+
+        # If it's a check valve and flow is in the wrong direction, no flow
+        if valve.is_check_valve and p_diff < 0:
+            return
+
+        source_drop = PV_transfer / source.volume
+        source.pressure -= source_drop
+        dest_rise = PV_transfer / dest.volume
+        dest.pressure += dest_rise
+
+    def vent_to_atmosphere(self, valve: Valve):
+        # Technically we could also check if the pressure is below ambient and simulate backflow from atmosphere
+        # But skipping that for now because that basically never happens
+        source = self.volumes[valve.inlet_volume_name.lower()]
+
+        p_diff = source.pressure - 0
+        if abs(p_diff) < 0.001:
+            return
+        loss = p_diff * valve.flow_coefficient
+
+        source.pressure -= loss
     
     def update_physics(self):
         """
@@ -152,20 +188,10 @@ class Simulation:
         # For each valve, if it's open, equalize pressure between inlet and outlet volumes according to flowrate
         for valve in self.valves.values():
             if valve.state == OPEN:
-                inlet_volume = self.volumes.get(valve.inlet_volume_name.lower())
-                outlet_volume = self.volumes.get(valve.outlet_volume_name.lower())
-                if inlet_volume is None or outlet_volume is None:
-                    error_and_exit(f"Valve {valve.channel} has invalid inlet or outlet volume name, please check your simulation parameters file")
-                # Simple flow model: flowrate is proportional to pressure differential, with some constant of proportionality
-                pressure_diff = inlet_volume.pressure - outlet_volume.pressure
-                flowrate = 0.01 * pressure_diff  # liters per second at 1 psi pressure differential, adjust as needed
-                # Update pressures of inlet and outlet volumes according to flowrate and volume size
-                inlet_volume.pressure -= flowrate / inlet_volume.volume
-                outlet_volume.pressure += flowrate / outlet_volume.volume
-                # If it's a check valve, only allow flow from inlet to outlet
-                if valve.is_check_valve and pressure_diff < 0:
-                    inlet_volume.pressure += flowrate / inlet_volume.volume
-                    outlet_volume.pressure -= flowrate / outlet_volume.volume
+                if valve.outlet_volume_name.lower() == self.atmosphere_volume_name.lower():
+                    self.vent_to_atmosphere(valve)
+                else:
+                    self.transfer_fluid(valve)
 
 def load_yaml(path: str) -> dict[str, str]:
     """
@@ -241,6 +267,7 @@ def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
     exit(error_code)
 
 
+import os
 def parse_args() -> argparse.Namespace:
     global do_noise
     parser = argparse.ArgumentParser(
@@ -265,7 +292,7 @@ def parse_args() -> argparse.Namespace:
         "-c",
         "--cluster",
         help="Specify a Synnax cluster to connect to (should almost always be localhost)",
-        default="localhost",
+        default=os.getenv("SYNNAX_CLUSTER", "localhost"),
         type=str,
     )
     args = parser.parse_args()

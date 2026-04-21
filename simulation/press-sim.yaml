@@ -35,43 +35,43 @@ valves:
   - channel: "COPV_Vent" # control channel name or alias
     inlet: "copv" # volume name
     outlet: "atmosphere" # volume name
-    flowrate: 0.01 # liters per second at 1 psi pressure differential
+    flow_coefficient: 0.01 # liters per second at 1 psi pressure differential
     is_check_valve: false # if true, only unidirectional flow from INLET to OUTLET
     is_normally_open: false
   - channel: "Press_Iso_1"
     inlet: "bottle 1"
     outlet: "press fill manifold"
-    flowrate: 1
+    flow_coefficient: 1
     is_check_valve: false
     is_normally_open: false
   - channel: "Press_Iso_2"
     inlet: "bottle 2"
     outlet: "press fill manifold"
-    flowrate: 1
+    flow_coefficient: 1
     is_check_valve: false
     is_normally_open: false
   - channel: "Press_Iso_3"
     inlet: "bottle 3"
     outlet: "press fill manifold"
-    flowrate: 1
+    flow_coefficient: 1
     is_check_valve: false
     is_normally_open: false
   - channel: "Press_Iso_4"
     inlet: "bottle 4"
     outlet: "press fill manifold"
-    flowrate: 1
+    flow_coefficient: 1
     is_check_valve: false
     is_normally_open: false
   - channel: "Press_Fill_Vent"
     inlet: "press fill manifold"
     outlet: "atmosphere"
-    flowrate: 0.01
+    flow_coefficient: 0.01
     is_check_valve: false
     is_normally_open: false
   - channel: "Press_Fill_Iso"
     inlet: "press fill manifold"
     outlet: "copv"
-    flowrate: 1
+    flow_coefficient: 1
     is_check_valve: false
     is_normally_open: false
 

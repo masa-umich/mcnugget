@@ -110,6 +110,16 @@ When developing, remember to make a new branch of this repo, make & push commits
 
 ### Step 3: Install and Setup a Synnax Cluster for Testing (Optional)
 If you want to test your script with a real Synnax cluster before you push it (a GREAT idea), you can do so by following the instructions on their website [found here](https://docs.synnaxlabs.com/reference/cluster/quick-start). Make sure to change your connection settings to use `localhost` as the host in your Synnax connection settings.
+
+Alternatively, you can run a local Synnax cluster together with a simulation environment using Docker. See the [Simulation Docker Guide](simulation/docker/README.md) for more details.
+
+### Step 3.1: Running Simulation with Docker
+For a quick setup of both Synnax and a simulation environment:
+```sh
+cd simulation/docker
+./run_sim.sh start
+```
+This script will automatically detect and install Docker if it's missing (on Linux), then build and start the containers.
 ### Step 4: Install and Setup a Synnax Console (Optional)
 Install the [Synnax Console](https://docs.synnaxlabs.com/reference/console/get-started) for your operating system to view what your script is doing in real-time!
 
