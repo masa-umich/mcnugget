@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MASA | Stream Starting Soon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Official MASA Color Palette [cite: 875] */
+            --masa-blue: #00274c;
+            --masa-maize: #ffcb05;
+            --masa-vermillion: #ef4624;
+            --masa-sand: #eeeeea;
+            --masa-white: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 1920px;
+            height: 1080px;
+            background-color: var(--masa-blue);
+            color: var(--masa-white);
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Maize to Vermillion gradient bar [cite: 936] */
+        .top-accent {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 15px;
+            background: linear-gradient(90deg, var(--masa-maize), var(--masa-vermillion));
+        }
+
+        .logo-container {
+            margin-bottom: 30px;
+        }
+
+        .masa-logo {
+            width: 380px;
+        }
+
+        .mission-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px; /* Space between patches and central text */
+            width: 100%;
+        }
+
+        .mission-patch {
+            width: 280px; /* Sized to be prominent but secondary to the logo */
+            height: 280px;
+            object-fit: contain;
+            /* Mission patches should have clear space around them [cite: 904] */
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mission-name {
+            font-size: 110px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 12px;
+            margin: 0;
+            width: 800px;
+            color: var(--masa-maize);
+        }
+
+        .status-header {
+            font-size: 38px;
+            font-weight: 600; /* Semibold for titles [cite: 877] */
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-top: 30px;
+            color: var(--masa-sand);
+            opacity: 0.9;
+        }
+
+        .countdown-container {
+            margin-top: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #timer {
+            font-size: 140px;
+            font-weight: 700; /* Bold for headers [cite: 877] */
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 5px;
+        }
+
+        .timer-label {
+            font-size: 20px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--masa-sand);
+        }
+
+        .footer-info {
+            position: absolute;
+            bottom: 60px;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--masa-sand);
+            text-align: center;
+        }
+
+        .footer-info span {
+            color: var(--masa-maize);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-accent"></div>
+
+    <div class="logo-container">
+        <img src="masa_logo_transparent.png" alt="MASA Logo" class="masa-logo" onerror="this.style.visibility='hidden'">
+    </div>
+
+    <div class="mission-content">
+        <img src="MASA Team Patch.png" alt="Mission Patch 1" class="mission-patch" onerror="this.style.opacity='0'">
+        
+        <div class="text-center">
+            <h1 class="mission-name">Limelight Launch</h1>
+            <div class="status-header">Stream Starting Soon</div>
+        </div>
+
+        <img src="Limelight Mission Patch.png" alt="Mission Patch 2" class="mission-patch" onerror="this.style.opacity='0'">
+    </div>
+
+    <div class="footer-info">
+        MICHIGAN AERONAUTICAL SCIENCE ASSOCIATION
+    </div>
+</body>
+</html>

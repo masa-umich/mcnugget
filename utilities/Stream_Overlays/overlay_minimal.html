@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal MASA Stream Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background-color: transparent; 
+            font-family: 'Montserrat', sans-serif;
+            color: #ffffff;
+        }
+
+        /* Widened Lower Third */
+        .lower-third {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 65%; 
+            justify-content: space-between; 
+            display: flex;
+            align-items: center;
+            background: rgba(0, 39, 76, 0.975); /* Highly Translucent MASA Blue */
+            backdrop-filter: blur(10px); 
+            border-radius: 8px;
+            padding: 15px 50px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-right: 2px solid rgba(238, 238, 234, 0.2); 
+            padding-right: 40px;
+            min-width: 250px;
+        }
+
+        .masa-logo { height: 45px; width: auto; display: block; }
+        .masa-logo-text { font-weight: 900; font-size: 40px; letter-spacing: 2px; color: #ffffff; margin: 0; }
+        .mission-name { font-weight: 700; font-size: 22px; color: #eeeeea; text-transform: uppercase; letter-spacing: 3px; }
+
+        /* Container to group the status boxes together */
+        .status-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1; /* Allows it to take up the middle space evenly */
+        }
+
+        /* Status Box Base Styles */
+        .state-box {
+            padding: 12px 25px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Pre-programmed Routine Box */
+        .routine-box {
+            background-color: #ef4624; /* MASA Vermillion */
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(239, 70, 36, 0.4);
+        }
+
+        /* Custom Alert Box (Maize to stand out) */
+        .custom-box {
+            background-color: #ffcb05; /* MASA Maize */
+            color: #00274c; /* MASA Blue text for contrast */
+            box-shadow: 0 0 15px rgba(255, 203, 5, 0.4);
+            display: none; /* Hidden by default until toggled by server */
+        }
+
+        .timer {
+            font-weight: 700;
+            font-size: 34px;
+            color: #ffcb05;
+            font-variant-numeric: tabular-nums;
+            min-width: 200px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lower-third">
+        <div class="logo-section">
+            <img src="masa_logo_transparent.png" alt="MASA" class="masa-logo" onerror="this.outerHTML='<div class=\'masa-logo-text\'>MASA</div>'">
+            <div class="mission-name">Limelight Launch</div>
+        </div>
+        
+        <div class="status-container">
+            <div class="state-box routine-box" id="routine-state">
+                CONNECTING...
+            </div>
+            
+            <div class="state-box custom-box" id="custom-state">
+                CUSTOM ALERT
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchSystemState() {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/state');
+                const data = await response.json();
+                
+                // Update Routine Message
+                const routineBox = document.getElementById('routine-state');
+                if (routineBox.innerText !== data.routine_state) {
+                    routineBox.innerText = data.routine_state;
+                }
+
+                // Update Custom Message and Handle Visibility
+                const customBox = document.getElementById('custom-state');
+                if (customBox.innerText !== data.custom_message) {
+                    customBox.innerText = data.custom_message;
+                }
+
+                // Toggle visibility based on the checkbox in the portal
+                if (data.show_custom) {
+                    customBox.style.display = "block";
+                } else {
+                    customBox.style.display = "none";
+                }
+
+            } catch (error) {
+                console.error("Waiting for Ground Station Server...");
+            }
+        }
+
+        setInterval(fetchSystemState, 1000);
+    </script>
+</body>
+</html>

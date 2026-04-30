@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MASA Camera Status Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 1920px;
+            height: 1080px;
+            /* MASA Blue: #00274c */
+            background-color: #00274c; 
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* Subtle Maize border to separate panels */
+            border: 1px solid rgba(255, 203, 5, 0.2); 
+            box-sizing: border-box;
+        }
+
+        .logo {
+            width: 250px;
+            margin-bottom: 24px;
+        }
+
+        .status-text {
+            /* MASA Maize: #ffcb05 */
+            color: #ffcb05; 
+            font-size: 42px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .source-label {
+            /* MASA Sand: #eeeeea */
+            color: #eeeeea; 
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 12px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <img src="masa_logo_transparent.png" alt="MASA Logo" class="logo" onerror="this.style.visibility='hidden'">
+            <div class="status-text">Camera Disconnected</div>
+            <div class="source-label">VIDEO SOURCE 01</div>
+        </div>
+        <div class="panel">
+            <img src="masa_logo_transparent.png" alt="MASA Logo" class="logo" onerror="this.style.visibility='hidden'">
+            <div class="status-text">Camera Disconnected</div>
+            <div class="source-label">VIDEO SOURCE 02</div>
+        </div>
+        <div class="panel">
+            <img src="masa_logo_transparent.png" alt="MASA Logo" class="logo" onerror="this.style.visibility='hidden'">
+            <div class="status-text">Camera Disconnected</div>
+            <div class="source-label">VIDEO SOURCE 03</div>
+        </div>
+        <div class="panel">
+            <img src="masa_logo_transparent.png" alt="MASA Logo" class="logo" onerror="this.style.visibility='hidden'">
+            <div class="status-text">Camera Disconnected</div>
+            <div class="source-label">VIDEO SOURCE 04</div>
+        </div>
+    </div>
+</body>
+</html>
