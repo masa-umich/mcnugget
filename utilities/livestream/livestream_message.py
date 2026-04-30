@@ -1,4 +1,14 @@
+import json
+import math
+import sys
+
 from flask import Flask, request, jsonify, render_template_string
+from threading import Thread
+import time
+import socket
+from importlib import resources
+
+from lmp import TelemetryMessage, Board
 
 app = Flask(__name__)
 
@@ -17,12 +27,19 @@ PRE_PROGRAMMED_STATES = [
     "ABORT"
 ]
 
+launch_success_state = PRE_PROGRAMMED_STATES[-2]
+abort_state = PRE_PROGRAMMED_STATES[-1]
+
 # Active state of the overlay
 system_state = {
     "routine_state": PRE_PROGRAMMED_STATES[0],
     "custom_message": "RANGE IS RED",
-    "show_custom": False
+    "show_custom": False,
+    "countdown": False,
+    "countdownTime": -10
 }
+
+handoff_udp = False
 
 # The HTML for the web portal
 PORTAL_HTML = """
@@ -147,6 +164,8 @@ def update():
         system_state['custom_message'] = custom_msg.upper()
         
     system_state['show_custom'] = 'show_custom' in request.form
+    
+    system_state["countdown"] = False
     return index()
 
 @app.route('/api/state')
@@ -158,5 +177,70 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
+def countdownThread():
+    handoff_state = None
+    while True:
+        time.sleep(0.1)
+        if handoff_state is None:
+            handoff_state = handoff_udp
+            continue
+        if handoff_state is False and handoff_udp is True:
+            system_state['countdown'] = True
+            system_state['countdownTime'] = -10
+            
+            exit_flag = 0
+            start_time = time.time()
+            while True:
+                if system_state['countdown'] is False:
+                    exit_flag = 1
+                    break
+                time_left = -10 + math.trunc(time.time() - start_time)
+                if time_left < 0 and handoff_udp is False:
+                    exit_flag = 2
+                    break
+                if time_left > 59:
+                    break
+                system_state['countdownTime'] = time_left
+                
+                time.sleep(0.1)
+            if exit_flag == 0:
+                system_state['routine_state'] = launch_success_state
+                system_state['custom_message'] = "Awaiting recovery"
+                system_state['show_custom'] = True
+                system_state['countdown'] = False
+            elif exit_flag == 2:
+                system_state['routine_state'] = abort_state
+                system_state['custom_message'] = "No light"
+                system_state['show_custom'] = True
+                system_state['countdown'] = False
+        handoff_state = handoff_udp
+        
+def telem_listener(channels: list[str]):
+    global handoff_udp
+    autostate_index = channels.index("fc_auto_state")
+    udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    udpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if sys.platform != "win32":
+        udpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    udpsocket.bind(("0.0.0.0", 6767))
+    udpsocket.settimeout(1.0)
+    while True:
+        try:
+            data, client_address = udpsocket.recvfrom(1024)
+            if data:
+                msg = TelemetryMessage.from_bytes(data[1:])
+                if msg.board == Board.FC:
+                    handoff_udp = msg.values[autostate_index] > 0
+        except socket.timeout:
+            continue
+        except Exception:
+            continue
+
 if __name__ == '__main__':
+    channelsfile = resources.files("limewire.data").joinpath("channels.json")
+    with channelsfile.open('r') as f:
+        channels: dict[str, list[str]] = json.load(f)
+    Thread(target=countdownThread, daemon=True).start()
+    Thread(target=telem_listener, daemon=True,args=(channels["fc_timestamp"],)).start()
     app.run(host='0.0.0.0', port=5000)

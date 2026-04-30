@@ -22,7 +22,7 @@
             bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            width: 65%; 
+            width: max-content;
             justify-content: space-between; 
             display: flex;
             align-items: center;
@@ -37,14 +37,15 @@
             display: flex;
             align-items: center;
             gap: 20px;
-            border-right: 2px solid rgba(238, 238, 234, 0.2); 
+            border-right: 2px solid rgba(238, 238, 234, 0.2);
+            margin-right: 40px;
             padding-right: 40px;
             min-width: 250px;
         }
 
         .masa-logo { height: 45px; width: auto; display: block; }
         .masa-logo-text { font-weight: 900; font-size: 40px; letter-spacing: 2px; color: #ffffff; margin: 0; }
-        .mission-name { font-weight: 700; font-size: 22px; color: #eeeeea; text-transform: uppercase; letter-spacing: 3px; }
+        .mission-name { font-weight: 700; font-size: 22px; color: #eeeeea; text-transform: uppercase; letter-spacing: 3px; white-space: nowrap;}
 
         /* Container to group the status boxes together */
         .status-container {
@@ -52,7 +53,7 @@
             gap: 20px;
             justify-content: center;
             align-items: center;
-            flex-grow: 1; /* Allows it to take up the middle space evenly */
+            /*flex-grow: 1; /* Allows it to take up the middle space evenly */
         }
 
         /* Status Box Base Styles */
@@ -65,6 +66,7 @@
             letter-spacing: 1.5px;
             text-align: center;
             transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
         /* Pre-programmed Routine Box */
@@ -90,10 +92,33 @@
             min-width: 200px;
             text-align: right;
         }
+
+        .countdown-overlay {
+            background: rgba(0, 39, 76, 0.975); /* Highly Translucent MASA Blue */
+            backdrop-filter: blur(10px); 
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            display: none;
+            padding: 15px 35px;
+            /*margin: 20px 20px;*/
+            font-weight: 700;
+            font-size: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+            position: absolute;
+            bottom: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            /*transition: all 0.3s ease;
+            position: absolute;
+            top: 0;
+            right: 0;*/
+        }
     </style>
 </head>
 <body>
-
+    <div class="countdown-overlay" id="countdown"></div>
     <div class="lower-third">
         <div class="logo-section">
             <img src="masa_logo_transparent.png" alt="MASA" class="masa-logo" onerror="this.outerHTML='<div class=\'masa-logo-text\'>MASA</div>'">
@@ -112,6 +137,18 @@
     </div>
 
     <script>
+        countdownTime = 10;
+
+        function renderCountdown() {
+            const countdownBox = document.getElementById('countdown');
+            if(countdownTime < 0) {
+                countdownBox.textContent = "T" + countdownTime;
+            }
+            else {
+                countdownBox.textContent = "T+" + countdownTime;
+            }
+        }
+
         async function fetchSystemState() {
             try {
                 const response = await fetch('http://127.0.0.1:5000/api/state');
@@ -129,19 +166,38 @@
                     customBox.innerText = data.custom_message;
                 }
 
-                // Toggle visibility based on the checkbox in the portal
-                if (data.show_custom) {
-                    customBox.style.display = "block";
-                } else {
+                const countdownBox = document.getElementById('countdown');
+                if(data.countdown) {
+                    countdownTime = data.countdownTime;
+                    renderCountdown();
+                    countdownBox.style.display = "block";
                     customBox.style.display = "none";
+                    routineBox.style.display = "none";
+                    //document.getElementsByClassName("lower-third").item(0).style.width = "auto";
+                    document.getElementsByClassName("logo-section").item(0).style.borderRight = "0px";
+                    document.getElementsByClassName("logo-section").item(0).style.paddingRight = "0px";
+                    return;
+                    
+                }
+                else {
+                    countdownBox.style.display = "none";
+                    //document.getElementsByClassName("lower-third").item(0).style.width = "auto";
+                    document.getElementsByClassName("logo-section").item(0).style.borderRight = "2px solid rgba(238, 238, 234, 0.2)";
+                    document.getElementsByClassName("logo-section").item(0).style.paddingRight = "40px";
+                    if (data.show_custom) {
+                        customBox.style.display = "block";
+                    } else {
+                        customBox.style.display = "none";
+                    }
+                    routineBox.style.display = "block";
                 }
 
             } catch (error) {
                 console.error("Waiting for Ground Station Server...");
             }
         }
-
-        setInterval(fetchSystemState, 1000);
+        
+        setInterval(fetchSystemState, 100);
     </script>
 </body>
 </html>
