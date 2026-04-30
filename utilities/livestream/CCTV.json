@@ -21,9 +21,9 @@
         "push-to-talk-delay": 0,
         "hotkeys": {
             "libobs.mute": [],
-            "libobs.unmute": [],
             "libobs.push-to-mute": [],
-            "libobs.push-to-talk": []
+            "libobs.push-to-talk": [],
+            "libobs.unmute": []
         },
         "deinterlace_mode": 0,
         "deinterlace_field_order": 0,
@@ -52,17 +52,17 @@
         "push-to-talk-delay": 0,
         "hotkeys": {
             "libobs.mute": [],
-            "libobs.unmute": [],
             "libobs.push-to-mute": [],
-            "libobs.push-to-talk": []
+            "libobs.push-to-talk": [],
+            "libobs.unmute": []
         },
         "deinterlace_mode": 0,
         "deinterlace_field_order": 0,
         "monitoring_type": 0,
         "private_settings": {}
     },
-    "current_scene": "Please Hold",
-    "current_program_scene": "Please Hold",
+    "current_scene": "Starting Soon",
+    "current_program_scene": "Starting Soon",
     "scene_order": [
         {
             "name": "Starting Soon"
@@ -75,9 +75,6 @@
         },
         {
             "name": "Please Hold"
-        },
-        {
-            "name": "extra"
         }
     ],
     "name": "CCTV",
@@ -112,7 +109,7 @@
     "transition_duration": 300,
     "preview_locked": false,
     "scaling_enabled": false,
-    "scaling_level": -8,
+    "scaling_level": -2,
     "scaling_off_x": 0.0,
     "scaling_off_y": 0.0,
     "virtual-camera": {
@@ -127,10 +124,10 @@
             "switches": []
         },
         "captions": {
-            "source": "",
             "enabled": false,
             "lang_id": 1033,
-            "provider": "mssapi"
+            "provider": "mssapi",
+            "source": ""
         },
         "output-timer": {
             "streamTimerHours": 0,
@@ -153,51 +150,18 @@
     "sources": [
         {
             "prev_ver": 536870916,
-            "name": "Browser",
-            "uuid": "4e9d7d15-26bb-402b-8414-357b96636b85",
-            "id": "browser_source",
-            "versioned_id": "browser_source",
-            "settings": {
-                "is_local_file": true,
-                "local_file": "C:/Users/brynp/Desktop/clock.html"
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": [],
-                "ObsBrowser.Refresh": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
             "name": "Cam 2",
             "uuid": "40db4b1b-a246-4173-9b01-ed9b3e714daf",
             "id": "ffmpeg_source",
             "versioned_id": "ffmpeg_source",
             "settings": {
-                "hw_decode": true,
-                "input_format": "",
+                "close_when_inactive": true,
                 "ffmpeg_options": "rtsp_transport=tcp",
+                "hw_decode": true,
                 "input": "rtsp://admin:popTartGoBlue_26!@141.212.192.2/stream1\n",
+                "input_format": "",
                 "is_local_file": false,
-                "restart_on_activate": true,
-                "close_when_inactive": true
+                "restart_on_activate": true
             },
             "mixers": 255,
             "sync": 0,
@@ -288,11 +252,11 @@
             "id": "ffmpeg_source",
             "versioned_id": "ffmpeg_source",
             "settings": {
+                "close_when_inactive": true,
                 "ffmpeg_options": "rtsp_transport=tcp",
                 "hw_decode": true,
                 "input": "rtsp://admin:popTartGoBlue_26!@141.212.192.4/stream1",
-                "is_local_file": false,
-                "close_when_inactive": true
+                "is_local_file": false
             },
             "mixers": 255,
             "sync": 0,
@@ -382,11 +346,11 @@
             "id": "ffmpeg_source",
             "versioned_id": "ffmpeg_source",
             "settings": {
+                "close_when_inactive": true,
                 "ffmpeg_options": "rtsp_transport=tcp",
-                "input": "rtsp://admin:popTartGoBlue_26!@141.212.192.5/stream1\n",
                 "hw_decode": true,
-                "is_local_file": false,
-                "close_when_inactive": true
+                "input": "rtsp://admin:popTartGoBlue_26!@141.212.192.5/stream1\n",
+                "is_local_file": false
             },
             "mixers": 255,
             "sync": 0,
@@ -477,11 +441,11 @@
             "id": "ffmpeg_source",
             "versioned_id": "ffmpeg_source",
             "settings": {
+                "close_when_inactive": true,
                 "ffmpeg_options": "rtsp_transport=tcp",
                 "hw_decode": true,
                 "input": "rtsp://admin:popTartGoBlue_26!@141.212.192.6/stream1\n",
-                "is_local_file": false,
-                "close_when_inactive": true
+                "is_local_file": false
             },
             "mixers": 255,
             "sync": 0,
@@ -566,45 +530,6 @@
         },
         {
             "prev_ver": 536870916,
-            "name": "Camera 2",
-            "uuid": "6a0faa8f-dd48-4163-bb37-362c961d2bc8",
-            "id": "ffmpeg_source",
-            "versioned_id": "ffmpeg_source",
-            "settings": {
-                "hw_decode": true,
-                "input_format": "",
-                "ffmpeg_options": "rtsp_transport=tcp",
-                "input": "rtsp://admin:123456@141.212.192.10/stream1\n",
-                "is_local_file": false
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": [],
-                "MediaSource.Restart": [],
-                "MediaSource.Play": [],
-                "MediaSource.Pause": [],
-                "MediaSource.Stop": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
             "name": "Disconnected Screen",
             "uuid": "0a08a7e6-8c23-4b90-98b0-c315f764aafe",
             "id": "browser_source",
@@ -613,7 +538,7 @@
                 "is_local_file": true,
                 "width": 1920,
                 "height": 1080,
-                "local_file": "C:/Users/brynp/Documents/Projects/MASA Avionics/Limelight_Livestream/Stream_Overlays/camera_status.html"
+                "local_file": "camera_status.html"
             },
             "mixers": 255,
             "sync": 0,
@@ -636,551 +561,6 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "extra",
-            "uuid": "aa56d70d-66b2-4ed6-a644-46aad071ff15",
-            "id": "scene",
-            "versioned_id": "scene",
-            "settings": {
-                "custom_size": false,
-                "id_counter": 10,
-                "items": [
-                    {
-                        "name": "MASA Background",
-                        "source_uuid": "7e39087d-e46d-407a-b6fa-8aa5e419ec31",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 2560.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 1,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 4,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": -287.0,
-                            "y": 0.0
-                        },
-                        "pos_rel": {
-                            "x": -2.3092591762542725,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 2560.0,
-                            "y": 1080.0
-                        },
-                        "bounds_rel": {
-                            "x": 4.740740776062012,
-                            "y": 2.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "MASA Avionics",
-                        "source_uuid": "9544e0a6-d634-439c-9f08-2059be8881e5",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 2560.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 5,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 10.0,
-                            "y": 907.0
-                        },
-                        "pos_rel": {
-                            "x": -1.7592592239379883,
-                            "y": 0.6796296834945679
-                        },
-                        "scale": {
-                            "x": 0.5601503849029541,
-                            "y": 0.5597015023231506
-                        },
-                        "scale_rel": {
-                            "x": 0.5601503849029541,
-                            "y": 0.5597015023231506
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Synnax",
-                        "source_uuid": "57108952-a31c-4069-8d52-df20c9430492",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 6,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 568.0,
-                            "y": 690.0
-                        },
-                        "pos_rel": {
-                            "x": -0.7259259223937988,
-                            "y": 0.2777777910232544
-                        },
-                        "scale": {
-                            "x": 0.4385026693344116,
-                            "y": 0.43820226192474365
-                        },
-                        "scale_rel": {
-                            "x": 0.4385026693344116,
-                            "y": 0.43820226192474365
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Cam 2",
-                        "source_uuid": "40db4b1b-a246-4173-9b01-ed9b3e714daf",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 2,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 111.0
-                        },
-                        "pos_rel": {
-                            "x": -1.7777777910232544,
-                            "y": -0.7944444417953491
-                        },
-                        "scale": {
-                            "x": 0.22065868973731995,
-                            "y": 0.22083333134651184
-                        },
-                        "scale_rel": {
-                            "x": 0.22065868973731995,
-                            "y": 0.22083333134651184
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Camera 2",
-                        "source_uuid": "6a0faa8f-dd48-4163-bb37-362c961d2bc8",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 3,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 886.0,
-                            "y": 233.0
-                        },
-                        "pos_rel": {
-                            "x": -0.13703703880310059,
-                            "y": -0.5685185194015503
-                        },
-                        "scale": {
-                            "x": 0.2692708373069763,
-                            "y": 0.26944443583488464
-                        },
-                        "scale_rel": {
-                            "x": 0.2692708373069763,
-                            "y": 0.26944443583488464
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Video Capture Device",
-                        "source_uuid": "36a262e4-ad8a-479a-aae6-83a42030815a",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 7,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "pos_rel": {
-                            "x": -1.7777777910232544,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Media Source",
-                        "source_uuid": "a23f2249-c14f-4c9f-a179-809179aaa2c5",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 8,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "pos_rel": {
-                            "x": -1.7777777910232544,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Browser",
-                        "source_uuid": "4e9d7d15-26bb-402b-8414-357b96636b85",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 9,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "pos_rel": {
-                            "x": -1.7777777910232544,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 1.8312499523162842,
-                            "y": 1.8316667079925537
-                        },
-                        "scale_rel": {
-                            "x": 1.8312499523162842,
-                            "y": 1.8316667079925537
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Limelight Overlay",
-                        "source_uuid": "8bc3aded-6979-4516-9f57-157167874ead",
-                        "visible": false,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 10,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "pos_rel": {
-                            "x": -1.7777777910232544,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    }
-                ]
-            },
-            "mixers": 0,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "OBSBasic.SelectScene": [],
-                "libobs.show_scene_item.4": [],
-                "libobs.hide_scene_item.4": [],
-                "libobs.show_scene_item.5": [],
-                "libobs.hide_scene_item.5": [],
-                "libobs.show_scene_item.6": [],
-                "libobs.hide_scene_item.6": [],
-                "libobs.show_scene_item.2": [],
-                "libobs.hide_scene_item.2": [],
-                "libobs.show_scene_item.3": [],
-                "libobs.hide_scene_item.3": [],
-                "libobs.show_scene_item.7": [],
-                "libobs.hide_scene_item.7": [],
-                "libobs.show_scene_item.8": [],
-                "libobs.hide_scene_item.8": [],
-                "libobs.show_scene_item.9": [],
-                "libobs.hide_scene_item.9": [],
-                "libobs.show_scene_item.10": [],
-                "libobs.hide_scene_item.10": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         },
         {
@@ -1193,7 +573,7 @@
                 "is_local_file": true,
                 "width": 1920,
                 "height": 1080,
-                "local_file": "C:/Users/brynp/Documents/Projects/MASA Avionics/Limelight_Livestream/Stream_Overlays/overlay_minimal.html"
+                "local_file": "overlay_minimal.html"
             },
             "mixers": 255,
             "sync": 0,
@@ -1212,121 +592,6 @@
                 "libobs.push-to-mute": [],
                 "libobs.push-to-talk": [],
                 "ObsBrowser.Refresh": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "MASA Avionics",
-            "uuid": "9544e0a6-d634-439c-9f08-2059be8881e5",
-            "id": "image_source",
-            "versioned_id": "image_source",
-            "settings": {
-                "file": "C:/Users/brynp/Downloads/Avionics.png"
-            },
-            "mixers": 0,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {},
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {},
-            "filters": [
-                {
-                    "prev_ver": 536870916,
-                    "name": "Color Correction",
-                    "uuid": "60a5cf08-df66-4f5e-9043-0edb43bb7c50",
-                    "id": "color_filter",
-                    "versioned_id": "color_filter_v2",
-                    "settings": {
-                        "gamma": 3,
-                        "contrast": 4,
-                        "saturation": -1
-                    },
-                    "mixers": 0,
-                    "sync": 0,
-                    "flags": 0,
-                    "volume": 1.0,
-                    "balance": 0.5,
-                    "enabled": true,
-                    "muted": false,
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
-                    "hotkeys": {},
-                    "deinterlace_mode": 0,
-                    "deinterlace_field_order": 0,
-                    "monitoring_type": 0,
-                    "private_settings": {}
-                }
-            ]
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "MASA Background",
-            "uuid": "7e39087d-e46d-407a-b6fa-8aa5e419ec31",
-            "id": "image_source",
-            "versioned_id": "image_source",
-            "settings": {
-                "file": "C:/Users/brynp/Downloads/MASA _Worm_ Desktop Wallpaper.png"
-            },
-            "mixers": 0,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {},
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "Media Source",
-            "uuid": "a23f2249-c14f-4c9f-a179-809179aaa2c5",
-            "id": "ffmpeg_source",
-            "versioned_id": "ffmpeg_source",
-            "settings": {},
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": [],
-                "MediaSource.Restart": [],
-                "MediaSource.Play": [],
-                "MediaSource.Pause": [],
-                "MediaSource.Stop": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
@@ -1340,8 +605,8 @@
             "id": "scene",
             "versioned_id": "scene",
             "settings": {
-                "id_counter": 18,
                 "custom_size": false,
+                "id_counter": 18,
                 "items": [
                     {
                         "name": "Disconnected Screen",
@@ -1719,8 +984,8 @@
             "id": "scene",
             "versioned_id": "scene",
             "settings": {
-                "id_counter": 1,
                 "custom_size": false,
+                "id_counter": 1,
                 "items": [
                     {
                         "name": "Please Hold Screen",
@@ -1816,7 +1081,7 @@
                 "is_local_file": true,
                 "width": 1920,
                 "height": 1080,
-                "local_file": "C:/Users/brynp/Documents/Projects/MASA Avionics/Limelight_Livestream/Stream_Overlays/please_hold.html"
+                "local_file": "please_hold.html"
             },
             "mixers": 255,
             "sync": 0,
@@ -1848,8 +1113,8 @@
             "id": "scene",
             "versioned_id": "scene",
             "settings": {
-                "id_counter": 2,
                 "custom_size": false,
+                "id_counter": 2,
                 "items": [
                     {
                         "name": "Cam 2",
@@ -1999,8 +1264,8 @@
             "id": "scene",
             "versioned_id": "scene",
             "settings": {
-                "id_counter": 1,
                 "custom_size": false,
+                "id_counter": 1,
                 "items": [
                     {
                         "name": "Starting Soon Overlay",
@@ -2098,7 +1363,7 @@
                 "is_local_file": true,
                 "width": 1920,
                 "height": 1080,
-                "local_file": "C:/Users/brynp/Documents/Projects/MASA Avionics/Limelight_Livestream/Stream_Overlays/starting_soon.html"
+                "local_file": "starting_soon.html"
             },
             "mixers": 255,
             "sync": 0,
@@ -2117,97 +1382,6 @@
                 "libobs.push-to-mute": [],
                 "libobs.push-to-talk": [],
                 "ObsBrowser.Refresh": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "Synnax",
-            "uuid": "57108952-a31c-4069-8d52-df20c9430492",
-            "id": "window_capture",
-            "versioned_id": "window_capture",
-            "settings": {
-                "window": "Synnax:Tauri Window:app.exe",
-                "method": 2
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {},
-            "filters": [
-                {
-                    "prev_ver": 536870916,
-                    "name": "Crop/Pad",
-                    "uuid": "29c91e33-c146-4710-a178-b0bd548c34a2",
-                    "id": "crop_filter",
-                    "versioned_id": "crop_filter",
-                    "settings": {
-                        "left": 50,
-                        "top": 150,
-                        "bottom": 100
-                    },
-                    "mixers": 0,
-                    "sync": 0,
-                    "flags": 0,
-                    "volume": 1.0,
-                    "balance": 0.5,
-                    "enabled": true,
-                    "muted": false,
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
-                    "hotkeys": {},
-                    "deinterlace_mode": 0,
-                    "deinterlace_field_order": 0,
-                    "monitoring_type": 0,
-                    "private_settings": {}
-                }
-            ]
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "Video Capture Device",
-            "uuid": "36a262e4-ad8a-479a-aae6-83a42030815a",
-            "id": "dshow_input",
-            "versioned_id": "dshow_input",
-            "settings": {},
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,

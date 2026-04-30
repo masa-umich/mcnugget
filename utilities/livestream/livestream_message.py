@@ -206,10 +206,12 @@ def countdownThread():
             if exit_flag == 0:
                 system_state['routine_state'] = launch_success_state
                 system_state['custom_message'] = "Awaiting recovery"
+                system_state['show_custom'] = True
                 system_state['countdown'] = False
             elif exit_flag == 2:
                 system_state['routine_state'] = abort_state
                 system_state['custom_message'] = "No light"
+                system_state['show_custom'] = True
                 system_state['countdown'] = False
         handoff_state = handoff_udp
         
