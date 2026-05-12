@@ -14,21 +14,22 @@ app = Flask(__name__)
 
 # Hard-coded list of pre-programmed states
 PRE_PROGRAMMED_STATES = [
-    "ASSEMBLING SYSTEM 1/10",
-    "LEAK CHECKS 2/10",
-    "RAISING ROCKET 3/10",
-    "FILLING FUEL 4/10",
-    "FILLING PRESSURANT 5/10",
-    "FILLING OXIDIZER 6/10",
-    "DISCONNECTING QDS 7/10",
-    "GO/NO-GO POLL 8/10",
-    "AUTOSEQUENCE START 9/10",
-    "LAUNCH 10/10",
-    "ABORT"
+    "ASSEMBLING & PREPARING SYSTEM", # starting state
+    "ASSEMBLING SYSTEM", # optional assembly steps - most likely pre-stream, but maybe useful in some situations
+    "LEAK CHECKS",
+    "RAISING ROCKET",
+    "FILLING FUEL",
+    "FILLING PRESSURANT", # First step during planned stream
+    "FILLING OXIDIZER",
+    "FILLING PRESSURANT & OXIDIZER",
+    "DISCONNECTING QDS",
+    "LAUNCHED",
+    "ABORT",
+    "SCRUB"
 ]
 
-launch_success_state = PRE_PROGRAMMED_STATES[-2]
-abort_state = PRE_PROGRAMMED_STATES[-1]
+launch_success_state = PRE_PROGRAMMED_STATES[-3]
+abort_state = PRE_PROGRAMMED_STATES[-2]
 
 # Active state of the overlay
 system_state = {
