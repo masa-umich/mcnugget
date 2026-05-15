@@ -16,7 +16,6 @@ variables:
   press_fill_vent_time: 5 # seconds to keep press fill vent open
   fuel_pre_press_time: 0.025 # seconds to open fuel dome iso after one press of "enter" during fuel pre-press
 
-
 # Channel Mappings
 channel_mappings:
   # Device mappings
@@ -36,7 +35,6 @@ channel_mappings:
       Bottle_4_PT: 17
       Press_Fill_PT: 18
       Reg_Set_PT: 19
-      #Fullstack_Hydraulic_PT: 20
       Ox_MPV_Pneumatics: 20
     valves: # Valves
       Ox_Fill_Valve: 1
@@ -48,9 +46,9 @@ channel_mappings:
       Ox_Pre_Press: 8
       # 9 and 10 are broken
       Fuel_Fill_Purge: 11
-      #Ox_MPV_Purge: 12 #NOTE: 12 -> fuel mpv purge for 3/29
-      # 13 is broken
-      #Fuel_MPV_Purge: 14 #NOTE: CHANGE CHANGE CHANGE 
+      Fuel_pre_press: 12 
+      #13 is broken
+      Fuel_mpv_purge: 14
       Ox_Fill_QD_Pilot: 15
       Ox_Pre_Press_QD_Pilot: 16
       COPV_Fill_QD_Pilot: 17
