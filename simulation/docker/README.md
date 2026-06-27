@@ -28,6 +28,11 @@ The `./run_sim.sh` script provides several commands:
 - **`Dockerfile`**: Defines how the simulation image is built.
 - **`aliases.yaml` & `press-sim.yaml`**: Simulation configuration files (copied into the container).
 
+## Versions
+
+- **Synnax Core** (Docker): `synnaxlabs/synnax:0.55`
+- **Synnax Python client** (simulator): `0.55.x` (pinned in `pyproject.toml`)
+
 ## Connecting to Synnax
 
 By default, the simulator connects to the `synnax` service inside the Docker network. If you want to connect to this local Synnax cluster from your host machine (e.g., using a script running locally or the Synnax Console), use:

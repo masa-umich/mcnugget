@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   synnax:
-    image: synnaxlabs/synnax:latest
+    image: synnaxlabs/synnax:0.55
     command: ["-ivm", "--license-key", ""]
     ports:
       - "9090:9090"
