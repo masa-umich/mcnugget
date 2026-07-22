@@ -213,7 +213,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         # make sure we stop the spinner on any exception (it prevents the program from exiting cleanly)
         spinner.stop()
-        raise (e)
+        raise
