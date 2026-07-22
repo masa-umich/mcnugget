@@ -41,7 +41,7 @@ import argparse
 # CLI argument parser
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="The autosequence for preparing Limeight for launch!"
+        description="Torch ignition autosequence (manual, interactive)"
     )
     parser.add_argument(
         "-m",
@@ -61,8 +61,14 @@ def parse_args() -> argparse.Namespace:
         "-l",
         "--log",
         help="Specify a log file to write logs to at the end of the autosequence",
-        default="launch-autosequence.log",
+        default="torch-autosequence.log",
         type=str,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Should the program output extra debugging information",
+        action="store_true",
     )
     args: argparse.Namespace = parser.parse_args()
     # check that if there was an alternate config file given, that it is at least a .yaml file
