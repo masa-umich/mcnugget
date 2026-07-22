@@ -1,5 +1,5 @@
 # Launch Autosequene
-Authors: Jack Hammerberg (jackmh)
+Authors: Ryan Dunlap (radunlap) + Jack Hammerberg (jackmh)
 
 Documentation Last Updated: 12-26-2025
 
@@ -47,7 +47,3 @@ cd mcnugget/simulation
 cd mcnugget/autosequences/launch
 ./launch.py --cluster <localhost or WSL IP>
 ```
-
-## TODO (for developers in no particular order):
-- Watch temperature when venting in global_abort()
-- Automatic phase transitions & only allow for certain phase transitions

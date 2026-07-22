@@ -102,7 +102,7 @@ class Autosequence:
         channels: list[str] = self.config.get_sensors() + self.config.get_states()
         defined: bool = self.ctrl.wait_until_defined(
             channels=channels,  # type: ignore
-            timeout=5,
+            timeout=10,
         )
         if not defined:
             self.release()
