@@ -284,18 +284,18 @@ def fuel_pre_press(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
 
-    fuel_dome_iso = config.get_vlv("fuel_dome_iso")
+    fuel_pre_press_valve = config.get_vlv("fuel_pre_press")
     fuel_pre_press_time = config.get_var("fuel_pre_press_time")
     while True:
-        phase.log(f"Press 'enter' to open fuel dome iso for {fuel_pre_press_time} seconds...")
+        phase.log(f"Press 'enter' to open fuel pre-press valve for {fuel_pre_press_time} seconds...")
         phase.wait_for_input()
         while phase._wait.is_set():
             phase.sleep(0.1)
-        phase.log(f"Opening fuel dome iso for {fuel_pre_press_time} seconds...")
-        ctrl[fuel_dome_iso] = True
+        phase.log(f"Opening fuel pre-press valve for {fuel_pre_press_time} seconds...")
+        ctrl[fuel_pre_press_valve] = True
         phase.sleep(fuel_pre_press_time)
-        ctrl[fuel_dome_iso] = False
-        phase.log("Fuel dome iso closed, continuing to monitor fuel tank pressure...")
+        ctrl[fuel_pre_press_valve] = False
+        phase.log("Fuel pre-press valve closed, continuing to monitor fuel tank pressure...")
 
 
 def ox_pre_press_safe(phase: Phase) -> None:
@@ -361,7 +361,7 @@ def qd_disconnect(phase: Phase) -> None:
     phase.log("QD disconnection phase complete", "green", True)
     return
 
-def coldflow_full(phase: Phase) -> None:
+def launch_sequence(phase: Phase) -> None:
     ctrl: Controller = phase.ctrl
     config: Config = phase.config
 
@@ -387,11 +387,10 @@ def coldflow_full(phase: Phase) -> None:
         second_mpv: str = "ox"  # Which MPV to open second, ox or fuel
     else:
         phase.log(
-            f"Invalid first_mpv value: {first_mpv}. Must be 'ox' or 'fuel'. Quitting coldflow.",
+            f"Invalid first_mpv value: {first_mpv}. Must be 'ox' or 'fuel'. Quitting Launch Sequence.",
             "red",
             True,
         )
-        # NOTE: What to do here?
         return
 
     # track state variables
@@ -403,12 +402,12 @@ def coldflow_full(phase: Phase) -> None:
     first_iso_opened: bool = False
     second_iso_opened: bool = False
 
-    phase.log("Hit 'enter' to start coldflow sequence")
+    phase.log("Hit 'enter' to start Launch Sequence")
     phase.wait_for_input()
 
     while phase._wait.is_set():
         phase.sleep(0.1)
-    phase.log("Beginning coldflow sequence...", "green", True)
+    phase.log("Beginning Launch Sequence...", "green", True)
     ctrl["handoff_channel"] = True
 
     target_time: sy.TimeStamp = sy.TimeStamp.now() + sy.TimeSpan.from_seconds(
@@ -453,7 +452,7 @@ def coldflow_full(phase: Phase) -> None:
             #NOTE: This is actually what is ran when the igniter HAS been confirmed.
             #       "not igniter_confirmed" just ensures that we don't print this 
             #        message multiple times after the end time has passed.
-            phase.log("Ignition confirmed. Continuing with coldflow...", "green", True)
+            phase.log("Ignition confirmed. Continuing with Launch Sequence...", "green", True)
             igniter_confirmed = True
 
         if now >= igniter_start_time and not igniter_prompted:
@@ -509,97 +508,97 @@ def coldflow_full(phase: Phase) -> None:
     return
 
 
-def post_ignition_sequence(phase: Phase) -> None:
-    ctrl: Controller = phase.ctrl
-    config: Config = phase.config
+# def post_ignition_sequence(phase: Phase) -> None:
+#     ctrl: Controller = phase.ctrl
+#     config: Config = phase.config
 
-    vents: list[str] = [
-        config.get_vlv("Press_Fill_Vent"),
-        config.get_vlv("ox_vent"),
-        config.get_vlv("fuel_vent"),
-    ]
+#     vents: list[str] = [
+#         config.get_vlv("Press_Fill_Vent"),
+#         config.get_vlv("ox_vent"),
+#         config.get_vlv("fuel_vent"),
+#     ]
 
-    valves_to_close: list[str] = [
-        config.get_vlv("ox_dome_iso"),
-        config.get_vlv("fuel_dome_iso"),
-        config.get_vlv("fuel_mpv"),
-        config.get_vlv("ox_mpv"),
-        config.get_vlv("igniter"),
-    ]
+#     valves_to_close: list[str] = [
+#         config.get_vlv("ox_dome_iso"),
+#         config.get_vlv("fuel_dome_iso"),
+#         config.get_vlv("fuel_mpv"),
+#         config.get_vlv("ox_mpv"),
+#         config.get_vlv("igniter"),
+#     ]
 
-    purge_valves: list[str] = [
-        config.get_vlv("ox_mpv_purge"),
-        config.get_vlv("fuel_mpv_purge"),
-    ]
+#     # purge_valves: list[str] = [
+#     #     config.get_vlv("ox_mpv_purge"),
+#     #     config.get_vlv("fuel_mpv_purge"),
+#     # ]
 
-    duration: int = config.get_var(
-        "duration"
-    )  # Duration to keep MPVs open after ignition in seconds
-    purge_duration: int = config.get_var(
-        "purge_duration"
-    )  # Duration to purge after closing valves in seconds
+#     duration: int = config.get_var(
+#         "duration"
+#     )  # Duration to keep MPVs open after ignition in seconds
+#     purge_duration: int = config.get_var(
+#         "purge_duration"
+#     )  # Duration to purge after closing valves in seconds
 
-    coldflow_start_time: sy.TimeStamp = sy.TimeStamp.now()
-    last_shown: int = -1
+#     coldflow_start_time: sy.TimeStamp = sy.TimeStamp.now()
+#     last_shown: int = -1
 
-    end_time = coldflow_start_time + sy.TimeSpan.from_seconds(duration)
+#     end_time = coldflow_start_time + sy.TimeSpan.from_seconds(duration)
 
-    coldflow_start_time: sy.TimeStamp = sy.TimeStamp.now()
-    last_shown: int = -1
+#     coldflow_start_time: sy.TimeStamp = sy.TimeStamp.now()
+#     last_shown: int = -1
 
-    # Calculate the end time once
-    end_time = coldflow_start_time + sy.TimeSpan.from_seconds(duration)
+#     # Calculate the end time once
+#     end_time = coldflow_start_time + sy.TimeSpan.from_seconds(duration)
 
-    while sy.TimeStamp.now() < end_time:
-        phase.sleep(0.05)
+#     while sy.TimeStamp.now() < end_time:
+#         phase.sleep(0.05)
 
-        now: sy.TimeStamp = sy.TimeStamp.now()
-        span_passed = sy.TimeSpan(now - coldflow_start_time)
-        seconds_passed_float: float | None = sy.TimeSpan.to_seconds(span_passed)
-        if seconds_passed_float is None:
-            seconds_passed_int = 0
-        else:
-            seconds_passed_int = int(seconds_passed_float)
+#         now: sy.TimeStamp = sy.TimeStamp.now()
+#         span_passed = sy.TimeSpan(now - coldflow_start_time)
+#         seconds_passed_float: float | None = sy.TimeSpan.to_seconds(span_passed)
+#         if seconds_passed_float is None:
+#             seconds_passed_int = 0
+#         else:
+#             seconds_passed_int = int(seconds_passed_float)
 
-        if seconds_passed_int != last_shown:
-            phase.log(f"T+{seconds_passed_int}")
-            last_shown = seconds_passed_int
+#         if seconds_passed_int != last_shown:
+#             phase.log(f"T+{seconds_passed_int}")
+#             last_shown = seconds_passed_int
 
-    phase.log("Duration elapsed, safing system...", "yellow")
+#     phase.log("Duration elapsed, safing system...", "yellow")
 
-    for valve in valves_to_close:
-        if config.is_vlv_nc(valve):
-            ctrl[valve] = False
-        else:
-            ctrl[valve] = True
+#     for valve in valves_to_close:
+#         if config.is_vlv_nc(valve):
+#             ctrl[valve] = False
+#         else:
+#             ctrl[valve] = True
 
-    for vent in vents:
-        if config.is_vlv_nc(vent):
-            ctrl[vent] = True
-        else:
-            ctrl[vent] = False
+#     for vent in vents:
+#         if config.is_vlv_nc(vent):
+#             ctrl[vent] = True
+#         else:
+#             ctrl[vent] = False
 
-    phase.log(f"Purging for {purge_duration} seconds...")
+#     phase.log(f"Purging for {purge_duration} seconds...")
 
-    for purge_valve in purge_valves:
-        if config.is_vlv_nc(purge_valve):
-            ctrl[purge_valve] = True
-        else:
-            ctrl[purge_valve] = False
+#     for purge_valve in purge_valves:
+#         if config.is_vlv_nc(purge_valve):
+#             ctrl[purge_valve] = True
+#         else:
+#             ctrl[purge_valve] = False
 
-    phase.sleep(purge_duration)  # purge for configured duration
+#     phase.sleep(purge_duration)  # purge for configured duration
 
-    for purge_valve in purge_valves:
-        if config.is_vlv_nc(purge_valve):
-            ctrl[purge_valve] = False
-        else:
-            ctrl[purge_valve] = True
+#     for purge_valve in purge_valves:
+#         if config.is_vlv_nc(purge_valve):
+#             ctrl[purge_valve] = False
+#         else:
+#             ctrl[purge_valve] = True
 
-    phase.log("Purging complete.", "green", True)
+#     phase.log("Purging complete.", "green", True)
 
-    phase.log("Autosequence complete.", "green", True)
+#     phase.log("Autosequence complete.", "green", True)
 
-    return
+#     return
 
 
 def main() -> None:
@@ -652,14 +651,14 @@ def main() -> None:
     )
     auto.add_phase(qd_disconnect_phase)
 
-    coldflow_full_phase: Phase = Phase(
-        name="Coldflow",
+    launch_phase: Phase = Phase(
+        name="Launch",
         ctrl=auto.ctrl,
         config=config,
-        main_func=coldflow_full,
+        main_func=launch_sequence,
         auto=auto,
     )
-    auto.add_phase(coldflow_full_phase)
+    auto.add_phase(launch_phase)
 
     spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports and setup
 

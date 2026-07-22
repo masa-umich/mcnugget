@@ -1,7 +1,7 @@
 variables:
-  first_mpv_time: 0   # seconds before ignition to open first mpv
+  first_mpv_time: 0.275   # seconds before ignition to open first mpv
   ox_iso_time: 0    # seconds before ox mpv opening to open ox iso
-  fuel_iso_time: 0  # seconds before fuel mpv opening to open fuel iso
+  fuel_iso_time: 0.391  # seconds before fuel mpv opening to open fuel iso
   using_ox: True
   using_fuel: True
   first_mpv: "fuel" # Which MPV to open first, ox or fuel
@@ -11,11 +11,10 @@ variables:
   averaging_time: 1 # seconds to average over for pressure readings
   ox_fill_target: 1.48 # psid
   ox_fill_margin: 0.06 # psid
-  ox_pre_press_target: 411.61 
+  ox_pre_press_target: 421 
   ox_pre_press_margin: 10 
   press_fill_vent_time: 5 # seconds to keep press fill vent open
   fuel_pre_press_time: 0.025 # seconds to open fuel dome iso after one press of "enter" during fuel pre-press
-
 
 # Channel Mappings
 channel_mappings:
@@ -36,7 +35,6 @@ channel_mappings:
       Bottle_4_PT: 17
       Press_Fill_PT: 18
       Reg_Set_PT: 19
-      #Fullstack_Hydraulic_PT: 20
       Ox_MPV_Pneumatics: 20
     valves: # Valves
       Ox_Fill_Valve: 1
@@ -48,12 +46,12 @@ channel_mappings:
       Ox_Pre_Press: 8
       # 9 and 10 are broken
       Fuel_Fill_Purge: 11
-      #Ox_MPV_Purge: 12 #NOTE: 12 -> fuel mpv purge for 3/29
-      # 13 is broken
-      #Fuel_MPV_Purge: 14 #NOTE: CHANGE CHANGE CHANGE 
-      Ox_Fill_QD_Pilot: 15
+      Fuel_pre_press: 12 
+      #13 is broken
+      Fuel_mpv_purge: 14
+      Ox_Fill_QD_Pilot: 17
       Ox_Pre_Press_QD_Pilot: 16
-      COPV_Fill_QD_Pilot: 17
+      COPV_Fill_QD_Pilot: 15
       Igniter: 18
       Press_Iso_4: 19
       Press_Fill_Vent:

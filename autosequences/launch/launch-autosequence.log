@@ -4500,3 +4500,307 @@
 2026-04-05T20:57:57.578107 [QD] > QD disconnection phase complete
 2026-04-05T20:58:05.406680 > Autosequence has released control
 2026-04-05T20:58:05.408244 > Autosequence has terminated, have a great flight!
+2026-05-15T09:34:11.143949 > Background task started
+2026-05-15T09:34:22.572767 [Ox PP] > Current Ox pressure of 0.9090768694877625 psid < 401.61 psid lower bound
+2026-05-15T09:34:22.573164 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 421.61 psid
+2026-05-15T09:34:29.500250 [Ox PP] > Upper Bound Ox pressure reached: 426.7376708984375, closing Ox Pre-Press
+2026-05-15T09:34:29.502097 [Ox PP] > Continuing to monitor Ox pressure...
+2026-05-15T09:34:42.517354 [Ox PP] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
+2026-05-15T09:34:47.422341 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-15T09:34:51.435910 [Launch] > Beginning Launch Sequence...
+2026-05-15T09:34:51.437511 [Launch] > T-10
+2026-05-15T09:34:52.438318 [Launch] > T-9
+2026-05-15T09:34:53.437431 [Launch] > T-8
+2026-05-15T09:34:54.437430 [Launch] > T-7
+2026-05-15T09:34:55.437427 [Launch] > Press 'enter' to confirm smoke...
+2026-05-15T09:34:55.439925 [Launch] > T-6
+2026-05-15T09:34:56.437568 [Launch] > T-5
+2026-05-15T09:34:57.437429 [Launch] > T-4
+2026-05-15T09:34:58.437429 [Launch] > T-3
+2026-05-15T09:34:59.437429 [Launch] > Ignition confirmed. Continuing with Launch Sequence...
+2026-05-15T09:34:59.437722 [Launch] > T-2
+2026-05-15T09:35:00.437430 [Launch] > T-1
+2026-05-15T09:35:01.437434 [Launch] > Opening FUEL ISO...
+2026-05-15T09:35:01.438982 [Launch] > Opening OX ISO...
+2026-05-15T09:35:01.439344 [Launch] > Opening FUEL MPV...
+2026-05-15T09:35:01.439430 [Launch] > Opening OX MPV...
+2026-05-15T09:35:01.439481 [Launch] > IGNITION.
+2026-05-15T09:35:01.439690 [Launch] > Launch autosequence complete.
+2026-05-15T09:35:09.493418 [Ox PP] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
+2026-05-15T09:35:09.519656 > Autosequence has released control
+2026-05-15T09:35:09.521535 > Autosequence has terminated, have a great flight!
+2026-05-15T09:35:14.327015 > Background task started
+2026-05-15T09:35:25.935031 [Fuel PP] > Press 'enter' to open fuel dome iso for 0.025 seconds...
+2026-05-15T09:35:28.041356 [Fuel PP] > Opening fuel dome iso for 0.025 seconds...
+2026-05-15T09:35:28.069179 [Fuel PP] > Fuel dome iso closed, continuing to monitor fuel tank pressure...
+2026-05-15T09:35:28.069362 [Fuel PP] > Press 'enter' to open fuel dome iso for 0.025 seconds...
+2026-05-15T09:35:30.472608 [Fuel PP] > Opening fuel dome iso for 0.025 seconds...
+2026-05-15T09:35:30.500430 [Fuel PP] > Fuel dome iso closed, continuing to monitor fuel tank pressure...
+2026-05-15T09:35:30.500596 [Fuel PP] > Press 'enter' to open fuel dome iso for 0.025 seconds...
+2026-05-15T09:35:31.402053 [Fuel PP] > Opening fuel dome iso for 0.025 seconds...
+2026-05-15T09:35:31.429889 [Fuel PP] > Fuel dome iso closed, continuing to monitor fuel tank pressure...
+2026-05-15T09:35:31.430055 [Fuel PP] > Press 'enter' to open fuel dome iso for 0.025 seconds...
+2026-05-15T09:35:33.423021 > Autosequence has released control
+2026-05-15T09:35:33.425465 > Autosequence has terminated, have a great flight!
+2026-05-15T15:29:43.655431 > Background task started
+2026-05-15T15:29:52.345923 > Autosequence has released control
+2026-05-15T15:29:52.347684 > Autosequence has terminated, have a great flight!
+2026-05-15T16:11:52.797869 > Background task started
+2026-05-15T16:13:04.787908 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-15T16:13:10.397469 [Launch] > Beginning Launch Sequence...
+2026-05-15T16:13:10.410994 [Launch] > T-10
+2026-05-15T16:13:11.410812 [Launch] > T-9
+2026-05-15T16:13:12.410823 [Launch] > T-8
+2026-05-15T16:13:13.410811 [Launch] > T-7
+2026-05-15T16:13:14.410810 [Launch] > Press 'enter' to confirm smoke...
+2026-05-15T16:13:14.413140 [Launch] > T-6
+2026-05-15T16:13:15.411230 [Launch] > T-5
+2026-05-15T16:13:16.410816 [Launch] > T-4
+2026-05-15T16:13:17.410813 [Launch] > T-3
+2026-05-15T16:13:18.410810 [Launch] > Ignition confirmed. Continuing with Launch Sequence...
+2026-05-15T16:13:18.410972 [Launch] > T-2
+2026-05-15T16:13:19.410815 [Launch] > T-1
+2026-05-15T16:13:20.410812 [Launch] > Opening FUEL ISO...
+2026-05-15T16:13:20.411901 [Launch] > Opening OX ISO...
+2026-05-15T16:13:20.412316 [Launch] > Opening FUEL MPV...
+2026-05-15T16:13:20.412658 [Launch] > Opening OX MPV...
+2026-05-15T16:13:20.413690 [Launch] > IGNITION.
+2026-05-15T16:13:20.415021 [Launch] > Launch autosequence complete.
+2026-05-15T16:13:25.186634 > Autosequence has released control
+2026-05-15T16:13:25.188591 > Autosequence has terminated, have a great flight!
+2026-05-15T16:31:01.422927 > Background task started
+2026-05-15T16:31:05.588446 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-15T16:31:12.200865 [Launch] > Beginning Launch Sequence...
+2026-05-15T16:31:12.206865 [Launch] > T-10
+2026-05-15T16:31:13.206823 [Launch] > T-9
+2026-05-15T16:31:14.206826 [Launch] > T-8
+2026-05-15T16:31:15.206796 [Launch] > T-7
+2026-05-15T16:31:16.206826 [Launch] > Press 'enter' to confirm smoke...
+2026-05-15T16:31:16.208885 [Launch] > T-6
+2026-05-15T16:31:17.206790 [Launch] > T-5
+2026-05-15T16:31:18.206790 [Launch] > T-4
+2026-05-15T16:31:19.206791 [Launch] > T-3
+2026-05-15T16:31:20.206840 [Launch] > T-2
+2026-05-15T16:31:20.206961 [Launch] > No ignition. Ending sequence.
+2026-05-15T16:31:26.613843 > Autosequence has released control
+2026-05-15T16:31:26.615635 > Autosequence has terminated, have a great flight!
+2026-05-15T16:32:29.908642 > Background task started
+2026-05-15T16:33:04.499742 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-15T16:33:09.608725 [Launch] > Beginning Launch Sequence...
+2026-05-15T16:33:09.610101 [Launch] > T-10
+2026-05-15T16:33:10.611350 [Launch] > T-9
+2026-05-15T16:33:11.610023 [Launch] > T-8
+2026-05-15T16:33:12.610023 [Launch] > T-7
+2026-05-15T16:33:13.610020 [Launch] > Press 'enter' to confirm smoke...
+2026-05-15T16:33:13.612459 [Launch] > T-6
+2026-05-15T16:33:14.610025 [Launch] > T-5
+2026-05-15T16:33:15.610027 [Launch] > T-4
+2026-05-15T16:33:16.096577 > Keyboard interrupt detected, aborting!
+2026-05-15T16:33:16.338108 > Please wait 5 seconds to vent press fill safely...
+2026-05-15T16:33:16.339008 > Or, press Ctrl+C again to close press fill iso immediately
+2026-05-15T16:33:56.091160 > COPV Vent opened.
+2026-05-15T16:33:56.104415 > Autosequence has released control
+2026-05-15T16:33:56.105331 > Autosequence aborted successfully
+2026-05-15T16:33:56.106292 > Autosequence has terminated, have a great flight!
+2026-05-15T16:34:59.192317 > Background task started
+2026-05-15T16:35:10.600512 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-15T16:35:16.211383 [Launch] > Beginning Launch Sequence...
+2026-05-15T16:35:16.214725 [Launch] > T-10
+2026-05-15T16:35:17.214530 [Launch] > T-9
+2026-05-15T16:35:18.214529 [Launch] > T-8
+2026-05-15T16:35:19.214551 [Launch] > T-7
+2026-05-15T16:35:20.214529 [Launch] > Press 'enter' to confirm smoke...
+2026-05-15T16:35:20.216497 [Launch] > T-6
+2026-05-15T16:35:21.214653 [Launch] > T-5
+2026-05-15T16:35:22.214531 [Launch] > T-4
+2026-05-15T16:35:23.214561 [Launch] > T-3
+2026-05-15T16:35:24.214529 [Launch] > Ignition confirmed. Continuing with Launch Sequence...
+2026-05-15T16:35:24.215867 [Launch] > T-2
+2026-05-15T16:35:25.214660 [Launch] > T-1
+2026-05-15T16:35:26.214730 [Launch] > Opening FUEL ISO...
+2026-05-15T16:35:26.218102 [Launch] > Opening OX ISO...
+2026-05-15T16:35:26.219366 [Launch] > Opening FUEL MPV...
+2026-05-15T16:35:26.220373 [Launch] > Opening OX MPV...
+2026-05-15T16:35:26.220836 [Launch] > IGNITION.
+2026-05-15T16:35:26.221135 [Launch] > Launch autosequence complete.
+2026-05-15T16:35:29.752422 > Autosequence has released control
+2026-05-15T16:35:29.754035 > Autosequence has terminated, have a great flight!
+2026-05-15T19:49:28.542049 > Background task started
+2026-05-15T19:49:33.628711 [QD] > Input enter to disconnect ox fill QD
+2026-05-15T19:52:12.183171 [QD] > Ox fill QD disconnected
+2026-05-15T19:52:12.183451 [QD] > Input enter to disconnect ox pre-press QD
+2026-05-15T19:52:24.604738 [QD] > Ox pre-press QD disconnected
+2026-05-15T19:52:24.604917 [QD] > Input enter to initiate COPV fill QD disconnect sequence
+2026-05-15T19:52:40.429237 [QD] > Closing all press isos...
+2026-05-15T19:52:40.429599 [QD] > Opening press fill iso...
+2026-05-15T19:52:40.430539 [QD] > Opening press fill vent for 5 seconds...
+2026-05-15T19:52:45.430837 [QD] > Closing press fill vent and iso...
+2026-05-15T19:52:45.434131 [QD] > Disconnecting COPV fill QD...
+2026-05-15T19:52:45.435479 [QD] > COPV fill QD disconnected
+2026-05-15T19:52:45.435576 [QD] > QD disconnection phase complete
+2026-05-15T19:52:58.790842 > Autosequence has released control
+2026-05-15T19:52:58.792729 > Autosequence has terminated, have a great flight!
+2026-05-16T06:15:05.940766 > Background task started
+2026-05-16T06:16:25.916563 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-16T06:18:04.182508 [Launch] > Beginning Launch Sequence...
+2026-05-16T06:18:04.184625 [Launch] > T-10
+2026-05-16T06:18:05.184558 [Launch] > T-9
+2026-05-16T06:18:06.184557 [Launch] > T-8
+2026-05-16T06:18:07.184560 [Launch] > T-7
+2026-05-16T06:18:08.184553 [Launch] > Press 'enter' to confirm smoke...
+2026-05-16T06:18:08.186678 [Launch] > T-6
+2026-05-16T06:18:09.184555 [Launch] > T-5
+2026-05-16T06:18:10.184558 [Launch] > T-4
+2026-05-16T06:18:11.184558 [Launch] > T-3
+2026-05-16T06:18:12.184555 [Launch] > Ignition confirmed. Continuing with Launch Sequence...
+2026-05-16T06:18:12.185835 [Launch] > T-2
+2026-05-16T06:18:13.184557 [Launch] > T-1
+2026-05-16T06:18:13.909563 [Launch] > Opening FUEL ISO...
+2026-05-16T06:18:13.912030 [Launch] > Opening FUEL MPV...
+2026-05-16T06:18:14.184558 [Launch] > Opening OX ISO...
+2026-05-16T06:18:14.187289 [Launch] > Opening OX MPV...
+2026-05-16T06:18:14.187746 [Launch] > IGNITION.
+2026-05-16T06:18:14.189286 [Launch] > Launch autosequence complete.
+2026-05-16T06:18:17.691615 > Autosequence has released control
+2026-05-16T06:18:17.693319 > Autosequence has terminated, have a great flight!
+2026-05-16T06:22:00.166476 > Background task started
+2026-05-16T06:22:05.692765 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-16T06:22:12.405622 [Launch] > Beginning Launch Sequence...
+2026-05-16T06:22:12.411053 [Launch] > T-10
+2026-05-16T06:22:13.410979 [Launch] > T-9
+2026-05-16T06:22:14.410977 [Launch] > T-8
+2026-05-16T06:22:15.410979 [Launch] > T-7
+2026-05-16T06:22:16.410978 [Launch] > Press 'enter' to confirm smoke...
+2026-05-16T06:22:16.414523 [Launch] > T-6
+2026-05-16T06:22:17.410978 [Launch] > T-5
+2026-05-16T06:22:18.411065 [Launch] > T-4
+2026-05-16T06:22:19.410978 [Launch] > T-3
+2026-05-16T06:22:20.410976 [Launch] > T-2
+2026-05-16T06:22:20.411108 [Launch] > No ignition. Ending sequence.
+2026-05-16T06:22:26.508108 > Autosequence has released control
+2026-05-16T06:22:26.509826 > Autosequence has terminated, have a great flight!
+2026-05-16T06:22:47.057354 > Background task started
+2026-05-16T06:22:54.328068 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-16T06:23:03.501561 [Launch] > Beginning Launch Sequence...
+2026-05-16T06:23:03.505350 [Launch] > T-10
+2026-05-16T06:23:04.505233 [Launch] > T-9
+2026-05-16T06:23:05.505228 [Launch] > T-8
+2026-05-16T06:23:06.505228 [Launch] > T-7
+2026-05-16T06:23:07.505225 [Launch] > Press 'enter' to confirm smoke...
+2026-05-16T06:23:07.506814 [Launch] > T-6
+2026-05-16T06:23:08.505229 [Launch] > T-5
+2026-05-16T06:23:09.505275 [Launch] > T-4
+2026-05-16T06:23:10.505231 [Launch] > T-3
+2026-05-16T06:23:10.890075 > Keyboard interrupt detected, aborting!
+2026-05-16T06:23:11.148487 > Please wait 5 seconds to vent press fill safely...
+2026-05-16T06:23:11.149801 > Or, press Ctrl+C again to close press fill iso immediately
+2026-05-16T06:23:21.103841 > Autosequence has released control
+2026-05-16T06:23:21.105433 > Autosequence aborted successfully
+2026-05-16T06:23:21.107117 > Autosequence has terminated, have a great flight!
+2026-05-16T06:24:33.964903 > Background task started
+2026-05-16T06:24:40.737071 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-16T06:24:46.149077 [Launch] > Beginning Launch Sequence...
+2026-05-16T06:24:46.151927 [Launch] > T-10
+2026-05-16T06:24:47.151823 [Launch] > T-9
+2026-05-16T06:24:48.151822 [Launch] > T-8
+2026-05-16T06:24:49.151823 [Launch] > T-7
+2026-05-16T06:24:50.151819 [Launch] > Press 'enter' to confirm smoke...
+2026-05-16T06:24:50.153876 [Launch] > T-6
+2026-05-16T06:24:51.151821 [Launch] > T-5
+2026-05-16T06:24:52.151822 [Launch] > T-4
+2026-05-16T06:24:53.151822 [Launch] > T-3
+2026-05-16T06:24:54.151819 [Launch] > Ignition confirmed. Continuing with Launch Sequence...
+2026-05-16T06:24:54.152045 [Launch] > T-2
+2026-05-16T06:24:55.151822 [Launch] > T-1
+2026-05-16T06:24:55.876848 [Launch] > Opening FUEL ISO...
+2026-05-16T06:24:55.880448 [Launch] > Opening FUEL MPV...
+2026-05-16T06:24:56.151821 [Launch] > Opening OX ISO...
+2026-05-16T06:24:56.152734 [Launch] > Opening OX MPV...
+2026-05-16T06:24:56.152943 [Launch] > IGNITION.
+2026-05-16T06:24:56.153129 [Launch] > Launch autosequence complete.
+2026-05-16T06:24:59.811963 > Autosequence has released control
+2026-05-16T06:24:59.814174 > Autosequence has terminated, have a great flight!
+2026-05-16T09:00:53.555000 > Background task started
+2026-05-16T09:01:43.668044 [Ox PP] > Current Ox pressure of 3.4219696521759033 psid < 411 psid lower bound
+2026-05-16T09:01:43.672058 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 431 psid
+2026-05-16T09:06:06.548009 [Ox PP] > Upper Bound Ox pressure reached: 431.03955078125, closing Ox Pre-Press
+2026-05-16T09:06:06.550212 [Ox PP] > Continuing to monitor Ox pressure...
+2026-05-16T09:06:13.333874 [Ox PP] > Current Ox pressure of 410.9140930175781 psid < 411 psid lower bound
+2026-05-16T09:06:13.334713 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 431 psid
+2026-05-16T09:06:36.781974 [Ox PP] > Upper Bound Ox pressure reached: 431.002685546875, closing Ox Pre-Press
+2026-05-16T09:06:36.782737 [Ox PP] > Continuing to monitor Ox pressure...
+2026-05-16T09:06:44.145489 [Ox PP] > Current Ox pressure of 410.97491455078125 psid < 411 psid lower bound
+2026-05-16T09:06:44.147759 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 431 psid
+2026-05-16T09:07:04.693467 [Ox PP] > Upper Bound Ox pressure reached: 431.1087646484375, closing Ox Pre-Press
+2026-05-16T09:07:04.694439 [Ox PP] > Continuing to monitor Ox pressure...
+2026-05-16T09:07:12.209737 [Ox PP] > Current Ox pressure of 410.9517517089844 psid < 411 psid lower bound
+2026-05-16T09:07:12.212276 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 431 psid
+2026-05-16T09:07:31.758948 [Ox PP] > Upper Bound Ox pressure reached: 431.01031494140625, closing Ox Pre-Press
+2026-05-16T09:07:31.759730 [Ox PP] > Continuing to monitor Ox pressure...
+2026-05-16T09:07:39.060175 [Ox PP] > Current Ox pressure of 410.8931884765625 psid < 411 psid lower bound
+2026-05-16T09:07:39.062521 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 431 psid
+2026-05-16T09:07:46.475911 [Ox PP] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
+2026-05-16T09:07:48.828127 [Ox PP] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
+2026-05-16T09:07:48.864268 > Autosequence has released control
+2026-05-16T09:07:48.866098 > Autosequence has terminated, have a great flight!
+2026-05-16T09:11:10.635416 > Background task started
+2026-05-16T09:11:14.109237 [Ox PP] > Current Ox pressure of 296.88623046875 psid < 411 psid lower bound
+2026-05-16T09:11:14.113569 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 431 psid
+2026-05-16T09:11:57.813151 [Ox PP] > Upper Bound Ox pressure reached: 431.0545654296875, closing Ox Pre-Press
+2026-05-16T09:11:57.816140 [Ox PP] > Continuing to monitor Ox pressure...
+2026-05-16T09:12:04.347665 [Ox PP] > Current Ox pressure of 410.99700927734375 psid < 411 psid lower bound
+2026-05-16T09:12:04.348984 [Ox PP] > Opening Ox Pre-Press until Ox Pressure >= 431 psid
+2026-05-16T09:12:20.479639 [Ox PP] > Upper Bound Ox pressure reached: 431.0258483886719, closing Ox Pre-Press
+2026-05-16T09:12:20.480490 [Ox PP] > Continuing to monitor Ox pressure...
+2026-05-16T09:12:25.719060 [Ox PP] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
+2026-05-16T09:12:40.134812 [QD] > Input enter to disconnect ox fill QD
+2026-05-16T09:12:46.049948 [QD] > Ox fill QD disconnected
+2026-05-16T09:12:46.050124 [QD] > Input enter to disconnect ox pre-press QD
+2026-05-16T09:12:49.656300 [QD] > Ox pre-press QD disconnected
+2026-05-16T09:12:49.656395 [QD] > Input enter to initiate COPV fill QD disconnect sequence
+2026-05-16T09:12:53.963666 [QD] > Closing all press isos...
+2026-05-16T09:12:53.965839 [QD] > Opening press fill iso...
+2026-05-16T09:12:53.967170 [QD] > Opening press fill vent for 5 seconds...
+2026-05-16T09:12:58.968305 [QD] > Closing press fill vent and iso...
+2026-05-16T09:12:58.969025 [QD] > Disconnecting COPV fill QD...
+2026-05-16T09:12:58.969330 [QD] > COPV fill QD disconnected
+2026-05-16T09:12:58.969401 [QD] > QD disconnection phase complete
+2026-05-16T09:14:07.681706 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-16T09:14:10.788141 [Launch] > Beginning Launch Sequence...
+2026-05-16T09:14:10.791039 [Launch] > T-10
+2026-05-16T09:14:11.790926 [Launch] > T-9
+2026-05-16T09:14:12.790934 [Launch] > T-8
+2026-05-16T09:14:13.790924 [Launch] > T-7
+2026-05-16T09:14:14.790922 [Launch] > Press 'enter' to confirm smoke...
+2026-05-16T09:14:14.793382 [Launch] > T-6
+2026-05-16T09:14:15.790926 [Launch] > T-5
+2026-05-16T09:14:16.790990 [Launch] > T-4
+2026-05-16T09:14:17.790927 [Launch] > T-3
+2026-05-16T09:14:18.790924 [Launch] > T-2
+2026-05-16T09:14:18.791374 [Launch] > No ignition. Ending sequence.
+2026-05-16T09:14:43.285368 [Ox PP] > Safing Pre-Press Phase - Closing Ox Pre-Press Valve
+2026-05-16T09:14:43.326629 > Autosequence has released control
+2026-05-16T09:14:43.328817 > Autosequence has terminated, have a great flight!
+2026-05-16T09:14:49.097398 > Background task started
+2026-05-16T09:14:52.433433 [Launch] > Hit 'enter' to start Launch Sequence
+2026-05-16T09:14:54.738771 [Launch] > Beginning Launch Sequence...
+2026-05-16T09:14:54.741506 [Launch] > T-10
+2026-05-16T09:14:55.741418 [Launch] > T-9
+2026-05-16T09:14:56.741411 [Launch] > T-8
+2026-05-16T09:14:57.741415 [Launch] > T-7
+2026-05-16T09:14:58.741410 [Launch] > Press 'enter' to confirm smoke...
+2026-05-16T09:14:58.742757 [Launch] > T-6
+2026-05-16T09:14:59.741411 [Launch] > T-5
+2026-05-16T09:15:00.746349 [Launch] > T-4
+2026-05-16T09:15:01.741412 [Launch] > T-3
+2026-05-16T09:15:02.741410 [Launch] > Ignition confirmed. Continuing with Launch Sequence...
+2026-05-16T09:15:02.741546 [Launch] > T-2
+2026-05-16T09:15:03.741433 [Launch] > T-1
+2026-05-16T09:15:04.075413 [Launch] > Opening FUEL ISO...
+2026-05-16T09:15:04.466417 [Launch] > Opening FUEL MPV...
+2026-05-16T09:15:04.741412 [Launch] > Opening OX ISO...
+2026-05-16T09:15:04.742204 [Launch] > Opening OX MPV...
+2026-05-16T09:15:04.742494 [Launch] > IGNITION.
+2026-05-16T09:15:04.742683 [Launch] > Launch autosequence complete.
+2026-05-16T09:16:05.021571 > Autosequence has released control
+2026-05-16T09:16:05.023907 > Autosequence has terminated, have a great flight!
