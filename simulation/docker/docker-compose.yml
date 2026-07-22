@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  synnax:
+    image: synnaxlabs/synnax:0.55
+    command: ["-ivm", "--license-key", ""]
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    # volumes:
+    #   - synnax_data:/data
+
+  simulator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - synnax
+    restart: on-failure
+    environment:
+      - SYNNAX_CLUSTER=synnax
+    command: ["-a", "aliases.yaml", "-s", "press-sim.yaml"]
+
+# volumes:
+#   synnax_data:

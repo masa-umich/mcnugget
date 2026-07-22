@@ -1,0 +1,94 @@
+do_noise: true
+default_pt_noise_sigma: 50
+do_temp_simulation: true
+default_tc_noise_sigma: 2
+frequency: 50 # Hz
+atmosphere_volume_name: "atmosphere"
+
+volumes:
+  - name: "copv"
+    volume: 31.3 # liters
+    fluid: Nitrogen
+    initial_pressure: 0 # psi
+    initial_temperature: 20 # C
+    wall_ua: 5.0 # W/K convective heat transfer to ambient
+    channels: ["COPV_PT_1", "COPV_PT_2", "COPV_TC_1", "COPV_TC_2", "COPV_SKIN_TC_1", "COPV_SKIN_TC_2"]
+  - name: "bottle 1"
+    volume: 42.2
+    fluid: Nitrogen
+    initial_pressure: 6000
+    initial_temperature: 20
+    wall_ua: 2.0
+    channels: ["Bottle_1_PT", "Bottle_1_Skin_TC"]
+  - name: "bottle 2"
+    volume: 42.2
+    fluid: Nitrogen
+    initial_pressure: 6000
+    initial_temperature: 20
+    wall_ua: 2.0
+    channels: ["Bottle_2_PT", "Bottle_2_Skin_TC"]
+  - name: "bottle 3"
+    volume: 42.2
+    fluid: Nitrogen
+    initial_pressure: 6000
+    initial_temperature: 20
+    wall_ua: 2.0
+    channels: ["Bottle_3_PT", "Bottle_3_Skin_TC"]
+  - name: "bottle 4"
+    volume: 42.2
+    fluid: Nitrogen
+    initial_pressure: 6000
+    initial_temperature: 20
+    wall_ua: 2.0
+    channels: ["Bottle_4_PT", "Bottle_4_Skin_TC"]
+  - name: "press fill manifold"
+    volume: 0.1
+    fluid: Nitrogen
+    initial_pressure: 0
+    initial_temperature: 20
+    wall_ua: 10.0
+    channels: ["Press_Fill_PT"]
+
+valves:
+  - channel: "COPV_Vent"
+    inlet: "copv"
+    outlet: "atmosphere"
+    flow_coefficient: 1.0e-7 # Cd*A effective orifice area in m^2
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Press_Iso_1"
+    inlet: "bottle 1"
+    outlet: "press fill manifold"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Press_Iso_2"
+    inlet: "bottle 2"
+    outlet: "press fill manifold"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Press_Iso_3"
+    inlet: "bottle 3"
+    outlet: "press fill manifold"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Press_Iso_4"
+    inlet: "bottle 4"
+    outlet: "press fill manifold"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Press_Fill_Vent"
+    inlet: "press fill manifold"
+    outlet: "atmosphere"
+    flow_coefficient: 1.0e-7
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Press_Fill_Iso"
+    inlet: "press fill manifold"
+    outlet: "copv"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: false
