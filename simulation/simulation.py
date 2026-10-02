@@ -1,241 +1,119 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = [
-#     "synnax>=0.49.0",
-#     "yaspin",
-#     "termcolor",
-#     "pyyaml",
-#     "mclib",
-# ]
-#
-# [tool.uv]
-# reinstall-package = ["mclib"]
-# [tool.uv.sources]
-# mclib = { path = "../mclib" }
-# ///
+# Not a script! Don't try to run this, just a collection of utilities
 
-from termcolor import colored
-from yaspin import yaspin
-from mclib.system import State, System
-from mclib.config import Config
+from dataclasses import dataclass
+import yaml
+from typing import Final
+from pathlib import Path
 
-# fun spinner while we load packages
-spinner = yaspin()
-spinner.text = colored("Initializing...", "yellow")
-spinner.start()
+# Alias for boolean state of a valve to make things easier to read
+OPEN: Final[bool] = True
+CLOSED: Final[bool] = False
 
-import argparse
-import random
-import synnax as sy
+@dataclass
+class Volume:
+    name: str
+    volume: float # liters
+    initial_pressure: float # psi
+    initial_temperature: float # C
+    channels: list[str]
 
-do_noise = True
+@dataclass
+class Valve:
+    channel: str 
+    state: bool # True = open, False = closed
+    inlet_volume_name: str
+    outlet_volume_name: str
+    flow_coefficient: float
+    is_check_valve: bool
+    is_normally_open: bool
 
+    def __init__(self, channel: str, inlet: str, outlet: str, flow_coefficient: float, is_check_valve: bool, is_normally_open: bool):
+        self.channel = channel
+        self.inlet_volume_name = inlet
+        self.outlet_volume_name = outlet
+        self.flow_coefficient = flow_coefficient
+        self.is_check_valve = is_check_valve
+        self.is_normally_open = is_normally_open
+        self.state = CLOSED
 
-# helper function to raise pretty errors
-def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
-    spinner.stop()  # incase it's running
-    if exception != None:  # exception is an optional argument
-        print(exception)
-    print(colored(message, "red", attrs=["bold"]))
-    print(colored("Exiting", "red", attrs=["bold"]))
-    exit(error_code)
-
-
-def parse_args() -> argparse.Namespace:
-    global do_noise
-    parser = argparse.ArgumentParser(
-        description="The autosequence for preparring Limeight for launch!"
-    )
-
-    parser.add_argument(
-        "-n",
-        "--noise",
-        help="Should the simulation include simulated sensor noise?",
-        default="True",
-        type=str,
-    )
-    parser.add_argument(
-        "-m",
-        "--config",
-        help="The file to use for channel config",
-        default="config.yaml",
-        type=str,
-    )
-    parser.add_argument(
-        "-c",
-        "--cluster",
-        help="Specify a Synnax cluster to connect to",
-        default="localhost",
-        type=str,
-    )
-    parser.add_argument(
-        "-f",
-        "--frequency",
-        help="Specify a frequency to push data into Synnax at",
-        default=50,
-        type=int,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Shold the program output extra debugging information",
-        action="store_true",
-    )  # Positional argument
-    args = parser.parse_args()
-    # check that if there was an alternate config file given, that it is at least a .yaml file
-    if args.config != "config.yaml":
-        if args.config.endswith(".yaml"):
-            if args.verbose:
-                print(colored(f"Using config from file: {args.config}", "yellow"))
+    def energize(self) -> None:
+        if self.is_normally_open:
+            self.state = CLOSED
         else:
-            error_and_exit(
-                f"Invalid specified config file: {args.config}, must be .yaml file"
-            )
-    if args.noise.lower() == "true":
-        do_noise = True
-    elif args.noise.lower() == "false":
-        do_noise = False
-    else:
-        error_and_exit("Argument --noise must be followed by either 'true' or 'false'")
-    return args
+            self.state = OPEN
 
+    def deenergize(self) -> None:
+        if self.is_normally_open:
+            self.state = OPEN
+        else:
+            self.state = CLOSED
 
-@yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
-def synnax_login(cluster: str) -> sy.Synnax:
-    try:
-        client = sy.Synnax(
-            host=cluster,
-            port=9090,
-            username="synnax",
-            password="seldon",
-        )
-    except Exception as e:
-        error_and_exit(
-            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
-        )
-    return client  # type: ignore
+class Simulation:
+    # Sim settings
+    do_noise: bool
+    default_pt_noise_sigma: int
+    do_temp_simulation: bool
+    default_tc_noise_sigma: int
+    frequency: int # Hz
+    atmosphere_volume_name: str
+    # Aliases
+    aliases: dict[str, str]
+    reverse_aliases: dict[str, str]
+    # Sim state
+    volumes: list[Volume]
+    valves: list[Valve]
 
+    def __init__(self, sim_params_path: Path, aliases_path: Path):
+        self.aliases = {}
+        self.reverse_aliases = {}
+        self.volumes = []
+        self.valves = []
+        self.parse_aliases(aliases_path)
+        self.parse_sim_params(sim_params_path)
 
-# Makes or gets all the channels we care about into Synnax
-@yaspin(text=colored("Setting up channels...", "yellow"))
-def get_channels(client: sy.Synnax, config: Config):
-    valves = config.get_vlvs() + ["handoff_channel"]
-    states = config.get_states()
-    sensors = config.get_sensors()
+    def parse_aliases(self, aliases_path: Path) -> None:
+        # Load raw YAML
+        raw_aliases = {}
+        with open(aliases_path, "r") as f:
+            raw_aliases = yaml.safe_load(f)
+        # Build new dict with prefixes
+        for controller_prefix, channel_type_prefixes in raw_aliases.items():
+            for channel_type_prefix, channel_ids in channel_type_prefixes.items():
+                for channel_id, alias in channel_ids.items():
+                    channel_full_name = f"{controller_prefix}_{channel_type_prefix}_{channel_id}"
+                    self.aliases[channel_full_name] = alias
+                    self.reverse_aliases[alias] = channel_full_name
 
-    time_channel = client.channels.create(
-        retrieve_if_name_exists=True,
-        name="time",
-        data_type=sy.DataType.TIMESTAMP,
-        virtual=False,
-        is_index=True,
-    )
+    def parse_sim_params(self, sim_params: Path) -> None:
+        raw_params = {}
+        with open(sim_params, 'r') as f:
+            raw_params = yaml.safe_load(f)
+            
+        self.do_noise = raw_params["do_noise"]
+        self.default_pt_noise_sigma = raw_params["default_pt_noise_sigma"]
+        self.do_temp_simulation = raw_params["do_temp_simulation"]
+        self.default_tc_noise_sigma = raw_params["default_tc_noise_sigma"]
+        self.frequency = raw_params["frequency"]
+        self.atmosphere_volume_name = raw_params["atmosphere_volume_name"]
 
-    for valve in valves:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=valve,
-            data_type=sy.DataType.INT8,
-            virtual=True,
-        )
+        for volume in raw_params["volumes"]:
+            self.volumes.append(Volume(**volume))
+            
+        for valve in raw_params["valves"]:
+            self.valves.append(Valve(**valve))
 
-    for state in states:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=state,
-            data_type=sy.DataType.INT8,
-            virtual=False,
-            index=time_channel.key,
-        )
+    def get_valve_channels(self) -> list[str]:
+        valve_channels = []
+        for valve in self.valves:
+            valve_channels.append(self.reverse_aliases[valve.channel])
+        return valve_channels
 
-    for sensor in sensors:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=sensor,
-            data_type=sy.DataType.FLOAT32,
-            virtual=False,
-            index=time_channel.key,
-        )
+    def get_sensor_channels(self) -> list[str]:
+        sensor_channels = []
+        for volume in self.volumes:
+            for sensor_channel in volume.channels:
+                sensor_channels.append(self.reverse_aliases[sensor_channel])
+        return sensor_channels
 
-
-# A fake driver that writes data to all channels according to the simulation
-@yaspin(text=colored("Running Simulation...", "green"))
-def driver(
-    config: Config, streamer: sy.Streamer, writer: sy.Writer, system: System, args
-):
-    global do_noise
-    driver_frequency = args.frequency  # Hz
-    loop = sy.Loop(interval=(sy.Rate.HZ * driver_frequency))
-
-    while loop.wait():
-        write_data: dict = {}
-        write_data["time"] = sy.TimeStamp.now()
-
-        # Check for incoming valve commands
-        fr = streamer.read(timeout=0)
-        if fr is not None:
-            for channel in fr.channels:
-                cmd = fr[channel][0]
-                valve = system.get_valve_obj(channel)  # type: ignore
-                if cmd == True:
-                    valve.energize()
-                else:
-                    valve.de_energize()
-
-        for state_ch in config.get_states():
-            valve = system.get_valve_obj(state_ch.replace("state", "vlv"))
-            if valve.normally_closed:  # Account for normally open valves
-                if valve.state == State.OPEN:
-                    write_data[state_ch] = 1
-                else:
-                    write_data[state_ch] = 0
-            else:
-                if valve.state == State.OPEN:
-                    write_data[state_ch] = 0
-                else:
-                    write_data[state_ch] = 1
-
-        for pt_ch in config.get_pts():
-            noise = (
-                (random.gauss(0, 10)) if (do_noise) else (0)
-            )  # instrument noise is approximately gaussian
-            # TODO: add different noise for different instruments with some sort of lookup table
-            pressure = system.get_pressure(pt_ch) + noise
-            write_data[pt_ch] = pressure
-        for tc_ch in config.get_tcs():
-            noise = (
-                (random.gauss(0, 2)) if (do_noise) else (0)
-            )  # instrument noise is approximately gaussian
-            temperature = system.get_temperature(tc_ch) + noise
-            write_data[tc_ch] = temperature
-
-        writer.write(write_data)  # type: ignore
-        system.update()
-
-
-def main():
-    args = parse_args()
-    client = synnax_login(args.cluster)
-    config = Config(args.config)
-    system = System(config)
-    get_channels(client, config)
-    # Open streamer for valve commands
-
-    write_chs = config.get_vlvs()
-    read_chs = config.get_states() + config.get_sensors() + ["time"]
-
-    with client.open_streamer(channels=write_chs) as streamer:
-        # Open writer for everything else
-        with client.open_writer(start=sy.TimeStamp.now(), channels=read_chs) as writer:
-            driver(config, streamer, writer, system, args)  # Run the fake driver
-
-
-if __name__ == "__main__":
-    spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports
-    try:
-        main()
-    except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
-        error_and_exit("Keyboard interrupt detected")
-    except Exception as e:  # catch-all uncaught errors
-        error_and_exit("Uncaught exception!", exception=e)
+    def simulation_step(self) -> None:
+        pass
