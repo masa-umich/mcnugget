@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 import yaml
-from typing import Final
+from typing import Final, Any
 from pathlib import Path
 
 # Alias for boolean state of a valve to make things easier to read
@@ -13,19 +13,28 @@ CLOSED: Final[bool] = False
 class Volume:
     name: str
     volume: float # liters
-    initial_pressure: float # psi
-    initial_temperature: float # C
+    pressure: float # psi
+    temperature: float # C
     channels: list[str]
+
+    def __init__(self, name: str, volume: float, initial_pressure: float, initial_temperature: float, channels: list[str]):
+        self.name = name
+        self.volume = volume
+        self.pressure = initial_pressure
+        self.temperature = initial_temperature
+        self.pressure = initial_pressure
+        self.channels = channels
 
 @dataclass
 class Valve:
-    channel: str 
-    state: bool # True = open, False = closed
+    channel: str
     inlet_volume_name: str
     outlet_volume_name: str
     flow_coefficient: float
     is_check_valve: bool
     is_normally_open: bool
+
+    state: bool # True = open, False = closed
 
     def __init__(self, channel: str, inlet: str, outlet: str, flow_coefficient: float, is_check_valve: bool, is_normally_open: bool):
         self.channel = channel
@@ -88,7 +97,7 @@ class Simulation:
         raw_params = {}
         with open(sim_params, 'r') as f:
             raw_params = yaml.safe_load(f)
-            
+
         self.do_noise = raw_params["do_noise"]
         self.default_pt_noise_sigma = raw_params["default_pt_noise_sigma"]
         self.do_temp_simulation = raw_params["do_temp_simulation"]
@@ -98,7 +107,7 @@ class Simulation:
 
         for volume in raw_params["volumes"]:
             self.volumes.append(Volume(**volume))
-            
+
         for valve in raw_params["valves"]:
             self.valves.append(Valve(**valve))
 
@@ -114,6 +123,27 @@ class Simulation:
             for sensor_channel in volume.channels:
                 sensor_channels.append(self.reverse_aliases[sensor_channel])
         return sensor_channels
+
+    # Returns PT, TC, and valve state data with mapping: REAL_CHANNEL_NAME: float | bool
+    def get_channel_readings(self) -> dict[str, Any]:
+        readings = {}
+        for volume in self.volumes:
+            for alias in volume.channels:
+                channel_name = self.reverse_aliases[alias]
+                if "pt" in channel_name:
+                    readings[channel_name] = volume.pressure
+                if "tc" in channel_name:
+                    readings[channel_name] = volume.temperature
+        for valve in self.valves:
+            channel_name = (self.reverse_aliases[valve.channel]).replace("vlv", "state")
+            readings[channel_name] = valve.state
+        return readings
+
+    def set_valve_state(self, channel_name: str, state: bool):
+        alias = self.aliases[channel_name]
+        for valve in self.valves:
+            if (valve.channel == alias):
+                valve.state = state
 
     def simulation_step(self) -> None:
         pass

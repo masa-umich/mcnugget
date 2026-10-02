@@ -5,4 +5,5 @@
 **/.venv/
 **/dist/
 **/venv/
+**/synnax-logs/
 *xlsx*

@@ -20,6 +20,7 @@ spinner.start()
 import argparse
 import synnax as sy
 import os
+from typing import Any
 from pathlib import Path
 from simulation import Simulation
 
@@ -114,8 +115,19 @@ def init_channels(client: sy.Synnax, sim: Simulation) -> tuple[list[str], list[s
     return write_channels, read_channels
 
 def driver(streamer: sy.Streamer, writer: sy.Writer, sim: Simulation) -> None:
-    # TBD
-    pass
+    loop = sy.Loop(interval=(sy.Rate.HZ * sim.frequency))
+    channel_readings: dict[str, Any] = {}
+
+    while loop.wait():
+        fr = streamer.read(timeout=0)
+        if fr is not None:
+            for channel in fr.channels:
+                cmd = fr[channel][0]
+                sim.set_valve_state(channel, cmd)
+        channel_readings = sim.get_channel_readings()
+        channel_readings["time"] = sy.TimeStamp.now()
+        writer.write(channel_readings)
+        sim.simulation_step()
 
 def main() -> None:
     args: argparse.Namespace = parse_args()
