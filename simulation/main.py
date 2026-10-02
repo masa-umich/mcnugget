@@ -114,6 +114,7 @@ def init_channels(client: sy.Synnax, sim: Simulation) -> tuple[list[str], list[s
         write_channels.append(state_channel)
     return write_channels, read_channels
 
+@yaspin(text=colored("Running simulation...", "green"))
 def driver(streamer: sy.Streamer, writer: sy.Writer, sim: Simulation) -> None:
     loop = sy.Loop(interval=(sy.Rate.HZ * sim.frequency))
     channel_readings: dict[str, Any] = {}

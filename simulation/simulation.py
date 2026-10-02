@@ -1,6 +1,7 @@
 # Not a script! Don't try to run this, just a collection of utilities
 
 from dataclasses import dataclass
+import random
 import yaml
 from typing import Final, Any
 from pathlib import Path
@@ -44,18 +45,6 @@ class Valve:
         self.is_check_valve = is_check_valve
         self.is_normally_open = is_normally_open
         self.state = CLOSED
-
-    def energize(self) -> None:
-        if self.is_normally_open:
-            self.state = CLOSED
-        else:
-            self.state = OPEN
-
-    def deenergize(self) -> None:
-        if self.is_normally_open:
-            self.state = OPEN
-        else:
-            self.state = CLOSED
 
 class Simulation:
     # Sim settings
@@ -125,14 +114,17 @@ class Simulation:
         return sensor_channels
 
     # Returns PT, TC, and valve state data with mapping: REAL_CHANNEL_NAME: float | bool
+    # Adds noise based on simulation configuration
     def get_channel_readings(self) -> dict[str, Any]:
         readings = {}
         for volume in self.volumes:
             for alias in volume.channels:
                 channel_name = self.reverse_aliases[alias]
                 if "pt" in channel_name:
-                    readings[channel_name] = volume.pressure
+                    noise = random.gauss(0, self.default_pt_noise_sigma) if (self.do_noise) else (0)
+                    readings[channel_name] = volume.pressure + noise
                 if "tc" in channel_name:
+                    noise = random.gauss(0, self.default_tc_noise_sigma) if (self.do_noise) else (0)
                     readings[channel_name] = volume.temperature
         for valve in self.valves:
             channel_name = (self.reverse_aliases[valve.channel]).replace("vlv", "state")
