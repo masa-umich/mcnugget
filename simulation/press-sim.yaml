@@ -2,6 +2,10 @@ do_noise: true
 default_pt_noise_sigma: 50
 do_temp_simulation: true
 default_tc_noise_sigma: 2
+gas_specific_heat_ratio: 1.4 # nitrogen Cp/Cv
+ambient_temperature: 20 # C
+default_heat_transfer_coefficient: 10 # W/K, approximate gas-to-wall/environment conductance
+heat_transfer_coefficients: {} # optional overrides keyed by volume name
 frequency: 50 # Hz
 atmosphere_volume_name: "atmosphere"
 
