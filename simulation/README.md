@@ -14,8 +14,10 @@ uv run main.py -a <alias file> -s <sim params file>
 ```
 Built-in example:
 ```bash
-uv run main.py -a aliases.yaml -s sim-profiles/press-sim.yaml
+uv run main.py -a aliases.yaml -s sim-profiles/press-fill/press-fill.yaml
 ```
+The corresponding Synnax project with PNID and plots can be found in the `sim-profiles/press-fill/` directory as well.
+
 Valid alias and sim profile examples can be found in the sample files as well.
 
 In some cases you may have to make fake volumes for the system to behave correctly or to attach instrumentation to the correct sections. For example, in the press-sim profile there is a "press fill manifold" which does not exist in real life, but exists so that there is some intermediate space between the 6k bottles and COPV, in reality there are only some pipes.
@@ -51,6 +53,7 @@ separate wall temperatures.
  - [x] Reconfigurable simulation profiles with config files
  - [x] Temperature simulation (basic ideal gas law)
  - [ ] Option to automatically start a corresponding Synnax cluster while the script is running using Podman/Docker
+ - [ ] Add a "Reset/Reload Sim" channel which just resets and reloads the simulation profile back to initial conditions without restarting the script
  - [ ] Configurable fluid types in config using coolprop
  - [ ] Some sort of very basic combustion simulation: \
        *Maybe just a bool in the sim profile that makes a volume's pressure & temperature increase when gas is transferred into it beyond equalibrium.*
