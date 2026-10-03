@@ -10,7 +10,6 @@ from pathlib import Path
 OPEN: Final[bool] = True
 CLOSED: Final[bool] = False
 
-@dataclass
 class Volume:
     name: str
     volume: float # liters
@@ -26,7 +25,6 @@ class Volume:
         self.pressure = initial_pressure
         self.channels = channels
 
-@dataclass
 class Valve:
     channel: str
     inlet_volume_name: str
@@ -131,11 +129,11 @@ class Simulation:
             readings[channel_name] = valve.state
         return readings
 
-    def set_valve_state(self, channel_name: str, state: bool):
+    def set_valve_state(self, channel_name: str, state: bool) -> None:
         alias = self.aliases[channel_name]
         for valve in self.valves:
             if (valve.channel == alias):
                 valve.state = state
 
-    def simulation_step(self) -> None:
+    def simulation_step(self, time_step: float) -> None:
         pass
