@@ -46,7 +46,7 @@ gse:
     17: COPV_Fill_QD_Pilot
     18: Igniter
     19: Press_Iso_4
-    20: Press_Fill_Vent # normally_open: true
+    20: Press_Fill_Vent
 
 fc:
   pt:

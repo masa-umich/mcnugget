@@ -1,9 +1,10 @@
-do_noise: true
+do_noise: false
 default_pt_noise_sigma: 50
 do_temp_simulation: true
 default_tc_noise_sigma: 2
 gas_specific_heat_ratio: 1.4 # nitrogen Cp/Cv
 ambient_temperature: 20 # C
+thermal_equilibrium_time_constant: 60 # seconds; larger means slower thermal settling
 default_heat_transfer_coefficient: 10 # W/K, approximate gas-to-wall/environment conductance
 heat_transfer_coefficients: {} # optional overrides keyed by volume name
 frequency: 50 # Hz
@@ -45,9 +46,9 @@ valves:
   - channel: "COPV_Vent"
     inlet: "copv"
     outlet: "atmosphere"
-    flow_coefficient: 1.0e-7 # Cd*A effective orifice area in m^2
+    flow_coefficient: 1.0e-4 # Cd*A effective orifice area in m^2
     is_check_valve: false
-    is_normally_open: false
+    is_normally_open: true
   - channel: "Press_Iso_1"
     inlet: "bottle 1"
     outlet: "press fill manifold"
@@ -75,9 +76,9 @@ valves:
   - channel: "Press_Fill_Vent"
     inlet: "press fill manifold"
     outlet: "atmosphere"
-    flow_coefficient: 1.0e-7
+    flow_coefficient: 1.0e-5
     is_check_valve: false
-    is_normally_open: false
+    is_normally_open: true
   - channel: "Press_Fill_Iso"
     inlet: "press fill manifold"
     outlet: "copv"

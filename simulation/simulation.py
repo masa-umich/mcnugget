@@ -1,6 +1,5 @@
 # Not a script! Don't try to run this, just a collection of utilities
 
-from dataclasses import dataclass
 import math
 import random
 import yaml
@@ -43,7 +42,7 @@ class Valve:
         self.flow_coefficient = flow_coefficient
         self.is_check_valve = is_check_valve
         self.is_normally_open = is_normally_open
-        self.state = CLOSED
+        self.state = OPEN if is_normally_open else CLOSED
 
 class Simulation:
     # Sim settings
@@ -53,6 +52,7 @@ class Simulation:
     default_tc_noise_sigma: int
     gas_specific_heat_ratio: float
     ambient_temperature: float # C
+    thermal_equilibrium_time_constant: float | None # seconds; None uses thermal conductance
     default_heat_transfer_coefficient: float # W/K, effective gas-to-surroundings conductance
     heat_transfer_coefficients: dict[str, float] # optional overrides by volume name
     frequency: int # Hz
@@ -98,12 +98,17 @@ class Simulation:
         self.atmosphere_volume_name = raw_params["atmosphere_volume_name"]
         self.gas_specific_heat_ratio = raw_params.get("gas_specific_heat_ratio", 1.4)
         self.ambient_temperature = raw_params.get("ambient_temperature", 20.0)
+        self.thermal_equilibrium_time_constant = raw_params.get("thermal_equilibrium_time_constant")
         self.default_heat_transfer_coefficient = raw_params.get("default_heat_transfer_coefficient", 10.0)
         self.heat_transfer_coefficients = raw_params.get("heat_transfer_coefficients", {})
         if not math.isfinite(self.gas_specific_heat_ratio) or self.gas_specific_heat_ratio <= 1:
             raise ValueError("gas_specific_heat_ratio must be finite and greater than one")
         if not math.isfinite(self.ambient_temperature) or self.ambient_temperature <= -273.15:
             raise ValueError("ambient_temperature must be finite and above absolute zero")
+        if self.thermal_equilibrium_time_constant is not None:
+            if (not math.isfinite(self.thermal_equilibrium_time_constant) or
+                    self.thermal_equilibrium_time_constant <= 0):
+                raise ValueError("thermal_equilibrium_time_constant must be finite and positive, or null")
         for coefficient in (self.default_heat_transfer_coefficient, *self.heat_transfer_coefficients.values()):
             if not math.isfinite(coefficient) or coefficient < 0:
                 raise ValueError("Heat transfer coefficients must be finite and nonnegative")
@@ -142,14 +147,17 @@ class Simulation:
                     readings[channel_name] = volume.temperature + noise
         for valve in self.valves:
             channel_name = (self.reverse_aliases[valve.channel]).replace("vlv", "state")
-            readings[channel_name] = valve.state
+            if not valve.is_normally_open:
+                readings[channel_name] = valve.state
+            else:
+                readings[channel_name] = not valve.state
         return readings
 
     def set_valve_state(self, channel_name: str, state: bool) -> None:
         alias = self.aliases[channel_name]
         for valve in self.valves:
             if (valve.channel == alias):
-                valve.state = state
+                valve.state = (not bool(state)) if valve.is_normally_open else bool(state)
 
     def simulation_step(self, time_step: float) -> None:
         """Advance by elapsed seconds using a simple, pressure-driven gas flow.
@@ -196,6 +204,13 @@ class Simulation:
             name: self.heat_transfer_coefficients.get(name, self.default_heat_transfer_coefficient)
             for name in amounts
         }
+
+        def settling_time(name: str) -> float:
+            if self.thermal_equilibrium_time_constant is not None:
+                return self.thermal_equilibrium_time_constant
+            if heat_transfer[name] == 0:
+                return math.inf
+            return amounts[name] * molar_heat_capacity / heat_transfer[name]
 
         connections = []
         degree = {name: 0 for name in pressures}
@@ -258,19 +273,19 @@ class Simulation:
                     step = min(step, amounts[name] / (2 * gamma * rate))
                 # Resolve heat-driven pressure changes while valves are open,
                 # including when connected tanks initially have equal pressure.
-                if (self.do_temp_simulation and connections and heat_transfer[name] > 0 and
+                if (self.do_temp_simulation and connections and
                         temperatures[name] != ambient_temperature):
-                    step = min(step, 0.25 * amounts[name] * molar_heat_capacity / heat_transfer[name])
+                    step = min(step, 0.25 * settling_time(name))
 
             for name in amounts:
                 energy = amounts[name] * temperatures[name] + energy_rates[name] * step
                 amounts[name] += amount_rates[name] * step
                 if self.do_temp_simulation:
                     temperatures[name] = energy / amounts[name]
-                    # Exact Newton cooling at the new gas amount: heat capacity
-                    # grows as the tank fills. This also works with closed valves
-                    # and cannot overshoot ambient for a large elapsed time.
-                    cooling_exponent = heat_transfer[name] * step / (amounts[name] * molar_heat_capacity)
+                    # Exponential recovery with either the configured settling
+                    # time or the conductance-based time at the new gas amount.
+                    # Closed valves still allow recovery toward ambient.
+                    cooling_exponent = step / settling_time(name)
                     temperatures[name] += ((ambient_temperature - temperatures[name]) *
                                            -math.expm1(-cooling_exponent))
                 pressures[name] = (amounts[name] * gas_constant * temperatures[name] /

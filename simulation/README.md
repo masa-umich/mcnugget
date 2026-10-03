@@ -1,33 +1,57 @@
 # Simulation
 
+Naive fluid & pressure simulation for verifying autosequence logic
+
+Only supports pretty basic behavior as of now, feel free to enhance with things like combustion or configurable fluid types in the future.
+
 ## Usage
-Run with:
+1. Must be running an active Synnax server. Go to their docs to find out how to install and setup for your OS: \
+https://docs.synnaxlabs.com/reference/core/quick-start \
+Note: If your simulation has 50+ channels you will need to also start this with our Synnax key
+2. Run this script with uv:
 ```bash
 uv run main.py -a <alias file> -s <sim params file>
 ```
+Built-in example:
+```bash
+uv run main.py -a aliases.yaml -s sim-profiles/press-sim.yaml
+```
+Valid alias and sim profile examples can be found in the sample files as well.
 
-Container support coming eventually
+In some cases you may have to make fake volumes for the system to behave correctly or to attach instrumentation to the correct sections. For example, in the press-sim profile there is a "press fill manifold" which does not exist in real life, but exists so that there is some intermediate space between the 6k bottles and COPV, in reality there are only some pipes.
 
-## Temperature simulation
+## Physics Simulation Details
 
-With `do_temp_simulation: true`, gas transfer carries energy between tanks and
-pressure follows the ideal gas law. `gas_specific_heat_ratio` defaults to `1.4`
-for nitrogen. The previous `5/3` assumption described a monatomic gas and, with
-no heat loss, drove an initially atmospheric tank toward roughly 215 C when
-filled with gas at 20 C.
+`simulation_step(dt)` advances by `dt` seconds, subdividing large steps for
+stability. Tank capacities stay fixed while gas amounts change.
 
-The gas now also exchanges heat with a fixed wall/environment temperature set
-by `ambient_temperature` (default 20 C). `default_heat_transfer_coefficient`
-(default 10 W/K) sets the effective thermal conductance. Larger values produce
-less heating during filling and faster recovery toward ambient after filling
-or venting. Set it to zero for an adiabatic model. Override individual tanks
-with a `heat_transfer_coefficients` mapping, for example `copv: 20`.
+Open valves transfer gas from higher to lower pressure; check valves only allow
+inlet-to-outlet flow. The approximate transfer is
+`Δn = 1000 * flow_coefficient * |ΔP| * P_atm * dt / (R * T_source)`.
+Flow speed is assumed proportional to pressure difference. Pressure follows
+`P_abs = nRT / V`, using moles, liters, kelvin, and
+`R = 1.20591 psi·L/(mol·K)`. Gauge pressure is `P_abs - 14.6959 psi`.
 
-Heat exchange uses `Q_dot = conductance * (ambient_temperature - temperature)`
-and gas heat capacity `n * R / (gamma - 1)`, so a tank's thermal response changes
-as its gas inventory changes. Cooling is integrated exponentially to remain
-stable for large time steps, and pressure is recalculated without changing
-the gas amount. These conductances are tuning parameters, not measured tank
-properties. The model does not separately simulate wall or sensor temperatures;
-all thermocouples on a volume report its gas temperature. With temperature
-simulation disabled, temperatures remain constant.
+Transferred gas carries energy `ΔU = Cp * T_source * Δn` between tanks.
+Temperature follows `T = U / (nCv)`, with `Cv = 8.31446 / (γ - 1)` J/(mol·K)
+and `Cp = γCv`. The default `γ = 1.4` approximates nitrogen.
+
+With temperature simulation enabled, temperature relaxes toward ambient using
+`T_new = T_ambient + (T - T_ambient) * exp(-dt / τ)`.
+`thermal_equilibrium_time_constant` sets `τ` in seconds; larger values mean
+slower settling. If omitted or `null`, `τ = nCv / heat_transfer_coefficient`.
+Cooling lowers pressure even with closed valves. Disabling temperature
+simulation holds temperatures constant.
+
+Assumptions: ideal gas, uniform tank temperatures, fixed ambient temperature,
+and an unlimited atmosphere reservoir. No real gas effects, choked flow, or
+separate wall temperatures.
+
+## TODO
+ - [x] Reconfigurable simulation profiles with config files
+ - [x] Temperature simulation (basic ideal gas law)
+ - [ ] Option to automatically start a corresponding Synnax cluster while the script is running using Podman/Docker
+ - [ ] Configurable fluid types in config using coolprop
+ - [ ] Some sort of very basic combustion simulation: \
+       *Maybe just a bool in the sim profile that makes a volume's pressure & temperature increase when gas is transferred into it beyond equalibrium.*
+ - [ ] More comprehensive and up-to-date example simulation profile of full system
