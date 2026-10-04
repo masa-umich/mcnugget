@@ -13,16 +13,16 @@ def countdown(phase: Phase) -> None:
     
     # Grab the different configuration variables and channel names this phase will need from the config
     countdown_duration: float = config.get_var("countdown_duration")
-    burn_duration: float = config.get_var("burn_duration")
-    fuel_mpv_time_offset: float = config.get_var("fuel_mpv_time_offset")
-    ox_mpv_time_offset: float = config.get_var("ox_mpv_time_offset")
-    igniter_time_offset: float = config.get_var("igniter_time_offset")
+    burn_time: float = config.get_var("burn_time")
+    fuel_mpv_start_time: float = config.get_var("fuel_mpv_start_time")
+    ox_mpv_start_time: float = config.get_var("ox_mpv_start_time")
+    igniter_point_time: float = config.get_var("igniter_point_time")
     fuel_mpv_ch: str = config.get_vlv("fuel_mpv")
     ox_mpv_ch: str = config.get_vlv("ox_mpv")
     igniter_ch: str = config.get_vlv("igniter")
 
     # When making a phase, remember to always use the "phase" version of blocking events!
-    phase.log("Hit 'enter' to start countdown sequence")
+    phase.log("Hit 'enter' to start countdown sequence") #SOP doc says it should be enter
     phase.wait_for_input()
     while phase._wait.is_set():
         phase.sleep(0) # Wait until input is received
@@ -76,32 +76,6 @@ def countdown_safe(phase: Phase) -> None:
     for channel in channels_to_close:
         phase.log(f"Closing {channel}")
         ctrl[channel] = CLOSED
-
-def valve_test(phase: Phase) -> None:
-    # Grab the Synnax controller and config from the phase object
-    ctrl: sy.Controller = phase.ctrl
-    config: Config = phase.config
-
-    # Grab the different configuration variables and channel names this phase will need from the config
-    countdown_duration: float = config.get_var("countdown_duration")
-    burn_duration: float = config.get_var("burn_duration")
-    fuel_mpv_time_offset: float = config.get_var("fuel_mpv_time_offset")
-    ox_mpv_time_offset: float = config.get_var("ox_mpv_time_offset")
-    igniter_time_offset: float = config.get_var("igniter_time_offset")
-    fuel_mpv_values: str = config.get_vlv("fuel_mpv")
-    ox_mpv_values: str = config.get_vlv("ox_mpv")
-    igniter_values: str = config.get_vlv("igniter")
-    
-    # When making a phase, remember to always use the "phase" version of blocking events!
-    phase.log("Hit 'spacebar' to start valve test sequence")
-    phase.wait_for_input()
-    while phase._wait.is_set():
-        phase.sleep(0) # Wait until input is received
-
-    while True:
-        phase.sleep(0) # Always add a phase.sleep(0) if you're making a loop!
-        now: sy.TimeStamp = sy.TimeStamp.now()
-
 
 
 def main() -> None:

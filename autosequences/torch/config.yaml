@@ -1,0 +1,9 @@
+variables:
+  countdown_duration: 20 #how long mpv valves will be kept open post ignition
+  burn_time: 3 #time req for ignition confirmation
+  ox_mpv_start_time: 0.67 #secs before ignition point to open ox valve - start before fuel(O2 lighter than methane)
+  fuel_mpv_start_time: 0.34 #secs before ignition point to open fuel valve - placeholder value rn 
+  igmite_point_time: 0 #relative 0 mark - ignition starts now
+  using_ox: True
+  using_fuel: True
+  first_mpv: "ox" 
