@@ -1,241 +1,299 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = [
-#     "synnax>=0.49.0",
-#     "yaspin",
-#     "termcolor",
-#     "pyyaml",
-#     "mclib",
-# ]
-#
-# [tool.uv]
-# reinstall-package = ["mclib"]
-# [tool.uv.sources]
-# mclib = { path = "../mclib" }
-# ///
+# Not a script! Don't try to run this, just a collection of utilities
 
-from termcolor import colored
-from yaspin import yaspin
-from mclib.system import State, System
-from mclib.config import Config
-
-# fun spinner while we load packages
-spinner = yaspin()
-spinner.text = colored("Initializing...", "yellow")
-spinner.start()
-
-import argparse
+import math
 import random
-import synnax as sy
+import yaml
+from typing import Final, Any
+from pathlib import Path
 
-do_noise = True
+# Alias for boolean state of a valve to make things easier to read
+OPEN: Final[bool] = True
+CLOSED: Final[bool] = False
 
+class Volume:
+    name: str
+    volume: float # liters
+    pressure: float # psi
+    temperature: float # C
+    channels: list[str]
 
-# helper function to raise pretty errors
-def error_and_exit(message: str, error_code: int = 1, exception=None) -> None:
-    spinner.stop()  # incase it's running
-    if exception != None:  # exception is an optional argument
-        print(exception)
-    print(colored(message, "red", attrs=["bold"]))
-    print(colored("Exiting", "red", attrs=["bold"]))
-    exit(error_code)
+    def __init__(self, name: str, volume: float, initial_pressure: float, initial_temperature: float, channels: list[str]):
+        self.name = name
+        self.volume = volume
+        self.pressure = initial_pressure
+        self.temperature = initial_temperature
+        self.pressure = initial_pressure
+        self.channels = channels
 
+class Valve:
+    channel: str
+    inlet_volume_name: str
+    outlet_volume_name: str
+    flow_coefficient: float
+    is_check_valve: bool
+    is_normally_open: bool
 
-def parse_args() -> argparse.Namespace:
-    global do_noise
-    parser = argparse.ArgumentParser(
-        description="The autosequence for preparring Limeight for launch!"
-    )
+    state: bool # True = open, False = closed
 
-    parser.add_argument(
-        "-n",
-        "--noise",
-        help="Should the simulation include simulated sensor noise?",
-        default="True",
-        type=str,
-    )
-    parser.add_argument(
-        "-m",
-        "--config",
-        help="The file to use for channel config",
-        default="config.yaml",
-        type=str,
-    )
-    parser.add_argument(
-        "-c",
-        "--cluster",
-        help="Specify a Synnax cluster to connect to",
-        default="localhost",
-        type=str,
-    )
-    parser.add_argument(
-        "-f",
-        "--frequency",
-        help="Specify a frequency to push data into Synnax at",
-        default=50,
-        type=int,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Shold the program output extra debugging information",
-        action="store_true",
-    )  # Positional argument
-    args = parser.parse_args()
-    # check that if there was an alternate config file given, that it is at least a .yaml file
-    if args.config != "config.yaml":
-        if args.config.endswith(".yaml"):
-            if args.verbose:
-                print(colored(f"Using config from file: {args.config}", "yellow"))
-        else:
-            error_and_exit(
-                f"Invalid specified config file: {args.config}, must be .yaml file"
-            )
-    if args.noise.lower() == "true":
-        do_noise = True
-    elif args.noise.lower() == "false":
-        do_noise = False
-    else:
-        error_and_exit("Argument --noise must be followed by either 'true' or 'false'")
-    return args
+    def __init__(self, channel: str, inlet: str, outlet: str, flow_coefficient: float, is_check_valve: bool, is_normally_open: bool):
+        self.channel = channel
+        self.inlet_volume_name = inlet
+        self.outlet_volume_name = outlet
+        self.flow_coefficient = flow_coefficient
+        self.is_check_valve = is_check_valve
+        self.is_normally_open = is_normally_open
+        self.state = OPEN if is_normally_open else CLOSED
 
+class Simulation:
+    # Sim settings
+    do_noise: bool
+    default_pt_noise_sigma: int
+    do_temp_simulation: bool
+    default_tc_noise_sigma: int
+    gas_specific_heat_ratio: float
+    ambient_temperature: float # C
+    thermal_equilibrium_time_constant: float | None # seconds; None uses thermal conductance
+    default_heat_transfer_coefficient: float # W/K, effective gas-to-surroundings conductance
+    heat_transfer_coefficients: dict[str, float] # optional overrides by volume name
+    frequency: int # Hz
+    atmosphere_volume_name: str
+    # Aliases
+    aliases: dict[str, str]
+    reverse_aliases: dict[str, str]
+    # Sim state
+    volumes: list[Volume]
+    valves: list[Valve]
 
-@yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
-def synnax_login(cluster: str) -> sy.Synnax:
-    try:
-        client = sy.Synnax(
-            host=cluster,
-            port=9090,
-            username="synnax",
-            password="seldon",
-        )
-    except Exception as e:
-        error_and_exit(
-            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
-        )
-    return client  # type: ignore
+    def __init__(self, sim_params_path: Path, aliases_path: Path):
+        self.aliases = {}
+        self.reverse_aliases = {}
+        self.volumes = []
+        self.valves = []
+        self.parse_aliases(aliases_path)
+        self.parse_sim_params(sim_params_path)
 
+    def parse_aliases(self, aliases_path: Path) -> None:
+        # Load raw YAML
+        raw_aliases = {}
+        with open(aliases_path, "r") as f:
+            raw_aliases = yaml.safe_load(f)
+        # Build new dict with prefixes
+        for controller_prefix, channel_type_prefixes in raw_aliases.items():
+            for channel_type_prefix, channel_ids in channel_type_prefixes.items():
+                for channel_id, alias in channel_ids.items():
+                    channel_full_name = f"{controller_prefix}_{channel_type_prefix}_{channel_id}"
+                    self.aliases[channel_full_name] = alias
+                    self.reverse_aliases[alias] = channel_full_name
 
-# Makes or gets all the channels we care about into Synnax
-@yaspin(text=colored("Setting up channels...", "yellow"))
-def get_channels(client: sy.Synnax, config: Config):
-    valves = config.get_vlvs() + ["handoff_channel"]
-    states = config.get_states()
-    sensors = config.get_sensors()
+    def parse_sim_params(self, sim_params: Path) -> None:
+        raw_params = {}
+        with open(sim_params, 'r') as f:
+            raw_params = yaml.safe_load(f)
 
-    time_channel = client.channels.create(
-        retrieve_if_name_exists=True,
-        name="time",
-        data_type=sy.DataType.TIMESTAMP,
-        virtual=False,
-        is_index=True,
-    )
+        self.do_noise = raw_params["do_noise"]
+        self.default_pt_noise_sigma = raw_params["default_pt_noise_sigma"]
+        self.do_temp_simulation = raw_params["do_temp_simulation"]
+        self.default_tc_noise_sigma = raw_params["default_tc_noise_sigma"]
+        self.frequency = raw_params["frequency"]
+        self.atmosphere_volume_name = raw_params["atmosphere_volume_name"]
+        self.gas_specific_heat_ratio = raw_params.get("gas_specific_heat_ratio", 1.4)
+        self.ambient_temperature = raw_params.get("ambient_temperature", 20.0)
+        self.thermal_equilibrium_time_constant = raw_params.get("thermal_equilibrium_time_constant")
+        self.default_heat_transfer_coefficient = raw_params.get("default_heat_transfer_coefficient", 10.0)
+        self.heat_transfer_coefficients = raw_params.get("heat_transfer_coefficients", {})
+        if not math.isfinite(self.gas_specific_heat_ratio) or self.gas_specific_heat_ratio <= 1:
+            raise ValueError("gas_specific_heat_ratio must be finite and greater than one")
+        if not math.isfinite(self.ambient_temperature) or self.ambient_temperature <= -273.15:
+            raise ValueError("ambient_temperature must be finite and above absolute zero")
+        if self.thermal_equilibrium_time_constant is not None:
+            if (not math.isfinite(self.thermal_equilibrium_time_constant) or
+                    self.thermal_equilibrium_time_constant <= 0):
+                raise ValueError("thermal_equilibrium_time_constant must be finite and positive, or null")
+        for coefficient in (self.default_heat_transfer_coefficient, *self.heat_transfer_coefficients.values()):
+            if not math.isfinite(coefficient) or coefficient < 0:
+                raise ValueError("Heat transfer coefficients must be finite and nonnegative")
 
-    for valve in valves:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=valve,
-            data_type=sy.DataType.INT8,
-            virtual=True,
-        )
+        for volume in raw_params["volumes"]:
+            self.volumes.append(Volume(**volume))
 
-    for state in states:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=state,
-            data_type=sy.DataType.INT8,
-            virtual=False,
-            index=time_channel.key,
-        )
+        for valve in raw_params["valves"]:
+            self.valves.append(Valve(**valve))
 
-    for sensor in sensors:
-        client.channels.create(
-            retrieve_if_name_exists=True,
-            name=sensor,
-            data_type=sy.DataType.FLOAT32,
-            virtual=False,
-            index=time_channel.key,
-        )
+    def get_valve_channels(self) -> list[str]:
+        valve_channels = []
+        for valve in self.valves:
+            valve_channels.append(self.reverse_aliases[valve.channel])
+        return valve_channels
 
+    def get_sensor_channels(self) -> list[str]:
+        sensor_channels = []
+        for volume in self.volumes:
+            for sensor_channel in volume.channels:
+                sensor_channels.append(self.reverse_aliases[sensor_channel])
+        return sensor_channels
 
-# A fake driver that writes data to all channels according to the simulation
-@yaspin(text=colored("Running Simulation...", "green"))
-def driver(
-    config: Config, streamer: sy.Streamer, writer: sy.Writer, system: System, args
-):
-    global do_noise
-    driver_frequency = args.frequency  # Hz
-    loop = sy.Loop(interval=(sy.Rate.HZ * driver_frequency))
-
-    while loop.wait():
-        write_data: dict = {}
-        write_data["time"] = sy.TimeStamp.now()
-
-        # Check for incoming valve commands
-        fr = streamer.read(timeout=0)
-        if fr is not None:
-            for channel in fr.channels:
-                cmd = fr[channel][0]
-                valve = system.get_valve_obj(channel)  # type: ignore
-                if cmd == True:
-                    valve.energize()
-                else:
-                    valve.de_energize()
-
-        for state_ch in config.get_states():
-            valve = system.get_valve_obj(state_ch.replace("state", "vlv"))
-            if valve.normally_closed:  # Account for normally open valves
-                if valve.state == State.OPEN:
-                    write_data[state_ch] = 1
-                else:
-                    write_data[state_ch] = 0
+    # Returns PT, TC, and valve state data with mapping: REAL_CHANNEL_NAME: float | bool
+    # Adds noise based on simulation configuration
+    def get_channel_readings(self) -> dict[str, Any]:
+        readings = {}
+        for volume in self.volumes:
+            for alias in volume.channels:
+                channel_name = self.reverse_aliases[alias]
+                if "pt" in channel_name:
+                    noise = random.gauss(0, self.default_pt_noise_sigma) if (self.do_noise) else (0)
+                    readings[channel_name] = volume.pressure + noise
+                if "tc" in channel_name:
+                    noise = random.gauss(0, self.default_tc_noise_sigma) if (self.do_noise) else (0)
+                    readings[channel_name] = volume.temperature + noise
+        for valve in self.valves:
+            channel_name = (self.reverse_aliases[valve.channel]).replace("vlv", "state")
+            if not valve.is_normally_open:
+                readings[channel_name] = valve.state
             else:
-                if valve.state == State.OPEN:
-                    write_data[state_ch] = 0
-                else:
-                    write_data[state_ch] = 1
+                readings[channel_name] = not valve.state
+        return readings
 
-        for pt_ch in config.get_pts():
-            noise = (
-                (random.gauss(0, 10)) if (do_noise) else (0)
-            )  # instrument noise is approximately gaussian
-            # TODO: add different noise for different instruments with some sort of lookup table
-            pressure = system.get_pressure(pt_ch) + noise
-            write_data[pt_ch] = pressure
-        for tc_ch in config.get_tcs():
-            noise = (
-                (random.gauss(0, 2)) if (do_noise) else (0)
-            )  # instrument noise is approximately gaussian
-            temperature = system.get_temperature(tc_ch) + noise
-            write_data[tc_ch] = temperature
+    def set_valve_state(self, channel_name: str, state: bool) -> None:
+        alias = self.aliases[channel_name]
+        for valve in self.valves:
+            if (valve.channel == alias):
+                valve.state = (not bool(state)) if valve.is_normally_open else bool(state)
 
-        writer.write(write_data)  # type: ignore
-        system.update()
+    def simulation_step(self, time_step: float) -> None:
+        """Advance by elapsed seconds using a simple, pressure-driven gas flow.
 
+        Volume.volume is the fixed tank capacity in liters; the amount of gas
+        changes instead. Pressures are gauge psi and temperatures are Celsius.
+        Flow coefficients are effective areas, with a deliberately naive flow
+        speed of one meter/second per psi of pressure difference. Temperature
+        simulation uses ideal gas energy (Cp/Cv defaults to 1.4 for nitrogen)
+        and heat exchange with a fixed ambient heat sink representing the tank
+        wall and surroundings. Disabling it holds temperatures constant.
+        """
+        if not math.isfinite(time_step) or time_step < 0:
+            raise ValueError("time_step must be finite and nonnegative")
+        if time_step == 0:
+            return
 
-def main():
-    args = parse_args()
-    client = synnax_login(args.cluster)
-    config = Config(args.config)
-    system = System(config)
-    get_channels(client, config)
-    # Open streamer for valve commands
+        atmospheric_pressure = 14.6959  # absolute psi
+        gas_constant = 1.20591  # psi * liters / (mol * kelvin)
+        gamma = self.gas_specific_heat_ratio if self.do_temp_simulation else 1.0
+        molar_heat_capacity = 8.314462618 / (self.gas_specific_heat_ratio - 1) # Cv, J/(mol*K)
+        ambient_temperature = self.ambient_temperature + 273.15
+        volumes = {volume.name: volume for volume in self.volumes}
+        atmosphere = self.atmosphere_volume_name
+        pressures = {name: volume.pressure for name, volume in volumes.items()}
+        temperatures = {name: volume.temperature + 273.15 for name, volume in volumes.items()}
+        # The atmosphere can be a virtual endpoint absent from the YAML.
+        pressures.setdefault(atmosphere, 0.0)
+        temperatures.setdefault(atmosphere, ambient_temperature)
 
-    write_chs = config.get_vlvs()
-    read_chs = config.get_states() + config.get_sensors() + ["time"]
+        amounts = {}
+        for name, volume in volumes.items():
+            if (not math.isfinite(pressures[name]) or
+                    pressures[name] <= -atmospheric_pressure or
+                    not math.isfinite(temperatures[name]) or temperatures[name] <= 0):
+                raise ValueError(f"Volume {name!r} needs positive absolute pressure and temperature")
+            if name == atmosphere:
+                continue
+            if not math.isfinite(volume.volume) or volume.volume <= 0:
+                raise ValueError(f"Volume {name!r} must have a positive, finite capacity")
+            amounts[name] = ((pressures[name] + atmospheric_pressure) * volume.volume /
+                             (gas_constant * temperatures[name]))
+        heat_transfer = {
+            name: self.heat_transfer_coefficients.get(name, self.default_heat_transfer_coefficient)
+            for name in amounts
+        }
 
-    with client.open_streamer(channels=write_chs) as streamer:
-        # Open writer for everything else
-        with client.open_writer(start=sy.TimeStamp.now(), channels=read_chs) as writer:
-            driver(config, streamer, writer, system, args)  # Run the fake driver
+        def settling_time(name: str) -> float:
+            if self.thermal_equilibrium_time_constant is not None:
+                return self.thermal_equilibrium_time_constant
+            if heat_transfer[name] == 0:
+                return math.inf
+            return amounts[name] * molar_heat_capacity / heat_transfer[name]
 
+        connections = []
+        degree = {name: 0 for name in pressures}
+        for valve in self.valves:
+            if not valve.state:
+                continue
+            inlet, outlet = valve.inlet_volume_name, valve.outlet_volume_name
+            if inlet not in pressures or outlet not in pressures:
+                raise ValueError(f"Valve {valve.channel!r} references an unknown volume")
+            if not math.isfinite(valve.flow_coefficient) or valve.flow_coefficient < 0:
+                raise ValueError(f"Valve {valve.channel!r} needs a nonnegative, finite flow coefficient")
+            if inlet == outlet or valve.flow_coefficient == 0:
+                continue
+            connections.append(valve)
+            degree[inlet] += 1
+            degree[outlet] += 1
 
-if __name__ == "__main__":
-    spinner.stop()  # stop the "initializing..." spinner since we're done loading all the imports
-    try:
-        main()
-    except KeyboardInterrupt:  # Abort cases also rely on this, but Python takes the closest exception catch inside nested calls
-        error_and_exit("Keyboard interrupt detected")
-    except Exception as e:  # catch-all uncaught errors
-        error_and_exit("Uncaught exception!", exception=e)
+        remaining = time_step
+        while remaining > 0:
+            amount_rates = dict.fromkeys(amounts, 0.0)
+            energy_rates = dict.fromkeys(amounts, 0.0)  # energy divided by Cv
+            outgoing_rates = dict.fromkeys(amounts, 0.0)
+            step = remaining
+            for valve in connections:
+                source, destination = valve.inlet_volume_name, valve.outlet_volume_name
+                difference = pressures[source] - pressures[destination]
+                if difference < 0:
+                    if valve.is_check_valve:
+                        continue
+                    source, destination = destination, source
+                    difference = -difference
+                if difference == 0:
+                    continue
+
+                # Convert a naive atmospheric-equivalent liters/second flow
+                # into moles/second, conserving gas between connected tanks.
+                rate = (valve.flow_coefficient * 1000 * difference * atmospheric_pressure /
+                        (gas_constant * temperatures[source]))
+                if rate == 0:
+                    continue
+                pressure_rate = 0.0
+                for name, direction in ((source, -1), (destination, 1)):
+                    if name == atmosphere:
+                        continue
+                    amount_rates[name] += direction * rate
+                    energy_rates[name] += direction * gamma * temperatures[source] * rate
+                    if direction < 0:
+                        outgoing_rates[name] += rate
+                    flow_temperature = temperatures[source] if self.do_temp_simulation else temperatures[name]
+                    pressure_rate += gamma * gas_constant * flow_temperature * rate / volumes[name].volume
+
+                # Subdivide large calls so even a tiny manifold or many open
+                # valves cannot overshoot equilibrium in a single update.
+                if pressure_rate > 0:
+                    step = min(step, 0.5 * difference / pressure_rate /
+                               max(degree[source], degree[destination]))
+
+            for name, rate in outgoing_rates.items():
+                if rate > 0:
+                    step = min(step, amounts[name] / (2 * gamma * rate))
+                # Resolve heat-driven pressure changes while valves are open,
+                # including when connected tanks initially have equal pressure.
+                if (self.do_temp_simulation and connections and
+                        temperatures[name] != ambient_temperature):
+                    step = min(step, 0.25 * settling_time(name))
+
+            for name in amounts:
+                energy = amounts[name] * temperatures[name] + energy_rates[name] * step
+                amounts[name] += amount_rates[name] * step
+                if self.do_temp_simulation:
+                    temperatures[name] = energy / amounts[name]
+                    # Exponential recovery with either the configured settling
+                    # time or the conductance-based time at the new gas amount.
+                    # Closed valves still allow recovery toward ambient.
+                    cooling_exponent = step / settling_time(name)
+                    temperatures[name] += ((ambient_temperature - temperatures[name]) *
+                                           -math.expm1(-cooling_exponent))
+                pressures[name] = (amounts[name] * gas_constant * temperatures[name] /
+                                   volumes[name].volume - atmospheric_pressure)
+            remaining -= step
+
+        for name, volume in volumes.items():
+            if name != atmosphere:
+                volume.pressure = pressures[name]
+                if self.do_temp_simulation:
+                    volume.temperature = temperatures[name] - 273.15

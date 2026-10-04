@@ -1,0 +1,118 @@
+# Alias file for easy channel configuration in code
+# Interpretted in the format:
+#
+# gse:
+#   pt:
+#     1: channel_alias_A
+#     2: channel_alias_B
+#     ...
+#
+# Becomes:
+# channel_alias_A = gse_pt_1
+# channel_alias_B = gse_pt_2
+
+gse:
+  pt:
+    1: Ox_Fill_PT
+    2: Pneumatics_2k_Bottle_PT
+    3: Fuel_MPV_Pneumatics_PT
+    4: Trailer_Pneumatics_PT
+    5: Purge_2k_Bottle_PT
+    6: Purge_Post_Reg_PT
+    7: Trickle_Purge_PT
+    8: Bottle_1_PT
+    15: Bottle_2_PT
+    16: Bottle_3_PT
+    17: Bottle_4_PT
+    18: Press_Fill_PT
+    19: Reg_Set_PT
+    20: Ox_MPV_Pneumatics
+  tc:
+    1: Bottle_1_Skin_TC
+    2: Bottle_2_Skin_TC
+    3: Bottle_3_Skin_TC
+    4: Bottle_4_Skin_TC
+  vlv:
+    1: Ox_Fill_Valve
+    2: Ox_Drain_Valve
+    3: Press_Iso_1
+    4: Press_Iso_2
+    5: Press_Iso_3
+    6: Press_Fill_Iso
+    8: Ox_Pre_Press
+    11: Fuel_Fill_Purge
+    15: Ox_Fill_QD_Pilot
+    16: Ox_Pre_Press_QD_Pilot
+    17: COPV_Fill_QD_Pilot
+    18: Igniter
+    19: Press_Iso_4
+    20: Press_Fill_Vent
+
+fc:
+  pt:
+    1: Recovery_Bottle_PT
+  tc: {}
+  vlv:
+    1: Recovery_Piston_Pilot
+    2: Drogue_Parachute_TD
+    3: Main_Parachute_TD
+
+bb1:
+  pt:
+    1: COPV_PT_1
+    2: COPV_PT_2
+    3: Fuel_TPC_Inlet_PT
+    4: Fuel_TPC_Outlet_PT
+    5: Fuel_Pilot_Outlet_PT
+    6: Fuel_Dome_PT
+    7: Fuel_Tank_PT_1
+    8: Fuel_Tank_PT_2
+  tc:
+    1: COPV_TC_1
+    2: COPV_TC_2
+    3: COPV_SKIN_TC_1
+    4: COPV_SKIN_TC_2
+  vlv:
+    1: COPV_Vent
+    2: Fuel_Dome_Iso
+    3: Fuel_Vent
+
+bb2:
+  pt:
+    1: Ox_TPC_Inlet_PT
+    2: Ox_Pilot_Outlet_PT
+    3: Ox_Dome_PT
+    4: Ox_TPC_Outlet_PT
+    5: Ox_Tank_PT_1
+    6: Ox_Tank_PT_2
+    7: Fuel_Manifold_PT_2
+    8: Regen_Manifold_PT_2
+    9: Fuel_MPV_Outlet_PT
+  tc:
+    1: Ox_Ullage_TC
+  vlv:
+    1: Ox_Dome_Iso
+    2: Ox_Vent
+
+bb3:
+  pt:
+    1: Ox_MPV_Inlet_PT
+    2: Ox_MPV_Outlet_PT
+    3: Chamber_PT_1
+    4: Chamber_PT_2
+    5: Chamber_PT_3
+    6: Fuel_Manifold_PT_1
+    7: Regen_Manifold_PT_1
+    8: Ox_Level_Sensor
+    9: Fuel_Flowmeter_Inlet_PT
+    10: Fuel_Flowmeter_Throat_PT
+  tc:
+    1: Ox_Level_Sensor_TC
+    2: Fuel_Manifold_TC_1
+    3: Fuel_Manifold_TC_2
+    4: Regen_Manifold_TC_1
+    5: Regen_Manifold_TC_2
+    6: Ox_MPV_Inlet_TC
+  vlv:
+    1: Ox_MPV # normally_open: true
+    2: Fuel_MPV # normally_open: true
