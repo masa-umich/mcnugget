@@ -6,4 +6,16 @@ variables:
   igmite_point_time: 0 #relative 0 mark - ignition starts now
   using_ox: True
   using_fuel: True
-  first_mpv: "ox" 
+
+#i'm gonna use placeholders until i double check with prop team
+channel_mappings:
+  ebox:
+    pts:
+    ox_bottle_pt: 1
+    ox_post_reg_pt: 2 #the methan will be downstream of regulator(i think)
+    fuel_bottle_pt: 3
+    fuel_post_reg_pt: 4 #the methan will be downstream of regulator(i think)
+    torch_pt1:
+    torch_pt2:
+    torch_pt3:
+  valves:

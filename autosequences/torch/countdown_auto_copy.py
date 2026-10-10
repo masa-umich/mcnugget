@@ -6,6 +6,20 @@ from typing import Final
 OPEN: Final[bool] = True
 CLOSED: Final[bool] = False
 
+#Autosequence layout:
+#as of 10/4
+#T-X1 - Energize spark plug
+#T-X2 - Open Torch Ox MPV
+#T-X3 - Open Torch Fuel MPV
+#T-X4 - De-energize spark plug
+#T-X5 - Begin ignition detection
+#T-X6 - End ignition detection
+#T-X7 - Open Spectre Ox MPV
+#T-X8 - Open Spectre Fuel MPV
+#T-0 - Engine ignition
+#T+X9 - Close Torch MPVs and open Torch Post-MPV Vents
+
+
 def countdown(phase: Phase) -> None:
     # Grab the Synnax controller and config from the phase object
     ctrl: sy.Controller = phase.ctrl
@@ -16,7 +30,7 @@ def countdown(phase: Phase) -> None:
     burn_time: float = config.get_var("burn_time")
     fuel_mpv_start_time: float = config.get_var("fuel_mpv_start_time")
     ox_mpv_start_time: float = config.get_var("ox_mpv_start_time")
-    igniter_point_time: float = config.get_var("igniter_point_time")
+    ignite_point_time: float = config.get_var("ignite_point_time")
     fuel_mpv_ch: str = config.get_vlv("fuel_mpv")
     ox_mpv_ch: str = config.get_vlv("ox_mpv")
     igniter_ch: str = config.get_vlv("igniter")
@@ -30,10 +44,10 @@ def countdown(phase: Phase) -> None:
     # It is best practice to use the Synnax controller for timing events because it has a high-precision clock 
     t_start: sy.TimeStamp = sy.TimeStamp.now()
     t_zero: sy.TimeStamp = t_start + sy.TimeSpan.from_seconds(countdown_duration)
-    t_end: sy.TimeStamp = t_zero + sy.TimeSpan.from_seconds(burn_duration)
-    t_fuel: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(fuel_mpv_time_offset)
-    t_ox: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ox_mpv_time_offset)
-    t_igniter: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(igniter_time_offset)
+    t_end: sy.TimeStamp = t_zero + sy.TimeSpan.from_seconds(burn_time)
+    t_fuel: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(fuel_mpv_start_time)
+    t_ox: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ox_mpv_start_time)
+    t_igniter: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ignite_point_time)
     last_logged_second: int | None = None # Used to keep track of the countdown display
 
     while True:
