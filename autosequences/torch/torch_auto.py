@@ -144,10 +144,9 @@ def countdown_safe(phase: Phase) -> None: #this part is for if its aborted or er
     channels_to_close: list[str] = [
         config.get_vlv("fuel_mpv"),
         config.get_vlv("ox_mpv"),
-        config.get_vlv("fuel_pilot"),
-        config.get_vlv("ox_pilot"),
         config.get_vlv("igniter"),   
     ]
+    
     for channel in channels_to_close:
         channel: str = config.get_vlv(name)
         phase.log(f"Closing {name} ({channel})")

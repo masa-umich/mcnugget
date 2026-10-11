@@ -6,23 +6,22 @@ variables:
   igmiter_offset_time: 0 #relative 0 mark - ignition starts now
   using_ox: True
   using_fuel: True
-
-#i'm gonna use placeholders until i double check with prop team
+#i'm gonna use placeholders(for some - most have been confirmed now) until i double check with prop team
 channel_mappings:
   ebox:
     pts:
-      ox_bottle_pt: 1
-      ox_post_reg_pt: 2 #the methan will be downstream of regulator(i think)
-      fuel_bottle_pt: 3
-      fuel_post_reg_pt: 4 #the methan will be downstream of regulator(i think)
-      torch_pt1: 5
-      torch_pt2: 6
-      torch_pt3: 7
+      Ox_Bottle_PT: 4
+      Ox_Post_Reg_PT: 3 #the methan will be downstream of regulator(i think)
+      Fuel_Bottle_PT: 5
+      Fuel_Post_Reg_PT: 8 
+      Torch_PT1: 17
+      Torch_PT2: 18
+      Torch_PT3: 19
+      Ox_Pre_Injector_PT: 7
+      Fuel_Pre_Injector_PT: 16
   valves:
-    ox_mpv: 1
-    fuel_mpv: 2
-    ox_pilot: 3
-    fuel_pilot: 4
-    igniter: 5 #spark plug
+    Ox_MPV: 1
+    Fuel_MPV: 3
+    Igniter: 5 #spark plug - thi current value is not right - need to double check
     #nts - the mpv's actuate the pnuematic mpv(double check with jack what that means/ check sys pic) the pilots are parallel to the mpv's
-    
+  pts:
