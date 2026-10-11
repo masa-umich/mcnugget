@@ -27,13 +27,33 @@ def countdown(phase: Phase) -> None:
     
     # Grab the different configuration variables and channel names this phase will need from the config
     countdown_duration: float = config.get_var("countdown_duration")
-    burn_time: float = config.get_var("burn_time")
-    fuel_mpv_start_time: float = config.get_var("fuel_mpv_start_time")
-    ox_mpv_start_time: float = config.get_var("ox_mpv_start_time")
-    ignite_point_time: float = config.get_var("ignite_point_time")
+    burn_duration: float = config.get_var("burn_duration")
+    fuel_mpv_offset_time: float = config.get_var("fuel_mpv_offset_time")
+    ox_mpv_offset_time: float = config.get_var("ox_mpv_offset_time")
+    igniter_offset_time: float = config.get_var("igniter_offset_time")
     fuel_mpv_ch: str = config.get_vlv("fuel_mpv")
     ox_mpv_ch: str = config.get_vlv("ox_mpv")
     igniter_ch: str = config.get_vlv("igniter")
+    using_ox: bool = config.get_var("using_ox")
+    using_fuel: bool = config.get_var("using_fuel")
+
+    #doucle checking valid offsets
+    for name, offset in [("ox_mpv_offet_time", ox_mpv_offet_time), ("fuel_mpv_offset_time", fuel_mpv_offset_time), ("igniter_offset_time", igniter_offset_time)]:
+        if not(0 <= offset < countdown_duration):
+            phase.log(f"{name} = {offset} must be between 0 and countdown_duration ({countdown_duration}), aborting")
+            return
+
+    #setting todo of what to turn on + time before T-0
+    events: list[tuple[str, str, float]] =[]
+    if using_ox:
+        events.append(("Ox MPV", ox_mpv_ch, ox_mpv_offet_time))
+    else:
+        phase.log("using_ox is false, Ox MPV will stay closed")
+    if using_fuel:
+        events.append(("Fuel MPV", fuel_mpv_ch, fuel_mpv_offset_time))
+    else:
+        phase.log("using_fuel is false, Fuel MPV will stay closed")
+    events.append(("Igniter", igniter_ch, igniter_offset_time))
 
     # When making a phase, remember to always use the "phase" version of blocking events!
     phase.log("Hit 'enter' to start countdown sequence") #SOP doc says it should be enter
@@ -44,11 +64,12 @@ def countdown(phase: Phase) -> None:
     # It is best practice to use the Synnax controller for timing events because it has a high-precision clock 
     t_start: sy.TimeStamp = sy.TimeStamp.now()
     t_zero: sy.TimeStamp = t_start + sy.TimeSpan.from_seconds(countdown_duration)
-    t_end: sy.TimeStamp = t_zero + sy.TimeSpan.from_seconds(burn_time)
-    t_fuel: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(fuel_mpv_start_time)
-    t_ox: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ox_mpv_start_time)
-    t_igniter: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ignite_point_time)
-    last_logged_second: int | None = None # Used to keep track of the countdown display
+    t_end: sy.TimeStamp = t_zero + sy.TimeSpan.from_seconds(burn_duration)
+    schedule: list[tuple[str, str, sy.TimeStamp]] = [(name, channel, t_zero - sy.TimeSpan.from_seconds(offset)) for name, channel, offset, in events]
+    #t_fuel: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(fuel_mpv_start_time)
+    #t_ox: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ox_mpv_start_time)
+    #t_igniter: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ignite_point_time)
+    #last_logged_second: int | None = None # Used to keep track of the countdown display
 
     while True:
         phase.sleep(0) # Always add a phase.sleep(0) if you're making a loop!

@@ -19,3 +19,10 @@ channel_mappings:
     torch_pt2:
     torch_pt3:
   valves:
+    ox_mpv: 1
+    fuel_mpv: 2
+    ox_pilot: 3
+    fuel_pilot: 4
+    igniter: 5 #spark plug
+    #nts - the mpv's actuate the pnuematic mpv(double check with jack what that means/ check sys pic) the pilots are parallel to the mpv's
+    
