@@ -71,6 +71,10 @@ def countdown(phase: Phase) -> None:
     #t_igniter: sy.TimeStamp = t_zero - sy.TimeSpan.from_seconds(ignite_point_time)
     #last_logged_second: int | None = None # Used to keep track of the countdown display
 
+    #keep track of commands we've done ourselves
+    opened: set[str] = set()
+    last_logged_second = int | None = none #keeping track of countdown display
+
     while True:
         phase.sleep(0) # Always add a phase.sleep(0) if you're making a loop!
         now: sy.TimeStamp = sy.TimeStamp.now()
@@ -80,17 +84,25 @@ def countdown(phase: Phase) -> None:
         if t_seconds != last_logged_second:
             phase.log(f"T{t_seconds:+d}")
             last_logged_second = t_seconds
+
+        #actually turning on/open/close something if it's time (condendsed the checks below)
+        for name, channel, t_open in schedule:
+            if (now >= t_open) and (channel not in opened):
+                phase.log(f"Opening {name} ({channel})", color="green")
+                open_vlv(ctrl, config, channel)
+                opened.add(channel)
         
         # If it is time for one of the valves to open and it hasn't yet, open them 
-        if (now >= t_fuel) and (ctrl[fuel_mpv_ch] == CLOSED):
-            phase.log(f"Opening {fuel_mpv_ch}")
-            ctrl[fuel_mpv_ch] = OPEN
-        if (now >= t_ox) and (ctrl[ox_mpv_ch] == CLOSED):
-            phase.log(f"Opening {ox_mpv_ch}")
-            ctrl[ox_mpv_ch] = OPEN
-        if (now >= t_igniter) and (ctrl[igniter_ch] == CLOSED):
-            phase.log(f"Activating {igniter_ch}")
-            ctrl[igniter_ch] = OPEN
+        #if (now >= t_fuel) and (ctrl[fuel_mpv_ch] == CLOSED):
+        #    phase.log(f"Opening {fuel_mpv_ch}")
+        #    ctrl[fuel_mpv_ch] = OPEN
+        #if (now >= t_ox) and (ctrl[ox_mpv_ch] == CLOSED):
+        #    phase.log(f"Opening {ox_mpv_ch}")
+        #    ctrl[ox_mpv_ch] = OPEN
+        #if (now >= t_igniter) and (ctrl[igniter_ch] == CLOSED):
+        #    phase.log(f"Activating {igniter_ch}")
+        #    ctrl[igniter_ch] = OPEN
+        
         # If we are at or have exceeded the target time, close valves and return
         if now >= t_end:
             phase.log(f"Burn duration met or exceeded, closing valves")
@@ -99,26 +111,29 @@ def countdown(phase: Phase) -> None:
             ctrl[igniter_ch] = CLOSED
             return
 
-def countdown_safe(phase: Phase) -> None:
+def countdown_safe(phase: Phase) -> None: #this part is for if its aborted or errors out, needs to close all prop paths to torch + turn off spark plug
     ctrl: sy.Controller = phase.ctrl
     config: Config = phase.config
 
     channels_to_close: list[str] = [
         config.get_vlv("fuel_mpv"),
         config.get_vlv("ox_mpv"),
+        config.get_vlv("fuel_pilot"),
+        config.get_vlv("ox_pilot"),
         config.get_vlv("igniter"),   
     ]
     for channel in channels_to_close:
-        phase.log(f"Closing {channel}")
+        channel: str = config.get_vlv(name)
+        phase.log(f"Closing {name} ({channel})")
         ctrl[channel] = CLOSED
 
 
 def main() -> None:
-    config: Config = Config(filepath="example-config.yaml")
+    config: Config = Config(filepath="config.yaml")
     
     # Make Autosequence object, also connects to Synnax & other checks
     auto: Autosequence = Autosequence(
-        name="Limelight Launch Autosequence",
+        name="Torch Igniter Autosequence",
         cluster="localhost",
         config=config,
     )
