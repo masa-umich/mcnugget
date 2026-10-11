@@ -60,6 +60,8 @@ def countdown(phase: Phase) -> None:
     fuel_mpv_ch: str = config.get_vlv("fuel_mpv")
     ox_mpv_ch: str = config.get_vlv("ox_mpv")
     igniter_ch: str = config.get_vlv("igniter")
+    ox_post_mpv_vent: str = config.get_vlv("ox_post_mpv_vent")
+    fuel_post_mpv_vent: str = config.get_vlv("fuel_post_mpv_vent")
     using_ox: bool = config.get_var("using_ox")
     using_fuel: bool = config.get_var("using_fuel")
 
@@ -135,6 +137,8 @@ def countdown(phase: Phase) -> None:
             ctrl[fuel_mpv_ch] = CLOSED
             ctrl[ox_mpv_ch] = CLOSED
             ctrl[igniter_ch] = CLOSED
+            open_vlv(ctrl, config, ox_post_mpv_vent)
+            open_vlv()
             return
 
 def countdown_safe(phase: Phase) -> None: #this part is for if its aborted or errors out, needs to close all prop paths to torch + turn off spark plug
@@ -146,12 +150,20 @@ def countdown_safe(phase: Phase) -> None: #this part is for if its aborted or er
         config.get_vlv("ox_mpv"),
         config.get_vlv("igniter"),   
     ]
-    
+    channels_to_open: list[str] = [
+        config.get_vlv("fuel_post_mpv_vent"),
+        config.get_vlv("ox_post_mpv_vent") 
+    ]
+
     for channel in channels_to_close:
         channel: str = config.get_vlv(name)
         phase.log(f"Closing {name} ({channel})")
         ctrl[channel] = not config.is_vlv_nc(channel) # did it this way to prevent accidental reopening
 
+    for channel in channels_to_open:
+        channel: str = config.get_vlv(name)
+        phase.log(f"Opening {name} ({channel})")
+        ctrl[channel] = config.is_vlv_nc(channel)
 
 def main() -> None:
     args: argparse.Namespace = parse_args()

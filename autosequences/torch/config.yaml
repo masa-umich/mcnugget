@@ -3,7 +3,7 @@ variables:
   burn_duration: 3 #how long things stay on after T-0
   ox_mpv_offset_time: 0.67 #secs before ignition point to open ox valve - start before fuel
   fuel_mpv_offset_time: 0.34 #secs before ignition point to open fuel valve - placeholder value rn 
-  igmiter_offset_time: 0 #relative 0 mark - ignition starts now
+  igniter_offset_time: 0 #relative 0 mark - ignition starts now
   using_ox: True
   using_fuel: True
 #i'm gonna use placeholders(for some - most have been confirmed now) until i double check with prop team
@@ -19,9 +19,17 @@ channel_mappings:
       Torch_PT3: 19
       Ox_Pre_Injector_PT: 7
       Fuel_Pre_Injector_PT: 16
+    tcs:
+      Ox_Pre_Injector_TC: 2
+      Fuel_Pre_Injector_TC: 1
   valves:
     Ox_MPV: 1
     Fuel_MPV: 3
-    Igniter: 5 #spark plug - thi current value is not right - need to double check
+    Igniter: 5 #spark plug - this current value is not right - need to double check
+    Ox_Post_MPV_Vent: 
+      id: 2
+      is_normally_open: true
+    Fuel_Post_MPV_Vent: 
+      id: 4
+      is_normally_open: true
     #nts - the mpv's actuate the pnuematic mpv(double check with jack what that means/ check sys pic) the pilots are parallel to the mpv's
-  pts:

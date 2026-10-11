@@ -1,7 +1,7 @@
 #channel aliases
 
 gse:
-  pt:
+  pts:
     4: Ox_Bottle_PT
     3: Ox_Post_Reg_PT
     5: Fuel_Bottle_PT
@@ -9,9 +9,12 @@ gse:
     17: Torch_PT1
     18: Torch_PT2
     19: Torch_PT3
+    7: Ox_Pre_Injector_PT
+    16: Fuel_Pre_Injector_PT
+  tcs:
+    1: Fuel_Pre_Injector_TC
+    2: Ox_Pre_Injector_TC
   vlv:
     1: Ox_MPV
     3: Fuel_MPV
-    3: Ox_Pilot
-    4: Fuel_Pilot
-    5: Igniter
+    5: Igniter #check for actual channel number
