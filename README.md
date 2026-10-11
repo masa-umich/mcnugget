@@ -1,10 +1,14 @@
 # McNugget
 "The McChicken of Data Analysis."
 
-README last updated: 1-27-2026
+README last updated: 10-11-2026
 
 ## Overview
 McNugget is a collection of Python (and a few MatLab) scripts which interact with our data visualization, system control, and telemetry database server, [Synnax](https://www.synnaxlabs.com/). This repository was originally made by [Emiliano Bonilla](https://www.linkedin.com/in/emiliano-bonilla-8a0a95187/) in March 2023, then maintained by the 'Software' subteam until August 2025, and is now managed by Avionics.
+
+## Formal Autosequence Tutorial/Guide:
+There is a guide on our Google docs for how to make and test an autosequence. It has some overlap with this README, but if you have time you should read through both. You can find it here:
+https://docs.google.com/document/d/1ZUvh4Yml2eD9me4FyaoixU4aXREDANVIolDjPv7LHdg/edit?usp=sharing
 
 ## Disclaimer with Windows
 
@@ -54,7 +58,7 @@ Assuming you've already gone through the usage instructions (you have [`uv`](htt
 ### Step 0: Make your project (Optional)
 If you're make a new script from scratch rather than modifying an existing one, follow this guide so that it fits in with the others. First, go to the right directory (`autosequences/`, `utilities/`, or `avionics/`) and make a new project directory with `uv`:
 ```sh
-uv init <new project name>
+uv init <new project name> --no-package
 ```
 Enter it, if you want you can rename `main.py` to the name of the project which is usually nice, and then I also suggest you make the primary file of the script into a `uv` script so that it's easier for others to execute without activating the venv:
 ```sh
@@ -124,14 +128,22 @@ Ruff is a great, fast, Python Linter and code formatter made by the same folk wh
 
 
 ## FAQ and Common Problems
-Q: What is Synnax?\
-A: Synnax is our data visualization, system control, and telemetry database server. Basically, it takes in all of the sensor readings from our rocket or engine in real-time, stores them into a database so we can look at them later, and lets us control things on our system in real-time like valves. Synnax used to be made by MASA for MASA, but has since become a [succesful Colorado-based startup](https://www.synnaxlabs.com/company).
+<details>
+    <summary>What is Synnax?</summary>
 
-Q: WHERE ARE MY FILES?!\
-A: I (Jack) did a re-organization on October 20th, 2025 -- around when Avionics took over this repository. All old files (that haven't been replaced/updated) are in `mcnugget/archive` and for even older files, look in `mcnugget/archive/old` (a fantastic name, I know)
+Synnax is our data visualization, system control, and telemetry database server. Basically, it takes in all of the sensor readings from our rocket or engine in real-time, stores them into a database so we can look at them later, and lets us control things on our system in real-time like valves. Synnax used to be made by MASA for MASA, but has since become a [succesful Colorado-based startup](https://www.synnaxlabs.com/company).
+</details>
 
-Q: How do I connect to the real DAQ PC during a test to use a script?\
-A: All scripts will prioritize the current Synnax cluster last connected to in the terminal with:
+<details>
+    <summary>WHERE ARE MY FILES?!?</summary>
+
+I (Jack) did a re-organization on October 20th, 2025 -- around when Avionics took over this repository. All old files can be found as a release if you really need access to them: https://github.com/masa-umich/mcnugget/releases/tag/oct-2025
+</details>
+
+<details>
+    <summary>How do I connect to the real DAQ PC during a test to use a script?</summary>
+
+All scripts will prioritize the current Synnax cluster last connected to in the terminal with:
 ```sh
 sy login
 ```
@@ -141,23 +153,63 @@ When run in a project with the virtual environment activated. When connecting, t
 - **Username:** `synnax`
 - **Password:** `seldon`
 - **Secure:** `FALSE`
+</details>
 
-Q: How do I make it so I can run my script with the `./` again?\
-A: Add this line to the top of the file above your UV script header:
+<details>
+    <summary>How do I make it so I can run my script with the `./` again?</summary>
+
+Add this line to the top of the file above your UV script header:
 ```sh
 #!/usr/bin/env -S uv run --script
 ```
 And also modify the file metadata so the OS sees it as an executable with this:
 ```sh
-sudo chmod +x <filname>
-``` 
+sudo chmod +x <filename>
+```
+</details>
 
-Q: When I run a Synnax server on Windows but try to access it with my script in WSL, I can't connect\
-A: The IP of your Windows computer that is exposed to WSL is not `localhost` be default, but you can find it by running this command in WSL:
+<details>
+    <summary>When I run a Synnax server on Windows but try to access it with my script in WSL, I can't connect</summary>
+
+The IP of your Windows computer that is exposed to WSL is not `localhost` be default, but you can find it by running this command in WSL:
 ```sh
 ip route show | grep -i default | awk '{ print $3}'
 ```
 You should be able to set that as the host in your Synnax scripts to be able to connect.
+</details>
 
-Q: Why is it called McNugget?\
-A: To quote the famous Emiliano Bonilla: "I saw someone eating a chicken nugget while I was trying to come up with a name."
+<details>
+    <summary>My simulation needs more channels than the free version of Synnax, where do I find out license/key?</summary>
+
+If you are a MASA lead, our Synnax key is in our shared passwords Google doc. 
+
+If you are an admin on this repository, you can also find our key under: `settings->secrets & variables->actions->variables->SYNNAX_LICENSE`
+
+If you are a lowly avionics/software member, contact (DM) your local avionics/software lead, explain why you need our Synnax key, and hope that they send it to you.
+</details>
+
+<details>
+    <summary>Why is it called McNugget?</summary>
+
+To quote the famous Emiliano Bonilla: "I saw someone eating a chicken nugget while I was trying to come up with a name."
+</details>
+
+<details>
+    <summary>How do I pull in changes from main onto my branch?</summary>
+
+Use these commands:
+```bash
+git fetch origin
+git rebase origin/main
+git push --force-with-lease origin HEAD
+```
+This will fetch changes from main, rebase the timeline so that they're applied retroactively before you made any changes, then push that new timeline onto your branch. This is such a common pattern I made a Git alias which you can copy like this:
+```bash
+git config --global alias.rebase-push '!git fetch origin && git rebase origin/main && git push --force-with-lease origin HEAD'
+```
+Then updating your branch becomes as easy as running:
+```bash
+git rebase-push
+```
+The only caveat with doing things this way is that it can have merge conflicts if the changes from main interfere with changes you've made on your branch, in which case I reccomend getting an LLM to help you fix the situation.
+</details>
