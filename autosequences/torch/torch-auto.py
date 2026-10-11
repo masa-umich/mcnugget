@@ -1,10 +1,36 @@
-from mclib import Phase, Autosequence, Config
+from mclib import Phase, Autosequence, Config, close_vlv, open_vlv, write_logs_to_file
 import synnax as sy
 from typing import Final
+import argparse
 
 # Alias for boolean state of a valve to make things easier to read
-OPEN: Final[bool] = True
-CLOSED: Final[bool] = False
+#OPEN: Final[bool] = True
+#CLOSED: Final[bool] = False
+
+def parse_args() -> argparse.Namespace: #gotten from old torch.py
+    parser = argparse.ArgumentParser(description="Torch igniter countdown autosequence")
+    parser.add_argument(
+        "-m",
+        "--config",
+        help="Config file with variables and channel mappings",
+        default=str(Path(__file__).parent / "config.yaml"),
+        type=str,
+    )
+    parser.add_argument(
+        "-c",
+        "--cluster",
+        help="Synnax cluster to connect to",
+        default="localhost",
+        type=str,
+    )
+    parser.add_argument(
+        "-l",
+        "--log",
+        help="File to append the autosequence logs to when it exits",
+        default=None,
+        type=str,
+    )
+    return parser.parse_args()
 
 #Autosequence layout:
 #as of 10/4
@@ -38,7 +64,7 @@ def countdown(phase: Phase) -> None:
     using_fuel: bool = config.get_var("using_fuel")
 
     #doucle checking valid offsets
-    for name, offset in [("ox_mpv_offet_time", ox_mpv_offet_time), ("fuel_mpv_offset_time", fuel_mpv_offset_time), ("igniter_offset_time", igniter_offset_time)]:
+    for name, offset in [("ox_mpv_offset_time", ox_mpv_offet_time), ("fuel_mpv_offset_time", fuel_mpv_offset_time), ("igniter_offset_time", igniter_offset_time)]:
         if not(0 <= offset < countdown_duration):
             phase.log(f"{name} = {offset} must be between 0 and countdown_duration ({countdown_duration}), aborting")
             return
@@ -46,7 +72,7 @@ def countdown(phase: Phase) -> None:
     #setting todo of what to turn on + time before T-0
     events: list[tuple[str, str, float]] =[]
     if using_ox:
-        events.append(("Ox MPV", ox_mpv_ch, ox_mpv_offet_time))
+        events.append(("Ox MPV", ox_mpv_ch, ox_mpv_offset_time))
     else:
         phase.log("using_ox is false, Ox MPV will stay closed")
     if using_fuel:
@@ -125,16 +151,17 @@ def countdown_safe(phase: Phase) -> None: #this part is for if its aborted or er
     for channel in channels_to_close:
         channel: str = config.get_vlv(name)
         phase.log(f"Closing {name} ({channel})")
-        ctrl[channel] = CLOSED
+        ctrl[channel] = not config.is_vlv_nc(channel) # did it this way to prevent accidental reopening
 
 
 def main() -> None:
-    config: Config = Config(filepath="config.yaml")
+    args: argparse.Namespace = parse_args()
+    config: Config = Config(filepath="args.config")
     
     # Make Autosequence object, also connects to Synnax & other checks
     auto: Autosequence = Autosequence(
         name="Torch Igniter Autosequence",
-        cluster="localhost",
+        cluster=args.cluster,
         config=config,
     )
 
@@ -148,6 +175,9 @@ def main() -> None:
     )
     auto.add_phase(countdown_phase)
     auto.run() # Starts the autosequence CLI
+
+    if args.log is not None:
+        write_logs_to_file(filepath=args.log)
 
 if __name__ == "__main__":
     main()
