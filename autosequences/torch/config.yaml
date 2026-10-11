@@ -1,9 +1,9 @@
 variables:
-  countdown_duration: 20 #how long mpv valves will be kept open post ignition
-  burn_time: 3 #time req for ignition confirmation
-  ox_mpv_start_time: 0.67 #secs before ignition point to open ox valve - start before fuel(O2 lighter than methane)
-  fuel_mpv_start_time: 0.34 #secs before ignition point to open fuel valve - placeholder value rn 
-  igmite_point_time: 0 #relative 0 mark - ignition starts now
+  countdown_duration: 20 #time from 'Enter' to T-0
+  burn_duration: 3 #how long things stay on after T-0
+  ox_mpv_offset_time: 0.67 #secs before ignition point to open ox valve - start before fuel
+  fuel_mpv_offset_time: 0.34 #secs before ignition point to open fuel valve - placeholder value rn 
+  igmiter_offset_time: 0 #relative 0 mark - ignition starts now
   using_ox: True
   using_fuel: True
 
@@ -11,13 +11,13 @@ variables:
 channel_mappings:
   ebox:
     pts:
-    ox_bottle_pt: 1
-    ox_post_reg_pt: 2 #the methan will be downstream of regulator(i think)
-    fuel_bottle_pt: 3
-    fuel_post_reg_pt: 4 #the methan will be downstream of regulator(i think)
-    torch_pt1:
-    torch_pt2:
-    torch_pt3:
+      ox_bottle_pt: 1
+      ox_post_reg_pt: 2 #the methan will be downstream of regulator(i think)
+      fuel_bottle_pt: 3
+      fuel_post_reg_pt: 4 #the methan will be downstream of regulator(i think)
+      torch_pt1: 5
+      torch_pt2: 6
+      torch_pt3: 7
   valves:
     ox_mpv: 1
     fuel_mpv: 2
