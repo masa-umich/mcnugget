@@ -17,16 +17,19 @@ class Volume:
     temperature: float # C
     channels: list[str]
 
-    def __init__(self, name: str, volume: float, initial_pressure: float, initial_temperature: float, channels: list[str]):
+    def __init__(self, name: str, volume: float, initial_pressure: float, initial_temperature: float, channels: list[str], fluid: str | None = None, combustion: dict | None = None):
         self.name = name
         self.volume = volume
         self.pressure = initial_pressure
         self.temperature = initial_temperature
         self.pressure = initial_pressure
         self.channels = channels
+        self.fluid = fluid
+        self.combustion = combustion
+        self.lit = False
 
 class Valve:
-    channel: str
+    channel: str | None
     inlet_volume_name: str
     outlet_volume_name: str
     flow_coefficient: float
@@ -35,14 +38,15 @@ class Valve:
 
     state: bool # True = open, False = closed
 
-    def __init__(self, channel: str, inlet: str, outlet: str, flow_coefficient: float, is_check_valve: bool, is_normally_open: bool):
+    def __init__(self, inlet: str, outlet: str, flow_coefficient: float, channel: str | None = None, is_check_valve: bool = False, is_normally_open: bool = False, set_pressure: float | None = None):
         self.channel = channel
         self.inlet_volume_name = inlet
         self.outlet_volume_name = outlet
         self.flow_coefficient = flow_coefficient
         self.is_check_valve = is_check_valve
         self.is_normally_open = is_normally_open
-        self.state = OPEN if is_normally_open else CLOSED
+        self.state = OPEN if (is_normally_open or channel is None) else CLOSED
+        self.set_pressure = set_pressure
 
 class Simulation:
     # Sim settings
@@ -122,7 +126,8 @@ class Simulation:
     def get_valve_channels(self) -> list[str]:
         valve_channels = []
         for valve in self.valves:
-            valve_channels.append(self.reverse_aliases[valve.channel])
+            if valve.channel is not None:
+                valve_channels.append(self.reverse_aliases[valve.channel])
         return valve_channels
 
     def get_sensor_channels(self) -> list[str]:
@@ -146,6 +151,8 @@ class Simulation:
                     noise = random.gauss(0, self.default_tc_noise_sigma) if (self.do_noise) else (0)
                     readings[channel_name] = volume.temperature + noise
         for valve in self.valves:
+            if valve.channel is None:
+                continue
             channel_name = (self.reverse_aliases[valve.channel]).replace("vlv", "state")
             if not valve.is_normally_open:
                 readings[channel_name] = valve.state
@@ -219,14 +226,24 @@ class Simulation:
                 continue
             inlet, outlet = valve.inlet_volume_name, valve.outlet_volume_name
             if inlet not in pressures or outlet not in pressures:
-                raise ValueError(f"Valve {valve.channel!r} references an unknown volume")
+                raise ValueError(f"Valve {valve.channel or (inlet + ' ->' + outlet)!r} references an unknown volume")
             if not math.isfinite(valve.flow_coefficient) or valve.flow_coefficient < 0:
-                raise ValueError(f"Valve {valve.channel!r} needs a nonnegative, finite flow coefficient")
+                raise ValueError(f"Valve {valve.channel or (inlet + ' ->' + outlet)!r} needs a nonnegative, finite flow coefficient")
             if inlet == outlet or valve.flow_coefficient == 0:
                 continue
             connections.append(valve)
             degree[inlet] += 1
             degree[outlet] += 1
+        #for combustion: a chamber is lit while both ox and fuel are flowing into it, and eitherthe igniter was on or was already lit
+        valve_states = {valve.channel: valve.state for valve in self.valves if valve.channel is not None}
+        for volume in self.volumes:
+            if volume.combustion is None:
+                continue
+            #only count a feed with pressure diff > 1 so leftover gas can't light it
+            fluids_in = {volumes[valve.inlet_volume_name].fluid for valve in connections if valve.outlet_volume_name == volume.name
+                        and pressures[valve.inlet_volume_name] - pressures[volume.name] > 1.0}
+            has_both = {"ox", "fuel"} <= fluids_in
+            volume.lit =  has_both and (volume.lit or valve_states.get(volume.combustion["igniter"], False))
 
         remaining = time_step
         while remaining > 0:
@@ -236,7 +253,12 @@ class Simulation:
             step = remaining
             for valve in connections:
                 source, destination = valve.inlet_volume_name, valve.outlet_volume_name
-                difference = pressures[source] - pressures[destination]
+                if valve.set_pressure is not None:
+                    difference = min(pressures[source], valve.set_pressure) - pressures[destination]
+                    if difference <= 0:
+                        continue
+                else:
+                    difference = pressures[source] - pressures[destination]
                 if difference < 0:
                     if valve.is_check_valve:
                         continue
@@ -276,7 +298,9 @@ class Simulation:
                 if (self.do_temp_simulation and connections and
                         temperatures[name] != ambient_temperature):
                     step = min(step, 0.25 * settling_time(name))
-
+            for name in amounts:
+                if volumes[name].lit: # to help stop the combustion heating from overshooting in one step
+                    step = min(step, 0.25 * volumes[name].combustion["time_constant"])
             for name in amounts:
                 energy = amounts[name] * temperatures[name] + energy_rates[name] * step
                 amounts[name] += amount_rates[name] * step
@@ -288,6 +312,10 @@ class Simulation:
                     cooling_exponent = step / settling_time(name)
                     temperatures[name] += ((ambient_temperature - temperatures[name]) *
                                            -math.expm1(-cooling_exponent))
+                    if volumes[name].lit:
+                        flame_temperature = volumes[name].combustion["flame_temperature"] + 273.15
+                        time_constant = volumes[name].combustion["time_constant"]
+                        temperatures[name] += ((flame_temperature - temperatures[name]) * -math.expm1(-step / time_constant))
                 pressures[name] = (amounts[name] * gas_constant * temperatures[name] /
                                    volumes[name].volume - atmospheric_pressure)
             remaining -= step
