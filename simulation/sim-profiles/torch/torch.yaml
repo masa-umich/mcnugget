@@ -16,13 +16,13 @@ volumes:
     fluid: ox
   - name: "gox manifold" # tubing between the ox regulator and the mpv
     volume: 0.05
-    initial_pressure: 285 # starts equal to the bottle since there's no regulator
+    initial_pressure: 285 
     initial_temperature: 20
     channels: ["Ox_Post_Reg_PT"]
     fluid: ox
   - name: "methane bottle"
     volume: 49
-    initial_pressure: 285
+    initial_pressure: 2000
     initial_temperature: 20
     channels: ["Fuel_Bottle_PT"]
     fluid: fuel
@@ -91,13 +91,13 @@ valves:
     flow_coefficient: 1.0e-5
     is_check_valve: false
     is_normally_open: false
-  - channel: "Ox_Post_MPV_Vent"
+  - channel: "Post_MPV_Vents"
     inlet: "ox pre injector"
     outlet: "atmosphere"
     flow_coefficient: 1.0e-5
     is_check_valve: false
     is_normally_open: true
-  - channel: "Fuel_Post_MPV_Vent"
+  - channel: "Post_MPV_Vents"
     inlet: "fuel pre injector"
     outlet: "atmosphere"
     flow_coefficient: 1.0e-5
