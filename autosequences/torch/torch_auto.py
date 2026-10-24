@@ -73,12 +73,12 @@ def countdown(phase: Phase) -> None:
     ignition_detection_start: float = config.get_var("ignition_detection_start")
     ignition_detection_end: float = config.get_var("ignition_detection_end")
     torch_off_time: float = config.get_var("torch_off_time")
+    vent_open_time: float = config.get_var("vent_open_time")
     burn_duration: float = config.get_var("burn_duration")
     fuel_mpv_ch: str = config.get_vlv("fuel_mpv")
     ox_mpv_ch: str = config.get_vlv("ox_mpv")
     igniter_ch: str = config.get_vlv("igniter")
-    ox_post_mpv_vent: str = config.get_vlv("ox_post_mpv_vent")
-    fuel_post_mpv_vent: str = config.get_vlv("fuel_post_mpv_vent")
+    post_mpv_vents: str = config.get_vlv("post_mpv_vents")
     using_ox: bool = config.get_var("using_ox")
     using_fuel: bool = config.get_var("using_fuel")
     using_spectre: bool = config.get_var("using_spectre")
@@ -119,8 +119,7 @@ def countdown(phase: Phase) -> None:
         events.append((config.get_var("spectre_fuel_mpv_time"), "Spectre Fuel MPV", config.get_vlv("spectre_fuel_mpv"), "open"))
     events.append((torch_off_time, "Torch Ox MPV", ox_mpv_ch, "close"))
     events.append((torch_off_time, "Torch Fuel MPV", fuel_mpv_ch, "close"))
-    events.append((torch_off_time, "Ox Post-MPV Vent", ox_post_mpv_vent, "open"))
-    events.append((torch_off_time, "Fuel Post-MPV Vent", fuel_post_mpv_vent, "open"))
+    events.append((vent_open_time, "Post-MPV Vents", post_mpv_vents, "open"))
 
     # When making a phase, remember to always use the "phase" version of blocking events!
     phase.log("Hit 'enter' to start countdown sequence") #SOP doc says it should be enter
@@ -207,12 +206,10 @@ def countdown_safe(phase: Phase) -> None: #this part is for if its aborted or er
 
     channels_to_close: list[str] = [
         config.get_vlv("fuel_mpv"),
-        config.get_vlv("ox_mpv"),
-        config.get_vlv("igniter"),   
+        config.get_vlv("ox_mpv")   
     ]
     channels_to_open: list[str] = [
-        config.get_vlv("fuel_post_mpv_vent"),
-        config.get_vlv("ox_post_mpv_vent") 
+        config.get_vlv("post_mpv_vents")
     ]
 
     for channel in channels_to_close:
@@ -222,6 +219,10 @@ def countdown_safe(phase: Phase) -> None: #this part is for if its aborted or er
     for channel in channels_to_open:
         phase.log(f"Opening {channel}")
         ctrl[channel] = config.is_vlv_nc(channel)
+
+    igniter_ch: str = config.get_vlv("igniter")
+    phase.log(f"De-energizing {igniter_ch}")
+    ctrl[igniter_ch] = not config.is_vlv_nc(igniter_ch)
 
 def main() -> None:
     args: argparse.Namespace = parse_args()

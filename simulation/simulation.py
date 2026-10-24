@@ -126,7 +126,7 @@ class Simulation:
     def get_valve_channels(self) -> list[str]:
         valve_channels = []
         for valve in self.valves:
-            if valve.channel is not None:
+            if valve.channel is not None and self.reverse_aliases[valve.channel] not in valve_channels:
                 valve_channels.append(self.reverse_aliases[valve.channel])
         return valve_channels
 

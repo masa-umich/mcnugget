@@ -16,19 +16,19 @@ volumes:
     fluid: ox
   - name: "gox manifold" # tubing between the ox regulator and the mpv
     volume: 0.05
-    initial_pressure: 2000 # starts equal to the bottle since there's no regulator
+    initial_pressure: 285 # starts equal to the bottle since there's no regulator
     initial_temperature: 20
     channels: ["Ox_Post_Reg_PT"]
     fluid: ox
   - name: "methane bottle"
     volume: 49
-    initial_pressure: 2000
+    initial_pressure: 285
     initial_temperature: 20
     channels: ["Fuel_Bottle_PT"]
     fluid: fuel
   - name: "methane manifold" 
     volume: 0.05
-    initial_pressure: 2000
+    initial_pressure: 285
     initial_temperature: 20
     channels: ["Fuel_Post_Reg_PT"]
     fluid: fuel
@@ -82,27 +82,27 @@ valves:
   - channel: "Ox_MPV"
     inlet: "gox manifold"
     outlet: "ox pre injector"
-    flow_coefficient: 1.0e-6
+    flow_coefficient: 1.0e-5
     is_check_valve: false
     is_normally_open: false
   - channel: "Fuel_MPV"
     inlet: "methane manifold"
     outlet: "fuel pre injector"
-    flow_coefficient: 1.0e-6
+    flow_coefficient: 1.0e-5
     is_check_valve: false
     is_normally_open: false
   - channel: "Ox_Post_MPV_Vent"
     inlet: "ox pre injector"
     outlet: "atmosphere"
-    flow_coefficient: 1.0e-7 # smaller than the MPV, goes through an orifice on the PNID
+    flow_coefficient: 1.0e-5
     is_check_valve: false
-    is_normally_open: false
+    is_normally_open: true
   - channel: "Fuel_Post_MPV_Vent"
     inlet: "fuel pre injector"
     outlet: "atmosphere"
-    flow_coefficient: 1.0e-7
+    flow_coefficient: 1.0e-5
     is_check_valve: false
-    is_normally_open: false
+    is_normally_open: true
   
   - channel: "Igniter"
     inlet: "torch chamber"

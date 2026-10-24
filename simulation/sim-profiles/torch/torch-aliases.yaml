@@ -15,8 +15,7 @@ gse:
     1: Fuel_Pre_Injector_TC
     2: Ox_Pre_Injector_TC
   vlv:
-    1: Ox_MPV
-    3: Fuel_MPV
-    2: Ox_Post_MPV_Vent
-    4: Fuel_Post_MPV_Vent
+    6: Ox_MPV
+    8: Fuel_MPV
+    12: Post_MPV_Vents
     5: Igniter #check for actual channel number
