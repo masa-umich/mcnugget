@@ -1,0 +1,43 @@
+variables:
+  countdown_duration: 10 #time from 'Enter' to T-0
+  spark_on_time: -3.16 #X1 - Energize spark plug
+  ox_mpv_time: -3.15 #X2 - Open Torch Ox MPV
+  fuel_mpv_time: -2.95 #X3 - Open Torch Fuel MPV 
+  spark_off_time: -2.46 #X4 - De-energize spark plug
+  ignition_detection_start: -2.45 #X5 - Begin ignition detection 
+  ignition_detection_end: -0.21 #X6 - Stop ignition detection 
+  spectre_ox_mpv_time: -0.2 #X7 - Open Spectre Ox MPV
+  spectre_fuel_mpv_time: -0.1 #X8 - Open Spectre Fuel MPV
+  torch_off_time: 0.05 #X9 - Close Torch MPVs and open Torch Post-MPV Vents
+  vent_open_time: 0.1
+  burn_duration: 3 #max torch burn, measured from fuel mpv
+  ignition_lower_threshold: 165 # psig, SOP 3.112
+  ignition_upper_threshold: 242 # psig, SOP 3.112
+  vote_threshold: 20 
+  enable_ignition_detection_aborts: True          
+  using_ox: True
+  using_fuel: True
+  using_spectre: False
+#i'm gonna use placeholders(for some - most have been confirmed now) until i double check with prop team
+channel_mappings:
+  ebox:
+    pts:
+      Ox_Bottle_PT: 4
+      Ox_Post_Reg_PT: 3 
+      Fuel_Bottle_PT: 5
+      Fuel_Post_Reg_PT: 8 
+      Torch_PT1: 17
+      Torch_PT2: 18
+      Torch_PT3: 19
+      Ox_Pre_Injector_PT: 7
+      Fuel_Pre_Injector_PT: 16
+    tcs:
+      Ox_Pre_Injector_TC: 2
+      Fuel_Pre_Injector_TC: 1
+    valves:
+      Ox_MPV: 6
+      Fuel_MPV: 8
+      Igniter: 5 #spark plug - this current value is not right - need to double check
+      Post_MPV_Vents: 
+        id: 12
+        normally_open: true
