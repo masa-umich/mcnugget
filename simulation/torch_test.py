@@ -4,10 +4,9 @@ from simulation import Simulation
 sim = Simulation(Path("sim-profiles/torch/torch.yaml"), Path("sim-profiles/torch/torch-aliases.yaml"))
 chamber = next(v for v in sim.volumes if v.name == "torch chamber")
 
-sim.set_valve_state("gse_vlv_2", True)  
-sim.set_valve_state("gse_vlv_4", True)
-sim.set_valve_state("gse_vlv_1", True)  # open Ox MPV
-sim.set_valve_state("gse_vlv_3", True)  # open Fuel MPV
+channels_by_alias = {alias: channel for channel, alias in sim.aliases.items()}
+sim.set_valve_state(channels_by_alias["Ox_MPV"], True)
+sim.set_valve_state(channels_by_alias["Fuel_MPV"], True)
 
 for i in range(100):  
     sim.simulation_step(0.02)

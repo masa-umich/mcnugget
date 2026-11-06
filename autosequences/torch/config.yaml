@@ -14,11 +14,12 @@ variables:
   ignition_lower_threshold: 165 # psig, SOP 3.112
   ignition_upper_threshold: 242 # psig, SOP 3.112
   vote_threshold: 20 
-  enable_ignition_detection_aborts: True          
+  enable_ignition_detection_aborts: False
+  overpressure_abort_threshold: 333 #torch MAWP with no temp knockdown-(500 psig proof)/1.5
+  enable_overpressure_aborts: True          
   using_ox: True
   using_fuel: True
   using_spectre: False
-#i'm gonna use placeholders(for some - most have been confirmed now) until i double check with prop team
 channel_mappings:
   ebox:
     pts:

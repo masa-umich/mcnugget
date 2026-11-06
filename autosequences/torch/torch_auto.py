@@ -57,7 +57,12 @@ def evaluate_ignition(readings: list[float], vote_threshold: float, lower: float
     if voted is None:          
         return False, None
     return (lower <= voted <= upper), voted
-    
+
+def check_overpressure(readings: list[float], vote_threshold: float, max_pressure: float) -> tuple[bool, float | None]:
+    voted: float | None = sensor_vote_values(readings, vote_threshold)
+    if voted is None:
+        return False, None
+    return (voted > max_pressure), voted    
 
 def countdown(phase: Phase) -> None:
     # Grab the Synnax controller and config from the phase object
@@ -86,6 +91,8 @@ def countdown(phase: Phase) -> None:
     upper: float = config.get_var("ignition_upper_threshold")
     vote_threshold: float = config.get_var("vote_threshold")
     enable_ignition_detection_aborts: bool = config.get_var("enable_ignition_detection_aborts")
+    overpressure_threshold: float = config.get_var("overpressure_abort_threshold")
+    enable_overpressure_aborts: bool = config.get_var("enable_overpressure_aborts")
     torch_pts: list[str] = [
         config.get_pt("torch_pt1"),
         config.get_pt("torch_pt2"),
@@ -153,6 +160,14 @@ def countdown(phase: Phase) -> None:
             phase.log(f"T{t_seconds:+d}")
             last_logged_second = t_seconds
 
+        #for the overpressure abort, separate from the ignition detection flag
+        readings: list[float] = [v for v in (ctrl.get(ch) for ch in torch_pts) if v is not None]
+        overpressure, pc_now = check_overpressure(readings, vote_threshold, overpressure_threshold)
+        if overpressure and enable_overpressure_aborts:
+            phase.log(f"Chamber OVERPRESSURE (Pc = {pc_now:.1f} psig > {overpressure_threshold} psig), aborting", color="red", bold=True)
+            countdown_safe(phase)
+            return
+
         #actually turning on/open/close something if it's time (condendsed the checks below)
         for i, (t_event, name, channel, action) in enumerate(schedule):
             if (now >= t_event) and (i not in done):
@@ -179,7 +194,6 @@ def countdown(phase: Phase) -> None:
             if not ignition_detection_started:
                 phase.log("Ignition detection started")
                 ignition_detection_started = True
-            readings: list[float] = [v for v in (ctrl.get(ch) for ch in torch_pts) if v is not None]
             ok, pc = evaluate_ignition(readings, vote_threshold, lower, upper)
             pc_text: str = "no data" if pc is None else f"{pc:.1f}"
             if pc is not None:
