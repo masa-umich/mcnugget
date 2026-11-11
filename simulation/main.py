@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "synnax>=0.58.0",
+#     "synnax==0.49.0",
 #     "yaspin",
 #     "termcolor",
 #     "pyyaml",

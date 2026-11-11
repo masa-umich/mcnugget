@@ -1,0 +1,112 @@
+# Torch igniter simulation profile
+do_noise: false
+default_pt_noise_sigma: 5
+do_temp_simulation: true #needed for combustion (since pressure rises because the gas gets hotter)
+thermal_equilibrium_time_constant: 2 #so that the tiny chamber doesn't lose heat as fast as the flame adds it
+default_tc_noise_sigma: 2
+frequency: 50
+atmosphere_volume_name: "atmosphere"
+
+volumes:
+  - name: "gox bottle"
+    volume: 49 
+    initial_pressure: 2000 
+    initial_temperature: 20 
+    channels: ["Ox_Bottle_PT"]
+    fluid: ox
+  - name: "gox manifold" # tubing between the ox regulator and the mpv
+    volume: 0.05
+    initial_pressure: 285 
+    initial_temperature: 20
+    channels: ["Ox_Post_Reg_PT"]
+    fluid: ox
+  - name: "methane bottle"
+    volume: 49
+    initial_pressure: 2000
+    initial_temperature: 20
+    channels: ["Fuel_Bottle_PT"]
+    fluid: fuel
+  - name: "methane manifold" 
+    volume: 0.05
+    initial_pressure: 285
+    initial_temperature: 20
+    channels: ["Fuel_Post_Reg_PT"]
+    fluid: fuel
+  - name: "torch chamber"
+    volume: 0.05
+    initial_pressure: 0
+    initial_temperature: 20
+    channels: ["Torch_PT1", "Torch_PT2", "Torch_PT3"]
+    combustion:
+      igniter: "Igniter" # lights only if  spark plug is on while ox + fuel flow in
+      flame_temperature: 1200 
+      time_constant: 0.05
+  - name: "ox pre injector"
+    volume: 0.02
+    initial_pressure: 0
+    initial_temperature: 20
+    channels: ["Ox_Pre_Injector_PT", "Ox_Pre_Injector_TC"]
+    fluid: ox
+  - name: "fuel pre injector"
+    volume: 0.02
+    initial_pressure: 0
+    initial_temperature: 20
+    channels: ["Fuel_Pre_Injector_PT", "Fuel_Pre_Injector_TC"]
+    fluid: fuel
+    
+
+valves:
+  #nts-(no channel = always open, nothing in Synnax) ---
+  - inlet: "gox bottle" # placeholder for needle valve + regulator until regulators are simulated
+    outlet: "gox manifold"
+    flow_coefficient: 1.0e-4
+    set_pressure: 285
+  - inlet: "methane bottle" #placeholder until sim
+    outlet: "methane manifold"
+    flow_coefficient: 1.0e-4
+    set_pressure: 285
+
+    #passive flow paths
+  - inlet: "ox pre injector" # GOx injector
+    outlet: "torch chamber"
+    flow_coefficient: 1.0e-5
+  - inlet: "fuel pre injector" # methane injector
+    outlet: "torch chamber"
+    flow_coefficient: 1.0e-5
+  - inlet: "torch chamber" # torch exhaust into the (unlit) main engine
+    outlet: "atmosphere"
+    flow_coefficient: 1.8e-5
+    
+
+  #remote controlled valves
+  - channel: "Ox_MPV"
+    inlet: "gox manifold"
+    outlet: "ox pre injector"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Fuel_MPV"
+    inlet: "methane manifold"
+    outlet: "fuel pre injector"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: false
+  - channel: "Post_MPV_Vents"
+    inlet: "ox pre injector"
+    outlet: "atmosphere"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: true
+  - channel: "Post_MPV_Vents"
+    inlet: "fuel pre injector"
+    outlet: "atmosphere"
+    flow_coefficient: 1.0e-5
+    is_check_valve: false
+    is_normally_open: true
+  
+  - channel: "Igniter"
+    inlet: "torch chamber"
+    outlet: "torch chamber"
+    flow_coefficient: 0
+    is_check_valve: false
+    is_normally_open: false
