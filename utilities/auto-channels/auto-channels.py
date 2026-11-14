@@ -347,8 +347,8 @@ def process_sheet(file: pd.DataFrame):
                     "port": 60
                     if channel_num == 1
                     else (53 if channel_num == 2 else 62),
-                    "scale": row["scale"],
-                    "output": row["output"],
+                    "scale": row["LC Range"],
+                    "excite": row["LC Excitation"],
                 }
                 channels.append(channel)
                 spinner.write(colored(" > Found LC: " + row["Name"], "cyan"))
@@ -664,7 +664,7 @@ def setup_lc(client: sy.Synnax, channel, analog_task, analog_card):
             device=analog_card.key,
             port=channel["port"],
             custom_scale=ni.LinScale(
-                slope=((10 * channel["scale"]) / (4.9 * 5 * channel["output"])),
+                slope=((10 * channel["scale"]) / (4.9 * 5 * channel["excite"])),
                 y_intercept=(0),
                 pre_scaled_units="Volts",
                 scaled_units="Pounds",
