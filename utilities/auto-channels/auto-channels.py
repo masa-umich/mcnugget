@@ -455,7 +455,7 @@ def setup_channels(client: sy.Synnax, channels, analog_task, digital_task, analo
         elif channel["type"] == "Thermistor":
             spinner.write(colored(" > Creating Thermistor", "cyan"))
             setup_thermistor(client, channel, analog_task, analog_card)
-        if channel["type"] == "PT":
+        if channel["type"] == "LC":
             spinner.write(colored(f" > Creating LC: {channel['name']}", "cyan"))
             setup_lc(client, channel, analog_task, analog_card)
         else:
