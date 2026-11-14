@@ -19,11 +19,11 @@
 # 4. Type `./auto_channels.py` in your terminal and press enter
 # 5. Follow the prompts and enjoy!
 # If you have any problems, report to Jack on Slack
-# 
+#
 
 #
 # auto-channels.py
-# 
+#
 # Last updated: Nov 27, 2025
 # Author: jackmh
 #
@@ -31,6 +31,7 @@
 import argparse
 from termcolor import colored
 from yaspin import yaspin
+
 # Adds a fun spinner :)
 spinner = yaspin()
 spinner.text = colored("Initializing...", "yellow")
@@ -44,7 +45,7 @@ import time
 import os
 import synnax.ni as ni
 
-verbose: bool = False # global setting (default = False)
+verbose: bool = False  # global setting (default = False)
 analog_task_name: str = "Sensors"
 analog_card_model: str = "PCI-6225"
 
@@ -52,6 +53,7 @@ digital_task_name: str = "Valves"
 digital_card_model: str = "PCI-6514"
 
 calibration_read_time: int = 5
+
 
 @yaspin(text=colored("Logging onto Synnax cluster...", "yellow"))
 def synnax_login(cluster: str) -> sy.Synnax:
@@ -63,8 +65,11 @@ def synnax_login(cluster: str) -> sy.Synnax:
             password="seldon",
         )
     except Exception as e:
-        raise Exception(f"Could not connect to Synnax at {cluster}, are you sure you're connected?")
+        raise Exception(
+            f"Could not connect to Synnax at {cluster}, are you sure you're connected?"
+        )
     return client  # type: ignore
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -75,47 +80,53 @@ def parse_args() -> argparse.Namespace:
         "--cluster",
         help="Specify a Synnax cluster to connect to",
         type=str,
-        default="141.212.192.160"
+        default="141.212.192.160",
     )
     parser.add_argument(
         "-i",
         "--icd",
         help="Specify an ICD or instrumentation file to use",
         type=str,
-        default=""
+        default="",
     )
     parser.add_argument(
         "-f",
         "--frequency",
         help="Specify a frequency to read & write data at (Hertz)",
         type=int,
-        default=50
+        default=50,
     )
     parser.add_argument(
         "-v",
         "--verbose",
         help="Shold the program output extra debugging information",
-        action="store_true"
+        action="store_true",
     )  # Positional argument
     args = parser.parse_args()
-    if (args.verbose):
-        verbose = True # set global
+    if args.verbose:
+        verbose = True  # set global
     return args
+
 
 def main():
     args = parse_args()
     client = synnax_login(args.cluster)
     analog_task, digital_task, analog_card = create_tasks(client, args.frequency)
-    if (args.icd == ""):
-        file_path = input(colored("Path to instrumentation sheet or URL to ICD: ", "cyan"))
+    if args.icd == "":
+        file_path = input(
+            colored("Path to instrumentation sheet or URL to ICD: ", "cyan")
+        )
     else:
         file_path = args.icd
     sheet = get_sheet(file_path)
     channels = process_sheet(sheet)
     setup_channels(client, channels, analog_task, digital_task, analog_card)
-    calibrations = handle_calibrations(prompt_calibrations(client), client, channels, analog_task, args.frequency)
+    calibrations = handle_calibrations(
+        prompt_calibrations(client), client, channels, analog_task, args.frequency
+    )
     apply_calibrations(calibrations, analog_task)
     configure_tasks(client, analog_task, digital_task)
+
 
 def create_tasks(client: sy.Synnax, frequency: int):
     spinner.text = "Creating tasks..."
@@ -123,23 +134,59 @@ def create_tasks(client: sy.Synnax, frequency: int):
     time.sleep(0.1)
     try:
         analog_card = client.devices.retrieve(model=analog_card_model)
-        spinner.write(colored(" > Analog card '" + analog_card.make + " " + analog_card.model + "' found! ✅", "green", attrs=["bold"]))
+        spinner.write(
+            colored(
+                " > Analog card '"
+                + analog_card.make
+                + " "
+                + analog_card.model
+                + "' found! ✅",
+                "green",
+                attrs=["bold"],
+            )
+        )
         time.sleep(0.1)
     except:
-        raise Exception(colored("Analog card '" + analog_card_model + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red", attrs=["bold"]))
-    
+        raise Exception(
+            colored(
+                "Analog card '"
+                + analog_card_model
+                + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.",
+                "red",
+                attrs=["bold"],
+            )
+        )
+
     try:
         digital_card = client.devices.retrieve(model=digital_card_model)
-        spinner.write(colored(" > Digital card '" + digital_card.make + " " + digital_card.model + "' found! ✅", "green", attrs=["bold"]))
+        spinner.write(
+            colored(
+                " > Digital card '"
+                + digital_card.make
+                + " "
+                + digital_card.model
+                + "' found! ✅",
+                "green",
+                attrs=["bold"],
+            )
+        )
         time.sleep(0.1)
     except:
-        raise Exception(colored("Digital card '" + digital_card_model + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.", "red", attrs=["bold"]))
+        raise Exception(
+            colored(
+                "Digital card '"
+                + digital_card_model
+                + "' not found, are you sure it's connected? Maybe try re-enabling the NI Device Scanner.",
+                "red",
+                attrs=["bold"],
+            )
+        )
 
     analog_task = ni.AnalogReadTask(
         name=analog_task_name,
         device=analog_card.key,
         sample_rate=sy.Rate.HZ * frequency,
-        stream_rate=sy.Rate.HZ * frequency/2,
+        stream_rate=sy.Rate.HZ * frequency / 2,
         data_saving=True,
         channels=[],
     )
@@ -154,14 +201,21 @@ def create_tasks(client: sy.Synnax, frequency: int):
 
     return analog_task, digital_task, analog_card
 
+
 def get_sheet(sheet_path: str):
     spinner.start()
     spinner.text = colored("Reading sheet...", "magenta")
     if "docs.google.com" in sheet_path:
-        raise Exception(colored("Google Sheets not supported yet, please download as Excel file and try again", "red", attrs=["bold"]))
-        #SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-        #flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
-        #creds = flow.run_local_server(port=0)
+        raise Exception(
+            colored(
+                "Google Sheets not supported yet, please download as Excel file and try again",
+                "red",
+                attrs=["bold"],
+            )
+        )
+        # SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+        # flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
+        # creds = flow.run_local_server(port=0)
         # gspread_client = gspread.service_account("creds.json")
         # sheet = gspread_client.open_by_url(sheet_path)
         # vals = sheet.sheet1.get_all_values()
@@ -170,18 +224,26 @@ def get_sheet(sheet_path: str):
         #     df = pd.read_csv(sheet_path)
         # except Exception as e:
         #     raise Exception("Error reading Google Sheet: " + e + " are you sure the URL is correct?")
-    else: # assume it's an excel file
+    else:  # assume it's an excel file
         try:
             # The ICD has a goofy formatting, we start header at 1 and mappings must be in "AVI GSE Mappings" sheet
-            df = pd.read_excel(sheet_path.strip(' \'"'), header=1, sheet_name="AVI Mappings 25-26", index_col=[0])
+            df = pd.read_excel(
+                sheet_path.strip(" '\""),
+                header=1,
+                sheet_name="AVI Mappings 25-26",
+                index_col=[0],
+            )
             # we also add index_col=0 to handle the merged cells for sensor type
-            df["Connection Location"] = df["Connection Location"].ffill() # Fix merged cells
+            df["Connection Location"] = df[
+                "Connection Location"
+            ].ffill()  # Fix merged cells
         except FileNotFoundError as e:
             raise Exception(colored("File not found: " + sheet_path, "red"))
-        
+
     spinner.write(colored(" > Successfully read sheet", "green", attrs=["bold"]))
 
-    return df.head(300) # god forbid we have more than 300 channels
+    return df.head(300)  # god forbid we have more than 300 channels
+
 
 def process_sheet(file: pd.DataFrame):
     # makes dict of channels and relevant data
@@ -191,11 +253,15 @@ def process_sheet(file: pd.DataFrame):
     setup_thermistor = False
     for _, row in file.iterrows():
         if row["Connection Location"] != "EBOX":
-            spinner.write(colored(f"Channel found for non-EBox device, skipping...", "yellow"))
+            spinner.write(
+                colored(f"Channel found for non-EBox device, skipping...", "yellow")
+            )
             continue
         # handle invalid rows
         if row["Channel"] == "" or row["Name"] == "":
-            spinner.write(colored(" > Skipping row with no channel or name...", "yellow"))
+            spinner.write(
+                colored(" > Skipping row with no channel or name...", "yellow")
+            )
             time.sleep(0.1)
             continue
         try:
@@ -213,19 +279,19 @@ def process_sheet(file: pd.DataFrame):
         try:
             channel_num = int(row["Channel"])
             if row.name == "PTs" or row.name == "PT":
-                #time.sleep(0.1)
+                # time.sleep(0.1)
                 channel = {
                     "name": row["Name"],
                     "type": "PT",
                     "channel": channel_num,
-                    "port": channel_num -1,
+                    "port": channel_num - 1,
                     "max": int(row["Max Pressure"]),
-                    "min": 0
+                    "min": 0,
                 }
                 channels.append(channel)
                 spinner.write(colored(" > Found PT: " + row["Name"], "cyan"))
             elif row.name == "VLVs" or row.name == "VLV":
-                #time.sleep(0.1)
+                # time.sleep(0.1)
                 if channel_num >= 17:
                     port = 6
                 elif channel_num >= 9:
@@ -239,46 +305,66 @@ def process_sheet(file: pd.DataFrame):
                     "type": "VLV",
                     "channel": channel_num,
                     "port": port,
-                    "line": (channel_num - 1) % 8
+                    "line": (channel_num - 1) % 8,
                 }
                 channels.append(channel)
                 spinner.write(colored(" > Found VLV: " + row["Name"], "cyan"))
             elif row.name == "TCs" or row.name == "TC":
                 if not setup_thermistor:
-                    #time.sleep(0.1)
+                    # time.sleep(0.1)
                     channel = {
                         "type": "Thermistor",
                         "name": "Thermistor",
                         "signal": 78,
                         "supply": 79,
                         "max": 8,
-                        "min": -8
+                        "min": -8,
                     }
                     setup_thermistor = True
                     channels.append(channel)
                     spinner.write(colored(" > Found thermistor", "cyan"))
-                #time.sleep(0.1)
+                # time.sleep(0.1)
                 channel = {
                     "name": row["Name"],
                     "type": "TC",
                     "channel": channel_num,
                     "port": channel_num - 1 + 64,
                     "max": 8,
-                    "min": -8
+                    "min": -8,
                 }
                 channels.append(channel)
                 spinner.write(colored(" > Found TC: " + row["Name"], "cyan"))
             elif row.name == "LCs" or row.name == "LC":
-                spinner.write(colored(" > Load cells not supported yet, skipping...", "yellow"))
-                #time.sleep(0.1)
+                if channel_num < 1 or channel_num > 3:
+                    raise Exception(
+                        "Invalid channel number for load cell: " + row["Name"]
+                    )
+                # time.sleep(0.1)
+                channel = {
+                    "name": row["Name"],
+                    "type": "LC",
+                    "channel": channel_num,
+                    "port": 60
+                    if channel_num == 1
+                    else (53 if channel_num == 2 else 62),
+                    "scale": row["scale"],
+                    "output": row["output"],
+                }
+                channels.append(channel)
+                spinner.write(colored(" > Found LC: " + row["Name"], "cyan"))
+                # spinner.write(colored(" > Load cells not supported yet, skipping...", "yellow"))
+                # time.sleep(0.1)
             else:
-                spinner.write(colored(f" > Sensor type {row.name} not recognized", "yellow"))
+                spinner.write(
+                    colored(f" > Sensor type {row.name} not recognized", "yellow")
+                )
         except KeyError as e:
             spinner.write(colored(f"Missing column in row: {e} skipping...", "yellow"))
         except Exception as e:
             spinner.write(colored(f"Error populating tasks: {e} skipping...", "yellow"))
     spinner.write(colored(" > Finished parsing channels", "green", attrs=["bold"]))
     return channels
+
 
 def prompt_calibrations(client: sy.Synnax):
     try:
@@ -287,10 +373,22 @@ def prompt_calibrations(client: sy.Synnax):
         old_analog_task = None
 
     spinner.stop()
-    print(colored("What calibration settings would you like to apply for '" + analog_task_name + "' ?", "cyan"))
-    print(colored("1 - Assume system is at ambient, get new calibration data (must have ALL sensors attached)", "cyan"))
+    print(
+        colored(
+            "What calibration settings would you like to apply for '"
+            + analog_task_name
+            + "' ?",
+            "cyan",
+        )
+    )
+    print(
+        colored(
+            "1 - Assume system is at ambient, get new calibration data (must have ALL sensors attached)",
+            "cyan",
+        )
+    )
     print(colored("2 - Use factory calibration data (can be incorrect)", "cyan"))
-    if (old_analog_task != None):
+    if old_analog_task != None:
         print(colored("3 - Use existing calibration data from last task", "cyan"))
     print(colored("4 - Import old ambient calibration data from json file", "cyan"))
     answer = input(colored("Selection: ", "cyan"))
@@ -308,7 +406,10 @@ def prompt_calibrations(client: sy.Synnax):
         print(colored("Invalid selection, please try again", "red"))
         prompt_calibrations(client)
 
-def handle_calibrations(selection: int, client: sy.Synnax, channels, analog_task, frequency: int):
+
+def handle_calibrations(
+    selection: int, client: sy.Synnax, channels, analog_task, frequency: int
+):
     if selection == 1:
         return get_ambient_calibrations(client, channels, analog_task, frequency)
     elif selection == 2:
@@ -318,57 +419,71 @@ def handle_calibrations(selection: int, client: sy.Synnax, channels, analog_task
     elif selection == 4:
         return get_old_calibrations_from_json()
 
+
 def apply_calibrations(calibrations, analog_task):
     for channel in analog_task.config.channels:
         # same as in get_ambient_calibrations
-        if not isinstance(channel.custom_scale, ni.types.NoScale) and channel.custom_scale.scaled_units == "PoundsPerSquareInch":
+        if (
+            not isinstance(channel.custom_scale, ni.types.NoScale)
+            and channel.custom_scale.scaled_units == "PoundsPerSquareInch"
+        ):
             channel.custom_scale = ni.LinScale(
-                slope            = calibrations[channel.port]["slope"],
-                y_intercept      = calibrations[channel.port]["offset"],
-                pre_scaled_units = "Volts",
-                scaled_units     = "PoundsPerSquareInch"
+                slope=calibrations[channel.port]["slope"],
+                y_intercept=calibrations[channel.port]["offset"],
+                pre_scaled_units="Volts",
+                scaled_units="PoundsPerSquareInch",
             )
             channel.max_val = calibrations[channel.port]["max_val"]
             channel.min_val = calibrations[channel.port]["min_val"]
-    spinner.write(colored(" > Calibrations applied", "green", attrs=["bold"]))    
+    spinner.write(colored(" > Calibrations applied", "green", attrs=["bold"]))
+
 
 def setup_channels(client: sy.Synnax, channels, analog_task, digital_task, analog_card):
     spinner.text = "Creating channels in Synnax..."
-    yes_to_all = False # create new synnax channels for all items in the sheet?
+    yes_to_all = False  # create new synnax channels for all items in the sheet?
 
     for channel in channels:
-        if channel["type"] == "PT":            
-            spinner.write(colored(f" > Creating PT: {channel["name"]}", "cyan"))
+        if channel["type"] == "PT":
+            spinner.write(colored(f" > Creating PT: {channel['name']}", "cyan"))
             setup_pt(client, channel, analog_task, analog_card)
         elif channel["type"] == "VLV":
-            spinner.write(colored(f" > Creating VLV: {channel["name"]}", "cyan"))
+            spinner.write(colored(f" > Creating VLV: {channel['name']}", "cyan"))
             setup_vlv(client, channel, digital_task)
         elif channel["type"] == "TC":
-            spinner.write(colored(f" > Creating TC: {channel["name"]}", "cyan"))
+            spinner.write(colored(f" > Creating TC: {channel['name']}", "cyan"))
             setup_tc(client, channel, analog_task, analog_card)
         elif channel["type"] == "Thermistor":
             spinner.write(colored(" > Creating Thermistor", "cyan"))
             setup_thermistor(client, channel, analog_task, analog_card)
+        if channel["type"] == "PT":
+            spinner.write(colored(f" > Creating LC: {channel['name']}", "cyan"))
+            setup_lc(client, channel, analog_task, analog_card)
         else:
-            raise Exception(f"Sensor type {channel["type"]} in channels dict not recognized (issue with the script)")
-    spinner.write(colored(" > Successfully created channels in Synnax", "green", attrs=["bold"]))
+            raise Exception(
+                f"Sensor type {channel['type']} in channels dict not recognized (issue with the script)"
+            )
+    spinner.write(
+        colored(" > Successfully created channels in Synnax", "green", attrs=["bold"])
+    )
+
 
 def get_factory_calibrations(channels, analog_task: ni.AnalogReadTask):
     # assume slope and offset
     calibrations = {}
-    spinner.text = colored("Calculating factory calibration data...", "green")    
+    spinner.text = colored("Calculating factory calibration data...", "green")
     for channel in channels:
         ch_type = channel["type"]
         if ch_type == "PT":
             calibrations[channel["port"]] = {
-                "slope": (channel["max"] / 4), # 0.5-4.5V
-                "offset": -(channel["max"] / 4)*0.5, # assume 0 psi at exactly 0.5V
+                "slope": (channel["max"] / 4),  # 0.5-4.5V
+                "offset": -(channel["max"] / 4) * 0.5,  # assume 0 psi at exactly 0.5V
                 "min_val": channel["min"],
-                "max_val": channel["max"]
+                "max_val": channel["max"],
             }
         elif ch_type == "TC":
             calibrations[channel["port"]] = tc_calibrations[str(channel["channel"])]
     return calibrations
+
 
 def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency: int):
     # temporarily setup a task with all channels
@@ -380,37 +495,44 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
     analog_card = client.devices.retrieve(model=analog_card_model)
 
     calibrations = {}
-    channel_keys = {} # map channel name to (port, min, max)
+    channel_keys = {}  # map channel name to (port, min, max)
     frame = sy.Frame()
 
     temp_task = ni.AnalogReadTask(
         name="Ambient calibration for PTs",
         device=analog_card.key,
         sample_rate=sy.Rate.HZ * frequency,
-        stream_rate=sy.Rate.HZ * frequency/2, # 2 samples at a time
+        stream_rate=sy.Rate.HZ * frequency / 2,  # 2 samples at a time
         data_saving=False,
-        channels=[]
+        channels=[],
     )
 
     for channel in analog_task.config.channels:
         # copy pt channels for temp_task from analog_task
         # surely there's a better way to check if channel is for a pt
-        if not isinstance(channel.custom_scale, ni.types.NoScale) and channel.custom_scale.scaled_units == "PoundsPerSquareInch":
+        if (
+            not isinstance(channel.custom_scale, ni.types.NoScale)
+            and channel.custom_scale.scaled_units == "PoundsPerSquareInch"
+        ):
             temp_task.config.channels.append(channel)
 
     client.tasks.configure(task=temp_task, timeout=6000)
-    
+
     temp_task.start()
 
     try:
         channel_names = []
         for channel in channels:
             if channel["type"] == "PT":
-                channel_names.append(f"gse_pt_{channel["channel"]}")
-                channel_keys[f"gse_pt_{channel["channel"]}"] = (channel["port"], channel["min"], channel["max"])
+                channel_names.append(f"gse_pt_{channel['channel']}")
+                channel_keys[f"gse_pt_{channel['channel']}"] = (
+                    channel["port"],
+                    channel["min"],
+                    channel["max"],
+                )
         with client.open_streamer(channel_names) as streamer:
-            spinner.text = colored("Reading for ambient calibration...", "green")        
-            for i in range(frequency//2 * calibration_read_time):
+            spinner.text = colored("Reading for ambient calibration...", "green")
+            for i in range(frequency // 2 * calibration_read_time):
                 frame.append(streamer.read())
     finally:
         spinner.text = colored("Stopping task for ambient calibration...", "green")
@@ -421,16 +543,19 @@ def get_ambient_calibrations(client: sy.Synnax, channels, analog_task, frequency
             "slope": (channel_keys[channel][2] / 4),
             "offset": float(-frame.to_df()[channel].mean()),
             "min_val": float(channel_keys[channel][1]),
-            "max_val": float(channel_keys[channel][2])
+            "max_val": float(channel_keys[channel][2]),
         }
 
-    if not os.path.exists('calibrations'):
-        os.makedirs('calibrations')
+    if not os.path.exists("calibrations"):
+        os.makedirs("calibrations")
 
-    with open('calibrations/calibrations-' + time.strftime('%Y%m%d%H%M%S') + '.json', 'w') as save_file:
+    with open(
+        "calibrations/calibrations-" + time.strftime("%Y%m%d%H%M%S") + ".json", "w"
+    ) as save_file:
         json.dump(calibrations, save_file)
 
     return calibrations
+
 
 def get_old_calibrations_from_task(client: sy.Synnax, task_name: str):
     spinner.text = colored("Retrieving calibrations...", "green")
@@ -447,24 +572,29 @@ def get_old_calibrations_from_task(client: sy.Synnax, task_name: str):
     calibrations = {}
 
     for channel in config["channels"]:
-        if (channel["type"] == "ai_voltage") and (channel["custom_scale"]["type"] != "none"): # if it has a calibration
-            calibrations[channel["port"]] = { # add to calibrations dict
+        if (channel["type"] == "ai_voltage") and (
+            channel["custom_scale"]["type"] != "none"
+        ):  # if it has a calibration
+            calibrations[channel["port"]] = {  # add to calibrations dict
                 "slope": channel["custom_scale"]["slope"],
                 "offset": channel["custom_scale"]["y_intercept"],
                 "min_val": channel["min_val"],
-                "max_val": channel["max_val"]
+                "max_val": channel["max_val"],
             }
 
     return calibrations
 
+
 def get_old_calibrations_from_json():
     spinner.stop()
-    filename = input(colored("Path to json file with old ambient calibration data: ", "cyan"))
-    spinner.text = "Configuring tasks... (this may take a while)"    
+    filename = input(
+        colored("Path to json file with old ambient calibration data: ", "cyan")
+    )
+    spinner.text = "Configuring tasks... (this may take a while)"
     spinner.start()
 
     try:
-        with open(filename, 'r') as file:
+        with open(filename, "r") as file:
             calibrations = json.load(file)
         # applying calibrations needs key to be int, but json loads as str
         return {int(k): v for k, v in calibrations.items()}
@@ -472,6 +602,7 @@ def get_old_calibrations_from_json():
         raise Exception(f"Error decoding JSON: {e}")
     except FileNotFoundError:
         raise Exception(f"{filename} not found")
+
 
 def setup_pt(client: sy.Synnax, channel, analog_task, analog_card):
     time_channel = client.channels.create(
@@ -482,7 +613,7 @@ def setup_pt(client: sy.Synnax, channel, analog_task, analog_card):
     )
 
     pt_channel = client.channels.create(
-        name=f"gse_pt_{channel["channel"]}",
+        name=f"gse_pt_{channel['channel']}",
         data_type=sy.DataType.FLOAT32,
         index=time_channel.key,
         retrieve_if_name_exists=True,
@@ -495,10 +626,12 @@ def setup_pt(client: sy.Synnax, channel, analog_task, analog_card):
             port=channel["port"],
             custom_scale=ni.LinScale(
                 slope=(
-                    channel["max"] / 4.0 # slope is max output in psi over output range (4 volts for our PTs)
+                    channel["max"]
+                    / 4.0  # slope is max output in psi over output range (4 volts for our PTs)
                 ),
                 y_intercept=(
-                    -(channel["max"] / 4.0) * 0.5 # y intercept is negative slope at 0.5 volts
+                    -(channel["max"] / 4.0)
+                    * 0.5  # y intercept is negative slope at 0.5 volts
                 ),
                 pre_scaled_units="Volts",
                 scaled_units="PoundsPerSquareInch",
@@ -510,6 +643,38 @@ def setup_pt(client: sy.Synnax, channel, analog_task, analog_card):
     )
 
 
+def setup_lc(client: sy.Synnax, channel, analog_task, analog_card):
+    time_channel = client.channels.create(
+        name="gse_sensor_time",
+        data_type=sy.DataType.TIMESTAMP,
+        retrieve_if_name_exists=True,
+        is_index=True,
+    )
+
+    lc_channel = client.channels.create(
+        name=f"gse_lc_{channel['channel']}",
+        data_type=sy.DataType.FLOAT32,
+        index=time_channel.key,
+        retrieve_if_name_exists=True,
+    )
+
+    analog_task.config.channels.append(
+        ni.AIVoltageChan(
+            channel=lc_channel.key,
+            device=analog_card.key,
+            port=channel["port"],
+            custom_scale=ni.LinScale(
+                slope=((10 * channel["scale"]) / (4.9 * 5 * channel["output"])),
+                y_intercept=(0),
+                pre_scaled_units="Volts",
+                scaled_units="Pounds",
+            ),
+            terminal_config="RSE",
+            max_val=channel["scale"],
+            min_val=0,
+        )
+    )
+
 
 def setup_vlv(client: sy.Synnax, channel, digital_task):
     gse_state_time = client.channels.create(
@@ -520,14 +685,14 @@ def setup_vlv(client: sy.Synnax, channel, digital_task):
     )
 
     state_chan = client.channels.create(
-        name=f"gse_state_{channel["channel"]}",
+        name=f"gse_state_{channel['channel']}",
         data_type=sy.DataType.UINT8,
         retrieve_if_name_exists=True,
         index=gse_state_time.key,
     )
 
     cmd_chan = client.channels.create(
-        name=f"gse_vlv_{channel["channel"]}",
+        name=f"gse_vlv_{channel['channel']}",
         data_type=sy.DataType.UINT8,
         retrieve_if_name_exists=True,
         virtual=True,
@@ -541,6 +706,7 @@ def setup_vlv(client: sy.Synnax, channel, digital_task):
             line=channel["line"],
         )
     )
+
 
 def setup_thermistor(client: sy.Synnax, channel, analog_task, analog_card):
     time_channel = client.channels.create(
@@ -596,7 +762,7 @@ def setup_tc(client: sy.Synnax, channel, analog_task, analog_card):
     )
 
     tc_channel = client.channels.create(
-        name=f"gse_tc_{channel["channel"]}_raw",  # TCs without any CJC, CJC happens in a seperate script in real-time
+        name=f"gse_tc_{channel['channel']}_raw",  # TCs without any CJC, CJC happens in a seperate script in real-time
         data_type=sy.DataType.FLOAT32,
         index=time_channel.key,
         retrieve_if_name_exists=True,
@@ -618,6 +784,7 @@ def setup_tc(client: sy.Synnax, channel, analog_task, analog_card):
         )
     )
 
+
 def configure_tasks(client: sy.Synnax, analog_task, digital_task):
     spinner.text = "Configuring tasks... (this may take a while)"
 
@@ -631,10 +798,13 @@ def configure_tasks(client: sy.Synnax, analog_task, digital_task):
         spinner.write(colored(" > Attempting to configure digital task", "cyan"))
         client.tasks.configure(task=digital_task, timeout=500)
         spinner.write(colored(" > Successfully configured digital task!", "green"))
-    spinner.write(colored(" > All tasks have been successfully created!", "green", attrs=["bold"]))
+    spinner.write(
+        colored(" > All tasks have been successfully created!", "green", attrs=["bold"])
+    )
+
 
 # putting this here so it doesn't take up space at the top
-# hardcoded calibration data for thermocouples, 
+# hardcoded calibration data for thermocouples,
 # these should never really change because of how our converters work
 tc_calibrations = {
     "1": {"slope": 1.721453951, "offset": -7.888645383},
