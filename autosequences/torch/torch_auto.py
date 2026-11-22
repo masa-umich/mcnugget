@@ -99,7 +99,7 @@ def countdown(phase: Phase) -> None:
         config.get_pt("torch_pt3"),
     ]
 
-    order: list[float] = [spark_on_time, ox_mpv_time, fuel_mpv_time, spark_off_time, ignition_detection_start, ignition_detection_end]
+    order: list[float] = [spark_on_time, min(fuel_mpv_time, ox_mpv_time), max(fuel_mpv_time, ox_mpv_time), spark_off_time, ignition_detection_start, ignition_detection_end]
     if order != sorted(order) or not (ignition_detection_end < 0 <= torch_off_time):
         phase.log("Timeline out of order, quitting", color="red")
         return
@@ -109,7 +109,14 @@ def countdown(phase: Phase) -> None:
     if -spark_on_time >= countdown_duration:
         phase.log("spark_on_time is before the countdown starts, quitting", color="red")
         return
-
+    
+    if fuel_mpv_time < ox_mpv_time:
+        phase.log("Leading Fuel", color="Blue")
+    elif fuel_mpv_time > ox_mpv_time:
+        phase.log("Leading Ox", color="Blue")
+    else:
+        phase.log("Simultaneous Fuel and Ox", color="Blue")
+    
     #setting todo of what to turn on + time before T-0
     events: list[tuple[float, str, str, str]] = [(spark_on_time, "Spark plug ON", igniter_ch, "open")]
     if using_ox:
