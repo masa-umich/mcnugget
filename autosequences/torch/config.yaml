@@ -1,8 +1,8 @@
 variables:
   countdown_duration: 10 #time from 'Enter' to T-0
   spark_on_time: -3.20 #X1 - Energize spark plug
-  ox_mpv_time: -3.15 #X2 - Open Torch Ox MPV
-  fuel_mpv_time: -2.95 #X3 - Open Torch Fuel MPV 
+  ox_mpv_time: -2.95 #X2 - Open Torch Ox MPV
+  fuel_mpv_time: -3.15 #X3 - Open Torch Fuel MPV 
   spark_off_time: -2.46 #X4 - De-energize spark plug
   ignition_detection_start: -2.45 #X5 - Begin ignition detection 
   ignition_detection_end: -0.21 #X6 - Stop ignition detection 
